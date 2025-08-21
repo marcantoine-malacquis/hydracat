@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HydraCat</string>
+    <string name="app_description">Hydration tracking for cats with kidney disease</string>
+</resources>
