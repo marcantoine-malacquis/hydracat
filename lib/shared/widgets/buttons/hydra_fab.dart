@@ -8,12 +8,16 @@ class HydraFab extends StatelessWidget {
   const HydraFab({
     required this.onPressed,
     super.key,
+    this.icon = Icons.water_drop,
     this.isLoading = false,
     this.tooltip = 'Log Session',
   });
 
   /// Callback function when FAB is pressed
   final VoidCallback? onPressed;
+
+  /// Icon to display in the FAB
+  final IconData icon;
 
   /// Whether to show loading state
   final bool isLoading;
@@ -50,8 +54,8 @@ class HydraFab extends StatelessWidget {
       );
     }
 
-    return const Icon(
-      Icons.water_drop,
+    return Icon(
+      icon,
       size: 32, // Increased from 28 to make it stand out more
     );
   }

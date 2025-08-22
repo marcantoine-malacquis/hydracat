@@ -13,19 +13,11 @@ class ComponentDemoScreen extends StatefulWidget {
 }
 
 class _ComponentDemoScreenState extends State<ComponentDemoScreen> {
-  int _currentIndex = 0;
   bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
-    return HydraScaffold.create(
-      context: context,
-      currentIndex: _currentIndex,
-      onTap: (index) {
-        setState(() {
-          _currentIndex = index;
-        });
-      },
+    return Scaffold(
       appBar: AppBar(
         title: const Text('HydraCat Components'),
         backgroundColor: AppColors.surface,
@@ -252,13 +244,13 @@ class _ComponentDemoScreenState extends State<ComponentDemoScreen> {
           ),
           const SizedBox(height: AppSpacing.md),
           const Text(
-            'The navigation bar below demonstrates the custom design '
-            'with the droplet FAB.',
+            'The navigation bar is now handled by the AppShell and provides '
+            'consistent navigation across all screens with the droplet FAB.',
             style: AppTextStyles.body,
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            'Current Index: $_currentIndex',
+            'Current Index: 0',
             style: AppTextStyles.caption.copyWith(
               color: AppColors.primary,
             ),

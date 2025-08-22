@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/shared/widgets/accessibility/hydra_touch_target.dart';
 
-/// Base button component for HydraCat with water theme styling.
-/// Implements the button design specifications from the UI guidelines.
+/// A reusable button component with accessibility support.
 class HydraButton extends StatelessWidget {
   /// Creates a HydraButton.
   const HydraButton({
@@ -13,78 +13,64 @@ class HydraButton extends StatelessWidget {
     this.size = HydraButtonSize.medium,
     this.isLoading = false,
     this.isFullWidth = false,
+    this.semanticLabel,
   });
 
-  /// Callback function when button is pressed
+  /// Callback function when button is pressed.
   final VoidCallback? onPressed;
 
-  /// Button content
+  /// The child widget to display in the button.
   final Widget child;
 
-  /// Button variant (primary, secondary, text)
+  /// The visual variant of the button.
   final HydraButtonVariant variant;
 
-  /// Button size (small, medium, large)
+  /// The size of the button.
   final HydraButtonSize size;
 
-  /// Whether to show loading state
+  /// Whether to show loading state.
   final bool isLoading;
 
-  /// Whether button should take full width
+  /// Whether the button should take full width.
   final bool isFullWidth;
+
+  /// Semantic label for accessibility.
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
-    final buttonStyle = _getButtonStyle();
+    final button = _buildButton(context);
+
+    return HydraTouchTarget(
+      child: button,
+    );
+  }
+
+  Widget _buildButton(BuildContext context) {
+    final buttonStyle = _getButtonStyle(context);
     final buttonSize = _getButtonSize();
 
-    var button = _buildButton(buttonStyle, buttonSize);
-
-    if (isFullWidth) {
-      button = SizedBox(
-        width: double.infinity,
-        child: button,
-      );
-    }
-
-    return button;
+    return SizedBox(
+      width: isFullWidth ? double.infinity : null,
+      child: ElevatedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: buttonStyle,
+        child: SizedBox(
+          height: buttonSize.height,
+          child: _buildButtonContent(),
+        ),
+      ),
+    );
   }
 
-  Widget _buildButton(ButtonStyle buttonStyle, Size buttonSize) {
-    switch (variant) {
-      case HydraButtonVariant.primary:
-        return ElevatedButton(
-          onPressed: isLoading ? null : onPressed,
-          style: buttonStyle,
-          child: _buildButtonContent(buttonSize),
-        );
-      case HydraButtonVariant.secondary:
-        return OutlinedButton(
-          onPressed: isLoading ? null : onPressed,
-          style: buttonStyle,
-          child: _buildButtonContent(buttonSize),
-        );
-      case HydraButtonVariant.text:
-        return TextButton(
-          onPressed: isLoading ? null : onPressed,
-          style: buttonStyle,
-          child: _buildButtonContent(buttonSize),
-        );
-    }
-  }
-
-  Widget _buildButtonContent(Size buttonSize) {
+  Widget _buildButtonContent() {
     if (isLoading) {
-      return SizedBox(
-        width: buttonSize.height * 0.6,
-        height: buttonSize.height * 0.6,
+      return const SizedBox(
+        width: 20,
+        height: 20,
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(
-            variant == HydraButtonVariant.primary
-                ? AppColors.onPrimary
-                : AppColors.primary,
-          ),
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
         ),
       );
     }
@@ -92,79 +78,73 @@ class HydraButton extends StatelessWidget {
     return child;
   }
 
-  ButtonStyle _getButtonStyle() {
-    final baseStyle = variant == HydraButtonVariant.primary
-        ? ElevatedButton.styleFrom()
-        : variant == HydraButtonVariant.secondary
-        ? OutlinedButton.styleFrom()
-        : TextButton.styleFrom();
-
-    return baseStyle.copyWith(
-      minimumSize: WidgetStateProperty.all(_getButtonSize()),
-      padding: WidgetStateProperty.all(_getButtonPadding()),
-      shape: WidgetStateProperty.all(
-        RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
+  ButtonStyle _getButtonStyle(BuildContext context) {
+    switch (variant) {
+      case HydraButtonVariant.primary:
+        return ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 2,
+          shadowColor: AppColors.primary.withValues(alpha: 0.3),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        );
+      case HydraButtonVariant.secondary:
+        return ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: AppColors.primary,
+          elevation: 0,
+          side: const BorderSide(color: AppColors.primary),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        );
+      case HydraButtonVariant.text:
+        return ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: AppColors.primary,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        );
+    }
   }
 
   Size _getButtonSize() {
     switch (size) {
       case HydraButtonSize.small:
-        return const Size(AppSpacing.minTouchTarget, AppSpacing.minTouchTarget);
+        return const Size(80, 32);
       case HydraButtonSize.medium:
-        return const Size(AppSpacing.minTouchTarget, AppSpacing.minTouchTarget);
+        return const Size(120, 44);
       case HydraButtonSize.large:
-        return const Size(
-          AppSpacing.minTouchTarget,
-          AppSpacing.minTouchTarget + 8,
-        );
-    }
-  }
-
-  EdgeInsets _getButtonPadding() {
-    switch (size) {
-      case HydraButtonSize.small:
-        return const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
-        );
-      case HydraButtonSize.medium:
-        return const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
-        );
-      case HydraButtonSize.large:
-        return const EdgeInsets.symmetric(
-          horizontal: AppSpacing.xl,
-          vertical: AppSpacing.lg,
-        );
+        return const Size(160, 48);
     }
   }
 }
 
-/// Button variants for different use cases
+/// Button variants for different use cases.
 enum HydraButtonVariant {
-  /// Primary button with teal background
+  /// Primary action button.
   primary,
 
-  /// Secondary button with teal outline
+  /// Secondary action button.
   secondary,
 
-  /// Text button with teal text
+  /// Text-only button.
   text,
 }
 
-/// Button sizes for different contexts
+/// Button sizes for different contexts.
 enum HydraButtonSize {
-  /// Small button for compact layouts
+  /// Small button for compact layouts.
   small,
 
-  /// Medium button for standard use
+  /// Medium button for standard layouts.
   medium,
 
-  /// Large button for prominent actions
+  /// Large button for prominent actions.
   large,
 }

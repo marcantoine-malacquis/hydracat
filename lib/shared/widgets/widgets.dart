@@ -1,11 +1,9 @@
-/// Widget component exports for HydraCat.
-///
-/// This file provides easy access to all widget components:
-/// - Buttons: HydraButton, HydraFab, HydraExtendedFab
-/// - Cards: HydraCard, HydraSectionCard, HydraInfoCard
-/// - Navigation: HydraNavigationBar, HydraNavigationBarExtended
+/// Shared widget exports for HydraCat application.
 library;
 
+export 'accessibility/accessibility.dart';
 export 'buttons/buttons.dart';
 export 'cards/cards.dart';
+export 'icons/icons.dart';
+export 'layout/layout.dart';
 export 'navigation/navigation.dart';
