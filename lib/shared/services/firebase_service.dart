@@ -6,6 +6,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/firebase_options.dart';
+import 'package:hydracat/shared/services/mcp_service.dart';
 
 /// Service class for managing Firebase initialization and configuration.
 class FirebaseService {
@@ -22,6 +23,7 @@ class FirebaseService {
   late FirebaseAnalytics _analytics;
   late FirebaseCrashlytics _crashlytics;
   late FirebaseMessaging _messaging;
+  late MCPService _mcpService;
 
   /// Getter for the Firebase app instance
   FirebaseApp get app => _app;
@@ -56,6 +58,21 @@ class FirebaseService {
       _crashlytics = FirebaseCrashlytics.instance;
       _messaging = FirebaseMessaging.instance;
 
+      // Initialize MCP service only on supported platforms (desktop/web)
+      _mcpService = MCPService();
+      if (kIsWeb) {
+        try {
+          await _mcpService.initialize();
+          debugPrint('MCP service initialized successfully');
+        } on Exception catch (e) {
+          debugPrint(
+            'MCP service initialization failed (this is normal on mobile): $e',
+          );
+        }
+      } else {
+        debugPrint('MCP service not available on this platform');
+      }
+
       // Configure Firestore settings
       if (kDebugMode) {
         _firestore.settings = const Settings(
@@ -79,12 +96,10 @@ class FirebaseService {
       // Configure messaging permissions
       await _configureMessaging();
 
-      debugPrint('Firebase initialized successfully');
+      debugPrint('Firebase and MCP services initialized successfully');
     } catch (e) {
-      debugPrint('Failed to initialize Firebase: $e');
-      if (kDebugMode) {
-        rethrow;
-      }
+      debugPrint('Failed to initialize Firebase services: $e');
+      rethrow;
     }
   }
 
@@ -119,4 +134,7 @@ class FirebaseService {
 
   /// Stream of auth state changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  /// Get MCP service instance
+  MCPService get mcp => _mcpService;
 }
