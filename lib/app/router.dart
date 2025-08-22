@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/features/auth/screens/login_screen.dart';
+import 'package:hydracat/features/home/screens/component_demo_screen.dart';
 import 'package:hydracat/features/home/screens/home_screen.dart';
 import 'package:hydracat/features/logging/screens/logging_screen.dart';
 import 'package:hydracat/features/profile/screens/profile_screen.dart';
@@ -39,6 +40,11 @@ final appRouter = GoRouter(
       path: '/resources',
       name: 'resources',
       builder: (context, state) => const ResourcesScreen(),
+    ),
+    GoRoute(
+      path: '/demo',
+      name: 'demo',
+      builder: (context, state) => const ComponentDemoScreen(),
     ),
   ],
 );

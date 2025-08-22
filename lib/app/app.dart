@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/app/router.dart';
+import 'package:hydracat/core/theme/app_theme.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
 
 /// Main application widget for HydraCat.
@@ -97,19 +98,8 @@ class _HydraCatAppState extends ConsumerState<HydraCatApp> {
     return MaterialApp.router(
       title: 'HydraCat',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2196F3), // Blue theme for medical app
-        ),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2196F3),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
       routerConfig: appRouter,
     );
   }

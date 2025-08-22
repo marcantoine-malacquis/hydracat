@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A screen that displays the main home interface for the HydraCat app.
 class HomeScreen extends StatelessWidget {
@@ -8,31 +11,46 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('HydraCat'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: AppColors.surface,
+        foregroundColor: AppColors.textPrimary,
       ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.pets,
-              size: 64,
-              color: Colors.blue,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Welcome to HydraCat',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Hydration tracking for cats with kidney disease',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
-            ),
-          ],
+      body: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.pets,
+                size: 64,
+                color: AppColors.primary,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                'Welcome to HydraCat',
+                style: AppTextStyles.h1.copyWith(
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              const Text(
+                'Hydration tracking for cats with kidney disease',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.body,
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              HydraButton(
+                onPressed: () {
+                  context.push('/demo');
+                },
+                isFullWidth: true,
+                child: const Text('View Component Demo'),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -5,6 +5,7 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
     // Add Firebase plugin
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 android {

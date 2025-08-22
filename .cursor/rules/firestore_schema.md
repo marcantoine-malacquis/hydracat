@@ -1,3 +1,6 @@
+alwaysApply: true
+globs: ["**/*.dart"]
+
 devices
 │
 ├── {deviceId} (document)
@@ -17,15 +20,30 @@ users
       ├── createdAt: Timestamp
       ├── updatedAt: Timestamp
       │
+      ├── fluidInventory (subcollection)
+      │     └── {inventoryId}  # e.g., "main"
+      │           ├── initialVolume: number       # volume entered at the start (ml)
+      │           ├── remainingVolume: number     # updated after each session
+      │           ├── thresholdVolume: number     # for triggering low-fluid notifications
+      │           ├── lastUpdatedAt: Timestamp
+      │           └── createdAt: Timestamp
+      │
       └── pets (subcollection)
             │
             └── {petId} (auto-generated)
                   ├── petName: string
                   ├── birthdayOrAge: Timestamp       # optional
                   ├── photoURL: string              # optional
-                  ├── medicalNotes: string          # optional
                   ├── createdAt: Timestamp
                   └── updatedAt: Timestamp
+                  │
+                  ├── weights (subcollection)
+                  │     │
+                  │     └── {weightId}
+                  │           ├── date: Timestamp
+                  │           ├── weight: number (kg)
+                  │           ├── createdAt: Timestamp
+                  │           └── updatedAt: Timestamp
                   │
                   ├── fluidSessions (subcollection)
                   │     │
