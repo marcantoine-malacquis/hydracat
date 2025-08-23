@@ -5,7 +5,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hydracat/firebase_options.dart';
+import 'package:hydracat/core/config/app_config.dart';
+import 'package:hydracat/core/config/firebase_options.dart';
 import 'package:hydracat/shared/services/mcp_service.dart';
 
 /// Service class for managing Firebase initialization and configuration.
@@ -46,17 +47,45 @@ class FirebaseService {
   /// Initialize Firebase services
   Future<void> initialize() async {
     try {
-      // Initialize Firebase Core
-      _app = await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
+      // Use environment-specific app names to avoid conflicts
+      final appName = 'hydracat-${AppConfig.flavor}';
 
-      // Initialize Firebase services
-      _auth = FirebaseAuth.instance;
-      _firestore = FirebaseFirestore.instance;
-      _analytics = FirebaseAnalytics.instance;
-      _crashlytics = FirebaseCrashlytics.instance;
-      _messaging = FirebaseMessaging.instance;
+      // Check if app already exists
+      FirebaseApp? existingApp;
+      try {
+        existingApp = Firebase.app(appName);
+        debugPrint('Found existing Firebase app: $appName');
+      } catch (e) {
+        // App doesn't exist, which is fine
+        debugPrint('No existing Firebase app found for: $appName');
+      }
+
+      if (existingApp != null) {
+        // Use existing app
+        _app = existingApp;
+        debugPrint(
+          'Using existing Firebase app: ${_app.name} (${_app.options.projectId})',
+        );
+      } else {
+        // Initialize new app with environment-specific name
+        _app = await Firebase.initializeApp(
+          name: appName,
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        debugPrint(
+          'Initialized new Firebase app: ${_app.name} (${_app.options.projectId})',
+        );
+      }
+
+      // Initialize Firebase services using the specific app
+      _auth = FirebaseAuth.instanceFor(app: _app);
+      _firestore = FirebaseFirestore.instanceFor(app: _app);
+      // Analytics only supports multi-app on web, use default instance on mobile
+      _analytics = kIsWeb
+          ? FirebaseAnalytics.instanceFor(app: _app)
+          : FirebaseAnalytics.instance;
+      _crashlytics = FirebaseCrashlytics.instance; // No instanceFor method
+      _messaging = FirebaseMessaging.instance; // No instanceFor method
 
       // Initialize MCP service only on supported platforms (desktop/web)
       _mcpService = MCPService();

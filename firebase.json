@@ -1,1 +1,69 @@
-{"firestore":{"database":"(default)","location":"eur3","rules":"firestore.rules","indexes":"firestore.indexes.json"},"functions":[{"source":"functions","codebase":"default","ignore":["node_modules",".git","firebase-debug.log","firebase-debug.*.log","*.local"],"predeploy":["npm --prefix \"$RESOURCE_DIR\" run lint"]}],"hosting":{"public":"public","ignore":["firebase.json","**/.*","**/node_modules/**"],"rewrites":[{"source":"**","destination":"/index.html"}]},"storage":{"rules":"storage.rules"},"emulators":{"auth":{"port":9099},"functions":{"port":5001},"firestore":{"port":8080},"hosting":{"port":5000},"ui":{"enabled":true},"singleProjectMode":true},"flutter":{"platforms":{"android":{"default":{"projectId":"hydracattest","appId":"1:248700006204:android:fec11b962bce1c0000b839","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"hydracattest","appId":"1:248700006204:ios:e49d2b8d44050c3b00b839","uploadDebugSymbols":true,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"hydracattest","configurations":{"android":"1:248700006204:android:fec11b962bce1c0000b839","ios":"1:248700006204:ios:e49d2b8d44050c3b00b839"}}}}}}
+{
+  "firestore": {
+    "database": "(default)",
+    "location": "eur3",
+    "rules": ".firebase/shared/firestore.rules",
+    "indexes": ".firebase/shared/firestore.indexes.json"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ]
+    }
+  ],
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "storage": {
+    "rules": ".firebase/shared/storage.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "myckdapp",
+          "appId": "1:592563767500:android:1e31299d30698ccf9dda69",
+          "fileOutput": ".firebase/prod/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "myckdapp",
+          "appId": "1:592563767500:ios:9a052832453a3f9f9dda69",
+          "uploadDebugSymbols": true,
+          "fileOutput": ".firebase/prod/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/core/config/firebase_options.dart": {
+          "projectId": "myckdapp",
+          "configurations": {
+            "android": "1:592563767500:android:1e31299d30698ccf9dda69",
+            "ios": "1:592563767500:ios:9a052832453a3f9f9f9dda69"
+          }
+        }
+      }
+    }
+  }
+}
