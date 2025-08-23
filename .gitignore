@@ -17,12 +17,18 @@ migrate_working_dir/
 **/google-services*.json
 **/GoogleService-Info*.plist
 **/firebase_options.dart
+**/firebase_options_dev.dart
+**/firebase_options_prod.dart
 
 # Environment-specific Firebase configs (contain sensitive data)
 .firebase/dev/google-services.json
 .firebase/dev/GoogleService-Info.plist
 .firebase/prod/google-services.json
 .firebase/prod/GoogleService-Info.plist
+
+# Firebase config files with sensitive API keys
+**/firebase_options_*.dart
+**/firebase_options.dart
 
 # IntelliJ related
 *.iml
