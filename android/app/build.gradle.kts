@@ -65,25 +65,7 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
-// Configure Google Services for each flavor
-android.applicationVariants.all {
-    val variant = this
-    variant.outputs.all {
-        val output = this
-        if (output is com.android.build.gradle.internal.api.BaseVariantOutputImpl) {
-            val flavorName = variant.flavorName
-            val googleServicesFile = when (flavorName) {
-                "dev" -> "../../.firebase/dev/google-services.json"
-                "prod" -> "../../.firebase/prod/google-services.json"
-                else -> "../../.firebase/dev/google-services.json"
-            }
-            
-            // Copy the appropriate google-services.json for this flavor
-            copy {
-                from(googleServicesFile)
-                into(".")
-                rename { "google-services.json" }
-            }
-        }
-    }
-}
+// Note: Google Services files are managed manually for each flavor
+// Copy the appropriate google-services.json file before building:
+// For dev: cp .firebase/dev/google-services.json android/app/
+// For prod: cp .firebase/prod/google-services.json android/app/

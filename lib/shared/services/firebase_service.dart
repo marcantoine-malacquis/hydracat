@@ -6,6 +6,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/core/config/app_config.dart';
+import 'package:hydracat/core/config/env_config.dart';
 import 'package:hydracat/core/config/firebase_options.dart';
 import 'package:hydracat/shared/services/mcp_service.dart';
 
@@ -47,15 +48,18 @@ class FirebaseService {
   /// Initialize Firebase services
   Future<void> initialize() async {
     try {
+      // Debug environment loading
+      EnvConfig.debugEnvironmentLoading();
+
       // Use environment-specific app names to avoid conflicts
-      final appName = 'hydracat-${AppConfig.flavor}';
+      const appName = 'hydracat-${AppConfig.flavor}';
 
       // Check if app already exists
       FirebaseApp? existingApp;
       try {
         existingApp = Firebase.app(appName);
         debugPrint('Found existing Firebase app: $appName');
-      } catch (e) {
+      } on Exception {
         // App doesn't exist, which is fine
         debugPrint('No existing Firebase app found for: $appName');
       }
@@ -64,7 +68,8 @@ class FirebaseService {
         // Use existing app
         _app = existingApp;
         debugPrint(
-          'Using existing Firebase app: ${_app.name} (${_app.options.projectId})',
+          'Using existing Firebase app: ${_app.name} '
+          '(${_app.options.projectId})',
         );
       } else {
         // Initialize new app with environment-specific name
@@ -73,14 +78,16 @@ class FirebaseService {
           options: DefaultFirebaseOptions.currentPlatform,
         );
         debugPrint(
-          'Initialized new Firebase app: ${_app.name} (${_app.options.projectId})',
+          'Initialized new Firebase app: ${_app.name} '
+          '(${_app.options.projectId})',
         );
       }
 
       // Initialize Firebase services using the specific app
       _auth = FirebaseAuth.instanceFor(app: _app);
       _firestore = FirebaseFirestore.instanceFor(app: _app);
-      // Analytics only supports multi-app on web, use default instance on mobile
+      // Analytics only supports multi-app on web, use default instance
+      //on mobile
       _analytics = kIsWeb
           ? FirebaseAnalytics.instanceFor(app: _app)
           : FirebaseAnalytics.instance;

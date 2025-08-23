@@ -20,6 +20,10 @@ migrate_working_dir/
 **/firebase_options_dev.dart
 **/firebase_options_prod.dart
 
+# Environment Configuration Files (contain sensitive API keys)
+config/env.*
+.env*
+
 # Environment-specific Firebase configs (contain sensitive data)
 .firebase/dev/google-services.json
 .firebase/dev/GoogleService-Info.plist
@@ -29,6 +33,11 @@ migrate_working_dir/
 # Firebase config files with sensitive API keys
 **/firebase_options_*.dart
 **/firebase_options.dart
+
+# Firebase project configuration (exclude sensitive files but allow project structure)
+.firebase/*/google-services.json
+.firebase/*/GoogleService-Info.plist
+.firebase/*/firebase_options*.dart
 
 # IntelliJ related
 *.iml
@@ -127,6 +136,20 @@ app.*.symbols
 
 # Obfuscation related
 app.*.map.json
+
+# Additional security - credentials and secrets
+**/credentials.json
+**/service-account*.json
+**/secrets.json
+**/api_keys.json
+**/config.json
+**/auth.json
+**/token.json
+**/private_key.pem
+**/public_key.pem
+**/*.p12
+**/*.pem
+**/*.key
 
 # Exceptions to above rules.
 !**/ios/**/default.mode1v3

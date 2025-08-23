@@ -2,10 +2,15 @@
 ///
 /// Usage:
 /// - Development: flutter run --flavor dev --dart-define=FLAVOR=dev
+///   --dart-define=ENV=dev
 /// - Production: flutter run --flavor prod --dart-define=FLAVOR=prod
+///   --dart-define=ENV=prod
 class AppConfig {
   /// The current environment flavor (dev, prod, etc.)
   static const flavor = String.fromEnvironment('FLAVOR', defaultValue: 'dev');
+
+  /// The current environment (dev, prod, etc.) - used for loading env files
+  static const environment = String.fromEnvironment('ENV', defaultValue: 'dev');
 
   /// Whether the app is running in production mode
   static bool get isProd => flavor == 'prod';

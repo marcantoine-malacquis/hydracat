@@ -2,6 +2,17 @@
 
 A Flutter application for managing feline fluid therapy with Firebase backend integration and AI-powered development tools.
 
+## Run
+
+# For production builds
+
+./scripts/run_prod.sh
+
+# For development builds  
+
+./scripts/run_dev.sh
+
+
 ## Features
 
 - **Firebase Integration**: Full Firebase backend with Firestore, Authentication, and Storage

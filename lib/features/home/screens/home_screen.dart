@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/config/app_config.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 
@@ -17,41 +18,52 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.pets,
-                size: 64,
-                color: AppColors.primary,
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.pets,
+                    size: 64,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(
+                    'Welcome to HydraCat',
+                    style: AppTextStyles.h1.copyWith(
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  const Text(
+                    'Hydration tracking for cats with kidney disease',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.body,
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  HydraButton(
+                    onPressed: () {
+                      context.push('/demo');
+                    },
+                    isFullWidth: true,
+                    child: const Text('View Component Demo'),
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.lg),
-              Text(
-                'Welcome to HydraCat',
-                style: AppTextStyles.h1.copyWith(
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              const Text(
-                'Hydration tracking for cats with kidney disease',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.body,
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              HydraButton(
-                onPressed: () {
-                  context.push('/demo');
-                },
-                isFullWidth: true,
-                child: const Text('View Component Demo'),
-              ),
-            ],
+            ),
           ),
-        ),
+          // Dev banner in upper right corner (only visible in dev mode)
+          if (AppConfig.isDev)
+            const Positioned(
+              top: AppSpacing.md,
+              right: AppSpacing.md,
+              child: DevBanner(),
+            ),
+        ],
       ),
     );
   }

@@ -8,11 +8,16 @@ echo "📱 Firebase Project: hydracatTest"
 echo "🔧 Environment: Development"
 echo ""
 
+# Setup Android Google Services configuration for development
+echo "🔧 Setting up Android Google Services..."
+cp .firebase/dev/google-services.json android/app/
+
 # Build for Android
 echo "📱 Building Android APK..."
 flutter build apk \
     --flavor dev \
     --dart-define=FLAVOR=dev \
+    --dart-define=ENV=dev \
     --release
 
 # Build for iOS (if on macOS)
@@ -21,6 +26,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     flutter build ios \
         --flavor dev \
         --dart-define=FLAVOR=dev \
+        --dart-define=ENV=dev \
         --release
 else
     echo "⚠️  iOS build skipped (not on macOS)"
