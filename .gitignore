@@ -18,6 +18,18 @@ migrate_working_dir/
 **/GoogleService-Info*.plist
 **/firebase_options.dart
 
+# Environment Files and Secrets
+config/env.*
+!config/env.template
+*.env
+.env*
+!.env.example
+**/secrets/
+**/*.key
+**/*.pem
+**/*.p12
+**/*.keystore
+
 # IntelliJ related
 *.iml
 *.ipr
