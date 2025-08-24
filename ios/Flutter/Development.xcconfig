@@ -1,0 +1,7 @@
+#include "Generated.xcconfig"
+
+// Development flavor configuration
+FLUTTER_TARGET=lib/main_development.dart
+PRODUCT_BUNDLE_IDENTIFIER=com.example.hydracatTest
+DISPLAY_NAME=Hydracat Dev
+BUNDLE_SUFFIX=.dev

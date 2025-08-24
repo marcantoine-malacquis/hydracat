@@ -34,6 +34,19 @@ android {
         versionName = flutter.versionName
     }
 
+    flavorDimensions += "environment"
+    productFlavors {
+        create("development") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            resValue("string", "app_name", "Hydracat Dev")
+        }
+        create("production") {
+            dimension = "environment"
+            resValue("string", "app_name", "Hydracat")
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

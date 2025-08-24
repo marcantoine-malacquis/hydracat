@@ -44,14 +44,15 @@ class FirebaseService {
   /// Initialize Firebase services
   Future<void> initialize() async {
     try {
-      // Initialize Firebase Core
+      // Initialize Firebase Core with flavor-specific app name
       _app = await Firebase.initializeApp(
+        name: DefaultFirebaseOptions.appName,
         options: DefaultFirebaseOptions.currentPlatform,
       );
 
-      // Initialize Firebase services
-      _auth = FirebaseAuth.instance;
-      _firestore = FirebaseFirestore.instance;
+      // Initialize Firebase services with the named app
+      _auth = FirebaseAuth.instanceFor(app: _app);
+      _firestore = FirebaseFirestore.instanceFor(app: _app);
       _analytics = FirebaseAnalytics.instance;
       _crashlytics = FirebaseCrashlytics.instance;
       _messaging = FirebaseMessaging.instance;

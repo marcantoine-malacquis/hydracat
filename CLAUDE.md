@@ -5,11 +5,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ### Core Flutter Commands
-- **Run App**: `flutter run`
+- **Run App (Development)**: `flutter run --flavor development -t lib/main_development.dart`
+- **Run App (Production)**: `flutter run --flavor production -t lib/main_production.dart`
 - **Run Tests**: `flutter test`
 - **Code Analysis**: `flutter analyze`
 - **Generate Code**: `flutter packages pub run build_runner build`
 - **Clean Build**: `flutter clean && flutter pub get`
+
+### Build Commands
+- **Build APK (Development)**: `flutter build apk --flavor development -t lib/main_development.dart`
+- **Build APK (Production)**: `flutter build apk --flavor production -t lib/main_production.dart`
+- **Build iOS (Development)**: `flutter build ios --flavor development -t lib/main_development.dart`
+- **Build iOS (Production)**: `flutter build ios --flavor production -t lib/main_production.dart`
 
 ## Architecture Overview
 
@@ -29,10 +36,23 @@ lib/
 - **Provider Pattern**: Service layer abstraction
 - **Repository Pattern**: Data access layer with Firebase integration
 
+### Flavors Configuration
+- **Development**: Uses `hydracattest` Firebase project
+  - App name: "Hydracat Dev"
+  - Bundle ID (iOS): `com.example.hydracatTest`
+  - Application ID (Android): `com.example.hydracat_test.dev`
+  - Entry point: `lib/main_development.dart`
+- **Production**: Uses `myckdapp` Firebase project
+  - App name: "Hydracat"
+  - Bundle ID (iOS): `com.example.hydracat`
+  - Application ID (Android): `com.example.hydracat_test`
+  - Entry point: `lib/main_production.dart`
+
 ### Firebase Integration
-- **Project**: `hydracattest`
+- **Development Project**: `hydracattest`
+- **Production Project**: `myckdapp`
 - **Services**: Auth, Firestore, Analytics, Crashlytics, Messaging, Storage
-- **Configuration**: Single environment setup using `lib/firebase_options.dart`
+- **Configuration**: Environment-specific setup using `lib/firebase_options.dart` with `FlavorConfig`
 
 ## Code Standards
 
@@ -71,9 +91,34 @@ features/[feature]/
 
 ## Important Notes
 
-- **Security**: Firebase config files are committed for development project
-- **Single Environment**: App uses `hydracattest` Firebase project
-- **Entry Point**: Main app starts from `lib/main.dart`
+- **Security**: API keys are stored in Firebase configuration files
+- **Dual Environment**: App supports both development and production environments
+- **Entry Points**: 
+  - Development: `lib/main_development.dart`
+  - Production: `lib/main_production.dart`
+  - Default: `lib/main.dart` (defaults to development)
+- **iOS Setup**: Requires manual Xcode configuration for build schemes (see iOS flavor setup instructions)
+- **Flavor Selection**: Use `--flavor` and `-t` flags when running or building the app
+
+## iOS Flavor Setup Instructions
+
+✅ **SETUP COMPLETE & TESTED**: All iOS flavor configurations are working!
+
+The following has been configured and tested:
+- Flavor-specific build configurations (Debug-development, Release-development, etc.)
+- Development.xcconfig and Production.xcconfig files in `ios/` directory
+- Scheme names match Android flavors: "development" and "production"  
+- Firebase setup script automatically copies correct GoogleService-Info.plist
+- Firebase projects switch correctly (hydracattest ↔ myckdapp)
+
+**Verified Commands:**
+- `flutter run --flavor development -t lib/main_development.dart` ✅ **WORKING**
+- `flutter run --flavor production -t lib/main_production.dart` ✅ **WORKING**
+
+Your iOS flavors automatically:
+- Use the correct Firebase project based on flavor
+- Display the correct app name ("Hydracat Dev" vs "Hydracat")
+- Apply proper bundle identifiers and configurations
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
