@@ -48,30 +48,22 @@ class HydraButton extends StatelessWidget {
 
   Widget _buildButton(BuildContext context) {
     final buttonStyle = _getButtonStyle(context);
-    final buttonSize = _getButtonSize();
 
     return SizedBox(
       width: isFullWidth ? double.infinity : null,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: buttonStyle,
-        child: SizedBox(
-          height: buttonSize.height,
-          child: _buildButtonContent(),
-        ),
+        child: _buildButtonContent(),
       ),
     );
   }
 
   Widget _buildButtonContent() {
     if (isLoading) {
-      return const SizedBox(
-        width: 20,
-        height: 20,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-        ),
+      return const CircularProgressIndicator(
+        strokeWidth: 2,
+        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
       );
     }
 
@@ -79,6 +71,9 @@ class HydraButton extends StatelessWidget {
   }
 
   ButtonStyle _getButtonStyle(BuildContext context) {
+    final buttonPadding = _getButtonPadding();
+    final minHeight = _getMinHeight();
+    
     switch (variant) {
       case HydraButtonVariant.primary:
         return ElevatedButton.styleFrom(
@@ -86,6 +81,8 @@ class HydraButton extends StatelessWidget {
           foregroundColor: Colors.white,
           elevation: 2,
           shadowColor: AppColors.primary.withValues(alpha: 0.3),
+          padding: buttonPadding,
+          minimumSize: Size(0, minHeight),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
@@ -96,6 +93,8 @@ class HydraButton extends StatelessWidget {
           foregroundColor: AppColors.primary,
           elevation: 0,
           side: const BorderSide(color: AppColors.primary),
+          padding: buttonPadding,
+          minimumSize: Size(0, minHeight),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
@@ -106,6 +105,8 @@ class HydraButton extends StatelessWidget {
           foregroundColor: AppColors.primary,
           elevation: 0,
           shadowColor: Colors.transparent,
+          padding: buttonPadding,
+          minimumSize: Size(0, minHeight),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
@@ -113,14 +114,25 @@ class HydraButton extends StatelessWidget {
     }
   }
 
-  Size _getButtonSize() {
+  EdgeInsets _getButtonPadding() {
     switch (size) {
       case HydraButtonSize.small:
-        return const Size(80, 32);
+        return const EdgeInsets.symmetric(horizontal: 12, vertical: 8);
       case HydraButtonSize.medium:
-        return const Size(120, 44);
+        return const EdgeInsets.symmetric(horizontal: 16, vertical: 12);
       case HydraButtonSize.large:
-        return const Size(160, 48);
+        return const EdgeInsets.symmetric(horizontal: 20, vertical: 16);
+    }
+  }
+
+  double _getMinHeight() {
+    switch (size) {
+      case HydraButtonSize.small:
+        return 32;
+      case HydraButtonSize.medium:
+        return 44;
+      case HydraButtonSize.large:
+        return 48;
     }
   }
 }

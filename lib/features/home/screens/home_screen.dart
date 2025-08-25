@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A screen that displays the main home interface for the HydraCat app.
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   /// Creates a home screen.
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return DevBanner(
       child: Scaffold(
       backgroundColor: AppColors.background,
@@ -17,6 +19,13 @@ class HomeScreen extends StatelessWidget {
         title: const Text('HydraCat'),
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
+        actions: [
+          IconButton(
+            onPressed: () => ref.read(authProvider.notifier).signOut(),
+            icon: const Icon(Icons.logout),
+            tooltip: 'Sign Out',
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),

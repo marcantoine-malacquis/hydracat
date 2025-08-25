@@ -95,12 +95,14 @@ class _HydraCatAppState extends ConsumerState<HydraCatApp> {
       );
     }
 
+    final router = ref.watch(appRouterProvider);
+    
     return MaterialApp.router(
       title: 'HydraCat',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      routerConfig: appRouter,
+      routerConfig: router,
     );
   }
 }
