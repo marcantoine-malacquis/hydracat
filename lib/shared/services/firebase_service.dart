@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/firebase_options.dart';
 
 /// Service class for managing Firebase initialization and configuration.
@@ -44,20 +45,39 @@ class FirebaseService {
   /// Initialize Firebase services
   Future<void> initialize() async {
     try {
-      // Initialize Firebase Core with flavor-specific app name
-      _app = await Firebase.initializeApp(
-        name: DefaultFirebaseOptions.appName,
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
+      _devLog('Initializing Firebase with current platform options...');
+      
+      // Check if Firebase is already initialized
+      try {
+        _app = Firebase.app();
+        _devLog('Firebase app already initialized: ${_app.name}');
+      } on FirebaseException {
+        // App doesn't exist, initialize it
+        _devLog('No existing Firebase app found, initializing new one...');
+        _app = await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        _devLog('Firebase app initialized: ${_app.name}');
+      }
 
-      // Initialize Firebase services with the named app
-      _auth = FirebaseAuth.instanceFor(app: _app);
-      _firestore = FirebaseFirestore.instanceFor(app: _app);
+      // Initialize Firebase services (using default instances)
+      _devLog('Initializing Firebase Auth...');
+      _auth = FirebaseAuth.instance;
+      
+      _devLog('Initializing Firestore...');
+      _firestore = FirebaseFirestore.instance;
+      
+      _devLog('Initializing Firebase Analytics...');
       _analytics = FirebaseAnalytics.instance;
+      
+      _devLog('Initializing Firebase Crashlytics...');
       _crashlytics = FirebaseCrashlytics.instance;
+      
+      _devLog('Initializing Firebase Messaging...');
       _messaging = FirebaseMessaging.instance;
 
       // Configure Firestore settings
+      _devLog('Configuring Firestore settings...');
       if (kDebugMode) {
         _firestore.settings = const Settings(
           persistenceEnabled: true,
@@ -71,6 +91,7 @@ class FirebaseService {
       }
 
       // Configure Crashlytics
+      _devLog('Configuring Crashlytics...');
       if (kDebugMode) {
         await _crashlytics.setCrashlyticsCollectionEnabled(false);
       } else {
@@ -78,14 +99,14 @@ class FirebaseService {
       }
 
       // Configure messaging permissions
+      _devLog('Configuring messaging...');
       await _configureMessaging();
 
-      debugPrint('Firebase initialized successfully');
-    } catch (e) {
-      debugPrint('Failed to initialize Firebase: $e');
-      if (kDebugMode) {
-        rethrow;
-      }
+      _devLog('Firebase initialized successfully');
+    } catch (e, stackTrace) {
+      _devLog('Failed to initialize Firebase: $e');
+      _devLog('Stack trace: $stackTrace');
+      rethrow;
     }
   }
 
@@ -96,19 +117,19 @@ class FirebaseService {
       final settings = await _messaging.requestPermission();
 
       if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        debugPrint('User granted notification permission');
+        _devLog('User granted notification permission');
       } else {
-        debugPrint('User declined notification permission');
+        _devLog('User declined notification permission');
       }
 
       // Get FCM token
       final token = await _messaging.getToken();
       if (token != null) {
-        debugPrint('FCM Token: $token');
-        // TODO(me): Send token to server
+        _devLog('FCM Token: $token');
+        // Implement later: Send token to server
       }
     } on Exception catch (e) {
-      debugPrint('Failed to configure messaging: $e');
+      _devLog('Failed to configure messaging: $e');
     }
   }
 
@@ -120,4 +141,11 @@ class FirebaseService {
 
   /// Stream of auth state changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  /// Log messages only in development flavor
+  void _devLog(String message) {
+    if (FlavorConfig.isDevelopment) {
+      debugPrint('[Firebase Dev] $message');
+    }
+  }
 }

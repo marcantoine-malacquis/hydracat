@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/app/router.dart';
+import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/core/theme/app_theme.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
 
@@ -25,69 +26,125 @@ class _HydraCatAppState extends ConsumerState<HydraCatApp> {
 
   Future<void> _initializeFirebase() async {
     try {
+      _devLog('Starting Firebase initialization...');
       await FirebaseService().initialize();
+      _devLog('Firebase initialization completed successfully');
       setState(() {
         _initialized = true;
       });
-    } on Exception catch (e) {
+    } on Exception catch (e, stackTrace) {
+      _devLog('Firebase initialization failed: $e');
+      _devLog('Stack trace: $stackTrace');
       setState(() {
-        _error = e.toString();
+        _error = 'Firebase Error: $e';
       });
+    }
+  }
+
+  /// Log messages only in development flavor
+  void _devLog(String message) {
+    if (FlavorConfig.isDevelopment) {
+      debugPrint('[App Dev] $message');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Always show error screen first if there's an error
     if (_error != null) {
       return MaterialApp(
+        title: 'HydraCat',
+        debugShowCheckedModeBanner: false,
         home: Scaffold(
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  color: Colors.red,
-                  size: 64,
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 64,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'App Initialization Failed',
+                      style: TextStyle(
+                        fontSize: 20, 
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red.shade200),
+                      ),
+                      child: Text(
+                        _error!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.red.shade800,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _error = null;
+                          _initialized = false;
+                        });
+                        _initializeFirebase();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32, 
+                          vertical: 12,
+                        ),
+                      ),
+                      child: const Text('Retry Initialization'),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Failed to initialize app',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _error!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.red),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _error = null;
-                    });
-                    _initializeFirebase();
-                  },
-                  child: const Text('Retry'),
-                ),
-              ],
+              ),
             ),
           ),
         ),
       );
     }
 
+    // Show loading screen while initializing
     if (!_initialized) {
       return const MaterialApp(
+        title: 'HydraCat',
+        debugShowCheckedModeBanner: false,
         home: Scaffold(
+          backgroundColor: Colors.white,
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Initializing HydraCat...'),
+                CircularProgressIndicator(
+                  color: Colors.blue,
+                ),
+                SizedBox(height: 24),
+                Text(
+                  'Initializing HydraCat...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
+                ),
               ],
             ),
           ),
@@ -95,14 +152,32 @@ class _HydraCatAppState extends ConsumerState<HydraCatApp> {
       );
     }
 
-    final router = ref.watch(appRouterProvider);
-    
-    return MaterialApp.router(
-      title: 'HydraCat',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      routerConfig: router,
-    );
+    // If we reach here, Firebase is initialized successfully
+    try {
+      final router = ref.watch(appRouterProvider);
+      
+      return MaterialApp.router(
+        title: 'HydraCat',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        routerConfig: router,
+      );
+    } on Exception catch (e) {
+      // If there's an error with routing, show a fallback
+      return MaterialApp(
+        title: 'HydraCat',
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: Text(
+              'Router Error: $e',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ),
+      );
+    }
   }
 }

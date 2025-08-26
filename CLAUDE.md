@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Run App (Production)**: `flutter run --flavor production -t lib/main_production.dart`
 - **Run Tests**: `flutter test`
 - **Code Analysis**: `flutter analyze`
-- **Generate Code**: `flutter packages pub run build_runner build`
+- **Generate Code**: `dart run build_runner build`
 - **Clean Build**: `flutter clean && flutter pub get`
 
 ### Build Commands
@@ -62,8 +62,8 @@ lib/
 - Run `flutter analyze` before committing
 
 ### Data Models
-- **Freezed**: Immutable data classes with JSON serialization
-- **Code Generation**: Run `flutter packages pub run build_runner build` after model changes
+- **Standard Dart Classes**: Manual data classes with optional JSON serialization
+- **Code Generation**: Run `dart run build_runner build` after model changes (when using json_serializable)
 
 ### Feature Structure
 Each feature follows domain-driven design:
@@ -85,7 +85,7 @@ features/[feature]/
 
 1. **Setup**: Run `flutter pub get` to install dependencies
 2. **Development**: Use `flutter run` to start the app
-3. **Code Generation**: Run build_runner after model changes
+3. **Code Generation**: Run `dart run build_runner build` after model changes (when needed)
 4. **Testing**: Execute `flutter test` before commits
 5. **Analysis**: Run `flutter analyze` to check for issues
 

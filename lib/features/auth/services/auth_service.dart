@@ -35,9 +35,9 @@ class AuthFailure extends AuthResult {
 /// error handling and clear success/failure responses.
 class AuthService {
   /// Creates an [AuthService] instance
-  AuthService() : _firebaseAuth = FirebaseService().auth;
+  AuthService();
 
-  final FirebaseAuth _firebaseAuth;
+  FirebaseAuth get _firebaseAuth => FirebaseService().auth;
 
   /// Current authenticated user, if any
   AppUser? get currentUser {
