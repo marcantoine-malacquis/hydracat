@@ -106,7 +106,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Sends a password reset email to the specified email address.
   /// Returns true if successful, false if there was an error.
   Future<bool> sendPasswordResetEmail(String email) async {
-    return _authService.sendPasswordResetEmail(email);
+    final result = await _authService.sendPasswordResetEmail(email);
+    return result is AuthSuccess;
+  }
+
+  /// Send email verification to current user
+  /// 
+  /// Sends an email verification link to the currently authenticated user.
+  /// Returns true if successful, false if there was an error.
+  Future<bool> sendEmailVerification() async {
+    final result = await _authService.sendEmailVerification();
+    return result is AuthSuccess;
+  }
+
+  /// Check if current user's email is verified
+  /// 
+  /// Refreshes the current user's data and checks verification status.
+  /// Returns true if email is verified, false otherwise.
+  Future<bool> checkEmailVerification() async {
+    return _authService.checkEmailVerification();
   }
 
   /// Clear error state

@@ -6,33 +6,36 @@ import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
 
-/// A screen that handles user authentication and login.
-class LoginScreen extends ConsumerStatefulWidget {
-  /// Creates a login screen.
-  const LoginScreen({super.key});
+/// A screen that handles user registration and account creation.
+class RegisterScreen extends ConsumerStatefulWidget {
+  /// Creates a registration screen.
+  const RegisterScreen({super.key});
 
   @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  void _handleSignIn() {
+  void _handleSignUp() {
     if (_formKey.currentState?.validate() ?? false) {
       ref
           .read(authProvider.notifier)
-          .signIn(
+          .signUp(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
@@ -50,11 +53,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     ref.listen<AuthState>(authProvider, (previous, next) {
       if (next is AuthStateError) {
         _showErrorSnackBar(next.message);
+      } else if (next is AuthStateAuthenticated) {
+        // Registration successful, navigate to verification screen
+        context.go('/email-verification?email=${_emailController.text.trim()}');
       }
     });
 
@@ -63,7 +70,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Login'),
+        title: const Text('Create Account'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: Padding(
@@ -75,8 +82,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text(
-                'Welcome back to Hydracat',
+                'Join Hydracat',
                 style: AppTextStyles.h1,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              const Text(
+                "Start tracking your cat's kidney treatment with care",
+                style: AppTextStyles.body,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.xl),
@@ -90,10 +103,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your email';
+                    return 'We need your email to create your account';
                   }
                   if (!value.contains('@')) {
-                    return 'Please enter a valid email';
+                    return 'Please enter a valid email address';
                   }
                   return null;
                 },
@@ -106,6 +119,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   labelText: 'Password',
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.lock),
+                  helperText: 'At least 8 characters to protect your data',
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword
@@ -121,40 +135,61 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
+                    return 'Please create a password for your account';
                   }
-                  if (value.length < 6) {
-                    return 'Password must be at least 6 characters';
+                  if (value.length < 8) {
+                    return 'Password must be at least 8 characters '
+                        'for security';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextFormField(
+                controller: _confirmPasswordController,
+                obscureText: _obscureConfirmPassword,
+                decoration: InputDecoration(
+                  labelText: 'Confirm Password',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirmPassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureConfirmPassword = !_obscureConfirmPassword;
+                      });
+                    },
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please confirm your password';
+                  }
+                  if (value != _passwordController.text) {
+                    return "Passwords don't match";
                   }
                   return null;
                 },
               ),
               const SizedBox(height: AppSpacing.lg),
               HydraButton(
-                onPressed: isLoading ? null : _handleSignIn,
+                onPressed: isLoading ? null : _handleSignUp,
                 isLoading: isLoading,
                 isFullWidth: true,
-                child: const Text('Sign In'),
+                child: const Text('Create Account'),
               ),
               const SizedBox(height: AppSpacing.md),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text("Don't have an account?"),
+                  const Text('Already have an account?'),
                   TextButton(
-                    onPressed: () => context.go('/register'),
-                    child: const Text('Sign Up'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Forgot your password?'),
-                  TextButton(
-                    onPressed: () => context.go('/forgot-password'),
-                    child: const Text('Reset Password'),
+                    onPressed: () => context.go('/login'),
+                    child: const Text('Sign In'),
                   ),
                 ],
               ),

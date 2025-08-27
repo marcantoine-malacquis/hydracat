@@ -59,6 +59,15 @@ class HomeScreen extends ConsumerWidget {
                 isFullWidth: true,
                 child: const Text('View Component Demo'),
               ),
+              const SizedBox(height: AppSpacing.md),
+              HydraButton(
+                onPressed: () {
+                  context.go('/email-verification?email=debug@example.com');
+                },
+                variant: HydraButtonVariant.secondary,
+                isFullWidth: true,
+                child: const Text('Debug: View Email Verification'),
+              ),
             ],
           ),
         ),

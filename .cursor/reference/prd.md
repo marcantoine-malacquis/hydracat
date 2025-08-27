@@ -3,6 +3,7 @@
 ## Executive Summary
 
 HydraCat is a specialized mobile application designed to help cat owners manage subcutaneous fluid therapy for cats with chronic kidney disease (CKD). Unlike generic pet care apps, HydraCat focuses specifically on the medical precision, emotional support, and adherence tracking needed for successful fluid therapy management.
+Help build a routine to log fluid therapy and other health parameters that are most important to your cat.
 
 ## Core Goals
 

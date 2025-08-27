@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hydracat/features/auth/exceptions/auth_exceptions.dart';
 import 'package:hydracat/features/auth/models/app_user.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
 
@@ -13,20 +14,23 @@ class AuthSuccess extends AuthResult {
   /// Creates an [AuthSuccess] with the authenticated user
   const AuthSuccess(this.user);
 
-  /// The authenticated user
-  final AppUser user;
+  /// The authenticated user (null for operations like password reset)
+  final AppUser? user;
 }
 
 /// Failed authentication result
 class AuthFailure extends AuthResult {
-  /// Creates an [AuthFailure] with error message and optional code
-  const AuthFailure(this.message, [this.code]);
+  /// Creates an [AuthFailure] with an authentication exception
+  const AuthFailure(this.exception);
 
-  /// The error message
-  final String message;
+  /// The authentication exception with user-friendly message
+  final AuthException exception;
 
-  /// Optional error code from Firebase
-  final String? code;
+  /// Convenience getter for error message
+  String get message => exception.message;
+
+  /// Convenience getter for error code
+  String? get code => exception.code;
 }
 
 /// Minimal Firebase Authentication service
@@ -56,7 +60,8 @@ class AuthService {
 
   /// Sign up with email and password
   ///
-  /// Creates a new user account and automatically sends email verification.
+  /// Creates a new user account without automatically sending email
+  /// verification.
   /// Returns [AuthSuccess] with user data or [AuthFailure] with error message.
   Future<AuthResult> signUp({
     required String email,
@@ -70,18 +75,15 @@ class AuthService {
 
       final firebaseUser = credential.user;
       if (firebaseUser == null) {
-        return const AuthFailure('Account creation failed');
+        return const AuthFailure(AccountCreationException());
       }
-
-      // Send email verification automatically
-      await firebaseUser.sendEmailVerification();
 
       final user = AppUser.fromFirebaseUser(firebaseUser);
       return AuthSuccess(user);
     } on FirebaseAuthException catch (e) {
-      return AuthFailure(_getErrorMessage(e), e.code);
+      return AuthFailure(AuthExceptionMapper.mapFirebaseException(e));
     } on Exception catch (e) {
-      return AuthFailure('An unexpected error occurred: $e');
+      return AuthFailure(AuthExceptionMapper.mapGenericException(e));
     }
   }
 
@@ -101,15 +103,15 @@ class AuthService {
 
       final firebaseUser = credential.user;
       if (firebaseUser == null) {
-        return const AuthFailure('Sign in failed');
+        return const AuthFailure(SignInException());
       }
 
       final user = AppUser.fromFirebaseUser(firebaseUser);
       return AuthSuccess(user);
     } on FirebaseAuthException catch (e) {
-      return AuthFailure(_getErrorMessage(e), e.code);
+      return AuthFailure(AuthExceptionMapper.mapFirebaseException(e));
     } on Exception catch (e) {
-      return AuthFailure('An unexpected error occurred: $e');
+      return AuthFailure(AuthExceptionMapper.mapGenericException(e));
     }
   }
 
@@ -129,37 +131,53 @@ class AuthService {
   /// Send password reset email
   ///
   /// Sends a password reset email to the specified email address.
-  /// Returns true if successful, false if there was an error.
-  Future<bool> sendPasswordResetEmail(String email) async {
+  /// Returns [AuthResult] with success or failure details.
+  Future<AuthResult> sendPasswordResetEmail(String email) async {
     try {
       await _firebaseAuth.sendPasswordResetEmail(email: email.trim());
-      return true;
+      return const AuthSuccess(null);
+    } on FirebaseAuthException catch (e) {
+      return AuthFailure(AuthExceptionMapper.mapFirebaseException(e));
+    } on Exception catch (e) {
+      return AuthFailure(AuthExceptionMapper.mapGenericException(e));
+    }
+  }
+
+  /// Send email verification to current user
+  ///
+  /// Sends an email verification link to the currently authenticated user.
+  /// Returns [AuthResult] with success or failure details.
+  Future<AuthResult> sendEmailVerification() async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user != null && !user.emailVerified) {
+        await user.sendEmailVerification();
+        return const AuthSuccess(null);
+      }
+      return const AuthFailure(EmailVerificationException());
+    } on FirebaseAuthException catch (e) {
+      return AuthFailure(AuthExceptionMapper.mapFirebaseException(e));
+    } on Exception catch (e) {
+      return AuthFailure(AuthExceptionMapper.mapGenericException(e));
+    }
+  }
+
+  /// Check if current user's email is verified
+  ///
+  /// Refreshes the current user's data and checks verification status.
+  /// Returns true if email is verified, false otherwise.
+  Future<bool> checkEmailVerification() async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user != null) {
+        await user.reload();
+        final refreshedUser = _firebaseAuth.currentUser;
+        return refreshedUser?.emailVerified ?? false;
+      }
+      return false;
     } on Exception {
       return false;
     }
   }
 
-  /// Convert Firebase Auth errors to user-friendly messages
-  String _getErrorMessage(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'weak-password':
-        return 'Password is too weak. Please choose a stronger password.';
-      case 'email-already-in-use':
-        return 'An account already exists with this email address.';
-      case 'invalid-email':
-        return 'Please enter a valid email address.';
-      case 'user-not-found':
-        return 'No account found with this email address.';
-      case 'wrong-password':
-        return 'Incorrect password. Please try again.';
-      case 'user-disabled':
-        return 'This account has been disabled.';
-      case 'too-many-requests':
-        return 'Too many failed attempts. Please try again later.';
-      case 'network-request-failed':
-        return 'Network error. Please check your connection and try again.';
-      default:
-        return e.message ?? 'An authentication error occurred.';
-    }
-  }
 }
