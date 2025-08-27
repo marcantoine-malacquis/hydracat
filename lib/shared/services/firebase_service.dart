@@ -48,11 +48,11 @@ class FirebaseService {
       _devLog('Initializing Firebase with current platform options...');
       
       // Check if Firebase is already initialized
-      try {
+      if (Firebase.apps.isNotEmpty) {
         _app = Firebase.app();
         _devLog('Firebase app already initialized: ${_app.name}');
-      } on FirebaseException {
-        // App doesn't exist, initialize it
+      } else {
+        // No apps exist, initialize new one
         _devLog('No existing Firebase app found, initializing new one...');
         _app = await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
