@@ -188,9 +188,9 @@ Implement Firebase Authentication with a beginner-friendly hybrid approach that 
 
 ---
 
-## Phase 3: Add Social Authentication
+✅ ## Phase 3: Add Social Authentication
 
-### Step 3.1: Configure Google Sign-In
+✅ ### Step 3.1: Configure Google Sign-In
 **Files to modify:**
 - `pubspec.yaml` - Add Google Sign-In dependencies
 - `android/app/build.gradle` - Google services configuration
@@ -216,7 +216,7 @@ Implement Firebase Authentication with a beginner-friendly hybrid approach that 
 
 **Learning Goal:** iOS-specific authentication setup
 
-### Step 3.3: Implement Social Authentication
+✅ ### Step 3.3: Implement Social Authentication
 **Location:** `lib/features/auth/services/`
 **Files to modify/create:**
 - Update `auth_service.dart` to include Google and Apple Sign-In
@@ -229,7 +229,7 @@ Implement Firebase Authentication with a beginner-friendly hybrid approach that 
 
 **Learning Goal:** Integrating third-party authentication providers
 
-### Step 3.4: Update Login Screen with Social Buttons
+✅ ### Step 3.4: Update Login Screen with Social Buttons
 **Location:** `lib/features/auth/screens/` and `lib/features/auth/widgets/`
 **Files to modify/create:**
 - Update `login_screen.dart` and `register_screen.dart`
@@ -496,3 +496,49 @@ Implement Firebase Authentication with a beginner-friendly hybrid approach that 
 **Production Quality:** End up with the same robust system as the original plan
 
 **Key Benefit:** By Phase 1, you'll have a real authentication system working. Everything after that is enhancement and polish!
+
+---
+
+## ⚠️ Common Issue: Google Sign-In Crashes in Production
+
+### Problem Description
+Google Sign-In works perfectly in development flavor but crashes when pressing the Google Sign-In button in production builds with this error:
+```
+GoogleSignIn framework crash in -[GIDSignIn signInWithOptions:]
+Bundle ID mismatch or Firebase configuration issue
+```
+
+### Root Cause
+The Firebase setup script runs correctly but copies the GoogleService-Info.plist to the wrong location. The Xcode Resources build phase overwrites the environment-specific configuration file with the default development config, causing production builds to use the wrong Firebase project credentials.
+
+### Solution
+**File:** `ios/Runner/firebase_setup.sh`
+
+**Change the destination path from:**
+```bash
+DEST_FILE="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist"
+```
+
+**To:**
+```bash
+DEST_FILE="${SRCROOT}/Runner/GoogleService-Info.plist"
+```
+
+**Why this works:**
+- Script runs during build phase BEFORE Resources phase
+- Copies the correct environment-specific plist to Runner directory  
+- Resources build phase then includes the correct file in final app bundle
+- Production builds get `myckdapp` project, development gets `hydracattest` project
+
+### Verification
+1. **Development:** `flutter run --flavor development -t lib/main_development.dart`
+   - Should use bundle ID: `com.example.hydracatTest`
+   - Should connect to Firebase project: `hydracattest`
+
+2. **Production:** `flutter run --flavor production -t lib/main_production.dart`  
+   - Should use bundle ID: `com.example.hydracat`
+   - Should connect to Firebase project: `myckdapp`
+   - Google Sign-In should work without crashes
+
+### Prevention
+Always ensure the Firebase setup script copies environment-specific config files to a location that will be processed correctly by the Resources build phase, not directly to the final app bundle location.

@@ -5,3 +5,4 @@ FLUTTER_TARGET=lib/main_production.dart
 PRODUCT_BUNDLE_IDENTIFIER=com.example.hydracat
 DISPLAY_NAME=Hydracat
 BUNDLE_SUFFIX=
+REVERSED_CLIENT_ID=com.googleusercontent.apps.592563767500-dneg8a80gsrh9o7vqdv5d4296ask19kp
