@@ -127,6 +127,46 @@ class AuthNotifier extends StateNotifier<AuthState> {
     return _authService.checkEmailVerification();
   }
 
+  /// Sign in with Google
+  /// 
+  /// Initiates Google Sign-In flow and authenticates with Firebase.
+  /// Updates the state to show loading, success, or error states.
+  Future<void> signInWithGoogle() async {
+    state = const AuthStateLoading();
+    
+    final result = await _authService.signInWithGoogle();
+    
+    if (result is AuthSuccess) {
+      // State will be updated automatically by _listenToAuthChanges
+      // when Firebase auth state changes
+    } else if (result is AuthFailure) {
+      state = AuthStateError(
+        message: result.message,
+        code: result.code,
+      );
+    }
+  }
+
+  /// Sign in with Apple
+  /// 
+  /// Initiates Apple Sign-In flow and authenticates with Firebase.
+  /// Updates the state to show loading, success, or error states.
+  Future<void> signInWithApple() async {
+    state = const AuthStateLoading();
+    
+    final result = await _authService.signInWithApple();
+    
+    if (result is AuthSuccess) {
+      // State will be updated automatically by _listenToAuthChanges
+      // when Firebase auth state changes
+    } else if (result is AuthFailure) {
+      state = AuthStateError(
+        message: result.message,
+        code: result.code,
+      );
+    }
+  }
+
   /// Clear error state
   /// 
   /// Resets the error state back to the appropriate auth state

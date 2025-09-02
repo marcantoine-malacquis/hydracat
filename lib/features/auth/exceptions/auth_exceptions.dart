@@ -103,6 +103,12 @@ class PasswordResetException extends AuthException {
     : super('Unable to send reset email. Please try again', code);
 }
 
+/// Exception for social sign-in failures
+class SocialSignInException extends AuthException {
+  /// Creates a [SocialSignInException]
+  const SocialSignInException(super.message, [super.code]);
+}
+
 /// Exception for general authentication errors
 class GeneralAuthException extends AuthException {
   /// Creates a [GeneralAuthException]

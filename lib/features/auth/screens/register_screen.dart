@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/auth/models/auth_state.dart';
+import 'package:hydracat/features/auth/widgets/social_signin_buttons.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
 
@@ -182,6 +183,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 isFullWidth: true,
                 child: const Text('Create Account'),
               ),
+              const SizedBox(height: AppSpacing.md),
+              
+              // Social Sign-In Buttons
+              const SocialSignInButtons(),
+              
               const SizedBox(height: AppSpacing.md),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
