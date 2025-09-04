@@ -542,3 +542,114 @@ DEST_FILE="${SRCROOT}/Runner/GoogleService-Info.plist"
 
 ### Prevention
 Always ensure the Firebase setup script copies environment-specific config files to a location that will be processed correctly by the Resources build phase, not directly to the final app bundle location.
+
+---
+
+## ✅ Feature Gating System - Implementation Complete
+
+### Overview
+A flexible feature gating system that restricts premium features to verified users while keeping core medical functionality always accessible. The system provides three widget patterns for different UX approaches and centralized feature access control.
+
+### Core Components
+
+**1. FeatureGateService (`lib/shared/services/feature_gate_service.dart`)**
+- Centralized feature access checking based on email verification
+- Predefined feature categories (free vs verified-only)
+- User-friendly blocking reason messages
+- Simple boolean checks: `FeatureGateService.canAccessFeature('feature_id')`
+
+**2. Verification Gate Widgets (`lib/shared/widgets/verification_gate.dart`)**
+- **VerificationGate**: Shows upgrade prompt when feature is blocked
+- **VerificationGateHidden**: Completely hides premium features from unverified users  
+- **VerificationGateDisabled**: Shows disabled state with dialog explanation
+
+### Usage Guidelines
+
+#### Adding New Premium Features
+1. **Add feature ID** to `verifiedOnlyFeatures` list in `FeatureGateService`
+2. **Wrap the feature UI** with appropriate gate widget:
+```dart
+// Shows upgrade prompt when blocked
+VerificationGate(
+  featureId: 'pdf_export',
+  child: PremiumButton(),
+)
+
+// Hides feature completely when blocked
+VerificationGateHidden(
+  featureId: 'advanced_analytics', 
+  child: AnalyticsWidget(),
+)
+
+// Shows disabled state when blocked
+VerificationGateDisabled(
+  featureId: 'cloud_backup',
+  onTap: () => performBackup(),
+  child: BackupButton(),
+)
+```
+
+#### Feature Categories
+> **📝 Note:** These feature lists are defined in `lib/shared/services/feature_gate_service.dart` - modify them there when adding/changing features.
+
+**Free Features (Always Accessible):**
+- `fluid_logging` - Core medical logging
+- `reminders` - Treatment reminders
+- `basic_streak_tracking` - Simple adherence tracking
+- `session_history` - Historical data viewing
+- `offline_logging` - Offline data entry
+- `basic_analytics` - Simple metrics
+
+**Premium Features (Verification Required):**
+- `pdf_export` - PDF report generation
+- `advanced_analytics` - Detailed analytics
+- `detailed_reports` - Comprehensive reports
+- `cloud_sync_premium` - Advanced cloud features
+- `export_data` - Data export functionality
+- `premium_insights` - AI-powered insights
+
+#### Implementation Patterns
+**For new premium screens:**
+```dart
+class PremiumScreen extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return VerificationGate(
+      featureId: 'premium_feature_id',
+      child: ActualScreenContent(),
+    );
+  }
+}
+```
+
+**For premium sections within screens:**
+```dart
+// Hide premium sections
+VerificationGateHidden(
+  featureId: 'advanced_charts',
+  child: AdvancedChartsSection(),
+)
+```
+
+**For premium actions:**
+```dart
+FloatingActionButton(
+  onPressed: FeatureGateService.canAccessFeature('export_pdf')
+    ? () => exportPdf()
+    : () => showVerificationDialog(),
+  child: Icon(Icons.picture_as_pdf),
+)
+```
+
+### Design Principles
+1. **Medical Safety First**: Core health features never blocked
+2. **Cost Control**: Expensive operations require verification
+3. **Progressive Enhancement**: Features unlock with verification
+4. **Clear Messaging**: Users understand why features are limited
+5. **Easy Integration**: Simple widget wrapping, minimal code changes
+
+### Verification Status Display
+Users can check their verification status in the **Profile screen**, which shows:
+- Current verification state with visual indicators
+- Direct link to email verification process
+- Clear explanation of verification benefits
