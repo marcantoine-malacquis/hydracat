@@ -8,8 +8,8 @@ class AppIcons {
   /// Home navigation - Paw icon
   static const String home = 'home';
 
-  /// Schedule navigation - Calendar icon
-  static const String schedule = 'calendar_today';
+  /// Learn navigation - Book icon
+  static const String learn = 'menu_book';
 
   /// Log session FAB - Droplet icon (custom)
   static const String logSession = 'water_drop';

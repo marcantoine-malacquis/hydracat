@@ -19,8 +19,7 @@ class ProfileScreen extends ConsumerWidget {
         backgroundColor: AppColors.background,
         appBar: AppBar(
           title: const Text('Profile'),
-          backgroundColor: AppColors.surface,
-          foregroundColor: AppColors.textPrimary,
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           actions: [
             IconButton(
               onPressed: () => ref.read(authProvider.notifier).signOut(),
@@ -112,6 +111,32 @@ class ProfileScreen extends ConsumerWidget {
                   'Profile Screen - Coming Soon',
                   style: AppTextStyles.body,
                 ),
+              ),
+              
+              const Spacer(),
+              
+              // User email at bottom
+              Consumer(
+                builder: (context, ref, _) {
+                  final authState = ref.watch(authProvider);
+                  return authState.when(
+                    loading: () => const SizedBox.shrink(),
+                    unauthenticated: () => const SizedBox.shrink(),
+                    authenticated: (user) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                        child: Text(
+                          'Logged in as: ${user.email ?? 'No email'}',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      );
+                    },
+                    error: (message, code, details) => const SizedBox.shrink(),
+                  );
+                },
               ),
             ],
           ),

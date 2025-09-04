@@ -22,14 +22,14 @@ class _AppShellState extends State<AppShell> {
   final List<HydraNavigationItem> _navigationItems = const [
     HydraNavigationItem(icon: AppIcons.home, label: 'Home', route: '/'),
     HydraNavigationItem(
-      icon: AppIcons.schedule,
-      label: 'Schedule',
-      route: '/schedule',
-    ),
-    HydraNavigationItem(
       icon: AppIcons.progress,
       label: 'Progress',
       route: '/progress',
+    ),
+    HydraNavigationItem(
+      icon: AppIcons.learn,
+      label: 'Learn',
+      route: '/learn',
     ),
     HydraNavigationItem(
       icon: AppIcons.profile,
@@ -44,6 +44,10 @@ class _AppShellState extends State<AppShell> {
       if (_navigationItems[i].route == currentLocation) {
         return i;
       }
+    }
+    // If on logging screen, don't highlight any nav item
+    if (currentLocation == '/logging') {
+      return -1;
     }
     return 0; // Default to home
   }

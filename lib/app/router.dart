@@ -12,7 +12,6 @@ import 'package:hydracat/features/logging/screens/logging_screen.dart';
 import 'package:hydracat/features/profile/screens/profile_screen.dart';
 import 'package:hydracat/features/progress/screens/progress_screen.dart';
 import 'package:hydracat/features/resources/screens/resources_screen.dart';
-import 'package:hydracat/features/schedule/screens/schedule_screen.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 
 /// Provider for the app router with authentication logic
@@ -82,10 +81,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
-            path: '/schedule',
-            name: 'schedule',
+            path: '/learn',
+            name: 'learn',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: ScheduleScreen(),
+              child: ResourcesScreen(),
             ),
           ),
           GoRoute(

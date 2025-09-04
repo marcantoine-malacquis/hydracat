@@ -44,7 +44,8 @@ class HydraIcon extends StatelessWidget {
         return Icons.person;
       case AppIcons.petProfile:
         return Icons.pets;
-      case AppIcons.schedule:
+      case AppIcons.learn:
+        return Icons.menu_book;
       case AppIcons.missedSession:
         return Icons.schedule;
       case AppIcons.logSession:

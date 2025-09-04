@@ -107,7 +107,7 @@ class HydraNavigationBar extends StatelessWidget {
     HydraNavigationItem item,
     int index,
   ) {
-    final isSelected = index == currentIndex;
+    final isSelected = currentIndex >= 0 && index == currentIndex;
     final color = isSelected ? AppColors.primary : AppColors.textSecondary;
 
     return HydraTouchTarget(
