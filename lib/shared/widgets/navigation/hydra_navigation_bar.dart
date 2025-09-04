@@ -18,6 +18,7 @@ class HydraNavigationBar extends StatelessWidget {
     super.key,
     this.backgroundColor,
     this.onFabPressed,
+    this.showVerificationBadge = false,
   });
 
   /// The navigation items to display.
@@ -34,6 +35,9 @@ class HydraNavigationBar extends StatelessWidget {
 
   /// Callback when the FAB is pressed.
   final VoidCallback? onFabPressed;
+
+  /// Whether to show verification badge on profile tab.
+  final bool showVerificationBadge;
 
   @override
   Widget build(BuildContext context) {
@@ -114,31 +118,52 @@ class HydraNavigationBar extends StatelessWidget {
       minSize: 48, // Slightly larger touch target
       child: GestureDetector(
         onTap: () => onTap(index),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
+        child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            HydraIcon(
-              icon: item.icon,
-              color: color,
-              semanticLabel: item.label,
-              size: 26, // Larger icon for better visibility
-            ),
-            const SizedBox(height: 2), // Reduced spacing to fit text
-            Flexible(
-              child: Text(
-                item.label,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                HydraIcon(
+                  icon: item.icon,
                   color: color,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  fontSize: 10, // Smaller text to prevent truncation
-                  height: 1, // Tighter line height
+                  semanticLabel: item.label,
+                  size: 26, // Larger icon for better visibility
                 ),
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1, // Ensure single line
-              ),
+                const SizedBox(height: 2), // Reduced spacing to fit text
+                Flexible(
+                  child: Text(
+                    item.label,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: color,
+                      fontWeight: isSelected 
+                          ? FontWeight.w600 
+                          : FontWeight.w400,
+                      fontSize: 10, // Smaller text to prevent truncation
+                      height: 1, // Tighter line height
+                    ),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1, // Ensure single line
+                  ),
+                ),
+              ],
             ),
+            // Show badge on profile tab for unverified users
+            if (showVerificationBadge && item.label == 'Profile')
+              Positioned(
+                right: 0,
+                top: -2,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.error,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
