@@ -18,10 +18,35 @@ final authServiceProvider = Provider<AuthService>((ref) {
 class AuthNotifier extends StateNotifier<AuthState> {
   /// Creates an [AuthNotifier] with the provided auth service
   AuthNotifier(this._authService) : super(const AuthStateLoading()) {
-    _listenToAuthChanges();
+    _initializeAuth();
   }
 
   final AuthService _authService;
+
+  /// Initialize authentication by waiting for auth service to be ready
+  /// then listening to auth state changes
+  Future<void> _initializeAuth() async {
+    try {
+      // Wait for Firebase Auth to determine initial state from persistence
+      await _authService.waitForInitialization();
+      
+      // Now listen to auth state changes
+      _listenToAuthChanges();
+      
+      // Set initial state based on current user
+      final currentUser = _authService.currentUser;
+      if (currentUser != null) {
+        state = AuthStateAuthenticated(user: currentUser);
+      } else {
+        state = const AuthStateUnauthenticated();
+      }
+    } on Exception catch (e) {
+      state = AuthStateError(
+        message: 'Failed to initialize authentication: $e',
+        code: 'initialization_error',
+      );
+    }
+  }
 
   /// Listen to Firebase auth state changes and update the state accordingly
   void _listenToAuthChanges() {

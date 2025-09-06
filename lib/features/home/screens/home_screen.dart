@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
-import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/shared/widgets/status/connection_status_widget.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A screen that displays the main home interface for the HydraCat app.
@@ -18,12 +18,8 @@ class HomeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('HydraCat'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        actions: [
-          IconButton(
-            onPressed: () => ref.read(authProvider.notifier).signOut(),
-            icon: const Icon(Icons.logout),
-            tooltip: 'Sign Out',
-          ),
+        actions: const [
+          ConnectionStatusWidget(),
         ],
       ),
       body: Padding(

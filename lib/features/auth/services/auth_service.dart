@@ -41,10 +41,41 @@ class AuthFailure extends AuthResult {
 /// error handling and clear success/failure responses.
 class AuthService {
   /// Creates an [AuthService] instance
-  AuthService();
+  AuthService() {
+    _initializeAuthState();
+  }
 
   FirebaseAuth get _firebaseAuth => FirebaseService().auth;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+  
+  bool _isInitialized = false;
+  
+  /// Initialize auth state and wait for Firebase to determine initial state
+  void _initializeAuthState() {
+    // Firebase Auth automatically determines initial state from persistence
+    // This ensures we know if a user is logged in from a previous session
+    _firebaseAuth.authStateChanges().first.then((_) {
+      _isInitialized = true;
+    });
+  }
+  
+  /// Whether the auth service has determined the initial authentication state
+  bool get isInitialized => _isInitialized;
+  
+  /// Whether there is a current authenticated user (cached, no network needed)
+  bool get hasAuthenticatedUser => _firebaseAuth.currentUser != null;
+  
+  /// Wait for the auth service to determine initial authentication state
+  /// 
+  /// This method completes when Firebase Auth has determined whether
+  /// there is a persisted user session from a previous app launch.
+  Future<void> waitForInitialization() async {
+    if (_isInitialized) return;
+    
+    // Wait for the first auth state change which indicates initialization
+    await _firebaseAuth.authStateChanges().first;
+    _isInitialized = true;
+  }
 
   /// Current authenticated user, if any
   AppUser? get currentUser {
@@ -169,13 +200,22 @@ class AuthService {
   ///
   /// Refreshes the current user's data and checks verification status.
   /// Returns true if email is verified, false otherwise.
+  /// 
+  /// This method gracefully handles offline scenarios by returning
+  /// the cached verification status when network is unavailable.
   Future<bool> checkEmailVerification() async {
     try {
       final user = _firebaseAuth.currentUser;
       if (user != null) {
-        await user.reload();
-        final refreshedUser = _firebaseAuth.currentUser;
-        return refreshedUser?.emailVerified ?? false;
+        try {
+          // Attempt to reload user data (requires network)
+          await user.reload();
+          final refreshedUser = _firebaseAuth.currentUser;
+          return refreshedUser?.emailVerified ?? false;
+        } on Exception {
+          // If reload fails (likely offline), return cached status
+          return user.emailVerified;
+        }
       }
       return false;
     } on Exception {

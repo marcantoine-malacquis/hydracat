@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/providers/connectivity_provider.dart';
+import 'package:hydracat/shared/services/connectivity_service.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
 
 /// Sync state enumeration
@@ -19,6 +21,9 @@ enum SyncStatus {
   
   /// Sync is disabled (user not authenticated)
   disabled,
+  
+  /// Sync is offline (no network connection)
+  offline,
 }
 
 /// Data model for sync state
@@ -55,6 +60,9 @@ class SyncState {
   
   /// Whether sync is disabled (no authenticated user)
   bool get isDisabled => status == SyncStatus.disabled;
+  
+  /// Whether sync is offline (no network connection)
+  bool get isOffline => status == SyncStatus.offline;
 
   /// Creates a copy of this sync state with the given fields replaced
   SyncState copyWith({
@@ -93,25 +101,57 @@ class SyncNotifier extends StateNotifier<SyncState> {
   SyncNotifier(this._ref)
       : super(const SyncState(status: SyncStatus.disabled)) {
     _listenToAuthChanges();
+    _listenToConnectivityChanges();
   }
 
   final Ref _ref;
-  StreamSubscription<AuthState>? _authSubscription;
   Timer? _syncTimer;
 
   /// Listen to authentication state changes
   void _listenToAuthChanges() {
     _ref.listen(
       authProvider,
-      (previous, next) => _handleAuthStateChange(next),
+      (previous, next) => _handleStateChanges(),
     );
   }
 
-  /// Handle authentication state changes
-  void _handleAuthStateChange(AuthState authState) {
+  /// Listen to connectivity state changes
+  void _listenToConnectivityChanges() {
+    _ref.listen(
+      connectionStateProvider,
+      (previous, next) => _handleStateChanges(),
+    );
+  }
+
+  /// Handle combined auth and connectivity state changes
+  void _handleStateChanges() {
+    final authState = _ref.read(authProvider);
+    final connectivityState = _ref.read(connectionStateProvider);
+
+    // Check auth state first
     switch (authState) {
       case AuthStateAuthenticated(user: final user):
-        _enableSyncForUser(user.id);
+        // User is authenticated, now check connectivity
+        connectivityState.when(
+          data: (connectionState) {
+            switch (connectionState) {
+              case ConnectionState.connected:
+                _enableSyncForUser(user.id);
+              case ConnectionState.offline:
+                _setOfflineState(user.id);
+              case ConnectionState.unknown:
+                // Keep current state while determining connectivity
+                break;
+            }
+          },
+          loading: () {
+            // Keep current state while loading connectivity
+          },
+          error: (error, stackTrace) {
+            // Assume offline on connectivity error
+            _setOfflineState(user.id);
+          },
+        );
       case AuthStateUnauthenticated():
         _disableSync();
       case AuthStateLoading():
@@ -130,9 +170,24 @@ class SyncNotifier extends StateNotifier<SyncState> {
         status: SyncStatus.idle,
         userId: userId,
       );
-    } else if (state.isDisabled) {
-      // Re-enable sync for same user
+    } else if (state.isDisabled || state.isOffline) {
+      // Re-enable sync for same user (from disabled or offline)
       state = state.copyWith(status: SyncStatus.idle);
+    }
+  }
+
+  /// Set offline state for authenticated user
+  void _setOfflineState(String userId) {
+    if (state.userId != userId) {
+      // User changed, set offline state
+      state = SyncState(
+        status: SyncStatus.offline,
+        userId: userId,
+      );
+    } else if (!state.isOffline) {
+      // Change to offline state
+      _cancelSyncTimer(); // Stop auto-sync when offline
+      state = state.copyWith(status: SyncStatus.offline);
     }
   }
 
@@ -146,8 +201,8 @@ class SyncNotifier extends StateNotifier<SyncState> {
 
   /// Start a sync operation
   Future<void> startSync() async {
-    // Only sync if user is authenticated
-    if (state.isDisabled || state.userId == null) return;
+    // Only sync if user is authenticated and online
+    if (state.isDisabled || state.isOffline || state.userId == null) return;
 
     // Don't start if already syncing
     if (state.isSyncing) return;
@@ -199,7 +254,7 @@ class SyncNotifier extends StateNotifier<SyncState> {
 
   /// Schedule automatic sync
   void scheduleAutoSync({Duration interval = const Duration(minutes: 5)}) {
-    if (state.isDisabled) return;
+    if (state.isDisabled || state.isOffline) return;
     
     _cancelSyncTimer();
     _syncTimer = Timer.periodic(interval, (_) => startSync());
@@ -213,7 +268,7 @@ class SyncNotifier extends StateNotifier<SyncState> {
 
   /// Force immediate sync
   Future<void> forceSync() async {
-    if (state.isDisabled) return;
+    if (state.isDisabled || state.isOffline) return;
     
     // Cancel any existing sync
     if (state.isSyncing) return;
@@ -232,7 +287,6 @@ class SyncNotifier extends StateNotifier<SyncState> {
 
   @override
   void dispose() {
-    _authSubscription?.cancel();
     _cancelSyncTimer();
     super.dispose();
   }

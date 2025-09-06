@@ -8,10 +8,10 @@ import 'package:hydracat/features/auth/screens/login_screen.dart';
 import 'package:hydracat/features/auth/screens/register_screen.dart';
 import 'package:hydracat/features/home/screens/component_demo_screen.dart';
 import 'package:hydracat/features/home/screens/home_screen.dart';
+import 'package:hydracat/features/learn/screens/learn_screen.dart';
 import 'package:hydracat/features/logging/screens/logging_screen.dart';
 import 'package:hydracat/features/profile/screens/profile_screen.dart';
 import 'package:hydracat/features/progress/screens/progress_screen.dart';
-import 'package:hydracat/features/resources/screens/resources_screen.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 
 /// Provider for the app router with authentication logic
@@ -21,11 +21,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
     redirect: (context, state) async {
+      // Don't redirect while auth is still loading/initializing
+      if (authState is AuthStateLoading) {
+        return null;
+      }
+      
       final isAuthenticated = authState is AuthStateAuthenticated;
       final isOnLoginPage = state.matchedLocation == '/login';
       final isOnRegisterPage = state.matchedLocation == '/register';
-      final isOnForgotPasswordPage = state.matchedLocation == '/forgot-password';
-      final isOnVerificationPage = state.matchedLocation.startsWith('/email-verification');
+      final isOnForgotPasswordPage =
+          state.matchedLocation == '/forgot-password';
+      final isOnVerificationPage = state.matchedLocation.startsWith(
+        '/email-verification',
+      );
 
       // If not authenticated and not on auth pages, redirect to login
       if (!isAuthenticated &&
@@ -40,7 +48,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (isAuthenticated && !isOnVerificationPage) {
         final authService = ref.read(authServiceProvider);
         final currentUser = authService.currentUser;
-        
+
         if (currentUser != null && !currentUser.emailVerified) {
           // User is authenticated but email not verified,
           // redirect to verification
@@ -51,7 +59,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       // If authenticated and on auth pages, redirect to home
-      if (isAuthenticated && 
+      if (isAuthenticated &&
           (isOnLoginPage || isOnRegisterPage || isOnForgotPasswordPage)) {
         return '/';
       }

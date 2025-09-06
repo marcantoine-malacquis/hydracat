@@ -69,14 +69,31 @@ class _AppShellState extends ConsumerState<AppShell> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    final isVerified = authState is AuthStateAuthenticated && 
-                      authState.user.emailVerified;
+
+    // Show loading screen while auth is initializing
+    if (authState is AuthStateLoading) {
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Loading your account...'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final isVerified =
+        authState is AuthStateAuthenticated && authState.user.emailVerified;
 
     return Scaffold(
       body: Column(
         children: [
           // Show verification banner for unverified users
-          if (authState is AuthStateAuthenticated && 
+          if (authState is AuthStateAuthenticated &&
               !authState.user.emailVerified)
             _buildVerificationBanner(context, authState.user.email),
           Expanded(child: widget.child),
@@ -115,7 +132,8 @@ class _AppShellState extends ConsumerState<AppShell> {
             ),
           ),
           TextButton(
-            onPressed: () => context.go('/email-verification?email=${email ?? ''}'),
+            onPressed: () =>
+                context.go('/email-verification?email=${email ?? ''}'),
             child: Text(
               'Verify',
               style: TextStyle(
