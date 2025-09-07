@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/features/auth/exceptions/auth_exceptions.dart';
 import 'package:hydracat/features/auth/models/auth_state.dart';
+import 'package:hydracat/features/auth/widgets/lockout_dialog.dart';
 import 'package:hydracat/features/auth/widgets/social_signin_buttons.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
@@ -21,23 +23,71 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isSubmitting = false;
+  ProviderSubscription<AuthState>? _authSubscription;
+  bool _isShowingLockoutDialog = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Listen to auth state changes once (avoid re-registering on rebuilds)
+      _authSubscription = ref.listenManual<AuthState>(
+        authProvider,
+        (previous, next) {
+          if (next is AuthStateError) {
+            _handleAuthError(next);
+          } else {}
+        },
+        fireImmediately: false,
+      );
+
+      // Handle any existing error state immediately after mount
+      final current = ref.read(authProvider);
+      if (current is AuthStateError) {
+        _handleAuthError(current);
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _authSubscription?.close();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  void _handleSignIn() {
-    if (_formKey.currentState?.validate() ?? false) {
-      ref
-          .read(authProvider.notifier)
-          .signIn(
-            email: _emailController.text.trim(),
-            password: _passwordController.text,
-          );
+  Future<void> _handleSignIn() async {
+    if (_isSubmitting) {
+      return;
     }
+
+    if (_formKey.currentState?.validate() ?? false) {
+      setState(() {
+        _isSubmitting = true;
+      });
+
+      try {
+        // Clear any existing snackbars before attempting login
+        if (mounted) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+        }
+
+        await ref
+            .read(authProvider.notifier)
+            .signIn(
+              email: _emailController.text.trim(),
+              password: _passwordController.text,
+            );
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isSubmitting = false;
+          });
+        }
+      }
+    } else {}
   }
 
   void _showErrorSnackBar(String message) {
@@ -51,16 +101,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    ref.listen<AuthState>(authProvider, (previous, next) {
-      if (next is AuthStateError) {
-        _showErrorSnackBar(next.message);
+  void _handleAuthError(AuthStateError authError) {
+    if (!mounted) return;
+
+    // Use a post-frame callback to ensure the context is still valid
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      // Check if this is a lockout exception stored in details
+      if (authError.details is AccountTemporarilyLockedException) {
+        if (_isShowingLockoutDialog) {
+          return;
+        }
+        _isShowingLockoutDialog = true;
+        final lockoutException =
+            authError.details as AccountTemporarilyLockedException;
+        showLockoutDialog(context, lockoutException.timeRemaining).whenComplete(
+          () {
+            _isShowingLockoutDialog = false;
+          },
+        );
+      } else {
+        // Show regular error message
+        _showErrorSnackBar(authError.message);
       }
     });
+  }
 
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    final isLoading = authState is AuthStateLoading;
+    final isLoading = authState is AuthStateLoading || _isSubmitting;
 
     return Scaffold(
       appBar: AppBar(
@@ -138,10 +209,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: const Text('Sign In'),
               ),
               const SizedBox(height: AppSpacing.md),
-              
+
               // Social Sign-In Buttons
               const SocialSignInButtons(),
-              
+
               const SizedBox(height: AppSpacing.md),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,

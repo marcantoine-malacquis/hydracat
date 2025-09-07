@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/app/app_shell.dart';
@@ -14,18 +16,43 @@ import 'package:hydracat/features/profile/screens/profile_screen.dart';
 import 'package:hydracat/features/progress/screens/progress_screen.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 
+/// Listenable that triggers GoRouter refreshes from a Stream
+class GoRouterRefreshStream extends ChangeNotifier {
+  /// Creates a [GoRouterRefreshStream] instance
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    _subscription = stream.asBroadcastStream().listen((_) {
+      notifyListeners();
+    });
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
+
 /// Provider for the app router with authentication logic
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
+  // Only refresh router when authentication status toggles,
+  // not for transient states like loading or error
+  ref.watch(isAuthenticatedProvider);
+  final authService = ref.read(authServiceProvider);
 
   return GoRouter(
     initialLocation: '/',
+    // Ensure redirects are re-evaluated when auth state changes
+    refreshListenable: GoRouterRefreshStream(authService.authStateChanges),
     redirect: (context, state) async {
+      // Read full auth state only when needed during redirect evaluation
+      final authState = ref.read(authProvider);
       // Don't redirect while auth is still loading/initializing
       if (authState is AuthStateLoading) {
         return null;
       }
-      
+
       final isAuthenticated = authState is AuthStateAuthenticated;
       final isOnLoginPage = state.matchedLocation == '/login';
       final isOnRegisterPage = state.matchedLocation == '/register';

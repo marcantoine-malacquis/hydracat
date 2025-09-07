@@ -116,6 +116,60 @@ class GeneralAuthException extends AuthException {
     : super('Authentication error occurred. Please try again', code);
 }
 
+/// Exception for account temporarily locked due to too many failed attempts
+class AccountTemporarilyLockedException extends AuthException {
+  /// Creates an [AccountTemporarilyLockedException] with time remaining
+  AccountTemporarilyLockedException({
+    required this.timeRemaining,
+    String? code,
+  }) : super(_buildMessage(timeRemaining), code);
+
+  /// Time remaining until account is unlocked
+  final Duration timeRemaining;
+
+  /// Builds user-friendly lockout message with time remaining
+  static String _buildMessage(Duration timeRemaining) {
+    final minutes = timeRemaining.inMinutes;
+    final hours = timeRemaining.inHours;
+
+    if (hours > 0) {
+      final remainingMinutes = minutes % 60;
+      if (remainingMinutes == 0) {
+        return 'Account temporarily locked. Please wait $hours '
+            'hour${hours == 1 ? '' : 's'} before trying again.';
+      } else {
+        return 'Account temporarily locked. Please wait $hours '
+            'hour${hours == 1 ? '' : 's'} and $remainingMinutes '
+            'minute${remainingMinutes == 1 ? '' : 's'} before trying again.';
+      }
+    } else if (minutes > 0) {
+      return 'Account temporarily locked. Please wait $minutes '
+          'minute${minutes == 1 ? '' : 's'} before trying again.';
+    } else {
+      return 'Account temporarily locked. Please try again in a moment.';
+    }
+  }
+}
+
+/// Exception for enhanced too many requests with lockout warning
+class TooManyAttemptsWithWarningException extends AuthException {
+  /// Creates a [TooManyAttemptsWithWarningException] with attempts remaining
+  TooManyAttemptsWithWarningException({
+    required this.attemptsRemaining,
+    String? code,
+  }) : super(_buildMessage(attemptsRemaining), code);
+
+  /// Number of attempts remaining before lockout
+  final int attemptsRemaining;
+
+  /// Builds warning message with attempts remaining
+  static String _buildMessage(int attemptsRemaining) {
+    return 'Incorrect credentials. $attemptsRemaining '
+        'attempt${attemptsRemaining == 1 ? '' : 's'} remaining '
+        'before temporary lockout.';
+  }
+}
+
 /// Utility class for mapping Firebase Auth exceptions to custom exceptions
 class AuthExceptionMapper {
   /// Maps Firebase Auth exceptions to user-friendly custom exceptions
@@ -130,6 +184,8 @@ class AuthExceptionMapper {
       case 'user-not-found':
         return UserNotFoundException(e.code);
       case 'wrong-password':
+        return WrongPasswordException(e.code);
+      case 'invalid-credential': // FirebaseAuthv6+ uses this for wrong password
         return WrongPasswordException(e.code);
       case 'user-disabled':
         return UserDisabledException(e.code);
