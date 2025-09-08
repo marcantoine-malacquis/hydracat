@@ -44,7 +44,7 @@ class AuthService {
   /// Creates an [AuthService] instance
   AuthService({LoginAttemptService? loginAttemptService}) {
     _loginAttemptService = loginAttemptService ?? LoginAttemptService();
-    _initializeAuthState();
+    _initializationFuture = _initializeAuthState();
   }
 
   FirebaseAuth get _firebaseAuth => FirebaseService().auth;
@@ -52,14 +52,14 @@ class AuthService {
   late final LoginAttemptService _loginAttemptService;
 
   bool _isInitialized = false;
+  late final Future<void> _initializationFuture;
 
   /// Initialize auth state and wait for Firebase to determine initial state
-  void _initializeAuthState() {
+  Future<void> _initializeAuthState() async {
     // Firebase Auth automatically determines initial state from persistence
     // This ensures we know if a user is logged in from a previous session
-    _firebaseAuth.authStateChanges().first.then((_) {
-      _isInitialized = true;
-    });
+    await _firebaseAuth.authStateChanges().first;
+    _isInitialized = true;
   }
 
   /// Whether the auth service has determined the initial authentication state
@@ -72,13 +72,7 @@ class AuthService {
   ///
   /// This method completes when Firebase Auth has determined whether
   /// there is a persisted user session from a previous app launch.
-  Future<void> waitForInitialization() async {
-    if (_isInitialized) return;
-
-    // Wait for the first auth state change which indicates initialization
-    await _firebaseAuth.authStateChanges().first;
-    _isInitialized = true;
-  }
+  Future<void> waitForInitialization() => _initializationFuture;
 
   /// Current authenticated user, if any
   AppUser? get currentUser {

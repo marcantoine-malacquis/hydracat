@@ -30,6 +30,10 @@ lib/
 ├── providers/              # Riverpod state management
 └── l10n/                   # Internationalization
 ```
+### Ideal Structure reference
+
+**Ideal Structure**: `ideal_archi.md` (updated regularily)
+
 
 ### State Management
 - **Riverpod**: Primary state management solution
@@ -89,6 +93,14 @@ features/[feature]/
 4. **Testing**: Execute `flutter test` before commits
 5. **Analysis**: Run `flutter analyze` to check for issues
 
+## Important planning files
+
+- **Initial project setup**: `~PLANNING/DONE/SETUP.md`
+- **Authentication**: `~PLANNING/auth_implementation_plan.md`
+
+Once planning files are completed, they are moved from `~PLANNING` to `~PLANNING/DONE`
+
+
 ## Important Notes
 
 - **Security**: API keys are stored in Firebase configuration files
@@ -100,28 +112,8 @@ features/[feature]/
 - **iOS Setup**: Requires manual Xcode configuration for build schemes (see iOS flavor setup instructions)
 - **Flavor Selection**: Use `--flavor` and `-t` flags when running or building the app
 
-## iOS Flavor Setup Instructions
-
-✅ **SETUP COMPLETE & TESTED**: All iOS flavor configurations are working!
-
-The following has been configured and tested:
-- Flavor-specific build configurations (Debug-development, Release-development, etc.)
-- Development.xcconfig and Production.xcconfig files in `ios/` directory
-- Scheme names match Android flavors: "development" and "production"  
-- Firebase setup script automatically copies correct GoogleService-Info.plist
-- Firebase projects switch correctly (hydracattest ↔ myckdapp)
-
-**Verified Commands:**
-- `flutter run --flavor development -t lib/main_development.dart` ✅ **WORKING**
-- `flutter run --flavor production -t lib/main_production.dart` ✅ **WORKING**
-
-Your iOS flavors automatically:
-- Use the correct Firebase project based on flavor
-- Display the correct app name ("Hydracat Dev" vs "Hydracat")
-- Apply proper bundle identifiers and configurations
-
 # important-instruction-reminders
-Do what has been asked; nothing more, nothing less.
-NEVER create files unless they're absolutely necessary for achieving your goal.
-ALWAYS prefer editing an existing file to creating a new one.
-NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+- Do what has been asked; nothing more, nothing less.
+- NEVER create files unless they're absolutely necessary for achieving your goal.
+- ALWAYS prefer editing an existing file to creating a new one.
+- NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.

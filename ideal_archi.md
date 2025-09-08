@@ -50,6 +50,7 @@ lib/
 │   ├── streak_provider.dart         # Streak tracking
 │   ├── subscription_provider.dart   # Premium features
 │   ├── sync_provider.dart           # Data synchronization
+│   ├── connectivity_provider.dart   # Connectivity state
 │   └── analytics_provider.dart      # Usage analytics
 │
 ├── features/                        # Feature modules
@@ -60,8 +61,16 @@ lib/
 │   │   ├── screens/                 # Auth UI screens
 │   │   │   ├── login_screen.dart    # Login interface
 │   │   │   ├── register_screen.dart # Registration form
+│   │   │   ├── email_verification_screen.dart # Email verification
 │   │   │   └── forgot_password_screen.dart # Password reset
 │   │   ├── widgets/                 # Auth UI components
+│   │   │   ├── social_signin_buttons.dart # Social auth buttons
+│   │   │   └── lockout_dialog.dart  # Account lockout dialog
+│   │   ├── mixins/                  # Auth utility mixins
+│   │   │   ├── auth_error_handler_mixin.dart # Error handling
+│   │   │   └── auth_loading_state_mixin.dart # Loading states
+│   │   ├── exceptions/              # Auth-specific exceptions
+│   │   │   └── auth_exceptions.dart # Authentication errors
 │   │   └── services/                # Auth business logic
 │   │       └── auth_service.dart    # Authentication service
 │   ├── onboarding/                  # User onboarding
@@ -80,6 +89,11 @@ lib/
 │   │       ├── streak_display.dart  # Streak counter
 │   │       ├── next_session_card.dart # Next session info
 │   │       └── quick_actions.dart   # Quick action buttons
+│   ├── learn/                       # Educational content
+│   │   ├── models/                  # Learn data models
+│   │   ├── screens/                 # Learn UI screens
+│   │   │   └── learn_screen.dart    # Main learning screen
+│   │   └── widgets/                 # Learn components
 │   ├── logging/                     # Session logging
 │   │   ├── models/                  # Logging data models
 │   │   │   ├── fluid_session.dart   # Fluid session data
@@ -167,7 +181,8 @@ lib/
 │   │   ├── base_model.dart          # Base model class
 │   │   ├── app_user.dart            # Global user model
 │   │   ├── api_response.dart        # API response wrapper
-│   │   └── sync_item.dart           # Sync data model
+│   │   ├── sync_item.dart           # Sync data model
+│   │   └── login_attempt_data.dart  # Login attempt tracking
 │   ├── repositories/                # Data access layer
 │   │   ├── base_repository.dart     # Base repository
 │   │   ├── session_repository.dart  # Session data access
@@ -183,7 +198,11 @@ lib/
 │   │   ├── analytics_service.dart   # Usage analytics
 │   │   ├── privacy_service.dart     # Privacy management
 │   │   ├── validation_service.dart  # Data validation
-│   │   └── backup_service.dart      # Data backup
+│   │   ├── backup_service.dart      # Data backup
+│   │   ├── feature_gate_service.dart # Feature gating
+│   │   ├── login_attempt_service.dart # Login attempt management
+│   │   ├── secure_preferences_service.dart # Secure storage
+│   │   └── connectivity_service.dart # Network connectivity
 │   └── widgets/                     # Reusable UI components
 │       ├── accessibility/           # Accessibility components
 │       │   ├── accessibility.dart   # A11y exports
@@ -210,6 +229,9 @@ lib/
 │       │   ├── success_animation.dart # Success animation
 │       │   ├── streak_celebration.dart # Streak milestone
 │       │   └── offline_indicator.dart # Offline status
+│       ├── status/                  # Status components
+│       │   └── connection_status_widget.dart # Connection status
+│       ├── verification_gate.dart   # Feature verification gate
 │       ├── layout/                  # Layout components
 │       │   ├── layout.dart          # Layout exports
 │       │   ├── dev_banner.dart      # Development banner
@@ -228,3 +250,17 @@ lib/
     ├── app_en.arb                   # English translations
     ├── app_fr.arb                   # French translations
     └── app_de.arb                   # German translations
+
+
+
+## Update prompt
+
+Please update @ideal_archi.md to reflect the current project structure. This file represents my ideal future architecture and gets updated regularly during development.
+
+Instructions:
+1. Add any new files and folders that exist in the current codebase but are not in the ideal_archi.md
+2. Keep ALL existing entries in the file, even if they don't exist yet (these are planned features)
+3. Ask me before deleting anything from the tree
+4. Maintain the same format and structure with comments explaining each component
+
+The file should represent both current implementation and future planned features.

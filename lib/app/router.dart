@@ -41,10 +41,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   ref.watch(isAuthenticatedProvider);
   final authService = ref.read(authServiceProvider);
 
+  // Create and store the refresh stream to ensure proper disposal
+  final refreshStream = GoRouterRefreshStream(authService.authStateChanges);
+  
+  // Register disposal callback to prevent memory leaks
+  ref.onDispose(refreshStream.dispose);
+
   return GoRouter(
     initialLocation: '/',
     // Ensure redirects are re-evaluated when auth state changes
-    refreshListenable: GoRouterRefreshStream(authService.authStateChanges),
+    refreshListenable: refreshStream,
     redirect: (context, state) async {
       // Read full auth state only when needed during redirect evaluation
       final authState = ref.read(authProvider);

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/config/flavor_config.dart';
+import 'package:hydracat/shared/services/login_attempt_service.dart';
 
 /// Dialog shown when account is temporarily locked due to too many failed
 /// attempts
@@ -9,11 +11,15 @@ class LockoutDialog extends StatefulWidget {
   /// Creates a [LockoutDialog] with the given lockout duration
   const LockoutDialog({
     required this.timeRemaining,
+    required this.email,
     super.key,
   });
 
   /// Time remaining until the account is unlocked
   final Duration timeRemaining;
+
+  /// Email address that is locked out
+  final String email;
 
   @override
   State<LockoutDialog> createState() => _LockoutDialogState();
@@ -22,6 +28,7 @@ class LockoutDialog extends StatefulWidget {
 class _LockoutDialogState extends State<LockoutDialog> {
   late Duration _timeRemaining;
   Timer? _countdownTimer;
+  final _loginAttemptService = LoginAttemptService();
 
   @override
   void initState() {
@@ -66,6 +73,19 @@ class _LockoutDialogState extends State<LockoutDialog> {
       return '${minutes}m ${seconds}s';
     } else {
       return '${seconds}s';
+    }
+  }
+
+  Future<void> _resetLockout() async {
+    await _loginAttemptService.resetAttemptData(widget.email);
+    if (mounted) {
+      context.pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Lockout reset for testing'),
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -140,6 +160,14 @@ class _LockoutDialogState extends State<LockoutDialog> {
           },
           child: const Text('Reset Password'),
         ),
+        if (FlavorConfig.isDevelopment)
+          TextButton(
+            onPressed: _resetLockout,
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.orange,
+            ),
+            child: const Text('Dev: Reset Lockout'),
+          ),
         FilledButton(
           onPressed: () => context.pop(),
           child: const Text('OK'),
@@ -153,12 +181,13 @@ class _LockoutDialogState extends State<LockoutDialog> {
 Future<void> showLockoutDialog(
   BuildContext context,
   Duration timeRemaining,
+  String email,
 ) async {
   return showDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext context) {
-      return LockoutDialog(timeRemaining: timeRemaining);
+      return LockoutDialog(timeRemaining: timeRemaining, email: email);
     },
   );
 }

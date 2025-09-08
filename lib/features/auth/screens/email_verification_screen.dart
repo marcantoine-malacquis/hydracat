@@ -11,6 +11,27 @@ import 'package:hydracat/features/auth/services/auth_service.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
 
+/// Configuration for smart email verification polling
+class VerificationPollingConfig {
+  /// Initial delay between verification checks
+  static const Duration initialDelay = Duration(seconds: 5);
+  
+  /// Maximum delay between verification checks
+  static const Duration maxDelay = Duration(minutes: 1);
+  
+  /// Maximum consecutive failures before circuit breaker
+  static const int maxFailures = 3;
+  
+  /// Delay during circuit breaker activation
+  static const Duration circuitBreakerDelay = Duration(minutes: 5);
+  
+  /// Maximum time to continue polling before timeout
+  static const Duration maxPollingDuration = Duration(minutes: 10);
+  
+  /// Multiplier for exponential backoff
+  static const int backoffMultiplier = 2;
+}
+
 /// A screen that handles email verification for new user accounts.
 class EmailVerificationScreen extends ConsumerStatefulWidget {
   /// Creates an email verification screen.
@@ -34,6 +55,13 @@ class _EmailVerificationScreenState
   int _cooldownSeconds = 0;
   Timer? _cooldownTimer;
   Timer? _verificationCheckTimer;
+  
+  // Smart polling state
+  Duration _currentDelay = VerificationPollingConfig.initialDelay;
+  int _failureCount = 0;
+  DateTime? _pollingStartTime;
+  bool _isPollingActive = false;
+  String _pollingStatus = '';
 
   @override
   void initState() {
@@ -49,20 +77,120 @@ class _EmailVerificationScreenState
   }
 
   void _startVerificationPolling() {
-    _verificationCheckTimer = Timer.periodic(
-      const Duration(seconds: 5),
-      (_) => _checkVerificationStatus(),
-    );
+    _currentDelay = VerificationPollingConfig.initialDelay;
+    _failureCount = 0;
+    _pollingStartTime = DateTime.now();
+    _isPollingActive = true;
+    if (mounted) {
+      setState(() {
+        _pollingStatus = 'Checking verification...';
+      });
+    }
+    _scheduleNextCheck();
+  }
+
+  void _scheduleNextCheck() {
+    if (!_isPollingActive || !mounted) return;
+    
+    // Stop if maximum duration exceeded
+    if (_pollingStartTime != null &&
+        DateTime.now().difference(_pollingStartTime!) > 
+        VerificationPollingConfig.maxPollingDuration) {
+      _handlePollingTimeout();
+      return;
+    }
+    
+    // Schedule next check with current delay
+    _verificationCheckTimer = Timer(_currentDelay, _performSmartCheck);
+  }
+
+  Future<void> _performSmartCheck() async {
+    if (!mounted || !_isPollingActive) return;
+    
+    try {
+      final isVerified = await ref
+          .read(authProvider.notifier)
+          .checkEmailVerification();
+      
+      if (isVerified && mounted) {
+        // Success - stop polling and navigate
+        _stopPolling();
+        context.go('/');
+        return;
+      }
+      
+      // Reset failure count on successful check (even if not verified yet)
+      _failureCount = 0;
+      
+      // Increase delay for next check (exponential backoff)
+      _currentDelay = Duration(
+        milliseconds: _currentDelay.inMilliseconds * 
+                      VerificationPollingConfig.backoffMultiplier,
+      );
+      
+      // Clamp to max delay
+      if (_currentDelay > VerificationPollingConfig.maxDelay) {
+        _currentDelay = VerificationPollingConfig.maxDelay;
+      }
+      
+      if (mounted) {
+        setState(() {
+          _pollingStatus = 
+              'Next check in ${_formatDuration(_currentDelay)}';
+        });
+      }
+      
+    } on Exception catch (_) {
+      _handlePollingFailure();
+    }
+    
+    _scheduleNextCheck();
+  }
+
+  void _handlePollingFailure() {
+    _failureCount++;
+    
+    if (_failureCount >= VerificationPollingConfig.maxFailures) {
+      // Trigger circuit breaker
+      _currentDelay = VerificationPollingConfig.circuitBreakerDelay;
+      _failureCount = 0; // Reset for next attempt
+      
+      if (mounted) {
+        setState(() {
+          _pollingStatus = 'Connection issues. '
+              'Trying again in ${_formatDuration(_currentDelay)}';
+        });
+      }
+    }
+  }
+
+  void _handlePollingTimeout() {
+    _stopPolling();
+    if (mounted) {
+      setState(() {
+        _pollingStatus = 'Verification check timed out. '
+            'Try resending the email or check manually.';
+      });
+    }
+  }
+
+  void _stopPolling() {
+    _isPollingActive = false;
+    _verificationCheckTimer?.cancel();
+  }
+
+  String _formatDuration(Duration duration) {
+    if (duration.inSeconds < 60) {
+      return '${duration.inSeconds}s';
+    } else {
+      return '${duration.inMinutes}m';
+    }
   }
 
   Future<void> _checkVerificationStatus() async {
-    final isVerified = await ref
-        .read(authProvider.notifier)
-        .checkEmailVerification();
-    if (isVerified && mounted) {
-      _verificationCheckTimer?.cancel();
-      context.go('/');
-    }
+    // Manual check - reset polling with fresh start
+    _stopPolling();
+    _startVerificationPolling();
   }
 
   Future<void> _sendVerificationEmail() async {
@@ -72,6 +200,9 @@ class _EmailVerificationScreenState
     if (result is AuthSuccess && mounted) {
       showSuccessMessage('Verification email sent to ${widget.email}');
       _startResendCooldown();
+      // Reset polling with fresh start after sending new email
+      _stopPolling();
+      _startVerificationPolling();
     } else if (result is AuthFailure && mounted) {
       showErrorMessage(result.message);
     }
@@ -102,7 +233,7 @@ class _EmailVerificationScreenState
     ref
       ..listen<AuthState>(authProvider, (previous, next) {
         if (next is AuthStateError) {
-          handleAuthError(next);
+          handleAuthError(next, email: widget.email);
         }
       })
       ..watch(authProvider);
@@ -188,6 +319,55 @@ class _EmailVerificationScreenState
               style: AppTextStyles.caption,
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: AppSpacing.lg),
+            // Smart polling status display
+            if (_pollingStatus.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: _isPollingActive 
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_isPollingActive) ...[
+                      SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                    ],
+                    Flexible(
+                      child: Text(
+                        _pollingStatus,
+                        style: AppTextStyles.caption.copyWith(
+                          color: _isPollingActive
+                              ? Theme.of(context).colorScheme.onPrimaryContainer
+                              : Theme.of(context).colorScheme.onSurface,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (_pollingStatus.isNotEmpty) 
+              const SizedBox(height: AppSpacing.md),
+            // Manual check button when polling stops
+            if (!_isPollingActive && _pollingStatus.isNotEmpty)
+              TextButton(
+                onPressed: _checkVerificationStatus,
+                child: const Text('Check Again'),
+              ),
             const SizedBox(height: AppSpacing.xl),
             TextButton(
               onPressed: () {

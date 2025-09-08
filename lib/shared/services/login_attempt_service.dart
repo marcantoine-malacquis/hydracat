@@ -128,6 +128,13 @@ class LoginAttemptService {
     return null;
   }
 
+  /// Resets all attempt data for the given email (development only)
+  ///
+  /// Completely clears failed attempts and lockout status for testing.
+  Future<void> resetAttemptData(String email) async {
+    await _removeAttemptData(email);
+  }
+
   /// Cleans up expired attempt data
   ///
   /// Should be called periodically to maintain storage efficiency.

@@ -50,7 +50,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   Widget build(BuildContext context) {
     ref.listen<AuthState>(authProvider, (previous, next) {
       if (next is AuthStateError) {
-        handleAuthError(next);
+        handleAuthError(next, email: _emailController.text.trim());
       } else if (next is AuthStateAuthenticated) {
         // Registration successful, navigate to verification screen
         context.go('/email-verification?email=${_emailController.text.trim()}');

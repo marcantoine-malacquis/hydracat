@@ -117,7 +117,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         _isShowingLockoutDialog = true;
         final lockoutException =
             authError.details as AccountTemporarilyLockedException;
-        showLockoutDialog(context, lockoutException.timeRemaining).whenComplete(
+        showLockoutDialog(
+          context, 
+          lockoutException.timeRemaining,
+          _emailController.text.trim(),
+        ).whenComplete(
           () {
             _isShowingLockoutDialog = false;
           },

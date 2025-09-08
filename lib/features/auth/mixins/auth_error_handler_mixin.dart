@@ -13,14 +13,18 @@ import 'package:hydracat/providers/auth_provider.dart';
 mixin AuthErrorHandlerMixin<T extends ConsumerStatefulWidget>
     on ConsumerState<T> {
   /// Handles authentication errors with appropriate UI feedback
-  void handleAuthError(AuthStateError error) {
+  void handleAuthError(AuthStateError error, {String? email}) {
     if (!mounted) return;
 
     // Check if this is a lockout exception stored in details
     if (error.details is AccountTemporarilyLockedException) {
       final lockoutException =
           error.details as AccountTemporarilyLockedException;
-      showLockoutDialog(context, lockoutException.timeRemaining);
+      showLockoutDialog(
+        context, 
+        lockoutException.timeRemaining,
+        email ?? 'unknown@example.com',
+      );
     } else {
       showErrorMessage(error.message);
     }
@@ -63,13 +67,13 @@ mixin AuthErrorHandlerMixin<T extends ConsumerStatefulWidget>
   /// Sets up auth state listener for error handling
   ///
   /// Call this from initState() to automatically handle auth errors
-  void setupAuthErrorListener() {
+  void setupAuthErrorListener({String? email}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.listen<AuthState>(
         authProvider, // This will need to be imported
         (previous, next) {
           if (next is AuthStateError) {
-            handleAuthError(next);
+            handleAuthError(next, email: email);
           }
         },
       );
