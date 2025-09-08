@@ -100,8 +100,6 @@ class LoginAttemptService {
     // Store the updated data
     await _storeAttemptData(updatedData);
 
-    if (updatedData.isLockedOut) {}
-
     return updatedData;
   }
 
