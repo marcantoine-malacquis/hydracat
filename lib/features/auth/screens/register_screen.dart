@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/features/auth/mixins/auth_error_handler_mixin.dart';
+import 'package:hydracat/features/auth/mixins/auth_loading_state_mixin.dart';
 import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/features/auth/widgets/social_signin_buttons.dart';
 import 'package:hydracat/providers/auth_provider.dart';
@@ -16,7 +18,8 @@ class RegisterScreen extends ConsumerStatefulWidget {
   ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends ConsumerState<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen>
+    with AuthErrorHandlerMixin, AuthLoadingStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -43,36 +46,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
   }
 
-  void _showErrorSnackBar(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-
   @override
   Widget build(BuildContext context) {
     ref.listen<AuthState>(authProvider, (previous, next) {
       if (next is AuthStateError) {
-        _showErrorSnackBar(next.message);
+        handleAuthError(next);
       } else if (next is AuthStateAuthenticated) {
         // Registration successful, navigate to verification screen
         context.go('/email-verification?email=${_emailController.text.trim()}');
       }
     });
 
-    final authState = ref.watch(authProvider);
-    final isLoading = authState is AuthStateLoading;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create Account'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
       ),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -107,7 +97,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     return 'We need your email to create your account';
                   }
                   if (!value.contains('@')) {
-                    return 'Please enter a valid email address';
+                    return 'Please enter a valid email';
                   }
                   return null;
                 },
@@ -139,8 +129,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     return 'Please create a password for your account';
                   }
                   if (value.length < 8) {
-                    return 'Password must be at least 8 characters '
-                        'for security';
+                    return '8 characters minimum for security';
                   }
                   return null;
                 },
@@ -195,6 +184,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   const Text('Already have an account?'),
                   TextButton(
                     onPressed: () => context.go('/login'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                    ),
                     child: const Text('Sign In'),
                   ),
                 ],

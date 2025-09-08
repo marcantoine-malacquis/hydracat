@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/features/auth/mixins/auth_loading_state_mixin.dart';
 import 'package:hydracat/features/auth/services/auth_service.dart';
 import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
 
@@ -15,10 +16,10 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
       _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
+class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
+    with AuthLoadingStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
-  bool _isLoading = false;
   bool _emailSent = false;
 
   @override
@@ -29,9 +30,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   Future<void> _handlePasswordReset() async {
     if (_formKey.currentState?.validate() ?? false) {
-      setState(() {
-        _isLoading = true;
-      });
+      setLocalLoading(loading: true);
 
       try {
         final authService = AuthService();
@@ -40,8 +39,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         );
 
         if (mounted) {
+          setLocalLoading(loading: false);
           setState(() {
-            _isLoading = false;
             _emailSent = result is AuthSuccess;
           });
 
@@ -53,9 +52,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         }
       } on Exception {
         if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
+          setLocalLoading(loading: false);
           _showErrorSnackBar('An error occurred. Please try again.');
         }
       }
@@ -64,9 +61,15 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   void _showSuccessSnackBar() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Password reset email sent! Please check your inbox.'),
-        backgroundColor: Colors.green,
+      SnackBar(
+        content: const Text(
+          'Password reset email sent! Please check your inbox.',
+        ),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
     );
   }
@@ -75,7 +78,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
     );
   }
@@ -85,7 +92,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reset Password'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
       ),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -131,18 +139,18 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email address';
+                      return 'We need your email to send reset link';
                     }
                     if (!value.contains('@')) {
-                      return 'Please enter a valid email address';
+                      return 'Please enter a valid email';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 HydraButton(
-                  onPressed: _isLoading ? null : _handlePasswordReset,
-                  isLoading: _isLoading,
+                  onPressed: isLoading ? null : _handlePasswordReset,
+                  isLoading: isLoading,
                   isFullWidth: true,
                   child: const Text('Send Reset Email'),
                 ),
@@ -150,7 +158,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 const Icon(
                   Icons.check_circle,
                   size: 48,
-                  color: Colors.green,
+                  color: AppColors.success,
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 HydraButton(
@@ -169,6 +177,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   const Text('Remember your password?'),
                   TextButton(
                     onPressed: () => context.go('/login'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                    ),
                     child: const Text('Sign In'),
                   ),
                 ],

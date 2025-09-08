@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/features/auth/mixins/auth_error_handler_mixin.dart';
+import 'package:hydracat/features/auth/mixins/auth_loading_state_mixin.dart';
 import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/features/auth/services/auth_service.dart';
 import 'package:hydracat/providers/auth_provider.dart';
@@ -26,7 +28,8 @@ class EmailVerificationScreen extends ConsumerStatefulWidget {
 }
 
 class _EmailVerificationScreenState
-    extends ConsumerState<EmailVerificationScreen> {
+    extends ConsumerState<EmailVerificationScreen>
+    with AuthErrorHandlerMixin, AuthLoadingStateMixin {
   bool _isResendCooldown = false;
   int _cooldownSeconds = 0;
   Timer? _cooldownTimer;
@@ -65,22 +68,12 @@ class _EmailVerificationScreenState
   Future<void> _sendVerificationEmail() async {
     final authService = ref.read(authServiceProvider);
     final result = await authService.sendEmailVerification();
-    
+
     if (result is AuthSuccess && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Verification email sent to ${widget.email}'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      showSuccessMessage('Verification email sent to ${widget.email}');
       _startResendCooldown();
     } else if (result is AuthFailure && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.message),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showErrorMessage(result.message);
     }
   }
 
@@ -104,32 +97,21 @@ class _EmailVerificationScreenState
     });
   }
 
-  void _showErrorSnackBar(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    ref.listen<AuthState>(authProvider, (previous, next) {
-      if (next is AuthStateError) {
-        _showErrorSnackBar(next.message);
-      }
-    });
-
-    final authState = ref.watch(authProvider);
-    final isLoading = authState is AuthStateLoading;
+    ref
+      ..listen<AuthState>(authProvider, (previous, next) {
+        if (next is AuthStateError) {
+          handleAuthError(next);
+        }
+      })
+      ..watch(authProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Verify Your Email'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
         automaticallyImplyLeading: false,
       ),
       body: Padding(
@@ -138,10 +120,10 @@ class _EmailVerificationScreenState
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Icon(
+            const Icon(
               Icons.mark_email_unread_outlined,
               size: 80,
-              color: Theme.of(context).primaryColor,
+              color: AppColors.primary,
             ),
             const SizedBox(height: AppSpacing.xl),
             const Text(
@@ -212,6 +194,9 @@ class _EmailVerificationScreenState
                 ref.read(authProvider.notifier).signOut();
                 context.go('/login');
               },
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+              ),
               child: const Text('Back to Login'),
             ),
           ],

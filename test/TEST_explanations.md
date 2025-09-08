@@ -1,9 +1,9 @@
-# Testing Guide for HydraCat - Solo Developer Edition >ê
+# Testing Guide for HydraCat - Solo Developer Edition 
 
 ## What Are Tests and Why Keep Them?
 
 ### Think of Tests Like This:
-- **Tests = Safety Net** =á
+- **Tests = Safety Net**
 - Every time you change code, tests automatically check "did I break anything?"
 - Like having a robot assistant that tests your app 24/7
 
@@ -20,7 +20,7 @@ test('should sign in with valid email and password', () async {
 
 ### Development Workflow
 ```
-Write Code ’ Run Tests ’ Fix Issues ’ Repeat
+Write Code -> Run Tests -> Fix Issues -> Repeat
 ```
 
 **Before tests:** 
@@ -94,10 +94,10 @@ test('should contain expected premium export features')     // Export features c
 **Status**:  Working
 **Purpose**: Data integrity and model validation
 
-###   **Tests Needing Fixes**
+### ï¿½ **Tests Needing Fixes**
 
 #### **4. AuthService Tests** - `test/features/auth/services/auth_service_test.dart`
-**Status**:   **Compilation errors** (logic is sound, mocking needs fixing)
+**Status**: ï¿½ **Compilation errors** (logic is sound, mocking needs fixing)
 **Purpose**: Core Authentication Logic
 
 ```dart
@@ -119,7 +119,7 @@ test('should provide auth state changes stream')            // State management
 **Why Critical**: Your entire app depends on authentication working. These catch login/logout bugs.
 
 #### **5. AuthProvider Tests** - `test/providers/auth_provider_test.dart`
-**Status**:   **Compilation errors** (Riverpod mocking complex)
+**Status**: ï¿½ **Compilation errors** (Riverpod mocking complex)
 **Purpose**: State Management Integration
 
 ```dart
@@ -132,11 +132,11 @@ test('should provide convenience getters')                // Helper methods
 ```
 
 #### **6. Login Screen Tests** - `test/features/auth/screens/login_screen_test.dart`
-**Status**:   **Widget test complexity** (UI testing is advanced)
+**Status**: ï¿½ **Widget test complexity** (UI testing is advanced)
 **Purpose**: User Interface Validation
 
 #### **7. Integration Tests** - `integration_test/auth_flow_test.dart`
-**Status**:   **End-to-end testing** (requires emulator/device)
+**Status**: ï¿½ **End-to-end testing** (requires emulator/device)
 **Purpose**: Complete User Journeys
 
 ## Testing Strategies for Solo Developers
@@ -212,7 +212,7 @@ L Test: should sign in with valid email and password
 
 ### **Scenario: Adding Apple Sign-in**
 - **Without tests**: Might accidentally break Google Sign-in
-- **With tests**: Google sign-in test fails immediately ’ you fix before deployment
+- **With tests**: Google sign-in test fails immediately ï¿½ you fix before deployment
 
 ### **Scenario: Refactoring authentication**
 - **Without tests**: Hours of manual testing
@@ -220,7 +220,7 @@ L Test: should sign in with valid email and password
 
 ### **Scenario: Feature gating bug**
 - **Without tests**: Users get premium features for free (revenue loss)
-- **With tests**: FeatureGateService test fails ’ caught before release
+- **With tests**: FeatureGateService test fails ï¿½ caught before release
 
 ## Test Maintenance Schedule
 

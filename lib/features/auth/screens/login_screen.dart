@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/auth/exceptions/auth_exceptions.dart';
+import 'package:hydracat/features/auth/mixins/auth_loading_state_mixin.dart';
 import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/features/auth/widgets/lockout_dialog.dart';
 import 'package:hydracat/features/auth/widgets/social_signin_buttons.dart';
@@ -18,12 +19,12 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen>
+    with AuthLoadingStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _isSubmitting = false;
   ProviderSubscription<AuthState>? _authSubscription;
   bool _isShowingLockoutDialog = false;
 
@@ -59,14 +60,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _handleSignIn() async {
-    if (_isSubmitting) {
+    if (isLocalLoading) {
       return;
     }
 
     if (_formKey.currentState?.validate() ?? false) {
-      setState(() {
-        _isSubmitting = true;
-      });
+      setLocalLoading(loading: true);
 
       try {
         // Clear any existing snackbars before attempting login
@@ -82,9 +81,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             );
       } finally {
         if (mounted) {
-          setState(() {
-            _isSubmitting = false;
-          });
+          setLocalLoading(loading: false);
         }
       }
     } else {}
@@ -95,7 +92,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
         ),
       );
     }
@@ -130,13 +131,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final isLoading = authState is AuthStateLoading || _isSubmitting;
+    // Uses mixin's isLoading which combines auth and local loading
+    ref.watch(authProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Login'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
       ),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -162,7 +164,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your email';
+                    return 'We need your email to continue';
                   }
                   if (!value.contains('@')) {
                     return 'Please enter a valid email';
@@ -193,10 +195,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
+                    return 'Password required to access your account';
                   }
                   if (value.length < 8) {
-                    return 'Password must be at least 8 characters';
+                    return '8 characters minimum for security';
                   }
                   return null;
                 },
@@ -220,6 +222,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const Text("Don't have an account?"),
                   TextButton(
                     onPressed: () => context.go('/register'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                    ),
                     child: const Text('Sign Up'),
                   ),
                 ],
@@ -231,6 +236,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const Text('Forgot your password?'),
                   TextButton(
                     onPressed: () => context.go('/forgot-password'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                    ),
                     child: const Text('Reset Password'),
                   ),
                 ],

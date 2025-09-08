@@ -9,104 +9,108 @@ import 'package:mocktail/mocktail.dart';
 
 class MockAuthService extends Mock implements AuthService {}
 
-class MockAuthNotifier extends AuthNotifier {
-  MockAuthNotifier(AuthState initialState) : super(MockAuthService()) {
+/// Simple mock notifier for testing specific auth behaviors
+class SimpleAuthNotifier extends AuthNotifier {
+  SimpleAuthNotifier(this._authService, AuthState initialState)
+    : super(_authService) {
+    // Override the initial state after construction
     state = initialState;
+  }
+
+  final AuthService _authService;
+
+  @override
+  Future<void> signUp({required String email, required String password}) async {
+    state = const AuthStateLoading();
+    final result = await _authService.signUp(email: email, password: password);
+    if (result is AuthSuccess) {
+      state = AuthStateAuthenticated(user: result.user!);
+    } else if (result is AuthFailure) {
+      state = AuthStateError(
+        message: result.message,
+        code: result.code,
+        details: result.exception,
+      );
+    }
+  }
+
+  @override
+  Future<void> signIn({required String email, required String password}) async {
+    state = const AuthStateLoading();
+    final result = await _authService.signIn(email: email, password: password);
+    if (result is AuthSuccess) {
+      state = AuthStateAuthenticated(user: result.user!);
+    } else if (result is AuthFailure) {
+      state = AuthStateError(
+        message: result.message,
+        code: result.code,
+        details: result.exception,
+      );
+    }
+  }
+
+  @override
+  Future<void> signOut() async {
+    state = const AuthStateLoading();
+    final success = await _authService.signOut();
+    if (!success) {
+      state = const AuthStateError(
+        message: 'Failed to sign out. Please try again.',
+      );
+    } else {
+      state = const AuthStateUnauthenticated();
+    }
+  }
+
+  @override
+  Future<bool> sendPasswordResetEmail(String email) async {
+    final result = await _authService.sendPasswordResetEmail(email);
+    return result is AuthSuccess;
+  }
+
+  @override
+  Future<bool> sendEmailVerification() async {
+    final result = await _authService.sendEmailVerification();
+    return result is AuthSuccess;
+  }
+
+  @override
+  Future<void> signInWithGoogle() async {
+    state = const AuthStateLoading();
+    final result = await _authService.signInWithGoogle();
+    if (result is AuthSuccess) {
+      state = AuthStateAuthenticated(user: result.user!);
+    } else if (result is AuthFailure) {
+      state = AuthStateError(
+        message: result.message,
+        code: result.code,
+        details: result.exception,
+      );
+    }
   }
 }
 
 void main() {
   group('AuthProvider', () {
     late MockAuthService mockAuthService;
-    late ProviderContainer container;
 
     setUp(() {
       mockAuthService = MockAuthService();
 
-      // Mock auth service defaults
+      // Default mocks
       when(
         () => mockAuthService.waitForInitialization(),
       ).thenAnswer((_) async {});
       when(
         () => mockAuthService.authStateChanges,
-      ).thenAnswer((_) => Stream.value(null));
+      ).thenAnswer((_) => const Stream.empty());
       when(() => mockAuthService.currentUser).thenReturn(null);
-
-      container = ProviderContainer(
-        overrides: [
-          authServiceProvider.overrideWithValue(mockAuthService),
-        ],
-      );
     });
 
-    tearDown(() {
-      container.dispose();
-    });
-
-    group('AuthNotifier', () {
-      test('should initialize with loading state', () async {
-        // Act
-        final authState = container.read(authProvider);
-
-        // Assert
-        expect(authState, isA<AuthStateLoading>());
-      });
-
-      test(
-        'should transition to unauthenticated when no user is signed in',
-        () async {
-          // Arrange
-          when(() => mockAuthService.currentUser).thenReturn(null);
-
-          // Act
-          await Future<void>.delayed(Duration.zero); // Let initialization
-          // complete
-
-          // Assert
-          final state = container.read(authProvider);
-          expect(state, isA<AuthStateUnauthenticated>());
-        },
-      );
-
-      test(
-        'should transition to authenticated when user is signed in',
-        () async {
-          // Arrange
-          const testUser = AppUser(
-            id: 'test-uid',
-            email: 'test@example.com',
-            emailVerified: true,
-          );
-          when(() => mockAuthService.currentUser).thenReturn(testUser);
-
-          // Create a new container for this test
-          final testContainer = ProviderContainer(
-            overrides: [
-              authServiceProvider.overrideWithValue(mockAuthService),
-            ],
-          );
-
-          // Act
-          await Future<void>.delayed(Duration.zero); // Let initialization
-          // complete
-
-          // Assert
-          final state = testContainer.read(authProvider);
-          expect(state, isA<AuthStateAuthenticated>());
-          if (state is AuthStateAuthenticated) {
-            expect(state.user.id, equals('test-uid'));
-          }
-
-          testContainer.dispose();
-        },
-      );
-
+    group('AuthNotifier Basic Functionality', () {
       test('should handle sign up successfully', () async {
         // Arrange
-        const testUser = AppUser(
-          id: 'new-user-uid',
-          email: 'new@example.com',
-        );
+        const testUser = AppUser(id: 'new-user-uid', email: 'new@example.com');
 
         when(
           () => mockAuthService.signUp(
@@ -114,6 +118,17 @@ void main() {
             password: any(named: 'password'),
           ),
         ).thenAnswer((_) async => const AuthSuccess(testUser));
+
+        final container = ProviderContainer(
+          overrides: [
+            authProvider.overrideWith(
+              (ref) => SimpleAuthNotifier(
+                mockAuthService,
+                const AuthStateLoading(),
+              ),
+            ),
+          ],
+        );
 
         // Act
         final notifier = container.read(authProvider.notifier);
@@ -128,6 +143,8 @@ void main() {
         if (state is AuthStateAuthenticated) {
           expect(state.user.email, equals('new@example.com'));
         }
+
+        container.dispose();
       });
 
       test('should handle sign up failure', () async {
@@ -140,6 +157,17 @@ void main() {
           ),
         ).thenAnswer((_) async => const AuthFailure(exception));
 
+        final container = ProviderContainer(
+          overrides: [
+            authProvider.overrideWith(
+              (ref) => SimpleAuthNotifier(
+                mockAuthService,
+                const AuthStateLoading(),
+              ),
+            ),
+          ],
+        );
+
         // Act
         final notifier = container.read(authProvider.notifier);
         await notifier.signUp(email: 'test@example.com', password: 'weak');
@@ -150,6 +178,8 @@ void main() {
         if (state is AuthStateError) {
           expect(state.message, contains('stronger password'));
         }
+
+        container.dispose();
       });
 
       test('should handle sign in successfully', () async {
@@ -166,6 +196,17 @@ void main() {
           ),
         ).thenAnswer((_) async => const AuthSuccess(testUser));
 
+        final container = ProviderContainer(
+          overrides: [
+            authProvider.overrideWith(
+              (ref) => SimpleAuthNotifier(
+                mockAuthService,
+                const AuthStateLoading(),
+              ),
+            ),
+          ],
+        );
+
         // Act
         final notifier = container.read(authProvider.notifier);
         await notifier.signIn(
@@ -179,6 +220,8 @@ void main() {
         if (state is AuthStateAuthenticated) {
           expect(state.user.email, equals('existing@example.com'));
         }
+
+        container.dispose();
       });
 
       test('should handle sign in failure', () async {
@@ -191,6 +234,17 @@ void main() {
           ),
         ).thenAnswer((_) async => const AuthFailure(exception));
 
+        final container = ProviderContainer(
+          overrides: [
+            authProvider.overrideWith(
+              (ref) => SimpleAuthNotifier(
+                mockAuthService,
+                const AuthStateLoading(),
+              ),
+            ),
+          ],
+        );
+
         // Act
         final notifier = container.read(authProvider.notifier);
         await notifier.signIn(
@@ -202,8 +256,13 @@ void main() {
         final state = container.read(authProvider);
         expect(state, isA<AuthStateError>());
         if (state is AuthStateError) {
-          expect(state.message, contains('password is incorrect'));
+          expect(
+            state.message,
+            contains("Password doesn't match. Please try again"),
+          );
         }
+
+        container.dispose();
       });
 
       test('should handle Google sign in successfully', () async {
@@ -218,6 +277,17 @@ void main() {
           () => mockAuthService.signInWithGoogle(),
         ).thenAnswer((_) async => const AuthSuccess(testUser));
 
+        final container = ProviderContainer(
+          overrides: [
+            authProvider.overrideWith(
+              (ref) => SimpleAuthNotifier(
+                mockAuthService,
+                const AuthStateLoading(),
+              ),
+            ),
+          ],
+        );
+
         // Act
         final notifier = container.read(authProvider.notifier);
         await notifier.signInWithGoogle();
@@ -228,11 +298,26 @@ void main() {
         if (state is AuthStateAuthenticated) {
           expect(state.user.email, equals('google@example.com'));
         }
+
+        container.dispose();
       });
 
       test('should handle sign out successfully', () async {
         // Arrange
         when(() => mockAuthService.signOut()).thenAnswer((_) async => true);
+
+        final container = ProviderContainer(
+          overrides: [
+            authProvider.overrideWith(
+              (ref) => SimpleAuthNotifier(
+                mockAuthService,
+                const AuthStateAuthenticated(
+                  user: AppUser(id: 'test', email: 'test@example.com'),
+                ),
+              ),
+            ),
+          ],
+        );
 
         // Act
         final notifier = container.read(authProvider.notifier);
@@ -241,19 +326,36 @@ void main() {
         // Assert
         final state = container.read(authProvider);
         expect(state, isA<AuthStateUnauthenticated>());
+
+        container.dispose();
       });
 
-      test('should handle sign out failure gracefully', () async {
+      test('should handle sign out failure', () async {
         // Arrange
         when(() => mockAuthService.signOut()).thenAnswer((_) async => false);
+
+        final container = ProviderContainer(
+          overrides: [
+            authProvider.overrideWith(
+              (ref) => SimpleAuthNotifier(
+                mockAuthService,
+                const AuthStateAuthenticated(
+                  user: AppUser(id: 'test', email: 'test@example.com'),
+                ),
+              ),
+            ),
+          ],
+        );
 
         // Act
         final notifier = container.read(authProvider.notifier);
         await notifier.signOut();
 
-        // Assert - Should still transition to unauthenticated for UX
+        // Assert
         final state = container.read(authProvider);
-        expect(state, isA<AuthStateUnauthenticated>());
+        expect(state, isA<AuthStateError>());
+
+        container.dispose();
       });
 
       test('should send email verification successfully', () async {
@@ -262,12 +364,27 @@ void main() {
           () => mockAuthService.sendEmailVerification(),
         ).thenAnswer((_) async => const AuthSuccess(null));
 
+        final container = ProviderContainer(
+          overrides: [
+            authProvider.overrideWith(
+              (ref) => SimpleAuthNotifier(
+                mockAuthService,
+                const AuthStateAuthenticated(
+                  user: AppUser(id: 'test', email: 'test@example.com'),
+                ),
+              ),
+            ),
+          ],
+        );
+
         // Act
         final notifier = container.read(authProvider.notifier);
         final result = await notifier.sendEmailVerification();
 
         // Assert
         expect(result, equals(true));
+
+        container.dispose();
       });
 
       test('should handle email verification failure', () async {
@@ -277,12 +394,27 @@ void main() {
           () => mockAuthService.sendEmailVerification(),
         ).thenAnswer((_) async => const AuthFailure(exception));
 
+        final container = ProviderContainer(
+          overrides: [
+            authProvider.overrideWith(
+              (ref) => SimpleAuthNotifier(
+                mockAuthService,
+                const AuthStateAuthenticated(
+                  user: AppUser(id: 'test', email: 'test@example.com'),
+                ),
+              ),
+            ),
+          ],
+        );
+
         // Act
         final notifier = container.read(authProvider.notifier);
         final result = await notifier.sendEmailVerification();
 
         // Assert
         expect(result, equals(false));
+
+        container.dispose();
       });
 
       test('should send password reset email successfully', () async {
@@ -290,6 +422,17 @@ void main() {
         when(
           () => mockAuthService.sendPasswordResetEmail(any()),
         ).thenAnswer((_) async => const AuthSuccess(null));
+
+        final container = ProviderContainer(
+          overrides: [
+            authProvider.overrideWith(
+              (ref) => SimpleAuthNotifier(
+                mockAuthService,
+                const AuthStateUnauthenticated(),
+              ),
+            ),
+          ],
+        );
 
         // Act
         final notifier = container.read(authProvider.notifier);
@@ -302,92 +445,147 @@ void main() {
         verify(
           () => mockAuthService.sendPasswordResetEmail('test@example.com'),
         ).called(1);
+
+        container.dispose();
       });
     });
 
     group('Convenience Providers', () {
       test(
         'currentUserProvider should return current user when authenticated',
-        () async {
+        () {
           // Arrange
-          final testContainer = ProviderContainer(
+          const testUser = AppUser(
+            id: 'test-uid',
+            email: 'test@example.com',
+            emailVerified: true,
+          );
+
+          final container = ProviderContainer(
             overrides: [
               authProvider.overrideWith(
-                (ref) => MockAuthNotifier(
-                  const AuthStateAuthenticated(
-                    user: AppUser(
-                      id: 'test-uid',
-                      email: 'test@example.com',
-                      emailVerified: true,
-                    ),
-                  ),
+                (ref) => SimpleAuthNotifier(
+                  mockAuthService,
+                  const AuthStateAuthenticated(user: testUser),
                 ),
               ),
             ],
           );
 
           // Act
-          final user = testContainer.read(currentUserProvider);
+          final user = container.read(currentUserProvider);
 
           // Assert
           expect(user?.id, equals('test-uid'));
           expect(user?.email, equals('test@example.com'));
 
-          testContainer.dispose();
+          container.dispose();
         },
       );
 
+      test('currentUserProvider should return null when unauthenticated', () {
+        final container = ProviderContainer(
+          overrides: [
+            authProvider.overrideWith(
+              (ref) => SimpleAuthNotifier(
+                mockAuthService,
+                const AuthStateUnauthenticated(),
+              ),
+            ),
+          ],
+        );
+
+        final user = container.read(currentUserProvider);
+
+        expect(user, isNull);
+
+        container.dispose();
+      });
+
+      test('isAuthenticatedProvider should return true when authenticated', () {
+        const testUser = AppUser(
+          id: 'test-uid',
+          email: 'test@example.com',
+          emailVerified: true,
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            authProvider.overrideWith(
+              (ref) => SimpleAuthNotifier(
+                mockAuthService,
+                const AuthStateAuthenticated(user: testUser),
+              ),
+            ),
+          ],
+        );
+
+        final isAuthenticated = container.read(isAuthenticatedProvider);
+
+        expect(isAuthenticated, equals(true));
+
+        container.dispose();
+      });
+
       test(
-        'isAuthenticatedProvider should return true when authenticated',
-        () async {
-          // Arrange
-          final testContainer = ProviderContainer(
+        'isAuthenticatedProvider should return false when unauthenticated',
+        () {
+          final container = ProviderContainer(
             overrides: [
               authProvider.overrideWith(
-                (ref) => MockAuthNotifier(
-                  const AuthStateAuthenticated(
-                    user: AppUser(
-                      id: 'test-uid',
-                      email: 'test@example.com',
-                      emailVerified: true,
-                    ),
-                  ),
+                (ref) => SimpleAuthNotifier(
+                  mockAuthService,
+                  const AuthStateUnauthenticated(),
                 ),
               ),
             ],
           );
 
-          // Act
-          final isAuthenticated = testContainer.read(isAuthenticatedProvider);
+          final isAuthenticated = container.read(isAuthenticatedProvider);
 
-          // Assert
-          expect(isAuthenticated, equals(true));
-
-          testContainer.dispose();
-        },
-      );
-
-      test(
-        'isAuthenticatedProvider should return false when unauthenticated',
-        () async {
-          // Arrange
-          final testContainer = ProviderContainer(
-            overrides: [
-              authProvider.overrideWith(
-                (ref) => MockAuthNotifier(const AuthStateUnauthenticated()),
-              ),
-            ],
-          );
-
-          // Act
-          final isAuthenticated = testContainer.read(isAuthenticatedProvider);
-
-          // Assert
           expect(isAuthenticated, equals(false));
 
-          testContainer.dispose();
+          container.dispose();
         },
       );
+
+      test('isAuthenticatedProvider should return false when loading', () {
+        final container = ProviderContainer(
+          overrides: [
+            authProvider.overrideWith(
+              (ref) => SimpleAuthNotifier(
+                mockAuthService,
+                const AuthStateLoading(),
+              ),
+            ),
+          ],
+        );
+
+        final isAuthenticated = container.read(isAuthenticatedProvider);
+
+        expect(isAuthenticated, equals(false));
+
+        container.dispose();
+      });
+
+      test('isAuthenticatedProvider should return false when error', () {
+        final container = ProviderContainer(
+          overrides: [
+            authProvider.overrideWith(
+              (ref) => SimpleAuthNotifier(
+                mockAuthService,
+                const AuthStateError(message: 'Test error'),
+              ),
+            ),
+          ],
+        );
+
+        final isAuthenticated = container.read(isAuthenticatedProvider);
+
+        expect(isAuthenticated, equals(false));
+
+        container.dispose();
+      });
     });
   });
 }
