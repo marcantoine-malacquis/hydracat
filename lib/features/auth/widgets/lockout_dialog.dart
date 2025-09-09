@@ -105,9 +105,10 @@ class _LockoutDialogState extends State<LockoutDialog> {
           color: theme.colorScheme.error,
         ),
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
           Text(
             'Too many failed login attempts have been detected. '
             'This is a security measure to protect your account.',
@@ -148,7 +149,8 @@ class _LockoutDialogState extends State<LockoutDialog> {
             ),
             textAlign: TextAlign.center,
           ),
-        ],
+          ],
+        ),
       ),
       actions: [
         TextButton(

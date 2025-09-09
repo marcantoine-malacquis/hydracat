@@ -76,6 +76,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String email,
     required String password,
   }) async {
+    _hasRecentError = false; // Clear error flag when user attempts new action
     state = const AuthStateLoading();
 
     final result = await _authService.signUp(
@@ -103,6 +104,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String email,
     required String password,
   }) async {
+    _hasRecentError = false; // Clear error flag when user attempts new action
     state = const AuthStateLoading();
 
     final result = await _authService.signIn(
@@ -128,11 +130,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = errorState;
       // Immediately call error callback if set (for UI handling)
       errorCallback?.call(errorState);
-
-      // Clear error flag after allowing UI to process the error
-      Future.delayed(const Duration(seconds: 3), () {
-        _hasRecentError = false;
-      });
     }
   }
 
@@ -182,6 +179,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Initiates Google Sign-In flow and authenticates with Firebase.
   /// Updates the state to show loading, success, or error states.
   Future<void> signInWithGoogle() async {
+    _hasRecentError = false; // Clear error flag when user attempts new action
     state = const AuthStateLoading();
 
     final result = await _authService.signInWithGoogle();
@@ -203,6 +201,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Initiates Apple Sign-In flow and authenticates with Firebase.
   /// Updates the state to show loading, success, or error states.
   Future<void> signInWithApple() async {
+    _hasRecentError = false; // Clear error flag when user attempts new action
     state = const AuthStateLoading();
 
     final result = await _authService.signInWithApple();
