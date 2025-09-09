@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 
 /// Mixin that provides unified loading state management for auth screens.
@@ -13,8 +12,7 @@ mixin AuthLoadingStateMixin<T extends ConsumerStatefulWidget>
 
   /// Returns true if the auth provider is in loading state
   bool get isAuthLoading {
-    final authState = ref.watch(authProvider);
-    return authState is AuthStateLoading;
+    return ref.watch(authIsLoadingProvider);
   }
 
   /// Returns true if local loading is active

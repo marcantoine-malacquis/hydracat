@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/theme/theme.dart';
-import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 
 /// A widget that provides Google and Apple Sign-In buttons
@@ -47,8 +46,7 @@ class _SocialSignInButtonsState extends ConsumerState<SocialSignInButtons> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final isAuthLoading = authState is AuthStateLoading;
+    final isAuthLoading = ref.watch(authIsLoadingProvider);
 
     return Column(
       children: [

@@ -136,7 +136,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   @override
   Widget build(BuildContext context) {
     // Uses mixin's isLoading which combines auth and local loading
-    ref.watch(authProvider);
+    ref.watch(authIsLoadingProvider);
 
     return Scaffold(
       appBar: AppBar(

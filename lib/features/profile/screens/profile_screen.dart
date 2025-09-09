@@ -203,23 +203,18 @@ class ProfileScreen extends ConsumerWidget {
               // User email at bottom
               Consumer(
                 builder: (context, ref, _) {
-                  final authState = ref.watch(authProvider);
-                  return authState.when(
-                    loading: () => const SizedBox.shrink(),
-                    unauthenticated: () => const SizedBox.shrink(),
-                    authenticated: (user) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                        child: Text(
-                          'Logged in as: ${user.email ?? 'No email'}',
-                          style: AppTextStyles.caption.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      );
-                    },
-                    error: (message, code, details) => const SizedBox.shrink(),
+                  final currentUser = ref.watch(currentUserProvider);
+                  if (currentUser == null) return const SizedBox.shrink();
+                  
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                    child: Text(
+                      'Logged in as: ${currentUser.email ?? 'No email'}',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   );
                 },
               ),

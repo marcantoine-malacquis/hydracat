@@ -243,21 +243,35 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   return AuthNotifier(authService);
 });
 
-/// Convenience provider to get the current authenticated user
+/// Optimized provider to get the current authenticated user
 ///
 /// Returns the current user if authenticated, null otherwise.
-/// This is useful for widgets that only need to know about the current user
-/// without caring about loading or error states.
+/// Only rebuilds when the user actually changes, not on loading/error states.
 final currentUserProvider = Provider<AppUser?>((ref) {
-  final authState = ref.watch(authProvider);
-  return authState.user;
+  return ref.watch(authProvider.select((state) => state.user));
 });
 
-/// Convenience provider to check if user is authenticated
+/// Optimized provider to check if user is authenticated
 ///
 /// Returns true if user is currently authenticated, false otherwise.
-/// This is useful for conditional UI rendering and navigation guards.
+/// Only rebuilds when authentication status changes, not on loading/error states.
 final isAuthenticatedProvider = Provider<bool>((ref) {
-  final authState = ref.watch(authProvider);
-  return authState.isAuthenticated;
+  return ref.watch(authProvider.select((state) => state.isAuthenticated));
+});
+
+/// Optimized provider to check if authentication is loading
+///
+/// Returns true if authentication is currently in progress, false otherwise.
+/// Only rebuilds when loading state changes.
+final authIsLoadingProvider = Provider<bool>((ref) {
+  return ref.watch(authProvider.select((state) => state is AuthStateLoading));
+});
+
+/// Optimized provider to get current authentication error
+///
+/// Returns the current error if in error state, null otherwise.
+/// Only rebuilds when error state changes.
+final authErrorProvider = Provider<AuthStateError?>((ref) {
+  return ref.watch(authProvider.select((state) => 
+    state is AuthStateError ? state : null));
 });

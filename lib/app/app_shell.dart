@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/constants/app_icons.dart';
-import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/shared/widgets/navigation/hydra_navigation_bar.dart';
 
@@ -68,10 +67,10 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
+    final isLoading = ref.watch(authIsLoadingProvider);
 
     // Show loading screen while auth is initializing
-    if (authState is AuthStateLoading) {
+    if (isLoading) {
       return const Scaffold(
         body: Center(
           child: Column(
@@ -86,16 +85,15 @@ class _AppShellState extends ConsumerState<AppShell> {
       );
     }
 
-    final isVerified =
-        authState is AuthStateAuthenticated && authState.user.emailVerified;
+    final currentUser = ref.watch(currentUserProvider);
+    final isVerified = currentUser?.emailVerified ?? false;
 
     return Scaffold(
       body: Column(
         children: [
           // Show verification banner for unverified users
-          if (authState is AuthStateAuthenticated &&
-              !authState.user.emailVerified)
-            _buildVerificationBanner(context, authState.user.email),
+          if (currentUser != null && !currentUser.emailVerified)
+            _buildVerificationBanner(context, currentUser.email),
           Expanded(child: widget.child),
         ],
       ),
