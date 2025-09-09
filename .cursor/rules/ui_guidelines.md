@@ -227,6 +227,22 @@ height: 80px; /* Extra height for FAB */
 box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
 ```
 
+**Press Feedback (✅ Implemented):**
+Navigation icons now provide satisfying visual feedback when pressed:
+```css
+/* Press effect shadow */
+box-shadow: 0 4px 12px rgba(107, 184, 168, 0.4);
+border-radius: 12px;
+transform: scale(0.95); /* Slight scale down */
+transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+```
+
+**Implementation Details:**
+- **Shadow Effect**: Teal-colored shadow matching the FAB button
+- **Scale Animation**: 95% scale with smooth 150ms transition  
+- **Timing**: 120ms delay to ensure effect visibility
+- **Accessibility**: Maintains touch targets and screen reader compatibility
+
 ## Iconography
 
 ### Icon Strategy

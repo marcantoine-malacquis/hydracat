@@ -1,34 +1,41 @@
 # HydraCat - Product Requirements Document
+## Complete CKD Companion with Fluid Therapy Expertise
 
-## Executive Summary
+### Executive Summary
 
-HydraCat is a specialized mobile application designed to help cat owners manage subcutaneous fluid therapy for cats with chronic kidney disease (CKD). Unlike generic pet care apps, HydraCat focuses specifically on the medical precision, emotional support, and adherence tracking needed for successful fluid therapy management.
-Help build a routine to log fluid therapy and other health parameters that are most important to your cat.
+HydraCat is a comprehensive mobile application designed to help cat owners manage chronic kidney disease (CKD) with veterinarian-designed expertise. While serving as a complete CKD companion, HydraCat's unique competitive advantage lies in its specialized subcutaneous fluid therapy management - the only app on the market with this level of medical precision for fluid administration.
+
+Unlike generic pet care apps, HydraCat combines broad CKD management capabilities with deep fluid therapy expertise, emotional support systems, and evidence-based adherence tracking to serve all CKD cat owners, whether they administer fluids or manage the disease through other treatments.
 
 ## Core Goals
 
-1. **Help owners organize and succeed with fluid therapy** - Provide structured scheduling, logging, and tracking tools
-2. **Reduce emotional stress** - For both cats and owners through guided support and positive reinforcement
-3. **Encourage compliance and consistency** - Through gamification, reminders, and motivational features
-4. **Build goodwill and visibility** - Establish brand presence for future HydraCat device ecosystem
-5. **Collect ethical usage data** - Anonymous, opt-in analytics to support product development and research
+1. **Comprehensive CKD Management** - Support all aspects of chronic kidney disease care from diagnosis to advanced stages
+2. **Fluid Therapy Excellence** - Maintain market-leading specialization in subcutaneous fluid therapy management
+3. **Veterinary-Grade Quality** - Provide medical precision and professional-ready documentation
+4. **Reduce Caregiver Stress** - Offer emotional support and guidance for both cats and owners
+5. **Encourage Treatment Adherence** - Through gamification, reminders, and motivational features across all treatment types
+6. **Build Veterinary Credibility** - Establish trust and visibility for future ecosystem expansion
+7. **Collect Ethical Usage Data** - Anonymous, opt-in analytics to support product development and CKD research
 
-## Target Audience
+## Target Audience & User Personas
 
 ### Primary Users
-- **Primary Caregivers**: Cat owners managing CKD with prescribed subcutaneous fluid therapy
-- **Concerned Family Members**: Secondary users who help with cat care
+- **CKD Cat Owners with Fluid Therapy**: Cat owners managing CKD with prescribed subcutaneous fluid therapy
+- **CKD Cat Owners (Medication Only)**: Owners managing CKD through medications, diet, and monitoring without fluids
+- **New CKD Diagnoses**: Recently diagnosed cats requiring comprehensive disease management guidance
 - **Veterinary-Conscious Owners**: Users who value medical precision and vet-approved guidance
 
 ### User Personas
-- **Anxious New Caregiver**: Recently diagnosed cat, overwhelmed by treatment complexity
-- **Experienced but Inconsistent**: Familiar with procedure but struggling with routine adherence
-- **Data-Driven Optimizer**: Wants detailed tracking and insights for veterinary consultations
+- **Fluid Therapy Specialist**: Experienced with or learning subcutaneous fluid administration, needs precision tracking
+- **Medication Manager**: Managing multiple CKD medications and treatments, needs scheduling and adherence support  
+- **Anxious New Caregiver**: Recently diagnosed cat, overwhelmed by CKD complexity, needs comprehensive guidance
+- **Data-Driven Optimizer**: Wants detailed tracking and insights for veterinary consultations across all treatments
+- **Progressive Caregiver**: Currently on medications, may advance to fluid therapy as disease progresses
 
 ## Technical Requirements
 
 ### Platform Support
-- **iOS**: Native Flutter app targeting iOS 12+
+- **iOS**: Native Flutter app targeting iOS 15.0+
 - **Android**: Native Flutter app targeting API level 21+
 - **Offline Capability**: Full functionality available without internet connection
 - **Data Sync**: Automatic synchronization when connectivity restored
@@ -39,283 +46,341 @@ Help build a routine to log fluid therapy and other health parameters that are m
 - **Conflict Resolution**: Last write wins for data conflicts
 - **Data Privacy**: GDPR-compliant, data minimization principles
 
-## Feature Requirements
+## User Experience Flow
 
-### Core Features (MVP)
+### Authentication (Required First)
+- **Mandatory Authentication**: All users must sign in for data security and sync
+- **Methods**: Email/password, Google Sign-In, Apple Sign-In
+- **Email Verification**: Manual verification control with feature gating
+- **Security**: Brute force protection with progressive lockouts
 
-#### Authentication & Profile Management
-**Free Tier:**
-- Single pet profile creation
-- Basic profile data (name, fluid schedule)
-- Logs stored in Firestore (so offline works)
-- Only 30 days of history visible
-- Only 1 reminder
-- Optional registration upgrade path
+### Onboarding Flow (After Authentication)
 
-**Premium Tier:**
-- Full Firebase account with cloud sync
-- Vet-ready PDF exports
-- Up to 5 pet profiles per account
-- Complete medical history storage
-- Tracking of fluid volume left in storage
-- Multiple reminders and notifications
-- Cross-device data synchronization
+#### Essential Information Collection
+1. **Pet Profile Setup**: Name, age, weight, CKD diagnosis date, IRIS stage
+2. **Treatment Approach Selection**: "Does your cat receive subcutaneous fluids? (Yes/No)"
+3. **Treatment Customization Screen**: Configure relevant treatments based on selection
+4. **Notification Preferences**: Reminder timing and frequency
 
-#### Fluid Therapy Scheduling
-- **Fixed Schedules**: Same volume, consistent frequency (daily/alternate days)
-- **Flexible Timing**: Multiple reminder times per day
-- **Volume Targets**: 0-500ml range with validation
-- **Future Enhancement**: Variable daily volumes, temporary overrides
+#### Treatment-Specific Setup
+**If Fluid Therapy = Yes:**
+- Fluid therapy frequency and volume setup
+- Injection site preferences and rotation settings
+- Supply tracking preferences
 
-#### Session Logging
-**Required Data:**
-- Date/time of administration (auto-fill with current timestamp, but editable)
-- Volume given (ml)
-- Treatment completion status
+**If Fluid Therapy = No:**
+- Medication selection and scheduling setup
+- Health parameter tracking preferences  
+- Symptom monitoring configuration
 
-**Optional Data:**
-- Stress level (low/medium/high)
-- Injection site location
-- Session notes/comments
-- Duration of treatment
-- Weight of the cat (by default, same as initially, updated when new value input)
-
-#### Notifications & Reminders
-- **Start-Session Nudges**: Exact scheduled time notifications
-- **Grace Period Follow-ups**: Gentle reminders until end of day
-- **Missed Session Alerts**: Compassionate tone, end-of-day notification
-- **Streak Celebrations**: Positive reinforcement for consistency
-- **Weekly Summaries**: Progress overview and encouragemen ("Your weekly summary is ready")
-
-
-#### Streak System & Gamification
-- **Forgiving Streak Logic**: Only breaks after 2 consecutive missed sessions
-- **End-of-Day Breaks**: Streaks broken at midnight, not missed appointment time
-- **Retroactive Logging**: Users can log missed sessions to maintain streaks
-- **Visual Progress**: Prominent display on home screen
-- **Health-First Philosophy**: Medical outcomes prioritized over gamification
-
-### Premium Features (€2.99/month)
-
-#### Advanced Analytics
-- **30+ Day History**: Complete treatment records
-- **Trend Analysis**: Volume patterns, adherence rates, timing analysis
-- **Stress Correlation**: Relationship between stress levels and treatment success
-- **Monthly/Weekly Reports**: Detailed summaries with visual charts
-- **Inventory Tracking**: Fluid quantity monitoring with reorder reminders
-
-#### Professional Integration
-- **Vet-Ready PDF Exports**: Professional reports for consultations
-- **Extended Data Storage**: Unlimited historical data retention
-- **Advanced Insights**: Personalized recommendations based on patterns
-
-#### Multi-Pet Management
-- **Up to 5 Cats**: Complete profiles and tracking for multiple pets
-- **Comparative Analytics**: Cross-pet insights and management efficiency
-- **Individual Scheduling**: Separate routines and notifications per pet
-
-### Future Enhancements (Post-MVP)
-- **Interactive Stress-Free Guide**: Video content, step-by-step tutorials
-- **Advanced Scheduling**: Variable volumes, vet-directed adjustments
-- **Community Features**: Anonymous peer support and tips sharing
-- **Creatinine Tracking**: Simple graph showing creatinine level evolution
-## User Experience Requirements
-
-Mandatory authentication to use the app (Firebase Authentication)
-
-### Onboarding Flow
-
-#### Minimum Viable Information
-1. Pet name
-2. Fluid therapy frequency
-3. Volume per session
-4. Email/password (if registering)
-
-#### Nice-to-Have Information
-- Pet sex, age, weight
-- Cat photo upload
-- CKD diagnosis date
-- Disease stage (IRIS staging)
-- Veterinary contact (optional)
+#### Optional Enhancement Information
+- **Veterinary Information**: Vet contact details and practice information
+- **Medical History**: Previous treatments and disease progression notes
+- **Educational Preferences**: Learning topics and content delivery preferences
 
 ### Home Screen Layout
-- **Primary Focus**: Next scheduled session countdown
-- **Streak Display**: Current and longest streak prominently featured
-- **Quick Actions**: One-tap session logging
-- **Recent History**: Last 3-7 sessions at a glance
-- **Cat Switching**: Long-press navbar for multi-pet accounts (Premium)
 
-### Session Logging Interface
-- **One-Tap Completion**: Quick "Done" button for routine sessions
-- **Detailed Entry**: Expandable form for comprehensive logging
-- **Validation**: Volume range checking (0-500ml)
-- **Stress Assessment**: Simple emoji-based rating system
-- **Injection Site Tracker**: Visual body diagram for site rotation
+#### Universal Elements (All Users)
+- **Pet Profile Header**: Current pet with photo and key stats
+- **Treatment Status Overview**: Next scheduled treatments across all types
+- **Streak Display**: Current and longest streaks prominently featured
+- **Quick Action Center**: One-tap logging for all treatment types
 
-## Data & Privacy Requirements
+#### Adaptive Content Based on Treatment Type
+**Fluid Therapy Users:**
+- **Next Fluid Session**: Countdown timer and volume reminder
+- **Injection Site Suggestion**: Rotation recommendations
+- **Recent Session Summary**: Last 3-5 fluid sessions with stress levels
+
+**Medication/Monitoring Users:**
+- **Today's Medications**: Outstanding and completed treatments
+- **Health Parameter Reminders**: Weight checks, symptom assessments
+- **Recent Trends**: Weight, appetite, or symptom patterns
+
+#### Multi-Pet Navigation (Premium Only)
+- **Pet Switching**: Long-press navigation bar for multi-pet accounts
+- **Unified Dashboard**: Overview of all pets' treatment status
+
+## Core Features
+
+### Treatment Management System
+
+#### Subcutaneous Fluid Therapy (Specialized Features)
+**Scheduling & Precision:**
+- Volume precision tracking (0-500ml with validation)
+- Fixed & flexible schedules (daily, every other day, custom)
+- Manual schedule adjustments for specific sessions
+
+**Advanced Logging:**
+- Date/time administration (auto-filled, editable)
+- Volume given with precision tracking
+- Treatment completion status and duration
+- Stress level assessment (low/medium/high)
+- Injection site location with visual body diagram
+- Session notes and observations
+
+**Specialized Tools:**
+- Injection site rotation tracking and suggestions
+- Stress correlation analysis
+- Treatment effectiveness monitoring
+
+#### Universal Medication Management
+**Scheduling System:**
+- Wheel selector for frequencies (daily, twice daily, every other day, weekly, custom)
+- Multiple medication support with individual schedules
+- Administration method tracking (oral, liquid, injection, topical)
+- Manual schedule deviation for individual doses
+
+**Simple Logging:**
+- Quick completion tracking (given/missed)
+- Optional administration time adjustment
+- Basic notes and observations
+- Side effect tracking
+
+#### Health Parameter Monitoring (Free for All Users)
+**CKD-Specific Metrics:**
+- Creatinine, BUN, phosphorus levels
+- Blood pressure readings
+- Urine specific gravity
+- IRIS stage progression tracking
+
+**General Health Tracking:**
+- **Weight Monitoring**: Separate dedicated tracking with trend analysis
+- **Appetite Assessment**: Simple scale (all/3/4/half/1/4/nothing)
+- **Symptom Check-ins**: Basic scale (good/okay/concerning)
+- **Optional Parameter Selection**: Users choose which metrics to track
+- **Neutral Data Presentation**: No medical interpretation, just recording and trending
+
+### Notification & Reminder System
+- **Universal Treatment Reminders**: Customizable for all treatment types
+- **Grace Period Follow-ups**: Gentle reminders until end of day
+- **Missed Treatment Alerts**: Compassionate messaging
+- **Streak Celebrations**: Positive reinforcement across all treatments
+- **Weekly Progress Summaries**: Comprehensive overview with encouragement
+
+### Gamification & Motivation System
+- **Universal Streak Logic**: Applies to all treatment types with forgiving rules
+- **Treatment-Specific Tracking**: Separate streaks for different treatments
+- **Retroactive Logging**: Maintain streaks with late entries
+- **Progressive Milestones**: Long-term adherence achievements
+- **Health-First Philosophy**: Medical outcomes prioritized over game elements
+
+### Educational Content System (Free for All Users)
+
+#### Veterinarian-Designed Content by Treatment Type
+**Subcutaneous Fluid Therapy:**
+- Administration techniques and best practices
+- Stress reduction strategies
+- Injection site care and rotation
+- Troubleshooting and safety
+
+**Medication Management:**
+- CKD medication types and purposes
+- Administration techniques for different forms
+- Side effect management
+- Compliance strategies
+
+**Diet & Nutrition:**
+- CKD-appropriate diets and nutrition
+- Hydration strategies
+- Appetite management
+- Supplement considerations
+
+**Monitoring & Assessment:**
+- Understanding lab values (neutral presentation)
+- Home monitoring techniques
+- Disease progression recognition
+- Quality of life assessment
+
+**Environmental & Supportive Care:**
+- CKD-friendly environments
+- Stress reduction techniques
+- Activity recommendations
+- End-of-life considerations
+
+## Business Model & Feature Tiers
+
+### Free Tier - Complete CKD Foundation
+**Value Proposition:** "Manage your cat's CKD day-to-day without limits, with professional veterinary guidance"
+
+**Core Features Included:**
+- **Complete Treatment Management**: All treatment types (fluids, medications, monitoring)
+- **Single Pet Profile**: Full CKD management for one cat
+- **Professional Health Tracking**: All CKD health parameters with trending
+- **30-Day History Viewing**: Recent data access (complete data preserved but locked)
+- **Basic Scheduling**: All treatment types with single daily reminder per treatment
+- **Complete Educational Content**: Full access to veterinary-designed guidance
+- **Gamification System**: Full streak tracking and motivation features
+- **Comprehensive Logging**: All treatment and health parameter logging
+- **Offline Functionality**: Complete core feature access without internet
+
+### Premium Tier - Advanced CKD Management (€2.99/month)
+**Value Proposition:** "For comprehensive care and veterinary consultations, unlock the complete health picture"
+
+**Premium Features:**
+- **Unlimited History Access**: Complete historical records and advanced trending
+- **Multi-Pet Management**: Up to 5 complete CKD profiles with comparative insights
+- **Professional PDF Reports**: Veterinary consultation-ready documentation for all treatments
+- **Advanced Analytics**: Multi-parameter correlations, CKD progression visualization, pattern recognition
+- **Enhanced Notifications**: Multiple daily reminders with treatment-specific suggestions
+- **Fluid Supply Management**: Inventory tracking for fluid bags, lines, and needles (fluid therapy users only)
+- **Advanced Export Options**: Multiple formats (PDF, CSV, structured data)
+- **Priority Customer Support**: Enhanced assistance and personalized guidance
+- **Early Feature Access**: Beta features and new tool previews
+
+### Feature Gating Logic
+**Always Free (Core Medical Value):**
+- All treatment logging and scheduling
+- Health parameter tracking and basic trending
+- Educational content and guidance
+- Basic adherence support and motivation
+
+**Premium Only (Advanced & Professional):**
+- Historical data beyond 30 days
+- Multi-pet management
+- Professional reporting and exports
+- Advanced analytics and correlations
+- Supply inventory management
+- Enhanced notifications and insights
+
+## Data & Privacy Framework
 
 ### Data Collection Principles
 - **GDPR-First Design**: Data minimization by default
-- **Optional Information**: Owner full name, address, birthday not collected
-- **Minimal Authentication**: Email + pet nickname sufficient
-- **Veterinary Data**: Optional storage only when explicitly provided
+- **Medical Data Sensitivity**: Enhanced protection for health information
+- **Voluntary Participation**: All data sharing explicitly opt-in
+- **Veterinary Ethics Alignment**: Professional medical standards compliance
 
-### Anonymous Analytics (Opt-in)
-**Collected Data:**
-- Treatment adherence metrics
-- Session characteristics (volume ranges, frequency patterns)
-- Schedule settings and preferences
-- App engagement patterns (feature usage, session duration)
-- Stress level trends (aggregated)
+### Core Data Categories
+**Pet Health Information:**
+- Treatment schedules and adherence records
+- Health parameter measurements and trends
+- Symptom tracking and progression notes
+- Veterinary visit records (user-entered)
 
-**Usage:**
-- Product development insights
-- Feature optimization
-- Research support for veterinary partnerships
-- Fundraising and development justification
+**Anonymous Analytics (Opt-in Only):**
+- CKD management effectiveness patterns
+- Treatment adherence success factors
+- Educational content engagement and impact
+- Feature usage and app engagement metrics
 
-### Data Security
-- **Encryption**: All data encrypted in transit and at rest
-- **Firestore Offline**: Built-in offline persistence with automatic sync
-- **Access Control**: Firebase security rules preventing cross-user access
-- **Data Export**: User-controlled data download for portability
+### Security & Compliance
+- **Healthcare-Grade Encryption**: All data encrypted in transit and at rest
+- **User Data Control**: Complete export and deletion capabilities
+- **Audit Trail**: Comprehensive logging for data integrity
+- **Regional Compliance**: GDPR and applicable healthcare standards
 
-## Business Model
+## Revenue Model & Future Expansion
 
-### Free Tier - Core Engagement
-**Included Features:**
-- Single pet profile
-- Basic fluid scheduling and reminders (1 reminder only)
-- Session logging with volume tracking
-- 30-day history access
-- Basic streak system
-- Stress level logging
-- Last injection site tracking
-- Essential tips and guidance
+### Current Revenue Streams
+- **Premium Subscriptions**: €2.99/month for advanced features
+- **Annual Subscription Discount**: Potential annual pricing (TBD)
 
-**Limitations:**
-- Firestore storage (but with offline capability)
-- 30-day history limit
-- Single pet maximum
-- Single reminder per session
-- Limited analytics
+### Future Revenue Opportunities
+- **HydraCat Fluid Therapy Supply Packages**: Curated medical supply kits
+- **Veterinary Practice Licensing**: Professional dashboard for clinic integration
+- **Research Partnerships**: Anonymized data insights for CKD research
+- **Educational Content Expansion**: Premium courses and expert consultations
+- **Supply Chain Partnerships**: Commission-based medical supply coordination
 
-### Premium Tier - €2.99/month
-**Additional Features:**
-- Cloud sync across devices
-- Up to 5 pet profiles
-- Unlimited history access (complete medical records)
-- Advanced analytics and insights
-- Vet-ready PDF exports
-- Fluid inventory tracking
-- Multiple reminders and notifications
-- Personalised recommendations
-- Inventory tracking
-- Priority customer support
+### Strategic Business Development
+- **Device Ecosystem**: Future HydraCat specialized equipment integration
+- **Professional Services**: Veterinary consultation and training services
+- **Research Collaboration**: Academic partnerships for CKD management studies
 
-**Future Pricing:**
-- Annual subscription discount (TBD)
-- Family plan considerations
-- Veterinary practice licensing (potential)
-
-## Success Metrics
+## Success Metrics & KPIs
 
 ### User Engagement
-- **Daily Active Users**: Target 60% of registered users
-- **Session Logging Rate**: >80% of scheduled sessions logged
-- **Retention**: 70% monthly retention for registered users
-- **Streak Participation**: 40% of users maintain 7+ day streaks
+- **Daily Active Users**: Target 70% free users, 85% premium users
+- **Treatment Logging Rate**: >85% of scheduled treatments logged
+- **Monthly Retention**: 75% free users, 90% premium users
+- **Cross-Treatment Engagement**: Users tracking multiple modalities
 
 ### Health Outcomes
-- **Treatment Adherence**: Measure improvement vs. baseline
-- **Stress Reduction**: Track reported stress level trends
-- **Veterinary Value**: PDF export usage and vet feedback
+- **Treatment Adherence**: Measurable improvement vs. baseline
+- **Veterinary Communication**: PDF export usage and feedback
+- **CKD Management Quality**: Comprehensive parameter tracking adoption
+- **Caregiver Confidence**: Stress reduction and care confidence surveys
 
-### Business Metrics
-- **Free-to-Premium Conversion**: Target 15% conversion rate
-- **Churn Rate**: <5% monthly churn for premium subscribers
-- **Customer Acquisition Cost**: Optimize through organic growth
-- **Lifetime Value**: Track premium subscription duration
+### Business Performance
+- **Free-to-Premium Conversion**: Target 20% conversion rate
+- **Premium Churn Rate**: <3% monthly churn
+- **Multi-Pet Adoption**: Premium users managing multiple cats
+- **Professional Recognition**: Veterinary recommendation rates
 
-## Technical Implementation Priority
+## Technical Implementation Roadmap
 
-### Phase 1 (MVP - 3 months)
-1. **Core Authentication**: Firebase Auth with Firestore integration
-2. **Basic Scheduling**: Fixed frequency, single daily reminder
-3. **Session Logging**: Volume + completion status + basic notes
-4. **Simple Analytics**: 30-day history for free users, basic streak tracking
-5. **Notification System**: FCM integration for reminders
-6. **Offline Support**: Firestore offline persistence and automatic sync
+### Phase 1: CKD Foundation (4 months)
+- Enhanced authentication with treatment-based onboarding
+- Universal treatment scheduling system
+- Comprehensive logging for all treatment types
+- Health parameter tracking with trending
+- Educational content delivery platform
+- Basic analytics with 30-day history
 
-### Phase 2 (Premium Features - 2 months)
-1. **Advanced Analytics**: Unlimited history, trend analysis
-2. **Multi-Pet Support**: Profile switching, separate schedules
-3. **PDF Export**: Vet-ready report generation
-4. **Enhanced Notifications**: Multiple reminders and personalized content
-5. **Payment Integration**: Subscription management
-6. **Inventory Tracking**: Fluid quantity monitoring system
+### Phase 2: Fluid Therapy Specialization (3 months)
+- Advanced fluid therapy features (injection sites, precision tracking)
+- Fluid supply inventory management
+- Specialized reporting and analytics
+- Enhanced stress management integration
+- Treatment-specific notification system
 
-### Phase 3 (Enhancement - 3 months)
-1. **Advanced Scheduling**: Variable volumes, temporary overrides
-2. **Stress-Free Guide**: Static content with illustrations
-3. **Inventory Tracking**: Basic fluid quantity monitoring
-4. **Pattern Recognition**: Automated insights and recommendations
-5. **Performance Optimization**: App speed and battery efficiency
+### Phase 3: Premium Platform (3 months)
+- Advanced analytics engine with unlimited history
+- Multi-pet architecture and comparative features
+- Professional PDF reporting system
+- Enhanced inventory management
+- Payment integration and subscription management
 
-### Phase 4 (Future Expansion - 6+ months)
-1. **Video Content**: Interactive guide with video tutorials
-2. **Community Features**: Anonymous peer support
-3. **Veterinary Integration**: Direct vet communication features
-4. **Supply Chain**: Potential fluid kit ordering system
-5. **Advanced Analytics**: Machine learning insights
+### Phase 4: Professional Integration (4 months)
+- Veterinary consultation tools
+- Advanced export systems
+- Research analytics platform
+- Professional communication features
+- API foundation for ecosystem expansion
 
-## Risk Assessment & Mitigation
+### Phase 5: Ecosystem Expansion (6+ months)
+- HydraCat device integration preparation
+- Supply chain partnership integration
+- Advanced pattern recognition
+- Community and peer support features
+- Research collaboration platform
+
+## Risk Assessment & Mitigation Strategies
 
 ### Technical Risks
-- **Firestore Costs**: Monitor usage patterns and optimize queries
-- **Offline Sync Complexity**: Implement robust conflict resolution with Firestore
-- **Cross-Platform Consistency**: Extensive testing on both platforms
-- **Performance**: Monitor app responsiveness with large datasets
-- **Battery Usage**: Optimise notification and background sync
+- **System Complexity**: Multiple treatment types increase architecture complexity
+  - *Mitigation*: Modular design with treatment-specific components
+- **Data Synchronization**: Complex medical data across devices
+  - *Mitigation*: Robust offline-first architecture
+- **Performance Scaling**: Large datasets for long-term management
+  - *Mitigation*: Efficient data models and query optimization
 
-### Business Risks
-- **Market Size**: Limited to CKD cat population - focus on excellent UX
-- **Competition**: Differentiate through medical specialization
-- **Monetization**: Balance free value with premium incentives
-- **Regulatory**: Ensure compliance with medical device regulations
+### Market & Business Risks
+- **Feature Scope Management**: Avoiding feature bloat while serving diverse users
+  - *Mitigation*: Progressive disclosure and adaptive UI based on user needs
+- **Premium Conversion Balance**: Optimizing free value vs. upgrade incentives
+  - *Mitigation*: Clear professional-grade premium benefits
+- **Veterinary Adoption**: Professional acceptance across treatment types
+  - *Mitigation*: Evidence-based design with veterinary validation
 
-### User Experience Risks
-- **Complexity Overwhelm**: Prioritize simplicity in core features
-- **Gamification Balance**: Ensure health outcomes remain primary focus
-- **Privacy Concerns**: Transparent data practices and user control
-- **Abandonment**: Strong onboarding and early value demonstration
+## Competitive Positioning
 
-## User Stories (Agile Framework)
+### Unique Value Proposition
+**"The only CKD companion designed by a veterinarian, with unmatched expertise in subcutaneous fluid therapy and comprehensive disease management."**
 
-### Authentication & Profile
-- As a first-time user, I want to create an account with my email and a password so that I can securely access my cat's health information and track their treatment.
-- As a returning user, I don't want to have to log in again to my account so that I can resume tracking my cat's fluid therapy sessions from where I left off.
-- As a cat owner, I want to create a profile for my cat with their name, a photo, weight, and fluid prescription so that I have a personalized and organized record of their health data in one place.
+### Key Differentiators
+1. **Veterinary Expertise**: Professional medical knowledge integrated throughout
+2. **Fluid Therapy Leadership**: Unmatched specialization in subcutaneous fluid management  
+3. **Comprehensive CKD Focus**: Complete disease management rather than generic pet tracking
+4. **Medical-Grade Features**: Professional documentation and health parameter tracking
+5. **Evidence-Based Design**: Research-informed features and veterinary best practices
 
-### Fluid Schedule & Logging
-- As a cat owner, I want to set a custom fluid schedule with specific times and amounts so that I never forget when to give my cat their fluids.
-- As a cat owner, I want to log a fluid session with a single tap so that I can quickly and easily record the treatment without disrupting my cat's care routine.
-- As a cat owner, I want to see a simple 7-day history of my logged fluid sessions so that I can review my cat's compliance over the past week.
-
-### Notifications & Streak System
-- As a cat owner, I want to receive timely notifications for my scheduled fluid sessions so that I can stay on track with my cat's treatment and improve their health.
-- As a cat owner, I want to have a simple streak system that tracks my consecutive days of successful fluid therapy so that I feel motivated and rewarded for my consistency.
-- As a cat owner, I want to see my current (and longest streak) prominently on the home screen so that I feel a sense of accomplishment and am encouraged to maintain the routine.
-
-### Stress-Free Guide
-- As a cat owner, I want a simple guide with essential, vet-approved tips on how to give fluids and handle my cat so that I feel more confident and reduce the stress for both of us.
-
-## Conclusion
-
-HydraCat addresses a specific, underserved market with a focused, medically-aware approach to pet health management. By prioritizing the unique needs of CKD cat owners and their emotional journey, the app can establish strong user loyalty and create a foundation for future expansion into broader pet health technology.
-
-The freemium model balances accessibility with sustainability, while the offline-first architecture ensures reliability in critical health management scenarios. Success will be measured not just in user engagement, but in improved health outcomes and reduced caregiver stress.
+### Market Position
+- **Primary**: Advanced CKD management platform with fluid therapy expertise
+- **Secondary**: Professional veterinary tool for enhanced client care
+- **Tertiary**: Research platform for CKD management effectiveness studies
 
 ---
 
-*This PRD serves as the definitive guide for HydraCat development. All feature decisions and technical implementations should reference this document to maintain product vision alignment and user-centered design principles.*
+*This PRD serves as the definitive guide for HydraCat's development as a comprehensive CKD companion. All implementation decisions should reference this document to maintain product vision alignment, veterinary credibility, and user-centered design while preserving the unique fluid therapy expertise that differentiates HydraCat in the marketplace.*
