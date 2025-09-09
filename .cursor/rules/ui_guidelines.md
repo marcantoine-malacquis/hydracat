@@ -442,7 +442,7 @@ outline-offset: 2px;
   /* All color variables defined above */
 }
 
-/* Dark theme (future consideration) */
+/* Dark theme (implemented) */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #1A1A1A;
@@ -452,6 +452,18 @@ outline-offset: 2px;
   }
 }
 ```
+
+### Manual Theme Toggle
+**Implementation Status**: ✅ **Completed**
+
+The app now includes a manual theme toggle that overrides system preferences:
+- **Default Mode**: Light theme (regardless of system setting)
+- **Toggle Location**: Profile screen with palette icon and light/dark mode button
+- **Persistence**: User preference saved using SharedPreferences
+- **Instant Switch**: No app restart required
+- **State Management**: Riverpod-based theme provider (`lib/providers/theme_provider.dart`)
+
+**Usage**: Users can manually switch between light and dark themes via the toggle button in the Profile screen, ensuring consistent testing experience and user control over theme preference.
 
 ### Design System Evolution
 - **Component tokens**: Design system-ready variable structure
@@ -475,7 +487,7 @@ outline-offset: 2px;
 - [ ] Animation system setup
 - [ ] Chart/visualization components
 - [ ] Advanced accessibility features
-- [ ] Dark theme preparation
+- [x] Dark theme preparation
 
 ### Phase 3 (Polish)
 - [ ] Celebration animations

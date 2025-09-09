@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/app/router.dart';
 import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/core/theme/app_theme.dart';
+import 'package:hydracat/providers/theme_provider.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
 
 /// Main application widget for HydraCat.
@@ -155,12 +156,14 @@ class _HydraCatAppState extends ConsumerState<HydraCatApp> {
     // If we reach here, Firebase is initialized successfully
     try {
       final router = ref.watch(appRouterProvider);
+      final themeMode = ref.watch(themeProvider);
       
       return MaterialApp.router(
         title: 'HydraCat',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
+        themeMode: themeMode,
         routerConfig: router,
       );
     } on Exception catch (e) {

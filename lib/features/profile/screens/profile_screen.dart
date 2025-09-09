@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/providers/theme_provider.dart';
 import 'package:hydracat/shared/services/feature_gate_service.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 
@@ -106,6 +107,90 @@ class ProfileScreen extends ConsumerWidget {
               ),
 
               const SizedBox(height: AppSpacing.xl),
+              
+              // Theme toggle section
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.palette,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    const Expanded(
+                      child: Text(
+                        'App Theme',
+                        style: AppTextStyles.body,
+                      ),
+                    ),
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final currentTheme = ref.watch(themeProvider);
+                        final isDark = currentTheme == ThemeMode.dark;
+                        
+                        return GestureDetector(
+                          onTap: () => ref
+                              .read(themeProvider.notifier)
+                              .toggleTheme(),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm,
+                              vertical: AppSpacing.xs,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDark 
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .primaryContainer
+                                  : Theme.of(context).colorScheme.secondary,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isDark ? Icons.dark_mode : Icons.light_mode,
+                                  size: 16,
+                                  color: isDark 
+                                      ? Theme.of(context)
+                                          .colorScheme
+                                          .onPrimaryContainer
+                                      : Theme.of(context)
+                                          .colorScheme
+                                          .onSecondary,
+                                ),
+                                const SizedBox(width: AppSpacing.xs),
+                                Text(
+                                  isDark ? 'Dark' : 'Light',
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: isDark 
+                                        ? Theme.of(context)
+                                            .colorScheme
+                                            .onPrimaryContainer
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .onSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: AppSpacing.lg),
               const Center(
                 child: Text(
                   'Profile Screen - Coming Soon',
