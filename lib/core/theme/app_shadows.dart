@@ -53,4 +53,20 @@ class AppShadows {
     color: Color(0x4D6BB8A8), // rgba(107, 184, 168, 0.3)
     spreadRadius: 2,
   );
+
+  // Navigation icon shadows
+  /// Shadow for navigation icons when pressed
+  static const BoxShadow navigationIconPressed = BoxShadow(
+    color: Color(0x666BB8A8), // rgba(107, 184, 168, 0.4) - More visible
+    offset: Offset(0, 4), // Larger offset
+    blurRadius: 12, // More blur for better effect
+    spreadRadius: 1, // Add spread for more prominence
+  );
+
+  /// Shadow for navigation icons on hover (web/desktop)
+  static const BoxShadow navigationIconHover = BoxShadow(
+    color: Color(0x1A6BB8A8), // rgba(107, 184, 168, 0.1)
+    offset: Offset(0, 1),
+    blurRadius: 4,
+  );
 }
