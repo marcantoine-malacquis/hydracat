@@ -168,10 +168,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// Check if current user's email is verified
   ///
-  /// Refreshes the current user's data and checks verification status.
+  /// Checks if current user's email is verified using smart caching.
   /// Returns true if email is verified, false otherwise.
-  Future<bool> checkEmailVerification() async {
-    return _authService.checkEmailVerification();
+  Future<bool> checkEmailVerification({bool forceReload = false}) async {
+    return _authService.checkEmailVerification(forceReload: forceReload);
   }
 
   /// Sign in with Google

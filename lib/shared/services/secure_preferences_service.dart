@@ -1,9 +1,81 @@
 import 'dart:convert';
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+/// Encrypts data using XOR cipher in isolate
+/// 
+/// This function runs in a background isolate to avoid blocking the main thread
+Map<String, dynamic> _encryptDataInIsolate(Map<String, dynamic> params) {
+  final key = List<int>.from(params['key'] as List);
+  final plainBytes = List<int>.from(params['plainBytes'] as List);
+  
+  // XOR encryption
+  final encryptedBytes = Uint8List(plainBytes.length);
+  for (var i = 0; i < plainBytes.length; i++) {
+    encryptedBytes[i] = plainBytes[i] ^ key[i % key.length];
+  }
+  
+  // Add checksum for integrity
+  final checksum = sha256.convert(plainBytes).bytes.take(4).toList();
+  final finalBytes = Uint8List.fromList([...checksum, ...encryptedBytes]);
+  
+  return {
+    'result': base64Encode(finalBytes),
+  };
+}
+
+/// Decrypts data using XOR cipher in isolate
+/// 
+/// This function runs in a background isolate to avoid blocking the main thread
+Map<String, dynamic> _decryptDataInIsolate(Map<String, dynamic> params) {
+  final key = List<int>.from(params['key'] as List);
+  final encryptedBytes = List<int>.from(params['encryptedBytes'] as List);
+  
+  // Extract checksum and encrypted content
+  if (encryptedBytes.length < 4) {
+    return {'result': null, 'error': 'Invalid data length'};
+  }
+  
+  final checksum = encryptedBytes.take(4).toList();
+  final content = encryptedBytes.skip(4).toList();
+  
+  // XOR decryption
+  final decryptedBytes = Uint8List(content.length);
+  for (var i = 0; i < content.length; i++) {
+    decryptedBytes[i] = content[i] ^ key[i % key.length];
+  }
+  
+  // Verify checksum
+  final expectedChecksum = sha256
+      .convert(decryptedBytes)
+      .bytes
+      .take(4)
+      .toList();
+  
+  // Simple list equality check
+  var checksumsMatch = true;
+  if (checksum.length != expectedChecksum.length) {
+    checksumsMatch = false;
+  } else {
+    for (var i = 0; i < checksum.length; i++) {
+      if (checksum[i] != expectedChecksum[i]) {
+        checksumsMatch = false;
+        break;
+      }
+    }
+  }
+  
+  if (!checksumsMatch) {
+    return {'result': null, 'error': 'Integrity check failed'};
+  }
+  
+  return {
+    'result': utf8.decode(decryptedBytes),
+  };
+}
 
 /// Service for secure encrypted storage of sensitive data
 ///
@@ -135,7 +207,7 @@ class SecurePreferencesService {
     );
   }
 
-  /// Encrypts data using AES
+  /// Encrypts data using XOR cipher in background isolate
   Future<String> _encryptData(String plaintext) async {
     try {
       final keyBase64 = await _secureStorage.read(key: _encryptionKeyName);
@@ -146,24 +218,19 @@ class SecurePreferencesService {
       final key = base64Decode(keyBase64);
       final plainBytes = utf8.encode(plaintext);
 
-      // For this implementation, we'll use a simple XOR cipher
-      // In a production app, you'd want to use a proper AES implementation
-      final encryptedBytes = Uint8List(plainBytes.length);
-      for (var i = 0; i < plainBytes.length; i++) {
-        encryptedBytes[i] = plainBytes[i] ^ key[i % key.length];
-      }
+      // Run encryption in background isolate to avoid blocking main thread
+      final result = await compute(_encryptDataInIsolate, {
+        'key': key,
+        'plainBytes': plainBytes,
+      });
 
-      // Add a simple checksum for integrity
-      final checksum = sha256.convert(plainBytes).bytes.take(4).toList();
-      final finalBytes = Uint8List.fromList([...checksum, ...encryptedBytes]);
-
-      return base64Encode(finalBytes);
+      return result['result'] as String;
     } on Exception {
       rethrow;
     }
   }
 
-  /// Decrypts data using AES
+  /// Decrypts data using XOR cipher in background isolate
   Future<String?> _decryptData(String encryptedData) async {
     try {
       final keyBase64 = await _secureStorage.read(key: _encryptionKeyName);
@@ -172,39 +239,21 @@ class SecurePreferencesService {
       final key = base64Decode(keyBase64);
       final encryptedBytes = base64Decode(encryptedData);
 
-      // Extract checksum and encrypted content
-      if (encryptedBytes.length < 4) return null;
-      final checksum = encryptedBytes.take(4).toList();
-      final content = encryptedBytes.skip(4).toList();
+      // Run decryption in background isolate to avoid blocking main thread
+      final result = await compute(_decryptDataInIsolate, {
+        'key': key,
+        'encryptedBytes': encryptedBytes,
+      });
 
-      // Decrypt using XOR
-      final decryptedBytes = Uint8List(content.length);
-      for (var i = 0; i < content.length; i++) {
-        decryptedBytes[i] = content[i] ^ key[i % key.length];
+      // Check for errors from isolate
+      if (result['error'] != null) {
+        return null;
       }
 
-      // Verify checksum
-      final expectedChecksum = sha256
-          .convert(decryptedBytes)
-          .bytes
-          .take(4)
-          .toList();
-      if (!_listsEqual(checksum, expectedChecksum)) {
-        return null; // Integrity check failed
-      }
-
-      return utf8.decode(decryptedBytes);
+      return result['result'] as String?;
     } on Exception {
       return null;
     }
   }
 
-  /// Helper method to compare lists
-  bool _listsEqual(List<int> list1, List<int> list2) {
-    if (list1.length != list2.length) return false;
-    for (var i = 0; i < list1.length; i++) {
-      if (list1[i] != list2[i]) return false;
-    }
-    return true;
-  }
 }

@@ -40,13 +40,21 @@ class _AppShellState extends ConsumerState<AppShell> {
     ),
   ];
 
+  // Pre-computed route-to-index mapping for O(1) lookup performance
+  static const Map<String, int> _routeToIndexMap = {
+    '/': 0,
+    '/progress': 1,
+    '/learn': 2,
+    '/profile': 3,
+  };
+
   int get _currentIndex {
     final currentLocation = GoRouterState.of(context).uri.path;
-    for (var i = 0; i < _navigationItems.length; i++) {
-      if (_navigationItems[i].route == currentLocation) {
-        return i;
-      }
-    }
+    
+    // Use O(1) map lookup instead of O(n) linear search
+    final index = _routeToIndexMap[currentLocation];
+    if (index != null) return index;
+    
     // If on logging screen, don't highlight any nav item
     if (currentLocation == '/logging') {
       return -1;

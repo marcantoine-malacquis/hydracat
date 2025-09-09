@@ -54,6 +54,11 @@ class AuthService {
   bool _isInitialized = false;
   late final Future<void> _initializationFuture;
 
+  // Email verification caching
+  DateTime? _lastVerificationCheck;
+  bool? _cachedVerificationStatus;
+  static const Duration _verificationCacheDuration = Duration(seconds: 30);
+
   /// Initialize auth state and wait for Firebase to determine initial state
   Future<void> _initializeAuthState() async {
     // Firebase Auth automatically determines initial state from persistence
@@ -195,6 +200,7 @@ class AuthService {
   Future<bool> signOut() async {
     try {
       await _firebaseAuth.signOut();
+      _clearVerificationCache(); // Clear cache on sign out
       return true;
     } on Exception {
       return false;
@@ -225,6 +231,7 @@ class AuthService {
       final user = _firebaseAuth.currentUser;
       if (user != null && !user.emailVerified) {
         await user.sendEmailVerification();
+        _clearVerificationCache(); // Clear cache after sending verification
         return const AuthSuccess(null);
       }
       return const AuthFailure(EmailVerificationException());
@@ -235,28 +242,55 @@ class AuthService {
     }
   }
 
+  /// Check if the verification status cache is still valid
+  bool _isVerificationCacheValid() {
+    return _lastVerificationCheck != null &&
+        DateTime.now().difference(_lastVerificationCheck!) <
+            _verificationCacheDuration;
+  }
+
+  /// Clear the verification status cache
+  void _clearVerificationCache() {
+    _lastVerificationCheck = null;
+    _cachedVerificationStatus = null;
+  }
+
   /// Check if current user's email is verified
   ///
-  /// Refreshes the current user's data and checks verification status.
+  /// Uses smart caching to reduce Firebase network calls.
+  /// Only reloads user data
+  /// if cache is stale (older than 30 seconds) or forceReload is true.
   /// Returns true if email is verified, false otherwise.
   ///
   /// This method gracefully handles offline scenarios by returning
   /// the cached verification status when network is unavailable.
-  Future<bool> checkEmailVerification() async {
+  Future<bool> checkEmailVerification({bool forceReload = false}) async {
     try {
       final user = _firebaseAuth.currentUser;
-      if (user != null) {
-        try {
-          // Attempt to reload user data (requires network)
-          await user.reload();
-          final refreshedUser = _firebaseAuth.currentUser;
-          return refreshedUser?.emailVerified ?? false;
-        } on Exception {
-          // If reload fails (likely offline), return cached status
-          return user.emailVerified;
-        }
+      if (user == null) {
+        return false;
       }
-      return false;
+
+      // Return cached result if valid and not forcing reload
+      if (!forceReload && _isVerificationCacheValid()) {
+        return _cachedVerificationStatus ?? false;
+      }
+
+      try {
+        // Attempt to reload user data (requires network)
+        await user.reload();
+        final refreshedUser = _firebaseAuth.currentUser;
+        final isVerified = refreshedUser?.emailVerified ?? false;
+
+        // Update cache
+        _lastVerificationCheck = DateTime.now();
+        _cachedVerificationStatus = isVerified;
+
+        return isVerified;
+      } on Exception {
+        // If reload fails (likely offline), return cached or local status
+        return _cachedVerificationStatus ?? user.emailVerified;
+      }
     } on Exception {
       return false;
     }

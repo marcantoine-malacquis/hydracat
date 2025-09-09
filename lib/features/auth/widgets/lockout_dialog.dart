@@ -44,21 +44,44 @@ class _LockoutDialogState extends State<LockoutDialog> {
   }
 
   void _startCountdown() {
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_timeRemaining.inSeconds <= 0) {
-        timer.cancel();
-        if (mounted) {
-          // Auto-close dialog when lockout expires
-          context.pop();
-        }
-        return;
-      }
+    _scheduleNextUpdate();
+  }
 
+  /// Get adaptive update interval based on remaining time
+  Duration _getUpdateInterval() {
+    if (_timeRemaining.inMinutes < 1) {
+      return const Duration(seconds: 1);      // < 1min: every second
+    } else if (_timeRemaining.inMinutes < 10) {
+      return const Duration(seconds: 15);     // 1-10min: every 15 seconds
+    } else {
+      return const Duration(seconds: 30);     // > 10min: every 30 seconds
+    }
+  }
+
+  /// Schedule next countdown update with adaptive interval
+  void _scheduleNextUpdate() {
+    if (_timeRemaining.inSeconds <= 0) {
       if (mounted) {
-        setState(() {
-          _timeRemaining = _timeRemaining - const Duration(seconds: 1);
-        });
+        // Auto-close dialog when lockout expires
+        context.pop();
       }
+      return;
+    }
+
+    final interval = _getUpdateInterval();
+    _countdownTimer = Timer(interval, () {
+      if (!mounted) return;
+
+      setState(() {
+        // Subtract the actual interval to stay synchronized
+        _timeRemaining = _timeRemaining - interval;
+        if (_timeRemaining.inSeconds < 0) {
+          _timeRemaining = Duration.zero;
+        }
+      });
+
+      // Schedule next update
+      _scheduleNextUpdate();
     });
   }
 

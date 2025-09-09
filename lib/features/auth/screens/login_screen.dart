@@ -25,35 +25,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  ProviderSubscription<AuthState>? _authSubscription;
   bool _isShowingLockoutDialog = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Listen to auth state changes once (avoid re-registering on rebuilds)
-      _authSubscription = ref.listenManual<AuthState>(
-        authProvider,
-        (previous, next) {
-          if (next is AuthStateError) {
-            _handleAuthError(next);
-          } else {}
-        },
-        fireImmediately: false,
-      );
-
-      // Handle any existing error state immediately after mount
-      final current = ref.read(authProvider);
-      if (current is AuthStateError) {
-        _handleAuthError(current);
-      }
-    });
   }
 
   @override
   void dispose() {
-    _authSubscription?.close();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -118,7 +98,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         final lockoutException =
             authError.details as AccountTemporarilyLockedException;
         showLockoutDialog(
-          context, 
+          context,
           lockoutException.timeRemaining,
           _emailController.text.trim(),
         ).whenComplete(
@@ -135,8 +115,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Uses mixin's isLoading which combines auth and local loading
-    ref.watch(authIsLoadingProvider);
+    // Listen to auth state changes using built-in Riverpod mechanism
+    ref
+      ..listen<AuthState>(authProvider, (previous, next) {
+        if (next is AuthStateError) {
+          _handleAuthError(next);
+        }
+      })
+      // Uses mixin's isLoading which combines auth and local loading
+      ..watch(authIsLoadingProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -153,101 +140,101 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(height: MediaQuery.of(context).size.height * 0.1),
-              const Text(
-                'Welcome back to Hydracat',
-                style: AppTextStyles.h1,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              TextFormField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
+                const Text(
+                  'Welcome back to Hydracat',
+                  style: AppTextStyles.h1,
+                  textAlign: TextAlign.center,
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'We need your email to continue';
-                  }
-                  if (!value.contains('@')) {
-                    return 'Please enter a valid email';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: AppSpacing.md),
-              TextFormField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.lock),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility
-                          : Icons.visibility_off,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
+                const SizedBox(height: AppSpacing.xl),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.email),
                   ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'We need your email to continue';
+                    }
+                    if (!value.contains('@')) {
+                      return 'Please enter a valid email';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Password required to access your account';
-                  }
-                  if (value.length < 8) {
-                    return '8 characters minimum for security';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              HydraButton(
-                onPressed: isLoading ? null : _handleSignIn,
-                isLoading: isLoading,
-                isFullWidth: true,
-                child: const Text('Sign In'),
-              ),
-              const SizedBox(height: AppSpacing.md),
-
-              // Social Sign-In Buttons
-              const SocialSignInButtons(),
-
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text("Don't have an account?"),
-                  TextButton(
-                    onPressed: () => context.go('/register'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primary,
+                const SizedBox(height: AppSpacing.md),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
                     ),
-                    child: const Text('Sign Up'),
                   ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Forgot your password?'),
-                  TextButton(
-                    onPressed: () => context.go('/forgot-password'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primary,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Password required to access your account';
+                    }
+                    if (value.length < 8) {
+                      return '8 characters minimum for security';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                HydraButton(
+                  onPressed: isLoading ? null : _handleSignIn,
+                  isLoading: isLoading,
+                  isFullWidth: true,
+                  child: const Text('Sign In'),
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                // Social Sign-In Buttons
+                const SocialSignInButtons(),
+
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text("Don't have an account?"),
+                    TextButton(
+                      onPressed: () => context.go('/register'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                      ),
+                      child: const Text('Sign Up'),
                     ),
-                    child: const Text('Reset Password'),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('Forgot your password?'),
+                    TextButton(
+                      onPressed: () => context.go('/forgot-password'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                      ),
+                      child: const Text('Reset Password'),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: AppSpacing.xl),
               ],
             ),
