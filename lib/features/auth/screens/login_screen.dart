@@ -144,14 +144,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(height: MediaQuery.of(context).size.height * 0.1),
               const Text(
                 'Welcome back to Hydracat',
                 style: AppTextStyles.h1,
@@ -247,7 +248,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   ),
                 ],
               ),
-            ],
+                const SizedBox(height: AppSpacing.xl),
+              ],
+            ),
           ),
         ),
       ),

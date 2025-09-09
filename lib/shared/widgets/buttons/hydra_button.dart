@@ -61,9 +61,13 @@ class HydraButton extends StatelessWidget {
 
   Widget _buildButtonContent() {
     if (isLoading) {
-      return const CircularProgressIndicator(
-        strokeWidth: 2,
-        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+      return const SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+        ),
       );
     }
 

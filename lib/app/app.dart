@@ -165,6 +165,13 @@ class _HydraCatAppState extends ConsumerState<HydraCatApp> {
         darkTheme: AppTheme.darkTheme,
         themeMode: themeMode,
         routerConfig: router,
+        builder: (context, child) {
+          return GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            behavior: HitTestBehavior.translucent,
+            child: child,
+          );
+        },
       );
     } on Exception catch (e) {
       // If there's an error with routing, show a fallback

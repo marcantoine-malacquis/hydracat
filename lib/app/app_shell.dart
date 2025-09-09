@@ -68,41 +68,150 @@ class _AppShellState extends ConsumerState<AppShell> {
   @override
   Widget build(BuildContext context) {
     final isLoading = ref.watch(authIsLoadingProvider);
-
-    // Show loading screen while auth is initializing
-    if (isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Loading your account...'),
-            ],
-          ),
-        ),
-      );
-    }
-
     final currentUser = ref.watch(currentUserProvider);
     final isVerified = currentUser?.emailVerified ?? false;
 
     return Scaffold(
       body: Column(
         children: [
-          // Show verification banner for unverified users
+          // Show verification banner for verified users only 
+          // (not during loading)
           if (currentUser != null && !currentUser.emailVerified)
             _buildVerificationBanner(context, currentUser.email),
-          Expanded(child: widget.child),
+          Expanded(
+            child: isLoading
+                ? _buildLoadingContent(context)
+                : widget.child,
+          ),
         ],
       ),
       bottomNavigationBar: HydraNavigationBar(
         items: _navigationItems,
-        currentIndex: _currentIndex,
-        onTap: _onNavigationTap,
-        onFabPressed: _onFabPressed,
-        showVerificationBadge: !isVerified,
+        // No selection during loading
+        currentIndex: isLoading ? -1 : _currentIndex,
+        // Disable navigation during loading
+        onTap: isLoading ? (_) {} : _onNavigationTap,
+        // Disable FAB during loading
+        onFabPressed: isLoading ? null : _onFabPressed,
+        showVerificationBadge: !isLoading && !isVerified,
+      ),
+    );
+  }
+
+  /// Build loading content with skeleton UI
+  Widget _buildLoadingContent(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Loading header
+          Container(
+            height: 24,
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 24),
+            child: Row(
+              children: [
+                // Skeleton for greeting/title
+                Container(
+                  height: 20,
+                  width: 120,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainer,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const Spacer(),
+                // Skeleton for user avatar/icon
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainer,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Loading content cards
+          Expanded(
+            child: ListView.separated(
+              itemCount: 3,
+              separatorBuilder: (context, index) => const SizedBox(height: 16),
+              itemBuilder: (context, index) => _buildLoadingSkeleton(context),
+            ),
+          ),
+
+          // Loading status
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Theme.of(context).colorScheme.primary.withValues(
+                      alpha: 0.6,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Setting up your account...',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build a skeleton loading card
+  Widget _buildLoadingSkeleton(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(
+            alpha: 0.2,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title skeleton
+          Container(
+            height: 16,
+            width: double.infinity * 0.7,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Subtitle skeleton
+          Container(
+            height: 12,
+            width: double.infinity * 0.5,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainer.withValues(
+                alpha: 0.7,
+              ),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ],
       ),
     );
   }
