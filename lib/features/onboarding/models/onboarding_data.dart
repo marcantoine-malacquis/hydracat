@@ -16,8 +16,6 @@ class OnboardingData {
     this.petWeightKg,
     this.ckdDiagnosisDate,
     this.irisStage,
-    this.veterinarianName,
-    this.veterinaryClinic,
     this.notes,
     this.hasSkippedWelcome = false,
     this.useMetricUnits = true,
@@ -32,8 +30,6 @@ class OnboardingData {
       petWeightKg = null,
       ckdDiagnosisDate = null,
       irisStage = null,
-      veterinarianName = null,
-      veterinaryClinic = null,
       notes = null,
       hasSkippedWelcome = false,
       useMetricUnits = true;
@@ -56,8 +52,6 @@ class OnboardingData {
       irisStage: json['irisStage'] != null
           ? IrisStage.fromString(json['irisStage'] as String)
           : null,
-      veterinarianName: json['veterinarianName'] as String?,
-      veterinaryClinic: json['veterinaryClinic'] as String?,
       notes: json['notes'] as String?,
       hasSkippedWelcome: json['hasSkippedWelcome'] as bool? ?? false,
       useMetricUnits: json['useMetricUnits'] as bool? ?? true,
@@ -84,12 +78,6 @@ class OnboardingData {
 
   /// Current IRIS stage
   final IrisStage? irisStage;
-
-  /// Primary veterinarian name
-  final String? veterinarianName;
-
-  /// Veterinary clinic name
-  final String? veterinaryClinic;
 
   /// Additional notes
   final String? notes;
@@ -126,8 +114,6 @@ class OnboardingData {
   bool get hasMedicalInfo =>
       ckdDiagnosisDate != null ||
       irisStage != null ||
-      veterinarianName != null ||
-      veterinaryClinic != null ||
       (notes != null && notes!.isNotEmpty);
 
   /// Whether data is complete enough for final profile creation
@@ -144,8 +130,6 @@ class OnboardingData {
       'petWeightKg': petWeightKg,
       'ckdDiagnosisDate': ckdDiagnosisDate?.toIso8601String(),
       'irisStage': irisStage?.name,
-      'veterinarianName': veterinarianName,
-      'veterinaryClinic': veterinaryClinic,
       'notes': notes,
       'hasSkippedWelcome': hasSkippedWelcome,
       'useMetricUnits': useMetricUnits,
@@ -161,8 +145,6 @@ class OnboardingData {
     double? petWeightKg,
     DateTime? ckdDiagnosisDate,
     IrisStage? irisStage,
-    String? veterinarianName,
-    String? veterinaryClinic,
     String? notes,
     bool? hasSkippedWelcome,
     bool? useMetricUnits,
@@ -175,8 +157,6 @@ class OnboardingData {
       petWeightKg: petWeightKg ?? this.petWeightKg,
       ckdDiagnosisDate: ckdDiagnosisDate ?? this.ckdDiagnosisDate,
       irisStage: irisStage ?? this.irisStage,
-      veterinarianName: veterinarianName ?? this.veterinarianName,
-      veterinaryClinic: veterinaryClinic ?? this.veterinaryClinic,
       notes: notes ?? this.notes,
       hasSkippedWelcome: hasSkippedWelcome ?? this.hasSkippedWelcome,
       useMetricUnits: useMetricUnits ?? this.useMetricUnits,
@@ -200,8 +180,6 @@ class OnboardingData {
     return copyWith(
       ckdDiagnosisDate: null,
       irisStage: null,
-      veterinarianName: null,
-      veterinaryClinic: null,
       notes: null,
     );
   }
@@ -266,8 +244,6 @@ class OnboardingData {
     final medicalInfo = MedicalInfo(
       ckdDiagnosisDate: ckdDiagnosisDate,
       irisStage: irisStage,
-      veterinarianName: veterinarianName,
-      veterinaryClinic: veterinaryClinic,
       notes: notes,
     );
 
@@ -319,8 +295,6 @@ class OnboardingData {
         other.petWeightKg == petWeightKg &&
         other.ckdDiagnosisDate == ckdDiagnosisDate &&
         other.irisStage == irisStage &&
-        other.veterinarianName == veterinarianName &&
-        other.veterinaryClinic == veterinaryClinic &&
         other.notes == notes &&
         other.hasSkippedWelcome == hasSkippedWelcome &&
         other.useMetricUnits == useMetricUnits;
@@ -336,8 +310,6 @@ class OnboardingData {
       petWeightKg,
       ckdDiagnosisDate,
       irisStage,
-      veterinarianName,
-      veterinaryClinic,
       notes,
       hasSkippedWelcome,
       useMetricUnits,
@@ -354,8 +326,6 @@ class OnboardingData {
         'petWeightKg: $petWeightKg, '
         'ckdDiagnosisDate: $ckdDiagnosisDate, '
         'irisStage: $irisStage, '
-        'veterinarianName: $veterinarianName, '
-        'veterinaryClinic: $veterinaryClinic, '
         'notes: $notes, '
         'hasSkippedWelcome: $hasSkippedWelcome, '
         'useMetricUnits: $useMetricUnits'

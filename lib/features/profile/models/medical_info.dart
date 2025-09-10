@@ -62,8 +62,6 @@ class MedicalInfo {
   const MedicalInfo({
     this.ckdDiagnosisDate,
     this.irisStage,
-    this.veterinarianName,
-    this.veterinaryClinic,
     this.lastCheckupDate,
     this.notes,
   });
@@ -77,8 +75,6 @@ class MedicalInfo {
       irisStage: json['irisStage'] != null
           ? IrisStage.fromString(json['irisStage'] as String)
           : null,
-      veterinarianName: json['veterinarianName'] as String?,
-      veterinaryClinic: json['veterinaryClinic'] as String?,
       lastCheckupDate: json['lastCheckupDate'] != null
           ? DateTime.parse(json['lastCheckupDate'] as String)
           : null,
@@ -92,12 +88,6 @@ class MedicalInfo {
   /// Current IRIS stage of the pet's CKD
   final IrisStage? irisStage;
 
-  /// Name of the primary veterinarian
-  final String? veterinarianName;
-
-  /// Name of the veterinary clinic
-  final String? veterinaryClinic;
-
   /// Date of the last veterinary checkup
   final DateTime? lastCheckupDate;
 
@@ -109,8 +99,6 @@ class MedicalInfo {
     return {
       'ckdDiagnosisDate': ckdDiagnosisDate?.toIso8601String(),
       'irisStage': irisStage?.name,
-      'veterinarianName': veterinarianName,
-      'veterinaryClinic': veterinaryClinic,
       'lastCheckupDate': lastCheckupDate?.toIso8601String(),
       'notes': notes,
     };
@@ -120,16 +108,12 @@ class MedicalInfo {
   MedicalInfo copyWith({
     DateTime? ckdDiagnosisDate,
     IrisStage? irisStage,
-    String? veterinarianName,
-    String? veterinaryClinic,
     DateTime? lastCheckupDate,
     String? notes,
   }) {
     return MedicalInfo(
       ckdDiagnosisDate: ckdDiagnosisDate ?? this.ckdDiagnosisDate,
       irisStage: irisStage ?? this.irisStage,
-      veterinarianName: veterinarianName ?? this.veterinarianName,
-      veterinaryClinic: veterinaryClinic ?? this.veterinaryClinic,
       lastCheckupDate: lastCheckupDate ?? this.lastCheckupDate,
       notes: notes ?? this.notes,
     );
@@ -163,8 +147,6 @@ class MedicalInfo {
   bool get hasData =>
       ckdDiagnosisDate != null ||
       irisStage != null ||
-      veterinarianName != null ||
-      veterinaryClinic != null ||
       lastCheckupDate != null ||
       (notes != null && notes!.isNotEmpty);
 
@@ -175,8 +157,6 @@ class MedicalInfo {
     return other is MedicalInfo &&
         other.ckdDiagnosisDate == ckdDiagnosisDate &&
         other.irisStage == irisStage &&
-        other.veterinarianName == veterinarianName &&
-        other.veterinaryClinic == veterinaryClinic &&
         other.lastCheckupDate == lastCheckupDate &&
         other.notes == notes;
   }
@@ -186,8 +166,6 @@ class MedicalInfo {
     return Object.hash(
       ckdDiagnosisDate,
       irisStage,
-      veterinarianName,
-      veterinaryClinic,
       lastCheckupDate,
       notes,
     );
@@ -198,8 +176,6 @@ class MedicalInfo {
     return 'MedicalInfo('
         'ckdDiagnosisDate: $ckdDiagnosisDate, '
         'irisStage: $irisStage, '
-        'veterinarianName: $veterinarianName, '
-        'veterinaryClinic: $veterinaryClinic, '
         'lastCheckupDate: $lastCheckupDate, '
         'notes: $notes'
         ')';
