@@ -29,6 +29,8 @@ class AppUser {
     this.provider = AuthProvider.email,
     this.createdAt,
     this.lastSignInAt,
+    this.hasCompletedOnboarding = false,
+    this.primaryPetId,
   });
 
   /// Creates an [AppUser] from JSON data
@@ -49,6 +51,8 @@ class AppUser {
       lastSignInAt: json['lastSignInAt'] != null
           ? DateTime.parse(json['lastSignInAt'] as String)
           : null,
+      hasCompletedOnboarding: json['hasCompletedOnboarding'] as bool? ?? false,
+      primaryPetId: json['primaryPetId'] as String?,
     );
   }
 
@@ -105,6 +109,12 @@ class AppUser {
   /// Timestamp when the user last signed in
   final DateTime? lastSignInAt;
 
+  /// Whether the user has completed the onboarding flow
+  final bool hasCompletedOnboarding;
+
+  /// ID of the user's primary pet profile
+  final String? primaryPetId;
+
   /// Converts [AppUser] to JSON data
   Map<String, dynamic> toJson() {
     return {
@@ -116,6 +126,8 @@ class AppUser {
       'provider': provider.name,
       'createdAt': createdAt?.toIso8601String(),
       'lastSignInAt': lastSignInAt?.toIso8601String(),
+      'hasCompletedOnboarding': hasCompletedOnboarding,
+      'primaryPetId': primaryPetId,
     };
   }
 
@@ -129,6 +141,8 @@ class AppUser {
     AuthProvider? provider,
     DateTime? createdAt,
     DateTime? lastSignInAt,
+    bool? hasCompletedOnboarding,
+    String? primaryPetId,
   }) {
     return AppUser(
       id: id ?? this.id,
@@ -139,6 +153,9 @@ class AppUser {
       provider: provider ?? this.provider,
       createdAt: createdAt ?? this.createdAt,
       lastSignInAt: lastSignInAt ?? this.lastSignInAt,
+      hasCompletedOnboarding: hasCompletedOnboarding ?? 
+          this.hasCompletedOnboarding,
+      primaryPetId: primaryPetId ?? this.primaryPetId,
     );
   }
 
@@ -154,7 +171,9 @@ class AppUser {
         other.emailVerified == emailVerified &&
         other.provider == provider &&
         other.createdAt == createdAt &&
-        other.lastSignInAt == lastSignInAt;
+        other.lastSignInAt == lastSignInAt &&
+        other.hasCompletedOnboarding == hasCompletedOnboarding &&
+        other.primaryPetId == primaryPetId;
   }
 
   @override
@@ -168,6 +187,8 @@ class AppUser {
       provider,
       createdAt,
       lastSignInAt,
+      hasCompletedOnboarding,
+      primaryPetId,
     );
   }
 
@@ -181,7 +202,9 @@ class AppUser {
         'emailVerified: $emailVerified, '
         'provider: $provider, '
         'createdAt: $createdAt, '
-        'lastSignInAt: $lastSignInAt'
+        'lastSignInAt: $lastSignInAt, '
+        'hasCompletedOnboarding: $hasCompletedOnboarding, '
+        'primaryPetId: $primaryPetId'
         ')';
   }
 }

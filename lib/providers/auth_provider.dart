@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/features/auth/models/app_user.dart';
 import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/features/auth/services/auth_service.dart';
+import 'package:hydracat/shared/services/firebase_service.dart';
 
 /// Provider for the AuthService instance
 ///
@@ -23,6 +25,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   final AuthService _authService;
   bool _hasRecentError = false;
+  
+  /// Firestore instance for user data persistence
+  FirebaseFirestore get _firestore => FirebaseService().firestore;
 
   /// Callback for handling authentication errors in UI
   void Function(AuthStateError)? errorCallback;
@@ -231,6 +236,98 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = const AuthStateUnauthenticated();
     }
   }
+
+  /// Mark onboarding as complete for the current user
+  ///
+  /// Updates both local state and Firestore with onboarding completion
+  /// and primary pet ID. Returns true if successful, false otherwise.
+  Future<bool> markOnboardingComplete(String primaryPetId) async {
+    final currentUser = _authService.currentUser;
+    if (currentUser == null) return false;
+
+    try {
+      // Update user data in Firestore
+      await _updateUserDataInFirestore(
+        currentUser.id,
+        hasCompletedOnboarding: true,
+        primaryPetId: primaryPetId,
+      );
+
+      // Update local state
+      final updatedUser = currentUser.copyWith(
+        hasCompletedOnboarding: true,
+        primaryPetId: primaryPetId,
+      );
+      state = AuthStateAuthenticated(user: updatedUser);
+
+      return true;
+    } on Exception {
+      return false;
+    }
+  }
+
+  /// Update onboarding status for the current user
+  ///
+  /// More flexible method for updating onboarding state and pet ID.
+  /// Returns true if successful, false otherwise.
+  Future<bool> updateOnboardingStatus({
+    bool? hasCompletedOnboarding,
+    String? primaryPetId,
+  }) async {
+    final currentUser = _authService.currentUser;
+    if (currentUser == null) return false;
+
+    try {
+      // Update user data in Firestore
+      await _updateUserDataInFirestore(
+        currentUser.id,
+        hasCompletedOnboarding: hasCompletedOnboarding,
+        primaryPetId: primaryPetId,
+      );
+
+      // Update local state
+      final updatedUser = currentUser.copyWith(
+        hasCompletedOnboarding: hasCompletedOnboarding,
+        primaryPetId: primaryPetId,
+      );
+      state = AuthStateAuthenticated(user: updatedUser);
+
+      return true;
+    } on Exception {
+      return false;
+    }
+  }
+
+  /// Update user data in Firestore
+  ///
+  /// Private helper method to persist user data changes to Firestore.
+  Future<void> _updateUserDataInFirestore(
+    String userId, {
+    bool? hasCompletedOnboarding,
+    String? primaryPetId,
+  }) async {
+    final userDoc = _firestore.collection('users').doc(userId);
+    
+    final updateData = <String, dynamic>{};
+    if (hasCompletedOnboarding != null) {
+      updateData['hasCompletedOnboarding'] = hasCompletedOnboarding;
+    }
+    if (primaryPetId != null) {
+      updateData['primaryPetId'] = primaryPetId;
+    }
+    
+    if (updateData.isNotEmpty) {
+      updateData['updatedAt'] = FieldValue.serverTimestamp();
+      await userDoc.set(updateData, SetOptions(merge: true));
+    }
+  }
+
+  /// Get current user with latest state
+  ///
+  /// Helper method to get the current user from the auth state.
+  AppUser? getCurrentUser() {
+    return state.user;
+  }
 }
 
 /// Provider for the authentication state notifier
@@ -273,4 +370,22 @@ final authIsLoadingProvider = Provider<bool>((ref) {
 final authErrorProvider = Provider<AuthStateError?>((ref) {
   return ref.watch(authProvider.select((state) => 
     state is AuthStateError ? state : null));
+});
+
+/// Optimized provider to check if user has completed onboarding
+///
+/// Returns true if user has completed onboarding, false otherwise.
+/// Only rebuilds when onboarding completion status changes.
+final hasCompletedOnboardingProvider = Provider<bool>((ref) {
+  return ref.watch(authProvider.select((state) => 
+    state.user?.hasCompletedOnboarding ?? false));
+});
+
+/// Optimized provider to get user's primary pet ID
+///
+/// Returns the primary pet ID if set, null otherwise.
+/// Only rebuilds when primary pet ID changes.
+final primaryPetIdProvider = Provider<String?>((ref) {
+  return ref.watch(authProvider.select((state) => 
+    state.user?.primaryPetId));
 });

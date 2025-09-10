@@ -124,7 +124,7 @@ class CatProfile {
 }
 ```
 
-### Step 1.2: Create Onboarding State Models
+✅### Step 1.2: Create Onboarding State Models
 **Location:** `lib/features/onboarding/models/`
 **Files to create:**
 - `onboarding_step.dart` - Step information and navigation
@@ -139,7 +139,7 @@ class CatProfile {
 
 **Learning Goal:** State management for multi-step user flows
 
-### Step 1.3: Extend Auth State for Onboarding
+✅ ### Step 1.3: Extend Auth State for Onboarding
 **Location:** `lib/features/auth/models/` and `lib/providers/`
 **Files to modify:**
 - `app_user.dart` - Add onboarding completion flag and primary pet ID
@@ -152,6 +152,35 @@ class CatProfile {
 - Update JSON serialization methods
 
 **Learning Goal:** Extending existing state management for new features
+
+**Usage Examples:**
+```dart
+// Check onboarding status in UI
+final hasCompleted = ref.watch(hasCompletedOnboardingProvider);
+
+// Get primary pet ID
+final petId = ref.watch(primaryPetIdProvider);
+
+// Mark onboarding complete
+await ref.read(authProvider.notifier).markOnboardingComplete('pet-123');
+
+// Update onboarding status flexibly
+await ref.read(authProvider.notifier).updateOnboardingStatus(
+  hasCompletedOnboarding: true,
+  primaryPetId: 'pet-456',
+);
+
+// Example: Router guard usage
+if (!ref.watch(hasCompletedOnboardingProvider)) {
+  return const OnboardingWelcomeScreen();
+}
+
+// Example: Conditional UI based on pet
+final petId = ref.watch(primaryPetIdProvider);
+if (petId != null) {
+  return PetDashboard(petId: petId);
+}
+```
 
 **🎯 MILESTONE:** Data models ready for onboarding flow implementation!
 
