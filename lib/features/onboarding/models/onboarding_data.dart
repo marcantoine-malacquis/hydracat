@@ -1,0 +1,364 @@
+import 'package:flutter/foundation.dart';
+
+import 'package:hydracat/features/profile/models/cat_profile.dart';
+import 'package:hydracat/features/profile/models/medical_info.dart';
+import 'package:hydracat/features/profile/models/user_persona.dart';
+
+/// Temporary data collection during onboarding flow
+@immutable
+class OnboardingData {
+  /// Creates an [OnboardingData] instance
+  const OnboardingData({
+    this.userId,
+    this.treatmentApproach,
+    this.petName,
+    this.petAge,
+    this.petWeightKg,
+    this.ckdDiagnosisDate,
+    this.irisStage,
+    this.veterinarianName,
+    this.veterinaryClinic,
+    this.notes,
+    this.hasSkippedWelcome = false,
+    this.useMetricUnits = true,
+  });
+
+  /// Creates empty initial data
+  const OnboardingData.empty()
+    : userId = null,
+      treatmentApproach = null,
+      petName = null,
+      petAge = null,
+      petWeightKg = null,
+      ckdDiagnosisDate = null,
+      irisStage = null,
+      veterinarianName = null,
+      veterinaryClinic = null,
+      notes = null,
+      hasSkippedWelcome = false,
+      useMetricUnits = true;
+
+  /// Creates an [OnboardingData] from JSON data
+  factory OnboardingData.fromJson(Map<String, dynamic> json) {
+    return OnboardingData(
+      userId: json['userId'] as String?,
+      treatmentApproach: json['treatmentApproach'] != null
+          ? UserPersona.fromString(json['treatmentApproach'] as String)
+          : null,
+      petName: json['petName'] as String?,
+      petAge: json['petAge'] as int?,
+      petWeightKg: json['petWeightKg'] != null
+          ? (json['petWeightKg'] as num).toDouble()
+          : null,
+      ckdDiagnosisDate: json['ckdDiagnosisDate'] != null
+          ? DateTime.parse(json['ckdDiagnosisDate'] as String)
+          : null,
+      irisStage: json['irisStage'] != null
+          ? IrisStage.fromString(json['irisStage'] as String)
+          : null,
+      veterinarianName: json['veterinarianName'] as String?,
+      veterinaryClinic: json['veterinaryClinic'] as String?,
+      notes: json['notes'] as String?,
+      hasSkippedWelcome: json['hasSkippedWelcome'] as bool? ?? false,
+      useMetricUnits: json['useMetricUnits'] as bool? ?? true,
+    );
+  }
+
+  /// User ID (if authenticated)
+  final String? userId;
+
+  /// Selected treatment approach/persona
+  final UserPersona? treatmentApproach;
+
+  /// Pet's name
+  final String? petName;
+
+  /// Pet's age in years
+  final int? petAge;
+
+  /// Pet's weight in kilograms
+  final double? petWeightKg;
+
+  /// Date when CKD was diagnosed
+  final DateTime? ckdDiagnosisDate;
+
+  /// Current IRIS stage
+  final IrisStage? irisStage;
+
+  /// Primary veterinarian name
+  final String? veterinarianName;
+
+  /// Veterinary clinic name
+  final String? veterinaryClinic;
+
+  /// Additional notes
+  final String? notes;
+
+  /// Whether the user skipped the welcome screen
+  final bool hasSkippedWelcome;
+
+  /// Whether to use metric units (kg) vs imperial (lbs)
+  final bool useMetricUnits;
+
+  /// Pet's weight in pounds (converted from kg)
+  double? get petWeightLbs =>
+      petWeightKg != null ? petWeightKg! * 2.20462 : null;
+
+  /// Whether persona selection is complete
+  bool get hasPersonaSelection => treatmentApproach != null;
+
+  /// Whether basic pet info is complete
+  bool get hasBasicPetInfo =>
+      petName != null &&
+      petName!.isNotEmpty &&
+      petAge != null &&
+      petAge! > 0 &&
+      petWeightKg != null &&
+      petWeightKg! > 0;
+
+  /// Whether we have minimum required data for first checkpoint
+  bool get hasMinimumData => hasPersonaSelection && hasBasicPetInfo;
+
+  /// Whether treatment setup is relevant (based on persona)
+  bool get needsTreatmentSetup => treatmentApproach != null;
+
+  /// Whether medical info has any data
+  bool get hasMedicalInfo =>
+      ckdDiagnosisDate != null ||
+      irisStage != null ||
+      veterinarianName != null ||
+      veterinaryClinic != null ||
+      (notes != null && notes!.isNotEmpty);
+
+  /// Whether data is complete enough for final profile creation
+  bool get isReadyForProfileCreation =>
+      hasMinimumData && (hasMedicalInfo || ckdDiagnosisDate != null);
+
+  /// Converts [OnboardingData] to JSON data
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'treatmentApproach': treatmentApproach?.name,
+      'petName': petName,
+      'petAge': petAge,
+      'petWeightKg': petWeightKg,
+      'ckdDiagnosisDate': ckdDiagnosisDate?.toIso8601String(),
+      'irisStage': irisStage?.name,
+      'veterinarianName': veterinarianName,
+      'veterinaryClinic': veterinaryClinic,
+      'notes': notes,
+      'hasSkippedWelcome': hasSkippedWelcome,
+      'useMetricUnits': useMetricUnits,
+    };
+  }
+
+  /// Creates a copy of this [OnboardingData] with the given fields replaced
+  OnboardingData copyWith({
+    String? userId,
+    UserPersona? treatmentApproach,
+    String? petName,
+    int? petAge,
+    double? petWeightKg,
+    DateTime? ckdDiagnosisDate,
+    IrisStage? irisStage,
+    String? veterinarianName,
+    String? veterinaryClinic,
+    String? notes,
+    bool? hasSkippedWelcome,
+    bool? useMetricUnits,
+  }) {
+    return OnboardingData(
+      userId: userId ?? this.userId,
+      treatmentApproach: treatmentApproach ?? this.treatmentApproach,
+      petName: petName ?? this.petName,
+      petAge: petAge ?? this.petAge,
+      petWeightKg: petWeightKg ?? this.petWeightKg,
+      ckdDiagnosisDate: ckdDiagnosisDate ?? this.ckdDiagnosisDate,
+      irisStage: irisStage ?? this.irisStage,
+      veterinarianName: veterinarianName ?? this.veterinarianName,
+      veterinaryClinic: veterinaryClinic ?? this.veterinaryClinic,
+      notes: notes ?? this.notes,
+      hasSkippedWelcome: hasSkippedWelcome ?? this.hasSkippedWelcome,
+      useMetricUnits: useMetricUnits ?? this.useMetricUnits,
+    );
+  }
+
+  /// Updates weight with a new value in kilograms
+  OnboardingData updateWeightKg(double newWeightKg) {
+    return copyWith(petWeightKg: newWeightKg);
+  }
+
+  /// Updates weight with a new value in pounds (converted to kg)
+  OnboardingData updateWeightLbs(double newWeightLbs) {
+    return updateWeightKg(newWeightLbs / 2.20462);
+  }
+
+  /// Clears all medical information
+  // ignore_for_file: avoid_redundant_argument_values
+  OnboardingData clearMedicalInfo() {
+    // We need to explicitly pass null values to clear existing medical data
+    return copyWith(
+      ckdDiagnosisDate: null,
+      irisStage: null,
+      veterinarianName: null,
+      veterinaryClinic: null,
+      notes: null,
+    );
+  }
+
+  /// Validates the collected data
+  List<String> validate() {
+    final errors = <String>[];
+
+    // Pet name validation
+    if (petName != null) {
+      if (petName!.isEmpty) {
+        errors.add('Pet name cannot be empty');
+      } else if (petName!.length > 50) {
+        errors.add('Pet name must be 50 characters or less');
+      }
+    }
+
+    // Age validation
+    if (petAge != null) {
+      if (petAge! < 0) {
+        errors.add('Age cannot be negative');
+      } else if (petAge! > 25) {
+        errors.add('Age seems unrealistic (over 25 years)');
+      }
+    }
+
+    // Weight validation
+    if (petWeightKg != null) {
+      if (petWeightKg! <= 0) {
+        errors.add('Weight must be greater than 0');
+      } else if (petWeightKg! > 15) {
+        errors.add('Weight seems unrealistic (over 15kg for a cat)');
+      }
+    }
+
+    // CKD diagnosis date validation
+    if (ckdDiagnosisDate != null && ckdDiagnosisDate!.isAfter(DateTime.now())) {
+      errors.add('CKD diagnosis date cannot be in the future');
+    }
+
+    // Age vs diagnosis consistency
+    if (petAge != null &&
+        ckdDiagnosisDate != null &&
+        petAge! > 0 &&
+        ckdDiagnosisDate != null) {
+      final diagnosisAge =
+          DateTime.now().difference(ckdDiagnosisDate!).inDays / 365.25;
+      if (diagnosisAge > petAge!) {
+        errors.add('CKD diagnosis date suggests pet is older than stated age');
+      }
+    }
+
+    return errors;
+  }
+
+  /// Converts to a complete CatProfile for final save
+  CatProfile? toCatProfile({required String petId}) {
+    if (!hasMinimumData || userId == null || treatmentApproach == null) {
+      return null;
+    }
+
+    final medicalInfo = MedicalInfo(
+      ckdDiagnosisDate: ckdDiagnosisDate,
+      irisStage: irisStage,
+      veterinarianName: veterinarianName,
+      veterinaryClinic: veterinaryClinic,
+      notes: notes,
+    );
+
+    final now = DateTime.now();
+
+    return CatProfile(
+      id: petId,
+      userId: userId!,
+      name: petName!,
+      ageYears: petAge!,
+      weightKg: petWeightKg!,
+      treatmentApproach: treatmentApproach!,
+      medicalInfo: medicalInfo,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  /// Creates a minimal CatProfile for checkpoint saves
+  CatProfile? toMinimalCatProfile({required String petId}) {
+    if (!hasBasicPetInfo || userId == null || treatmentApproach == null) {
+      return null;
+    }
+
+    final now = DateTime.now();
+
+    return CatProfile(
+      id: petId,
+      userId: userId!,
+      name: petName!,
+      ageYears: petAge!,
+      weightKg: petWeightKg!,
+      treatmentApproach: treatmentApproach!,
+      medicalInfo: const MedicalInfo(),
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is OnboardingData &&
+        other.userId == userId &&
+        other.treatmentApproach == treatmentApproach &&
+        other.petName == petName &&
+        other.petAge == petAge &&
+        other.petWeightKg == petWeightKg &&
+        other.ckdDiagnosisDate == ckdDiagnosisDate &&
+        other.irisStage == irisStage &&
+        other.veterinarianName == veterinarianName &&
+        other.veterinaryClinic == veterinaryClinic &&
+        other.notes == notes &&
+        other.hasSkippedWelcome == hasSkippedWelcome &&
+        other.useMetricUnits == useMetricUnits;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      userId,
+      treatmentApproach,
+      petName,
+      petAge,
+      petWeightKg,
+      ckdDiagnosisDate,
+      irisStage,
+      veterinarianName,
+      veterinaryClinic,
+      notes,
+      hasSkippedWelcome,
+      useMetricUnits,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'OnboardingData('
+        'userId: $userId, '
+        'treatmentApproach: $treatmentApproach, '
+        'petName: $petName, '
+        'petAge: $petAge, '
+        'petWeightKg: $petWeightKg, '
+        'ckdDiagnosisDate: $ckdDiagnosisDate, '
+        'irisStage: $irisStage, '
+        'veterinarianName: $veterinarianName, '
+        'veterinaryClinic: $veterinaryClinic, '
+        'notes: $notes, '
+        'hasSkippedWelcome: $hasSkippedWelcome, '
+        'useMetricUnits: $useMetricUnits'
+        ')';
+  }
+}
