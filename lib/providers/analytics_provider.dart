@@ -36,6 +36,18 @@ class AnalyticsEvents {
 
   /// Error event name
   static const String error = 'app_error';
+
+  /// Onboarding started event name
+  static const String onboardingStarted = 'onboarding_started';
+
+  /// Onboarding step completed event name
+  static const String onboardingStepCompleted = 'onboarding_step_completed';
+
+  /// Onboarding completed event name
+  static const String onboardingCompleted = 'onboarding_completed';
+
+  /// Onboarding abandoned event name
+  static const String onboardingAbandoned = 'onboarding_abandoned';
 }
 
 /// Analytics parameters
@@ -60,6 +72,30 @@ class AnalyticsParams {
 
   /// User type parameter name
   static const String userType = 'user_type';
+
+  /// Onboarding step parameter name
+  static const String step = 'step';
+
+  /// Next step parameter name
+  static const String nextStep = 'next_step';
+
+  /// Progress percentage parameter name
+  static const String progressPercentage = 'progress_percentage';
+
+  /// User persona parameter name
+  static const String userPersona = 'user_persona';
+
+  /// Pet ID parameter name
+  static const String petId = 'pet_id';
+
+  /// Treatment approach parameter name
+  static const String treatmentApproach = 'treatment_approach';
+
+  /// Duration parameter name
+  static const String duration = 'duration_seconds';
+
+  /// Completion rate parameter name
+  static const String completionRate = 'completion_rate';
 }
 
 /// User types for analytics
@@ -260,6 +296,84 @@ class AnalyticsService {
 
     await _analytics.setUserId();
     await _analytics.resetAnalyticsData();
+  }
+
+  /// Track onboarding started
+  Future<void> trackOnboardingStarted({
+    required String userId,
+    String? timestamp,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.onboardingStarted,
+      parameters: {
+        'user_id': userId,
+        if (timestamp != null) 'timestamp': timestamp,
+      },
+    );
+  }
+
+  /// Track onboarding step completed
+  Future<void> trackOnboardingStepCompleted({
+    required String userId,
+    required String step,
+    required String nextStep,
+    required double progressPercentage,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.onboardingStepCompleted,
+      parameters: {
+        'user_id': userId,
+        AnalyticsParams.step: step,
+        AnalyticsParams.nextStep: nextStep,
+        AnalyticsParams.progressPercentage: progressPercentage,
+      },
+    );
+  }
+
+  /// Track onboarding completed
+  Future<void> trackOnboardingCompleted({
+    required String userId,
+    required String petId,
+    required String treatmentApproach,
+    int? durationSeconds,
+    double completionRate = 1.0,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.onboardingCompleted,
+      parameters: {
+        'user_id': userId,
+        AnalyticsParams.petId: petId,
+        AnalyticsParams.treatmentApproach: treatmentApproach,
+        if (durationSeconds != null) AnalyticsParams.duration: durationSeconds,
+        AnalyticsParams.completionRate: completionRate,
+      },
+    );
+  }
+
+  /// Track onboarding abandoned
+  Future<void> trackOnboardingAbandoned({
+    required String userId,
+    required String lastStep,
+    required double progressPercentage,
+    int? timeSpentSeconds,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.onboardingAbandoned,
+      parameters: {
+        'user_id': userId,
+        AnalyticsParams.step: lastStep,
+        AnalyticsParams.progressPercentage: progressPercentage,
+        if (timeSpentSeconds != null) 'time_spent_seconds': timeSpentSeconds,
+      },
+    );
   }
 }
 

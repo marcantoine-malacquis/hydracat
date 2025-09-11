@@ -1,0 +1,448 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hydracat/features/onboarding/exceptions/onboarding_exceptions.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_progress.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
+import 'package:hydracat/features/onboarding/services/onboarding_service.dart';
+import 'package:hydracat/providers/auth_provider.dart';
+
+/// Onboarding state that holds current progress and data
+@immutable
+class OnboardingState {
+  /// Creates an [OnboardingState] instance
+  const OnboardingState({
+    this.progress,
+    this.data,
+    this.isLoading = false,
+    this.error,
+    this.isActive = false,
+  });
+
+  /// Creates initial empty state
+  const OnboardingState.initial()
+      : progress = null,
+        data = null,
+        isLoading = false,
+        error = null,
+        isActive = false;
+
+  /// Creates loading state
+  const OnboardingState.loading()
+      : progress = null,
+        data = null,
+        isLoading = true,
+        error = null,
+        isActive = false;
+
+  /// Current onboarding progress
+  final OnboardingProgress? progress;
+
+  /// Current onboarding data
+  final OnboardingData? data;
+
+  /// Whether an operation is in progress
+  final bool isLoading;
+
+  /// Current error if any
+  final OnboardingException? error;
+
+  /// Whether onboarding is currently active
+  final bool isActive;
+
+  /// Whether onboarding is complete
+  bool get isComplete => progress?.isComplete ?? false;
+
+  /// Current step if onboarding is active
+  OnboardingStepType? get currentStep => progress?.currentStep;
+
+  /// Whether can progress from current step
+  bool get canProgressFromCurrentStep =>
+      progress?.canProgressFromCurrentStep ?? false;
+
+  /// Whether can go back from current step
+  bool get canGoBack => progress?.canGoBack ?? false;
+
+  /// Whether can skip current step
+  bool get canSkipCurrentStep => progress?.canSkipCurrentStep ?? false;
+
+  /// Progress percentage (0.0 to 1.0)
+  double get progressPercentage => progress?.progressPercentage ?? 0.0;
+
+  /// Number of completed steps
+  int get completedStepsCount => progress?.completedStepsCount ?? 0;
+
+  /// Whether there's an error
+  bool get hasError => error != null;
+
+  /// Creates a copy of this [OnboardingState] with the given fields replaced
+  OnboardingState copyWith({
+    OnboardingProgress? progress,
+    OnboardingData? data,
+    bool? isLoading,
+    OnboardingException? error,
+    bool? isActive,
+  }) {
+    return OnboardingState(
+      progress: progress ?? this.progress,
+      data: data ?? this.data,
+      isLoading: isLoading ?? this.isLoading,
+      error: error ?? this.error,
+      isActive: isActive ?? this.isActive,
+    );
+  }
+
+  /// Creates a copy with error cleared
+  OnboardingState clearError() {
+    return copyWith();
+  }
+
+  /// Creates a copy with loading state
+  OnboardingState withLoading({required bool loading}) {
+    return copyWith(isLoading: loading);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is OnboardingState &&
+        other.progress == progress &&
+        other.data == data &&
+        other.isLoading == isLoading &&
+        other.error == error &&
+        other.isActive == isActive;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      progress,
+      data,
+      isLoading,
+      error,
+      isActive,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'OnboardingState('
+        'progress: $progress, '
+        'data: $data, '
+        'isLoading: $isLoading, '
+        'error: $error, '
+        'isActive: $isActive'
+        ')';
+  }
+}
+
+/// Notifier class for managing onboarding state
+class OnboardingNotifier extends StateNotifier<OnboardingState> {
+  /// Creates an [OnboardingNotifier] with the provided dependencies
+  OnboardingNotifier(this._onboardingService, this._ref)
+      : super(const OnboardingState.initial()) {
+    _listenToProgressStream();
+  }
+
+  final OnboardingService _onboardingService;
+  final Ref _ref;
+  StreamSubscription<OnboardingProgress?>? _progressSubscription;
+
+  /// Listen to onboarding progress stream for real-time updates
+  void _listenToProgressStream() {
+    _progressSubscription = _onboardingService.progressStream.listen(
+      (progress) {
+        // Update state with new progress
+        state = state.copyWith(
+          progress: progress,
+          isActive: progress != null && !progress.isComplete,
+        );
+      },
+      onError: (Object error) {
+        // Handle stream errors
+        if (error is OnboardingException) {
+          state = state.copyWith(
+            isLoading: false,
+            error: error,
+          );
+        } else {
+          state = state.copyWith(
+            isLoading: false,
+            error: OnboardingServiceException('Unexpected error: $error'),
+          );
+        }
+      },
+    );
+  }
+
+  /// Start a new onboarding session
+  Future<bool> startOnboarding(String userId) async {
+    state = state.withLoading(loading: true);
+
+    final result = await _onboardingService.startOnboarding(userId);
+
+    switch (result) {
+      case OnboardingSuccess():
+        state = state.copyWith(
+          isLoading: false,
+          isActive: true,
+        );
+        return true;
+
+      case OnboardingFailure(exception: final exception):
+        state = state.copyWith(
+          isLoading: false,
+          error: exception,
+          isActive: false,
+        );
+        return false;
+    }
+  }
+
+  /// Resume an existing onboarding session
+  Future<bool> resumeOnboarding(String userId) async {
+    state = state.withLoading(loading: true);
+
+    final result = await _onboardingService.resumeOnboarding(userId);
+
+    switch (result) {
+      case OnboardingSuccess(data: final data):
+        state = state.copyWith(
+          data: data as OnboardingData?,
+          isLoading: false,
+          isActive: true,
+        );
+        return true;
+
+      case OnboardingFailure(exception: final exception):
+        state = state.copyWith(
+          isLoading: false,
+          error: exception,
+          isActive: false,
+        );
+        return false;
+    }
+  }
+
+  /// Update onboarding data
+  Future<bool> updateData(OnboardingData newData) async {
+    state = state.withLoading(loading: true);
+
+    final result = await _onboardingService.updateData(newData);
+
+    switch (result) {
+      case OnboardingSuccess():
+        state = state.copyWith(
+          data: newData,
+          isLoading: false,
+        );
+        return true;
+
+      case OnboardingFailure(exception: final exception):
+        state = state.copyWith(
+          isLoading: false,
+          error: exception,
+        );
+        return false;
+    }
+  }
+
+  /// Move to the next step in the onboarding flow
+  Future<bool> moveToNextStep() async {
+    state = state.withLoading(loading: true);
+
+    final result = await _onboardingService.moveToNextStep();
+
+    switch (result) {
+      case OnboardingSuccess():
+        state = state.copyWith(
+          isLoading: false,
+        );
+        return true;
+
+      case OnboardingFailure(exception: final exception):
+        state = state.copyWith(
+          isLoading: false,
+          error: exception,
+        );
+        return false;
+    }
+  }
+
+  /// Move to the previous step in the onboarding flow
+  Future<bool> moveToPreviousStep() async {
+    state = state.withLoading(loading: true);
+
+    final result = await _onboardingService.moveToPreviousStep();
+
+    switch (result) {
+      case OnboardingSuccess():
+        state = state.copyWith(
+          isLoading: false,
+        );
+        return true;
+
+      case OnboardingFailure(exception: final exception):
+        state = state.copyWith(
+          isLoading: false,
+          error: exception,
+        );
+        return false;
+    }
+  }
+
+  /// Complete the onboarding flow
+  Future<bool> completeOnboarding() async {
+    state = state.withLoading(loading: true);
+
+    final result = await _onboardingService.completeOnboarding();
+
+    switch (result) {
+      case OnboardingSuccess(data: final petProfile):
+        // Mark onboarding as complete in auth
+        final authNotifier = _ref.read(authProvider.notifier);
+        final success = await authNotifier.markOnboardingComplete(
+          (petProfile as dynamic).id as String,
+        );
+
+        if (success) {
+          state = state.copyWith(
+            isLoading: false,
+            isActive: false,
+          );
+          return true;
+        } else {
+          state = state.copyWith(
+            isLoading: false,
+            error: const OnboardingServiceException(
+              'Failed to update user onboarding status',
+            ),
+          );
+          return false;
+        }
+
+      case OnboardingFailure(exception: final exception):
+        state = state.copyWith(
+          isLoading: false,
+          error: exception,
+        );
+        return false;
+    }
+  }
+
+  /// Clear the current error
+  void clearError() {
+    state = state.clearError();
+  }
+
+  /// Check if user has incomplete onboarding data
+  Future<bool> hasIncompleteOnboarding(String userId) async {
+    return _onboardingService.hasIncompleteOnboarding(userId);
+  }
+
+  /// Clear all onboarding data for a user
+  Future<void> clearOnboardingData(String userId) async {
+    await _onboardingService.clearOnboardingData(userId);
+    
+    // Reset state if clearing current user's data
+    final currentUserId = _ref.read(currentUserProvider)?.id;
+    if (currentUserId == userId) {
+      state = const OnboardingState.initial();
+    }
+  }
+
+  @override
+  void dispose() {
+    _progressSubscription?.cancel();
+    _onboardingService.dispose();
+    super.dispose();
+  }
+}
+
+/// Provider for the OnboardingService instance
+final onboardingServiceProvider = Provider<OnboardingService>((ref) {
+  return OnboardingService();
+});
+
+/// Provider for the onboarding state notifier
+final onboardingProvider =
+    StateNotifierProvider<OnboardingNotifier, OnboardingState>((ref) {
+  final service = ref.read(onboardingServiceProvider);
+  return OnboardingNotifier(service, ref);
+});
+
+/// Optimized provider to get current onboarding progress
+final onboardingProgressProvider = Provider<OnboardingProgress?>((ref) {
+  return ref.watch(onboardingProvider.select((state) => state.progress));
+});
+
+/// Optimized provider to get current onboarding data
+final onboardingDataProvider = Provider<OnboardingData?>((ref) {
+  return ref.watch(onboardingProvider.select((state) => state.data));
+});
+
+/// Optimized provider to check if onboarding is active
+final isOnboardingActiveProvider = Provider<bool>((ref) {
+  return ref.watch(onboardingProvider.select((state) => state.isActive));
+});
+
+/// Optimized provider to check if onboarding is loading
+final onboardingIsLoadingProvider = Provider<bool>((ref) {
+  return ref.watch(onboardingProvider.select((state) => state.isLoading));
+});
+
+/// Optimized provider to get current onboarding error
+final onboardingErrorProvider = Provider<OnboardingException?>((ref) {
+  return ref.watch(onboardingProvider.select((state) => state.error));
+});
+
+/// Optimized provider to get current onboarding step
+final currentOnboardingStepProvider = Provider<OnboardingStepType?>((ref) {
+  return ref.watch(onboardingProvider.select((state) => state.currentStep));
+});
+
+/// Optimized provider to check if can progress from current step
+final canProgressFromCurrentStepProvider = Provider<bool>((ref) {
+  return ref.watch(onboardingProvider.select(
+    (state) => state.canProgressFromCurrentStep,
+  ));
+});
+
+/// Optimized provider to check if can go back from current step
+final canGoBackFromCurrentStepProvider = Provider<bool>((ref) {
+  return ref.watch(onboardingProvider.select((state) => state.canGoBack));
+});
+
+/// Optimized provider to check if can skip current step
+final canSkipCurrentStepProvider = Provider<bool>((ref) {
+  return ref.watch(onboardingProvider.select(
+    (state) => state.canSkipCurrentStep,
+  ));
+});
+
+/// Optimized provider to get onboarding progress percentage
+final onboardingProgressPercentageProvider = Provider<double>((ref) {
+  return ref.watch(onboardingProvider.select(
+    (state) => state.progressPercentage,
+  ));
+});
+
+/// Optimized provider to get completed steps count
+final completedStepsCountProvider = Provider<int>((ref) {
+  return ref.watch(onboardingProvider.select(
+    (state) => state.completedStepsCount,
+  ));
+});
+
+/// Optimized provider to check if onboarding is complete
+final isOnboardingCompleteProvider = Provider<bool>((ref) {
+  return ref.watch(onboardingProvider.select((state) => state.isComplete));
+});
+
+/// Optimized provider to check if onboarding has an error
+final onboardingHasErrorProvider = Provider<bool>((ref) {
+  return ref.watch(onboardingProvider.select((state) => state.hasError));
+});
