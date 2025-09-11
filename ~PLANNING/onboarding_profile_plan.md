@@ -277,18 +277,21 @@ if (petId != null) {
 
 **Learning Goal:** Consistent UI patterns for multi-step flows with production-ready analytics
 
-### Step 3.2: Create User Persona Selection Screen
-**Location:** `lib/features/onboarding/screens/`
-**Files to create:**
-- `user_persona_screen.dart` - Treatment approach selection
-- `persona_selection_card.dart` - Large visual selection buttons
+✅### Step 3.2: Create User Persona Selection Screen
+**Location:** `lib/features/onboarding/screens/` and `lib/features/onboarding/widgets/`
+**Files created:**
+- `user_persona_screen.dart` - Treatment approach selection with custom layout
+- `persona_selection_card.dart` - Reusable card component with 3D effects
 
-**Key Requirements:**
-- Three large, visually distinct persona buttons
-- Clear descriptions of each treatment approach
-- Engaging graphics placeholders for future design
-- "You can change this anytime" messaging
-- Immediate feedback on selection
+**Key Implementation:**
+- **Custom Layout**: 2 square cards horizontally (Medication Only, Fluid Only), 1 rectangle below (Medication & Fluid)
+- **3D Press Effects**: Elevation animation (2→8px) with subtle scale feedback using AnimationController
+- **Loading States**: Circular progress indicator overlay on selected card during processing
+- **Immediate Selection**: Tap → visual feedback → background processing → auto-navigate to pet basics
+- **Analytics Integration**: Tracks persona selection with OnboardingScreenWrapper
+- **Error Handling**: Graceful fallback with snackbar notifications for network/processing failures
+- **Back Navigation**: Returns to welcome screen, preserves progress state
+- **Footer Message**: "You can change this anytime in Profile" with info icon styling
 
 **Learning Goal:** Engaging user input with persona-driven experiences
 
