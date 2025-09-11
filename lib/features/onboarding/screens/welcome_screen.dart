@@ -27,20 +27,20 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
     return Column(
       children: [
         const SizedBox(height: AppSpacing.xl),
-        
+
         // Main illustration placeholder
         _buildIllustration(),
-        
+
         const SizedBox(height: AppSpacing.xl),
-        
+
         // Welcome message
         _buildWelcomeMessage(),
-        
+
         const SizedBox(height: AppSpacing.lg),
-        
+
         // Benefits list
         _buildBenefitsList(),
-        
+
         const SizedBox(height: AppSpacing.xl),
       ],
     );
@@ -138,10 +138,12 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
   void _handleGetStarted(BuildContext context, WidgetRef ref) {
     // Track onboarding started
     // TODO(onboarding): Get actual user ID from auth
-    ref.read(analyticsServiceDirectProvider).trackOnboardingStarted(
-      userId: 'current_user', // Replace with actual user ID
-      timestamp: DateTime.now().toIso8601String(),
-    );
+    ref
+        .read(analyticsServiceDirectProvider)
+        .trackOnboardingStarted(
+          userId: 'current_user', // Replace with actual user ID
+          timestamp: DateTime.now().toIso8601String(),
+        );
 
     // Navigate to next screen (user persona selection)
     // TODO(navigation): Implement navigation to user persona screen
@@ -150,7 +152,7 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
     //     builder: (_) => const OnboardingUserPersonaScreen(),
     //   ),
     // );
-    
+
     // For now, show a placeholder message and close modal if in development
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -158,7 +160,7 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
         duration: Duration(seconds: 2),
       ),
     );
-    
+
     // Close modal after a delay for development testing
     Future.delayed(const Duration(seconds: 2), () {
       if (context.mounted) {
@@ -170,12 +172,14 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
   void _handleSkip(BuildContext context, WidgetRef ref) {
     // Track onboarding skipped/abandoned
     // TODO(onboarding): Get actual user ID from auth
-    ref.read(analyticsServiceDirectProvider).trackOnboardingAbandoned(
-      userId: 'current_user', // Replace with actual user ID
-      lastStep: 'welcome',
-      progressPercentage: 0,
-      timeSpentSeconds: 0,
-    );
+    ref
+        .read(analyticsServiceDirectProvider)
+        .trackOnboardingAbandoned(
+          userId: 'current_user', // Replace with actual user ID
+          lastStep: 'welcome',
+          progressPercentage: 0,
+          timeSpentSeconds: 0,
+        );
 
     // Navigate to main app with limited functionality
     // TODO(navigation): Implement navigation to main app
@@ -184,7 +188,7 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
     //     builder: (_) => const MainAppScreen(limitedAccess: true),
     //   ),
     // );
-    
+
     // For now, show a placeholder message and close modal if in development
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -192,7 +196,7 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
         duration: Duration(seconds: 2),
       ),
     );
-    
+
     // Close modal after a delay for development testing
     Future.delayed(const Duration(seconds: 2), () {
       if (context.mounted) {

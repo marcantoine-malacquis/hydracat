@@ -98,6 +98,39 @@ class AppDateUtils {
     return age;
   }
 
+  /// Calculate total age in months from birth date
+  static int calculateAgeInMonths(DateTime birthDate) {
+    final now = DateTime.now();
+    
+    // Calculate total months
+    var months = (now.year - birthDate.year) * 12;
+    months += now.month - birthDate.month;
+    
+    // Adjust if the day hasn't been reached yet this month
+    if (now.day < birthDate.day) {
+      months--;
+    }
+    
+    return months;
+  }
+
+  /// Calculate age with months precision for display
+  static String calculateAgeWithMonths(DateTime birthDate) {
+    final totalMonths = calculateAgeInMonths(birthDate);
+    final years = totalMonths ~/ 12;
+    final months = totalMonths % 12;
+    
+    if (years == 0) {
+      return months == 1 ? '1 month' : '$months months';
+    } else if (months == 0) {
+      return years == 1 ? '1 year' : '$years years';
+    } else {
+      final yearText = years == 1 ? '1 year' : '$years years';
+      final monthText = months == 1 ? '1 month' : '$months months';
+      return '$yearText, $monthText';
+    }
+  }
+
   /// Format duration for display
   static String formatDuration(Duration duration) {
     if (duration.inHours > 0) {

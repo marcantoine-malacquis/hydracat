@@ -25,9 +25,10 @@ Implement a streamlined 4-5 screen onboarding flow that creates pet profiles and
 - **Visual Selection**: Large, clear buttons with engaging treatment-specific graphics
 
 ### Data Collection & Validation
-- **Essential Pet Info**: Name, age, weight, CKD diagnosis date, optional IRIS stage
-- **Medical Validation**: Diagnosis date not in future, realistic age ranges (0-25 years)
-- **Weight System**: Both kg/lbs support with user preference, range 0-10kg validation
+- **Essential Pet Info**: Name, date of birth (auto-calculates age with months), gender; optional weight and breed
+- **Medical Validation**: Age ranges (0-25 years), 2-decimal precision for weight, realistic date ranges
+- **Weight System**: Both kg/lbs support with user preference, silent conversion to kg storage, range 0-15kg validation
+- **Data Strategy**: Store both date of birth AND calculated age for medical precision and future queries
 - **Treatment Customization**: Persona-specific frequency, volume, medication schedules
 
 ### Integration Requirements
@@ -295,20 +296,32 @@ if (petId != null) {
 
 **Learning Goal:** Engaging user input with persona-driven experiences
 
-### Step 3.3: Create Pet Basics Screen
-**Location:** `lib/features/onboarding/screens/`
-**Files to create:**
-- `pet_basics_screen.dart` - Name, age, weight collection
-- `weight_unit_selector.dart` - Kg/lbs toggle component
+✅### Step 3.3: Create Pet Basics Screen
+**Location:** `lib/features/onboarding/screens/` and `lib/features/onboarding/widgets/`
+**Files created:**
+- `pet_basics_screen.dart` - Comprehensive pet data collection form
+- `weight_unit_selector.dart` - Kg/lbs toggle component with preference storage
+- `gender_selector.dart` - Male/female toggle button component
 
-**Key Requirements:**
-- Pet name input with conflict detection
-- Age input with validation (0-25 years)
-- Weight input with unit selection
-- Real-time validation feedback
-- First checkpoint save trigger
+**Key Implementation:**
+- **Date of Birth Input**: Date picker with automatic age calculation (years + months precision)
+- **Enhanced Age Calculation**: Extended `AppDateUtils` with `calculateAgeInMonths()` and `calculateAgeWithMonths()` methods
+- **Required Fields**: Pet name, date of birth, gender (mandatory for medical accuracy)
+- **Optional Fields**: Weight with kg/lbs conversion, breed input
+- **Form Validation**: Submit-only validation using existing `ProfileValidationService`
+- **Firebase Cost Optimized**: Zero Firebase operations during screen use (first-time onboarding = no conflict checks needed)
+- **Data Storage Strategy**: Both date of birth AND calculated age stored for future use
+- **Weight Handling**: Silent conversion to kg storage, user preference saved locally
+- **UI Components**: Custom gender selector and weight unit selector following app design guidelines
 
-**Learning Goal:** Form validation and data collection patterns
+**Key Changes from Original Plan:**
+- **No Pet Name Conflict Check**: Eliminated since this is first-time onboarding (first pet creation)
+- **Date of Birth Focus**: Changed from direct age input to date picker with automatic age calculation for medical precision
+- **No Real-time Weight Conversion**: Weight converted silently on storage, no live unit conversion display
+- **Gender Required**: Added as mandatory field for veterinary completeness
+- **Offline-First**: Complete local storage during onboarding, sync only on completion
+
+**Learning Goal:** Firebase cost-optimized form validation and medical data collection patterns
 
 ### Step 3.4: Create Treatment Setup Screens
 **Location:** `lib/features/onboarding/screens/`
@@ -538,9 +551,10 @@ if (petId != null) {
 - "Can change anytime" messaging
 
 **Screen 3: Pet Basics** (20 seconds)
-- Name, age, weight collection
-- Real-time validation
-- First checkpoint save
+- Name, date of birth (with auto age calculation), gender collection
+- Optional weight and breed input
+- Submit-only validation (Firebase cost optimized)
+- Local data storage (no Firebase operations)
 
 **Screen 4: Treatment Setup** (10 seconds)
 - Persona-specific quick setup
