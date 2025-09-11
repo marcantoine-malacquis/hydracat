@@ -259,21 +259,23 @@ if (petId != null) {
 
 ## Phase 3: Onboarding UI Screens
 
-### Step 3.1: Create Welcome & Progress Infrastructure
+✅ ### Step 3.1: Create Welcome & Progress Infrastructure
 **Location:** `lib/features/onboarding/widgets/` and `lib/features/onboarding/screens/`
-**Files to create:**
-- `onboarding_progress_indicator.dart` - Progress dots component
-- `onboarding_screen_wrapper.dart` - Common screen structure
-- `welcome_screen.dart` - Entry screen with skip option
+**Files created:**
+- `onboarding_progress_indicator.dart` - Animated 5-dot progress with teal colors
+- `onboarding_screen_wrapper.dart` - Screen wrapper with analytics tracking
+- `welcome_screen.dart` - Welcome screen with CKD messaging
 
-**Key Requirements:**
-- Professional progress indicator with colored dots
-- Consistent screen layout and animations
-- Welcome screen with engaging CKD messaging
-- Skip button with clear consequences explanation
-- Analytics integration for screen timing
+**Key Implementation:**
+- **Progress Dots**: Animated teal dots with size transitions (12px→16px for current step)
+- **Screen Wrapper**: ConsumerStatefulWidget with automatic analytics (screen timing, view tracking)
+- **Welcome Content**: CKD-focused messaging, benefits list, skip functionality
+- **Analytics Integration**: Screen timing captured in initState/dispose with proper Riverpod lifecycle
+- **Development Testing**: Added dev-only button to home screen (`FlavorConfig.isDevelopment`)
 
-**Learning Goal:** Consistent UI patterns for multi-step flows
+**Critical Fix Applied:** Riverpod lifecycle issue - stored analytics service in initState to avoid `ref.read()` calls in dispose()
+
+**Learning Goal:** Consistent UI patterns for multi-step flows with production-ready analytics
 
 ### Step 3.2: Create User Persona Selection Screen
 **Location:** `lib/features/onboarding/screens/`

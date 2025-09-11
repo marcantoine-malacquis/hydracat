@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/features/onboarding/screens/welcome_screen.dart';
 import 'package:hydracat/shared/widgets/status/connection_status_widget.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 
@@ -55,11 +57,34 @@ class HomeScreen extends ConsumerWidget {
                 child: const Text('View Component Demo'),
               ),
               
+              // Development-only onboarding test button
+              if (FlavorConfig.isDevelopment) ...[
+                const SizedBox(height: AppSpacing.md),
+                HydraButton(
+                  onPressed: () => _showOnboardingModal(context),
+                  variant: HydraButtonVariant.secondary,
+                  isFullWidth: true,
+                  child: const Text('🧪 Test Onboarding'),
+                ),
+              ],
             ],
           ),
         ),
       ),
       ),
+    );
+  }
+
+  /// Shows the onboarding flow in a modal dialog (development only).
+  void _showOnboardingModal(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false, // Prevent dismissing during onboarding
+      builder: (BuildContext context) {
+        return const Dialog.fullscreen(
+          child: OnboardingWelcomeScreen(),
+        );
+      },
     );
   }
 }
