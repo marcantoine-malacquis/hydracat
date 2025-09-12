@@ -479,16 +479,22 @@ if (petId != null) {
 
 **Learning Goal:** Complex routing with conditional navigation and state-driven UI adaptation
 
-### Step 4.2: Update App Shell for Onboarding
+✅### Step 4.2: Update App Shell for Onboarding [COMPLETED]
 **Location:** `lib/app/`
-**Files to modify:**
+**Files modified:**
 - `app_shell.dart` - Handle onboarding vs normal app states
 
-**Key Requirements:**
-- Hide bottom navigation during onboarding
-- Show appropriate app structure based on completion status
-- Handle state transitions smoothly
-- Maintain consistent theming
+**Key Implementation Completed:**
+- **Hide bottom navigation during onboarding**: Lines 115-117 - `bottomNavigationBar: isInOnboardingFlow ? null : HydraNavigationBar(...)`
+- **Show appropriate app structure based on completion status**: Lines 78-89 - FAB redirects to onboarding if not completed, to logging if completed
+- **Handle state transitions smoothly**: Lines 96-97 - Smooth detection via `currentLocation.startsWith('/onboarding')`
+- **Maintain consistent theming**: All UI components use Theme.of(context) consistently throughout
+
+**Additional Smart Implementations:**
+- **Email verification banner hidden during onboarding** (lines 104-106)
+- **Navigation index handling** (lines 63-66) - No nav item highlighted during onboarding
+- **Loading state preservation** - Auth loading states work correctly during onboarding
+- **FAB integration** - Smart redirect logic based on onboarding status
 
 **Learning Goal:** Adaptive app structure based on user state
 
