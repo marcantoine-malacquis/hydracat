@@ -4,6 +4,7 @@ import 'package:hydracat/core/extensions/string_extensions.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/widgets/gender_selector.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.dart';
 import 'package:hydracat/features/onboarding/widgets/weight_unit_selector.dart';
@@ -253,7 +254,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
   Widget build(BuildContext context) {
     return OnboardingScreenWrapper(
       currentStep: 2,
-      totalSteps: 5,
+      totalSteps: OnboardingStepType.totalSteps,
       title: 'Tell us about your cat',
       subtitle: 'We need some basic information to personalize your experience',
       onBackPressed: _goBack,

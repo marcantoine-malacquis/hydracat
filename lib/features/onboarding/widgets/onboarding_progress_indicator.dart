@@ -3,7 +3,7 @@ import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 
 /// A progress indicator widget for the onboarding flow.
-/// Shows 5 dots representing the 5 onboarding screens with animated 
+/// Dynamically shows dots representing all onboarding screens with animated 
 /// transitions.
 class OnboardingProgressIndicator extends StatefulWidget {
   /// Creates an [OnboardingProgressIndicator].

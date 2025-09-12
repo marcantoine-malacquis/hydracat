@@ -409,6 +409,7 @@ class OnboardingService {
       OnboardingStepType.welcome => true,
       OnboardingStepType.userPersona => data.hasPersonaSelection,
       OnboardingStepType.petBasics => data.hasBasicPetInfo,
+      OnboardingStepType.ckdMedicalInfo => true, // Optional step, always valid
       OnboardingStepType.treatmentSetup => data.needsTreatmentSetup,
       OnboardingStepType.completion => data.isReadyForProfileCreation,
     };

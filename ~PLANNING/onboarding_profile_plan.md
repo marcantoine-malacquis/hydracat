@@ -1,13 +1,13 @@
 # HydraCat Onboarding & Pet Profile Implementation Plan
 
 ## Overview
-Implement a streamlined 4-5 screen onboarding flow that creates pet profiles and personalizes the app experience based on treatment approach. The flow integrates seamlessly with existing auth state management, provides engaging user persona selection, and maintains medical precision while being accessible to all CKD caregivers.
+Implement a streamlined 6-screen onboarding flow that creates pet profiles and personalizes the app experience based on treatment approach. The flow integrates seamlessly with existing auth state management, provides engaging user persona selection, and maintains medical precision while being accessible to all CKD caregivers.
 
 ## Key Onboarding Requirements Summary
 
 ### Flow Structure & Experience
-- **5-Screen Journey**: Welcome → User Persona → Pet Basics → Treatment Setup → Completion (60 seconds target)
-- **Progress Indication**: Moving colored dots (1 per screen) following industry standards
+- **6-Screen Journey**: Welcome → User Persona → Pet Basics → CKD Medical Info → Treatment Setup → Completion (75 seconds target)
+- **Progress Indication**: Moving colored dots (6 total) following industry standards
 - **Slide Animations**: Smooth transitions between screens with back navigation support
 - **Skippable Entry**: Users can skip from welcome screen for limited app exploration
 - **Engaging Visuals**: Clear, medical-friendly design with treatment type illustrations
@@ -263,7 +263,7 @@ if (petId != null) {
 ✅ ### Step 3.1: Create Welcome & Progress Infrastructure
 **Location:** `lib/features/onboarding/widgets/` and `lib/features/onboarding/screens/`
 **Files created:**
-- `onboarding_progress_indicator.dart` - Animated 5-dot progress with teal colors
+- `onboarding_progress_indicator.dart` - Animated 6-dot progress with teal colors
 - `onboarding_screen_wrapper.dart` - Screen wrapper with analytics tracking
 - `welcome_screen.dart` - Welcome screen with CKD messaging
 
@@ -323,7 +323,69 @@ if (petId != null) {
 
 **Learning Goal:** Firebase cost-optimized form validation and medical data collection patterns
 
-### Step 3.4: Create Treatment Setup Screens
+### Step 3.4: Create CKD Medical Information Screen
+**Location:** `lib/features/onboarding/screens/`
+**Files to create:**
+- `ckd_medical_info_screen.dart` - Professional CKD medical data collection
+- `iris_stage_selector.dart` - IRIS stage selection widget with "Unknown" option
+- `lab_values_input.dart` - Laboratory values input widget
+
+**Key Requirements:**
+- Empathetic screen title: "Last Bloodwork Results"
+- IRIS stage selection: Horizontal 5-button layout (Stage 1, 2, 3, 4, "Unknown")
+- Laboratory values input: Creatinine (mg/dL), BUN (mg/dL), SDMA (μg/dL)
+- Bloodwork date picker (required if any lab values provided)
+- Last checkup date picker (optional)
+- Skip functionality with caring messaging
+- Professional medical presentation reinforcing veterinary credibility
+- Local data storage only (Firebase cost optimized)
+
+**Key Implementation:**
+- **Empathetic Messaging**: "Help us understand your cat's recent lab work. This information helps personalize your experience."
+- **Skip Option**: "Don't have recent bloodwork? No problem - you can add this information anytime."
+- **IRIS Stage UI**: 5 horizontal buttons with clear visual distinction for "Unknown" option
+- **Lab Values**: Simple numeric inputs with unit labels, optional validation
+- **Date Handling**: Bloodwork date required only if lab values provided
+- **Professional Focus**: Structured medical data collection showing veterinary expertise
+- **Form Validation**: Submit-only validation, no real-time Firebase operations
+- **Future-Ready**: Data structure supports historical lab value tracking
+
+**Data Model Extensions:**
+- New `LabValues` class within `MedicalInfo`:
+  - `bloodworkDate` (DateTime?, required if lab values provided)
+  - `creatinineMgDl` (double?, optional)
+  - `bunMgDl` (double?, optional) 
+  - `sdmaMcgDl` (double?, optional)
+- Extended `OnboardingData` with lab value fields for local storage
+- Backward compatibility maintained with existing medical data structure
+
+**Learning Goal:** Professional medical data collection with empathetic user experience
+
+✅### Step 3.4: Create CKD Medical Information Screen [COMPLETED]
+**Location:** `lib/features/onboarding/screens/`
+**Files created:**
+- `ckd_medical_info_screen.dart` - Complete professional medical data collection screen
+- `iris_stage_selector.dart` - Horizontal 5-button IRIS stage selector (Stages 1-4 + "Unknown")
+- `lab_values_input.dart` - Professional lab values input with decimal validation
+
+**Key Implementation Completed:**
+- **Empathetic Introduction**: Heart icon with "We understand this can be overwhelming" messaging
+- **IRIS Stage Selection**: 5 horizontal buttons with visual feedback and stage descriptions
+- **Lab Values Input**: Creatinine, BUN, SDMA fields with proper decimal formatting and unit labels
+- **Date Pickers**: Bloodwork date (required with lab values) and last checkup date (optional)
+- **Skip Dialog**: Empathetic skip option with caring messaging about adding info later
+- **Form Validation**: Submit-only validation with field-specific error messages
+- **Data Integration**: Complete integration with OnboardingData model and lab value fields
+- **UI Polish**: Professional medical presentation with consistent error handling
+
+**Critical Features:**
+- All fields optional with clear messaging
+- Bloodwork date required only when lab values provided
+- Professional medical credibility maintained throughout
+- Firebase cost optimized (local storage only)
+- Skip functionality preserves user autonomy
+
+### Step 3.5: Create Treatment Setup Screens
 **Location:** `lib/features/onboarding/screens/`
 **Files to create:**
 - `treatment_setup_screen.dart` - Persona-specific setup
@@ -339,7 +401,7 @@ if (petId != null) {
 
 **Learning Goal:** Conditional UI flows based on user choices
 
-### Step 3.5: Create Completion Screen
+### Step 3.6: Create Completion Screen
 **Location:** `lib/features/onboarding/screens/`
 **Files to create:**
 - `onboarding_completion_screen.dart` - Success and next steps
@@ -485,13 +547,13 @@ if (petId != null) {
 **Phase-by-Phase Goals:**
 - **Phase 1:** Data models support complete onboarding flow
 - **Phase 2:** Services handle complex onboarding logic with conflict resolution
-- **Phase 3:** Engaging 5-screen UI flow with 60-second target completion
+- **Phase 3:** Engaging 6-screen UI flow with 75-second target completion
 - **Phase 4:** Seamless navigation integration with existing auth system
 - **Phase 5:** Full analytics tracking and robust error handling
 - **Phase 6:** Ongoing profile management with persona flexibility
 
 **Overall Success:**
-- [x] New users complete engaging onboarding in ~60 seconds
+- [x] New users complete engaging onboarding in ~75 seconds
 - [x] Three persona types drive adaptive app experience
 - [x] Single pet profile supports comprehensive CKD management
 - [x] Seamless integration with existing auth and state management
@@ -556,14 +618,154 @@ if (petId != null) {
 - Submit-only validation (Firebase cost optimized)
 - Local data storage (no Firebase operations)
 
-**Screen 4: Treatment Setup** (10 seconds)
+**Screen 4: CKD Medical Information** (15 seconds)
+- Empathetic "Last Bloodwork Results" presentation
+- IRIS stage selection (1, 2, 3, 4, "Unknown")
+- Laboratory values: Creatinine, BUN, SDMA (optional)
+- Bloodwork date and last checkup date
+- Skip option with caring messaging
+- Professional medical data collection
+
+**Screen 5: Treatment Setup** (10 seconds)
 - Persona-specific quick setup
-- Optional medical history
 - Future customization messaging
 
-**Screen 5: Completion** (5 seconds)
+**Screen 6: Completion** (5 seconds)
 - Celebration and next steps
 - Analytics completion
 - Navigate to personalized home
 
-**Total Target: 60 seconds with engaging, medical-focused experience**
+**Total Target: 75 seconds with engaging, medical-focused experience**
+
+---
+
+## Step 3.5: Treatment Setup Screens - Detailed Implementation Plan
+
+### Overview
+Create persona-adaptive treatment setup screens with complex medication management, fluid therapy configuration, and local-first data storage following Firebase cost optimization.
+
+### Core Implementation Components
+
+#### 1. Treatment Data Models (`lib/features/onboarding/models/`)
+
+**Create `treatment_data.dart`:**
+- `TreatmentData` base class with persona-specific subclasses
+- `MedicationData` class: name, unit, frequency, reminderTimes, summary
+- `FluidTherapyData` class: frequency, volumePerAdministration, preferredLocation, needleGauge
+- `TreatmentFrequency` enum: onceDaily, twiceDaily, thriceDaily, everyOtherDay, every3Days
+- `MedicationUnit` enum: alphabetical list (ampoules, capsules, drops, injections, micrograms, milligrams, milliliters, pills, portions, sachets, tablespoon, teaspoon)
+- `FluidLocation` enum: shoulderBladeLeft, shoulderBladeRight, hipBonesLeft, hipBonesRight
+- JSON serialization for local storage persistence
+
+#### 2. Extended OnboardingData Model
+
+**Update `onboarding_data.dart`:**
+- Add `List<MedicationData>? medications` field
+- Add `FluidTherapyData? fluidTherapy` field  
+- Add helper methods: `hasTreatmentData`, `isTreatmentSetupComplete`
+- Update `copyWith`, `toJson`, `fromJson`, `validate` methods
+- Maintain data when persona changes (preserve existing treatment data)
+
+#### 3. Treatment Setup Screens
+
+**Medication Setup Screens:**
+- `treatment_medication_screen.dart`: Main medication list with + button, medication summaries, Next button
+- `add_medication_screen.dart`: Multi-step popup flow (name/unit → frequency → reminder times)
+- Reusable popup components with iOS-style rotating wheels
+- Local validation and immediate local storage on medication save
+
+**Fluid Therapy Setup Screen:**
+- `treatment_fluid_screen.dart`: Single scrollable screen with all fluid therapy fields
+- Form validation for required fields (frequency, volume, location, needle gauge)
+- Local storage on Next button press
+
+**Combined Flow Screen:**
+- `treatment_setup_screen.dart`: Router screen that determines which treatment screens to show based on persona
+- Handles navigation flow: medication → fluid for combined persona
+
+#### 4. Reusable UI Components
+
+**Create treatment-specific widgets (`lib/features/onboarding/widgets/`):**
+- `medication_summary_card.dart`: Display medication with summary text
+- `rotating_wheel_picker.dart`: iOS-style picker for units, frequency, locations
+- `time_picker_group.dart`: Multiple time pickers based on frequency
+- `treatment_popup_wrapper.dart`: Consistent popup styling with Next/Save buttons
+
+#### 5. Navigation Flow Updates
+
+**Update existing files:**
+- `OnboardingStepType`: Ensure treatmentSetup routing works correctly
+- Navigation logic: medicationOnly → medication screen → completion, fluidTherapyOnly → fluid screen → completion, combined → medication → fluid → completion
+- Back navigation preserves all treatment data across persona changes
+- Local storage after each screen transition
+
+#### 6. Analytics Integration
+
+**Update analytics tracking:**
+- Track average fluid volumes in completion analytics
+- Treatment setup completion events
+- No persona change tracking within onboarding flow
+
+#### 7. Local Storage & Firebase Integration
+
+**Storage Pattern:**
+- All treatment data stored locally during setup using SecurePreferencesService
+- Zero Firebase writes during treatment setup screens
+- Single comprehensive write on completion screen "Finish" button
+- Include treatment data in final CatProfile creation
+
+#### 8. Validation & Error Handling
+
+**Treatment-specific validation:**
+- Medication name required, unit selection required
+- Frequency selection required, reminder times match frequency count
+- Fluid therapy: all fields required with realistic ranges
+- Integrate with existing OnboardingData.validate() method
+
+### Detailed User Experience Flow
+
+#### Medication Setup Flow (medicationOnly & medicationAndFluidTherapy personas):
+
+1. **Main Medication Screen**: List of added medications with + button
+   - Display medication summary cards ("One pill daily", "1/2 pill twice a day")
+   - + button opens add medication popup
+   - "You can update your schedules anytime in the Profile section" message
+   - Next button (enabled when at least one medication added)
+
+2. **Add Medication Popup Chain**:
+   - **Step 1**: Medication name (text input) + unit selection (rotating wheel: ampoules, capsules, drops, injections, micrograms, milligrams, milliliters, pills, portions, sachets, tablespoon, teaspoon)
+   - **Step 2**: Frequency selection (onceDaily, twiceDaily, thriceDaily, everyOtherDay, every3Days)
+   - **Step 3**: Reminder times (time pickers based on frequency count: First intake, Second intake, Third intake)
+   - Save button stores medication locally and returns to main screen
+
+#### Fluid Therapy Setup Flow (fluidTherapyOnly & medicationAndFluidTherapy personas):
+
+1. **Single Scrollable Screen**:
+   - Frequency selection (rotating wheel)
+   - Volume per administration (numeric input with ml unit)
+   - Preferred location (rotating wheel: shoulder blade - left/right, hipbones - left/right)
+   - Needle gauge selection (rotating wheel)
+   - All fields required with validation
+   - Next button saves locally and progresses
+
+#### Combined Persona Flow (medicationAndFluidTherapy):
+- Medication setup screens first
+- Then fluid therapy setup screen
+- Next button on fluid screen goes to completion
+
+### Technical Architecture Benefits
+
+- **Firebase Cost Optimized**: Zero reads/writes during treatment setup, single write on completion
+- **Data Preservation**: Users can change personas without losing treatment data  
+- **Modular Design**: Separate treatment data classes enable future expansion
+- **Consistent UX**: iOS-style pickers and popup flows match medical app standards
+- **Analytics Ready**: Built-in tracking for business insights on treatment preferences
+
+### Success Criteria
+
+- ✅ Persona-adaptive treatment setup flows completed in ~10 seconds each
+- ✅ Complex medication addition with intuitive multi-popup flow
+- ✅ All treatment data preserved during persona changes and navigation
+- ✅ Zero Firebase operations during treatment setup (cost optimized)
+- ✅ Professional medical presentation with "update later" messaging
+- ✅ Seamless integration with existing onboarding flow and completion

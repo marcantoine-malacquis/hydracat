@@ -11,6 +11,9 @@ enum OnboardingStepType {
   /// Pet basics - name, age, weight
   petBasics,
 
+  /// CKD medical information - IRIS stage and lab values
+  ckdMedicalInfo,
+
   /// Treatment setup - persona-specific configuration
   treatmentSetup,
 
@@ -22,6 +25,7 @@ enum OnboardingStepType {
         OnboardingStepType.welcome => 'Welcome',
         OnboardingStepType.userPersona => 'Treatment Approach',
         OnboardingStepType.petBasics => 'Pet Information',
+        OnboardingStepType.ckdMedicalInfo => 'Medical Information',
         OnboardingStepType.treatmentSetup => 'Treatment Setup',
         OnboardingStepType.completion => 'Complete',
       };
@@ -31,6 +35,7 @@ enum OnboardingStepType {
         OnboardingStepType.welcome => 'onboarding_welcome_viewed',
         OnboardingStepType.userPersona => 'onboarding_persona_viewed',
         OnboardingStepType.petBasics => 'onboarding_basics_viewed',
+        OnboardingStepType.ckdMedicalInfo => 'onboarding_medical_viewed',
         OnboardingStepType.treatmentSetup => 'onboarding_treatment_viewed',
         OnboardingStepType.completion => 'onboarding_completion_viewed',
       };
@@ -40,6 +45,7 @@ enum OnboardingStepType {
         OnboardingStepType.welcome => '/onboarding/welcome',
         OnboardingStepType.userPersona => '/onboarding/persona',
         OnboardingStepType.petBasics => '/onboarding/basics',
+        OnboardingStepType.ckdMedicalInfo => '/onboarding/medical',
         OnboardingStepType.treatmentSetup => '/onboarding/treatment',
         OnboardingStepType.completion => '/onboarding/completion',
       };
@@ -49,6 +55,7 @@ enum OnboardingStepType {
         OnboardingStepType.welcome => true,
         OnboardingStepType.userPersona => false,
         OnboardingStepType.petBasics => false,
+        OnboardingStepType.ckdMedicalInfo => true,
         OnboardingStepType.treatmentSetup => true,
         OnboardingStepType.completion => false,
       };
@@ -58,6 +65,7 @@ enum OnboardingStepType {
         OnboardingStepType.welcome => false,
         OnboardingStepType.userPersona => true,
         OnboardingStepType.petBasics => true,
+        OnboardingStepType.ckdMedicalInfo => true,
         OnboardingStepType.treatmentSetup => true,
         OnboardingStepType.completion => false,
       };
@@ -67,6 +75,7 @@ enum OnboardingStepType {
         OnboardingStepType.welcome => false,
         OnboardingStepType.userPersona => true, // First checkpoint
         OnboardingStepType.petBasics => true,   // Second checkpoint
+        OnboardingStepType.ckdMedicalInfo => false,
         OnboardingStepType.treatmentSetup => false,
         OnboardingStepType.completion => true,  // Final save
       };
@@ -76,15 +85,17 @@ enum OnboardingStepType {
         OnboardingStepType.welcome => 0,
         OnboardingStepType.userPersona => 1,
         OnboardingStepType.petBasics => 2,
-        OnboardingStepType.treatmentSetup => 3,
-        OnboardingStepType.completion => 4,
+        OnboardingStepType.ckdMedicalInfo => 3,
+        OnboardingStepType.treatmentSetup => 4,
+        OnboardingStepType.completion => 5,
       };
 
   /// Next step in the flow (null if this is the last step)
   OnboardingStepType? get nextStep => switch (this) {
         OnboardingStepType.welcome => OnboardingStepType.userPersona,
         OnboardingStepType.userPersona => OnboardingStepType.petBasics,
-        OnboardingStepType.petBasics => OnboardingStepType.treatmentSetup,
+        OnboardingStepType.petBasics => OnboardingStepType.ckdMedicalInfo,
+        OnboardingStepType.ckdMedicalInfo => OnboardingStepType.treatmentSetup,
         OnboardingStepType.treatmentSetup => OnboardingStepType.completion,
         OnboardingStepType.completion => null,
       };
@@ -94,7 +105,8 @@ enum OnboardingStepType {
         OnboardingStepType.welcome => null,
         OnboardingStepType.userPersona => OnboardingStepType.welcome,
         OnboardingStepType.petBasics => OnboardingStepType.userPersona,
-        OnboardingStepType.treatmentSetup => OnboardingStepType.petBasics,
+        OnboardingStepType.ckdMedicalInfo => OnboardingStepType.petBasics,
+        OnboardingStepType.treatmentSetup => OnboardingStepType.ckdMedicalInfo,
         OnboardingStepType.completion => OnboardingStepType.treatmentSetup,
       };
 

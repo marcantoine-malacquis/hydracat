@@ -4,6 +4,7 @@ import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.dart';
 import 'package:hydracat/features/onboarding/widgets/persona_selection_card.dart';
 import 'package:hydracat/features/profile/models/user_persona.dart';
@@ -126,7 +127,7 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
   Widget build(BuildContext context) {
     return OnboardingScreenWrapper(
       currentStep: 1, // Step 2 of 5 (0-indexed)
-      totalSteps: 5,
+      totalSteps: OnboardingStepType.totalSteps,
       title: "How do you manage your pet's CKD?",
       subtitle: 'Choose the approach that best matches your current '
           'treatment plan',

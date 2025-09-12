@@ -1,5 +1,143 @@
 import 'package:flutter/foundation.dart';
 
+/// Laboratory values for CKD monitoring
+@immutable
+class LabValues {
+  /// Creates a [LabValues] instance
+  const LabValues({
+    this.bloodworkDate,
+    this.creatinineMgDl,
+    this.bunMgDl,
+    this.sdmaMcgDl,
+  });
+
+  /// Creates a [LabValues] from JSON data
+  factory LabValues.fromJson(Map<String, dynamic> json) {
+    return LabValues(
+      bloodworkDate: json['bloodworkDate'] != null
+          ? DateTime.parse(json['bloodworkDate'] as String)
+          : null,
+      creatinineMgDl: json['creatinineMgDl'] != null
+          ? (json['creatinineMgDl'] as num).toDouble()
+          : null,
+      bunMgDl: json['bunMgDl'] != null
+          ? (json['bunMgDl'] as num).toDouble()
+          : null,
+      sdmaMcgDl: json['sdmaMcgDl'] != null
+          ? (json['sdmaMcgDl'] as num).toDouble()
+          : null,
+    );
+  }
+
+  /// Date when the bloodwork was performed
+  final DateTime? bloodworkDate;
+
+  /// Creatinine level in mg/dL
+  final double? creatinineMgDl;
+
+  /// Blood Urea Nitrogen (BUN) level in mg/dL
+  final double? bunMgDl;
+
+  /// Symmetric Dimethylarginine (SDMA) level in μg/dL
+  final double? sdmaMcgDl;
+
+  /// Whether any lab values are present
+  bool get hasValues =>
+      creatinineMgDl != null || bunMgDl != null || sdmaMcgDl != null;
+
+  /// Whether bloodwork date is provided with lab values
+  bool get hasCompleteData =>
+      hasValues && bloodworkDate != null;
+
+  /// Converts [LabValues] to JSON data
+  Map<String, dynamic> toJson() {
+    return {
+      'bloodworkDate': bloodworkDate?.toIso8601String(),
+      'creatinineMgDl': creatinineMgDl,
+      'bunMgDl': bunMgDl,
+      'sdmaMcgDl': sdmaMcgDl,
+    };
+  }
+
+  /// Creates a copy of this [LabValues] with the given fields replaced
+  LabValues copyWith({
+    DateTime? bloodworkDate,
+    double? creatinineMgDl,
+    double? bunMgDl,
+    double? sdmaMcgDl,
+  }) {
+    return LabValues(
+      bloodworkDate: bloodworkDate ?? this.bloodworkDate,
+      creatinineMgDl: creatinineMgDl ?? this.creatinineMgDl,
+      bunMgDl: bunMgDl ?? this.bunMgDl,
+      sdmaMcgDl: sdmaMcgDl ?? this.sdmaMcgDl,
+    );
+  }
+
+  /// Validates lab values for consistency
+  List<String> validate() {
+    final errors = <String>[];
+
+    // Bloodwork date validation
+    if (bloodworkDate != null && bloodworkDate!.isAfter(DateTime.now())) {
+      errors.add('Bloodwork date cannot be in the future');
+    }
+
+    // If any lab values are provided, bloodwork date should be provided
+    if (hasValues && bloodworkDate == null) {
+      errors.add('Bloodwork date is required when lab values are provided');
+    }
+
+    // Validate creatinine range (structural only)
+    if (creatinineMgDl != null && creatinineMgDl! <= 0) {
+      errors.add('Creatinine must be a positive number');
+    }
+
+    // Validate BUN range (structural only)
+    if (bunMgDl != null && bunMgDl! <= 0) {
+      errors.add('BUN must be a positive number');
+    }
+
+    // Validate SDMA range (structural only)
+    if (sdmaMcgDl != null && sdmaMcgDl! <= 0) {
+      errors.add('SDMA must be a positive number');
+    }
+
+    return errors;
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is LabValues &&
+        other.bloodworkDate == bloodworkDate &&
+        other.creatinineMgDl == creatinineMgDl &&
+        other.bunMgDl == bunMgDl &&
+        other.sdmaMcgDl == sdmaMcgDl;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      bloodworkDate,
+      creatinineMgDl,
+      bunMgDl,
+      sdmaMcgDl,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'LabValues('
+        'bloodworkDate: $bloodworkDate, '
+        'creatinineMgDl: $creatinineMgDl, '
+        'bunMgDl: $bunMgDl, '
+        'sdmaMcgDl: $sdmaMcgDl'
+        ')';
+  }
+}
+
 /// IRIS (International Renal Interest Society) staging for CKD
 enum IrisStage {
   /// Stage 1: Normal kidney function with some kidney damage
@@ -64,6 +202,7 @@ class MedicalInfo {
     this.irisStage,
     this.lastCheckupDate,
     this.notes,
+    this.labValues,
   });
 
   /// Creates a [MedicalInfo] from JSON data
@@ -79,6 +218,9 @@ class MedicalInfo {
           ? DateTime.parse(json['lastCheckupDate'] as String)
           : null,
       notes: json['notes'] as String?,
+      labValues: json['labValues'] != null
+          ? LabValues.fromJson(json['labValues'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -94,6 +236,9 @@ class MedicalInfo {
   /// Additional medical notes
   final String? notes;
 
+  /// Laboratory values from bloodwork
+  final LabValues? labValues;
+
   /// Converts [MedicalInfo] to JSON data
   Map<String, dynamic> toJson() {
     return {
@@ -101,6 +246,7 @@ class MedicalInfo {
       'irisStage': irisStage?.name,
       'lastCheckupDate': lastCheckupDate?.toIso8601String(),
       'notes': notes,
+      'labValues': labValues?.toJson(),
     };
   }
 
@@ -110,12 +256,14 @@ class MedicalInfo {
     IrisStage? irisStage,
     DateTime? lastCheckupDate,
     String? notes,
+    LabValues? labValues,
   }) {
     return MedicalInfo(
       ckdDiagnosisDate: ckdDiagnosisDate ?? this.ckdDiagnosisDate,
       irisStage: irisStage ?? this.irisStage,
       lastCheckupDate: lastCheckupDate ?? this.lastCheckupDate,
       notes: notes ?? this.notes,
+      labValues: labValues ?? this.labValues,
     );
   }
 
@@ -140,6 +288,11 @@ class MedicalInfo {
       errors.add('Last checkup date should be after diagnosis date');
     }
 
+    // Validate lab values if present
+    if (labValues != null) {
+      errors.addAll(labValues!.validate());
+    }
+
     return errors;
   }
 
@@ -148,7 +301,8 @@ class MedicalInfo {
       ckdDiagnosisDate != null ||
       irisStage != null ||
       lastCheckupDate != null ||
-      (notes != null && notes!.isNotEmpty);
+      (notes != null && notes!.isNotEmpty) ||
+      (labValues != null && labValues!.hasValues);
 
   @override
   bool operator ==(Object other) {
@@ -158,7 +312,8 @@ class MedicalInfo {
         other.ckdDiagnosisDate == ckdDiagnosisDate &&
         other.irisStage == irisStage &&
         other.lastCheckupDate == lastCheckupDate &&
-        other.notes == notes;
+        other.notes == notes &&
+        other.labValues == labValues;
   }
 
   @override
@@ -168,6 +323,7 @@ class MedicalInfo {
       irisStage,
       lastCheckupDate,
       notes,
+      labValues,
     );
   }
 
@@ -177,7 +333,8 @@ class MedicalInfo {
         'ckdDiagnosisDate: $ckdDiagnosisDate, '
         'irisStage: $irisStage, '
         'lastCheckupDate: $lastCheckupDate, '
-        'notes: $notes'
+        'notes: $notes, '
+        'labValues: $labValues'
         ')';
   }
 }

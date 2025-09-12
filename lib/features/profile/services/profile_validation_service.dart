@@ -366,6 +366,126 @@ class ProfileValidationService {
     }
   }
 
+  /// Validates lab values input
+  ValidationResult validateLabValues({
+    double? creatinine,
+    double? bun,
+    double? sdma,
+    DateTime? bloodworkDate,
+  }) {
+    final errors = <String>[];
+    final warnings = <String>[];
+
+    final hasValues = creatinine != null || bun != null || sdma != null;
+
+    // If any lab values are provided, bloodwork date should be provided
+    if (hasValues && bloodworkDate == null) {
+      errors.add('Bloodwork date is required when lab values are provided');
+    }
+
+    // Validate bloodwork date
+    if (bloodworkDate != null && bloodworkDate.isAfter(DateTime.now())) {
+      errors.add('Bloodwork date cannot be in the future');
+    }
+
+    // Validate creatinine (structural only)
+    if (creatinine != null && creatinine <= 0) {
+      errors.add('Creatinine must be a positive number');
+    }
+
+    // Validate BUN (structural only)
+    if (bun != null && bun <= 0) {
+      errors.add('BUN must be a positive number');
+    }
+
+    // Validate SDMA (structural only)
+    if (sdma != null && sdma <= 0) {
+      errors.add('SDMA must be a positive number');
+    }
+
+    if (errors.isNotEmpty) {
+      return ValidationResult.failure(errors);
+    } else if (warnings.isNotEmpty) {
+      return ValidationResult.withWarnings(warnings);
+    }
+
+    return const ValidationResult.success();
+  }
+
+  /// Validates IRIS stage selection
+  ValidationResult validateIrisStage(IrisStage? stage) {
+    final warnings = <String>[];
+
+    // No errors - IRIS stage is optional in most contexts
+    if (stage != null && stage.stageNumber >= 3) {
+      warnings.add(
+        'IRIS Stage ${stage.stageNumber} indicates moderate to severe '
+        'kidney disease. Close monitoring with your veterinarian is '
+        'important',
+      );
+    }
+
+    if (warnings.isNotEmpty) {
+      return ValidationResult.withWarnings(warnings);
+    }
+
+    return const ValidationResult.success();
+  }
+
+  /// Validates checkup date
+  ValidationResult validateCheckupDate(DateTime? checkupDate) {
+    final errors = <String>[];
+    final warnings = <String>[];
+
+    if (checkupDate != null) {
+      final now = DateTime.now();
+
+      // Date cannot be in the future
+      if (checkupDate.isAfter(now)) {
+        errors.add('Checkup date cannot be in the future');
+      }
+
+      // Warning if checkup was very long ago
+      final daysSinceCheckup = now.difference(checkupDate).inDays;
+      if (daysSinceCheckup > 365) {
+        warnings.add(
+          'Last checkup was over a year ago. Regular checkups are '
+          'important for CKD management',
+        );
+      }
+    }
+
+    if (errors.isNotEmpty) {
+      return ValidationResult.failure(errors);
+    } else if (warnings.isNotEmpty) {
+      return ValidationResult.withWarnings(warnings);
+    }
+
+    return const ValidationResult.success();
+  }
+
+  /// Validates medical notes (basic length and content check)
+  ValidationResult validateMedicalNotes(String? notes) {
+    final warnings = <String>[];
+
+    if (notes != null && notes.trim().isNotEmpty) {
+      final trimmedNotes = notes.trim();
+
+      // Warning for very long notes (might be better split up)
+      if (trimmedNotes.length > 1000) {
+        warnings.add(
+          'Very long notes might be better organized in separate sections',
+        );
+      }
+    }
+
+    if (warnings.isNotEmpty) {
+      return ValidationResult.withWarnings(warnings);
+    }
+
+    return const ValidationResult.success();
+  }
+
   /// Creates a ProfileValidationException from validation results
   ProfileValidationException createValidationException(
     ValidationResult result,

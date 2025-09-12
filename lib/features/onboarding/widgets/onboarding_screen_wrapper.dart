@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_progress_indicator.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
@@ -284,7 +285,7 @@ class OnboardingWelcomeWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return OnboardingScreenWrapper(
       currentStep: 0,
-      totalSteps: 5,
+      totalSteps: OnboardingStepType.totalSteps,
       title: title,
       subtitle: subtitle,
       showBackButton: false,

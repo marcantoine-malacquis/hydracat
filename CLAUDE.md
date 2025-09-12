@@ -75,7 +75,9 @@ Each feature follows domain-driven design:
 features/[feature]/
 ├── screens/               # UI screens
 ├── widgets/               # Feature-specific UI components
-├── models/                # Data models
+├── exceptions/            # Exceptions
+├── models/
+├── mixins/                # Reusable UI behavior (if needed)
 └── services/              # Business logic
 ```
 

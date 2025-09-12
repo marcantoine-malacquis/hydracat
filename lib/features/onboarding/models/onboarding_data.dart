@@ -19,6 +19,10 @@ class OnboardingData {
     this.notes,
     this.hasSkippedWelcome = false,
     this.useMetricUnits = true,
+    this.bloodworkDate,
+    this.creatinineMgDl,
+    this.bunMgDl,
+    this.sdmaMcgDl,
   });
 
   /// Creates empty initial data
@@ -32,7 +36,11 @@ class OnboardingData {
       irisStage = null,
       notes = null,
       hasSkippedWelcome = false,
-      useMetricUnits = true;
+      useMetricUnits = true,
+      bloodworkDate = null,
+      creatinineMgDl = null,
+      bunMgDl = null,
+      sdmaMcgDl = null;
 
   /// Creates an [OnboardingData] from JSON data
   factory OnboardingData.fromJson(Map<String, dynamic> json) {
@@ -55,6 +63,18 @@ class OnboardingData {
       notes: json['notes'] as String?,
       hasSkippedWelcome: json['hasSkippedWelcome'] as bool? ?? false,
       useMetricUnits: json['useMetricUnits'] as bool? ?? true,
+      bloodworkDate: json['bloodworkDate'] != null
+          ? DateTime.parse(json['bloodworkDate'] as String)
+          : null,
+      creatinineMgDl: json['creatinineMgDl'] != null
+          ? (json['creatinineMgDl'] as num).toDouble()
+          : null,
+      bunMgDl: json['bunMgDl'] != null
+          ? (json['bunMgDl'] as num).toDouble()
+          : null,
+      sdmaMcgDl: json['sdmaMcgDl'] != null
+          ? (json['sdmaMcgDl'] as num).toDouble()
+          : null,
     );
   }
 
@@ -88,6 +108,18 @@ class OnboardingData {
   /// Whether to use metric units (kg) vs imperial (lbs)
   final bool useMetricUnits;
 
+  /// Date when bloodwork was performed
+  final DateTime? bloodworkDate;
+
+  /// Creatinine level in mg/dL
+  final double? creatinineMgDl;
+
+  /// Blood Urea Nitrogen (BUN) level in mg/dL
+  final double? bunMgDl;
+
+  /// Symmetric Dimethylarginine (SDMA) level in μg/dL
+  final double? sdmaMcgDl;
+
   /// Pet's weight in pounds (converted from kg)
   double? get petWeightLbs =>
       petWeightKg != null ? petWeightKg! * 2.20462 : null;
@@ -110,11 +142,20 @@ class OnboardingData {
   /// Whether treatment setup is relevant (based on persona)
   bool get needsTreatmentSetup => treatmentApproach != null;
 
+  /// Whether any lab values are present
+  bool get hasLabValues =>
+      creatinineMgDl != null || bunMgDl != null || sdmaMcgDl != null;
+
+  /// Whether lab values have complete data (values + bloodwork date)
+  bool get hasCompleteLabData =>
+      hasLabValues && bloodworkDate != null;
+
   /// Whether medical info has any data
   bool get hasMedicalInfo =>
       ckdDiagnosisDate != null ||
       irisStage != null ||
-      (notes != null && notes!.isNotEmpty);
+      (notes != null && notes!.isNotEmpty) ||
+      hasLabValues;
 
   /// Whether data is complete enough for final profile creation
   bool get isReadyForProfileCreation =>
@@ -133,6 +174,10 @@ class OnboardingData {
       'notes': notes,
       'hasSkippedWelcome': hasSkippedWelcome,
       'useMetricUnits': useMetricUnits,
+      'bloodworkDate': bloodworkDate?.toIso8601String(),
+      'creatinineMgDl': creatinineMgDl,
+      'bunMgDl': bunMgDl,
+      'sdmaMcgDl': sdmaMcgDl,
     };
   }
 
@@ -148,6 +193,10 @@ class OnboardingData {
     String? notes,
     bool? hasSkippedWelcome,
     bool? useMetricUnits,
+    DateTime? bloodworkDate,
+    double? creatinineMgDl,
+    double? bunMgDl,
+    double? sdmaMcgDl,
   }) {
     return OnboardingData(
       userId: userId ?? this.userId,
@@ -160,6 +209,10 @@ class OnboardingData {
       notes: notes ?? this.notes,
       hasSkippedWelcome: hasSkippedWelcome ?? this.hasSkippedWelcome,
       useMetricUnits: useMetricUnits ?? this.useMetricUnits,
+      bloodworkDate: bloodworkDate ?? this.bloodworkDate,
+      creatinineMgDl: creatinineMgDl ?? this.creatinineMgDl,
+      bunMgDl: bunMgDl ?? this.bunMgDl,
+      sdmaMcgDl: sdmaMcgDl ?? this.sdmaMcgDl,
     );
   }
 
@@ -181,6 +234,10 @@ class OnboardingData {
       ckdDiagnosisDate: null,
       irisStage: null,
       notes: null,
+      bloodworkDate: null,
+      creatinineMgDl: null,
+      bunMgDl: null,
+      sdmaMcgDl: null,
     );
   }
 
@@ -232,6 +289,31 @@ class OnboardingData {
       }
     }
 
+    // Bloodwork date validation
+    if (bloodworkDate != null && bloodworkDate!.isAfter(DateTime.now())) {
+      errors.add('Bloodwork date cannot be in the future');
+    }
+
+    // If any lab values are provided, bloodwork date should be provided
+    if (hasLabValues && bloodworkDate == null) {
+      errors.add('Bloodwork date is required when lab values are provided');
+    }
+
+    // Validate creatinine range (structural only)
+    if (creatinineMgDl != null && creatinineMgDl! <= 0) {
+      errors.add('Creatinine must be a positive number');
+    }
+
+    // Validate BUN range (structural only)
+    if (bunMgDl != null && bunMgDl! <= 0) {
+      errors.add('BUN must be a positive number');
+    }
+
+    // Validate SDMA range (structural only)
+    if (sdmaMcgDl != null && sdmaMcgDl! <= 0) {
+      errors.add('SDMA must be a positive number');
+    }
+
     return errors;
   }
 
@@ -241,10 +323,20 @@ class OnboardingData {
       return null;
     }
 
+    final labValues = hasLabValues || bloodworkDate != null
+        ? LabValues(
+            bloodworkDate: bloodworkDate,
+            creatinineMgDl: creatinineMgDl,
+            bunMgDl: bunMgDl,
+            sdmaMcgDl: sdmaMcgDl,
+          )
+        : null;
+
     final medicalInfo = MedicalInfo(
       ckdDiagnosisDate: ckdDiagnosisDate,
       irisStage: irisStage,
       notes: notes,
+      labValues: labValues,
     );
 
     final now = DateTime.now();
@@ -297,7 +389,11 @@ class OnboardingData {
         other.irisStage == irisStage &&
         other.notes == notes &&
         other.hasSkippedWelcome == hasSkippedWelcome &&
-        other.useMetricUnits == useMetricUnits;
+        other.useMetricUnits == useMetricUnits &&
+        other.bloodworkDate == bloodworkDate &&
+        other.creatinineMgDl == creatinineMgDl &&
+        other.bunMgDl == bunMgDl &&
+        other.sdmaMcgDl == sdmaMcgDl;
   }
 
   @override
@@ -313,6 +409,10 @@ class OnboardingData {
       notes,
       hasSkippedWelcome,
       useMetricUnits,
+      bloodworkDate,
+      creatinineMgDl,
+      bunMgDl,
+      sdmaMcgDl,
     );
   }
 
@@ -328,7 +428,11 @@ class OnboardingData {
         'irisStage: $irisStage, '
         'notes: $notes, '
         'hasSkippedWelcome: $hasSkippedWelcome, '
-        'useMetricUnits: $useMetricUnits'
+        'useMetricUnits: $useMetricUnits, '
+        'bloodworkDate: $bloodworkDate, '
+        'creatinineMgDl: $creatinineMgDl, '
+        'bunMgDl: $bunMgDl, '
+        'sdmaMcgDl: $sdmaMcgDl'
         ')';
   }
 }
