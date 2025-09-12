@@ -1,5 +1,10 @@
+// Required for clearMedicalInfo() and clearTreatmentInfo() methods
+// where null values are explicitly passed to clear existing data
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'package:flutter/foundation.dart';
 
+import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/models/medical_info.dart';
 import 'package:hydracat/features/profile/models/user_persona.dart';
@@ -23,6 +28,8 @@ class OnboardingData {
     this.creatinineMgDl,
     this.bunMgDl,
     this.sdmaMcgDl,
+    this.medications,
+    this.fluidTherapy,
   });
 
   /// Creates empty initial data
@@ -40,7 +47,9 @@ class OnboardingData {
       bloodworkDate = null,
       creatinineMgDl = null,
       bunMgDl = null,
-      sdmaMcgDl = null;
+      sdmaMcgDl = null,
+      medications = null,
+      fluidTherapy = null;
 
   /// Creates an [OnboardingData] from JSON data
   factory OnboardingData.fromJson(Map<String, dynamic> json) {
@@ -74,6 +83,15 @@ class OnboardingData {
           : null,
       sdmaMcgDl: json['sdmaMcgDl'] != null
           ? (json['sdmaMcgDl'] as num).toDouble()
+          : null,
+      medications: json['medications'] != null
+          ? (json['medications'] as List<dynamic>)
+              .map((e) => MedicationData.fromJson(e as Map<String, dynamic>))
+              .toList()
+          : null,
+      fluidTherapy: json['fluidTherapy'] != null
+          ? FluidTherapyData.fromJson(
+              json['fluidTherapy'] as Map<String, dynamic>)
           : null,
     );
   }
@@ -120,6 +138,12 @@ class OnboardingData {
   /// Symmetric Dimethylarginine (SDMA) level in μg/dL
   final double? sdmaMcgDl;
 
+  /// List of medications for treatment
+  final List<MedicationData>? medications;
+
+  /// Fluid therapy configuration
+  final FluidTherapyData? fluidTherapy;
+
   /// Pet's weight in pounds (converted from kg)
   double? get petWeightLbs =>
       petWeightKg != null ? petWeightKg! * 2.20462 : null;
@@ -157,6 +181,26 @@ class OnboardingData {
       (notes != null && notes!.isNotEmpty) ||
       hasLabValues;
 
+  /// Whether any treatment data is present
+  bool get hasTreatmentData {
+    return (medications != null && medications!.isNotEmpty) ||
+        fluidTherapy != null;
+  }
+
+  /// Whether treatment setup is complete based on selected persona
+  bool get isTreatmentSetupComplete {
+    if (treatmentApproach == null) return false;
+
+    return switch (treatmentApproach!) {
+      UserPersona.medicationOnly => 
+        medications != null && medications!.isNotEmpty,
+      UserPersona.fluidTherapyOnly => 
+        fluidTherapy != null,
+      UserPersona.medicationAndFluidTherapy => 
+        medications != null && medications!.isNotEmpty && fluidTherapy != null,
+    };
+  }
+
   /// Whether data is complete enough for final profile creation
   bool get isReadyForProfileCreation =>
       hasMinimumData && (hasMedicalInfo || ckdDiagnosisDate != null);
@@ -178,6 +222,8 @@ class OnboardingData {
       'creatinineMgDl': creatinineMgDl,
       'bunMgDl': bunMgDl,
       'sdmaMcgDl': sdmaMcgDl,
+      'medications': medications?.map((e) => e.toJson()).toList(),
+      'fluidTherapy': fluidTherapy?.toJson(),
     };
   }
 
@@ -197,6 +243,8 @@ class OnboardingData {
     double? creatinineMgDl,
     double? bunMgDl,
     double? sdmaMcgDl,
+    List<MedicationData>? medications,
+    FluidTherapyData? fluidTherapy,
   }) {
     return OnboardingData(
       userId: userId ?? this.userId,
@@ -213,6 +261,8 @@ class OnboardingData {
       creatinineMgDl: creatinineMgDl ?? this.creatinineMgDl,
       bunMgDl: bunMgDl ?? this.bunMgDl,
       sdmaMcgDl: sdmaMcgDl ?? this.sdmaMcgDl,
+      medications: medications ?? this.medications,
+      fluidTherapy: fluidTherapy ?? this.fluidTherapy,
     );
   }
 
@@ -227,7 +277,6 @@ class OnboardingData {
   }
 
   /// Clears all medical information
-  // ignore_for_file: avoid_redundant_argument_values
   OnboardingData clearMedicalInfo() {
     // We need to explicitly pass null values to clear existing medical data
     return copyWith(
@@ -239,6 +288,45 @@ class OnboardingData {
       bunMgDl: null,
       sdmaMcgDl: null,
     );
+  }
+
+  /// Clears all treatment information
+  OnboardingData clearTreatmentInfo() {
+    // We need to explicitly pass null values to clear existing treatment data
+    return copyWith(
+      medications: null,
+      fluidTherapy: null,
+    );
+  }
+
+  /// Adds a medication to the medications list
+  OnboardingData addMedication(MedicationData medication) {
+    final currentMedications = medications ?? <MedicationData>[];
+    return copyWith(
+      medications: [...currentMedications, medication],
+    );
+  }
+
+  /// Removes a medication from the medications list
+  OnboardingData removeMedication(int index) {
+    if (medications == null || index < 0 || index >= medications!.length) {
+      return this;
+    }
+    final updatedMedications = List<MedicationData>.from(medications!)
+      ..removeAt(index);
+    return copyWith(
+      medications: updatedMedications.isEmpty ? null : updatedMedications,
+    );
+  }
+
+  /// Updates a medication at the given index
+  OnboardingData updateMedication(int index, MedicationData medication) {
+    if (medications == null || index < 0 || index >= medications!.length) {
+      return this;
+    }
+    final updatedMedications = List<MedicationData>.from(medications!);
+    updatedMedications[index] = medication;
+    return copyWith(medications: updatedMedications);
   }
 
   /// Validates the collected data
@@ -314,6 +402,47 @@ class OnboardingData {
       errors.add('SDMA must be a positive number');
     }
 
+    // Validate medications
+    if (medications != null) {
+      for (var i = 0; i < medications!.length; i++) {
+        final medication = medications![i];
+        if (!medication.isValid) {
+          errors.add('Medication ${i + 1} has invalid data');
+        }
+      }
+    }
+
+    // Validate fluid therapy
+    if (fluidTherapy != null && !fluidTherapy!.isValid) {
+      errors.add('Fluid therapy has invalid data');
+    }
+
+    // Validate treatment completeness based on persona 
+    // (skip validation during onboarding)
+    if (treatmentApproach != null && isReadyForProfileCreation) {
+      switch (treatmentApproach!) {
+        case UserPersona.medicationOnly:
+          if (medications == null || medications!.isEmpty) {
+            errors.add('At least one medication is required for '
+                'medication-only treatment');
+          }
+        case UserPersona.fluidTherapyOnly:
+          if (fluidTherapy == null) {
+            errors.add(
+                'Fluid therapy setup is required for fluid therapy treatment');
+          }
+        case UserPersona.medicationAndFluidTherapy:
+          if (medications == null || medications!.isEmpty) {
+            errors.add('At least one medication is required for '
+                'combination treatment');
+          }
+          if (fluidTherapy == null) {
+            errors.add(
+                'Fluid therapy setup is required for combination treatment');
+          }
+      }
+    }
+
     return errors;
   }
 
@@ -369,7 +498,6 @@ class OnboardingData {
       ageYears: petAge!,
       weightKg: petWeightKg!,
       treatmentApproach: treatmentApproach!,
-      medicalInfo: const MedicalInfo(),
       createdAt: now,
       updatedAt: now,
     );
@@ -393,7 +521,9 @@ class OnboardingData {
         other.bloodworkDate == bloodworkDate &&
         other.creatinineMgDl == creatinineMgDl &&
         other.bunMgDl == bunMgDl &&
-        other.sdmaMcgDl == sdmaMcgDl;
+        other.sdmaMcgDl == sdmaMcgDl &&
+        listEquals(other.medications, medications) &&
+        other.fluidTherapy == fluidTherapy;
   }
 
   @override
@@ -413,6 +543,8 @@ class OnboardingData {
       creatinineMgDl,
       bunMgDl,
       sdmaMcgDl,
+      Object.hashAll(medications ?? []),
+      fluidTherapy,
     );
   }
 
@@ -432,7 +564,9 @@ class OnboardingData {
         'bloodworkDate: $bloodworkDate, '
         'creatinineMgDl: $creatinineMgDl, '
         'bunMgDl: $bunMgDl, '
-        'sdmaMcgDl: $sdmaMcgDl'
+        'sdmaMcgDl: $sdmaMcgDl, '
+        'medications: $medications, '
+        'fluidTherapy: $fluidTherapy'
         ')';
   }
 }

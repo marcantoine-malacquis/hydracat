@@ -385,21 +385,46 @@ if (petId != null) {
 - Firebase cost optimized (local storage only)
 - Skip functionality preserves user autonomy
 
-### Step 3.5: Create Treatment Setup Screens
-**Location:** `lib/features/onboarding/screens/`
-**Files to create:**
-- `treatment_setup_screen.dart` - Persona-specific setup
-- `fluid_therapy_setup_screen.dart` - Fluid-specific questions
-- `medication_setup_screen.dart` - Medication-specific questions
+✅### Step 3.5: Create Treatment Setup Screens [COMPLETED]
+**Location:** `lib/features/onboarding/screens/` and `lib/features/onboarding/widgets/`
+**Files created:**
+- `treatment_setup_screen.dart` - Persona-adaptive routing with combined flow logic
+- `treatment_fluid_screen.dart` - Comprehensive fluid therapy setup
+- `treatment_medication_screen.dart` - Medication list management screen
+- `add_medication_screen.dart` - Multi-step medication entry popup
+- `treatment_data.dart` - Complete treatment data models
+- `rotating_wheel_picker.dart` - iOS-style picker component
+- `time_picker_group.dart` - Multi-time reminder setup
+- `medication_summary_card.dart` - Professional medication display
+- `treatment_popup_wrapper.dart` - Consistent popup system
 
-**Key Requirements:**
-- Adaptive screen based on selected persona
-- Basic schedule setup (detailed setup comes later)
-- Optional medical history (IRIS stage, diagnosis date)
-- Clear messaging about future customization
-- Second checkpoint save option
+**Key Implementation Completed:**
+- **Persona-Adaptive Flow**: Medication Only → medication screen → completion, Fluid Only → fluid screen → completion, Combined → medication → fluid → completion
+- **Multi-Step Medication Entry**: 3-step popup flow (name/unit → frequency → reminder times) with iOS-style rotating wheel pickers
+- **Comprehensive Medication Management**: Add, edit, delete with professional summaries ("1 pill twice daily", "2 drops once daily")
+- **Professional Fluid Setup**: Frequency, volume (ml), injection location (shoulder/hip left/right), needle gauge with helpful tips
+- **Treatment Data Models**: Complete enums (TreatmentFrequency, MedicationUnit, FluidLocation) with JSON serialization
+- **Enhanced OnboardingData**: Added medications list and fluidTherapy fields with helper methods and validation
+- **Data Preservation**: Users can change personas without losing existing treatment data
+- **Firebase Cost Optimization**: Zero Firebase operations during setup, single comprehensive write on completion
+- **Professional Medical UI**: Medication cards, gauge selection chips, location preferences, reminder time groups
+- **Local Storage Strategy**: All treatment data stored locally during setup, synced only on final completion
 
-**Learning Goal:** Conditional UI flows based on user choices
+**Critical Features:**
+- Treatment approach drives adaptive screen flow
+- Complex medication entry with unit selection (pills, drops, injections, ml, etc.)
+- Multiple reminder times based on frequency (once/twice/thrice daily, every other day, every 3 days)
+- Fluid therapy with volume validation, location selection, and needle gauge preferences
+- "You can update your schedules anytime in the Profile section" messaging throughout
+- Professional medical presentation maintaining veterinary credibility
+- Complete offline functionality with sync on completion
+
+**Technical Architecture:**
+- Reusable UI components for future treatment features
+- Type-safe treatment data models with validation
+- Persona-driven conditional flows
+- Local-first data strategy following Firebase cost optimization rules
+- Professional medical UX with iOS-style pickers and smooth animations
 
 ### Step 3.6: Create Completion Screen
 **Location:** `lib/features/onboarding/screens/`
