@@ -294,6 +294,28 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     }
   }
 
+  /// Set the current step in the onboarding flow (for fixing mismatches)
+  Future<bool> setCurrentStep(OnboardingStepType step) async {
+    state = state.withLoading(loading: true);
+
+    final result = await _onboardingService.setCurrentStep(step);
+
+    switch (result) {
+      case OnboardingSuccess():
+        state = state.copyWith(
+          isLoading: false,
+        );
+        return true;
+
+      case OnboardingFailure(exception: final exception):
+        state = state.copyWith(
+          isLoading: false,
+          error: exception,
+        );
+        return false;
+    }
+  }
+
   /// Complete the onboarding flow
   Future<bool> completeOnboarding() async {
     state = state.withLoading(loading: true);

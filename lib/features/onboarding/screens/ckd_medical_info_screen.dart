@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
@@ -220,8 +221,12 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
   }
 
   /// Navigate back to previous step
-  void _goBack() {
-    ref.read(onboardingProvider.notifier).moveToPreviousStep();
+  Future<void> _goBack() async {
+    await ref.read(onboardingProvider.notifier).moveToPreviousStep();
+    if (mounted) {
+      // Navigate to previous screen (pet basics)
+      context.go('/onboarding/basics');
+    }
   }
 
   /// Select last checkup date

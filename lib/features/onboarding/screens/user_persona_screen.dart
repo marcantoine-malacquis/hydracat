@@ -29,19 +29,62 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint('[UserPersonaScreen] Screen initialized');
+    
     // Load existing selection if resuming onboarding
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _validateOnboardingSession();
+      
       final existingData = ref.read(onboardingDataProvider);
-      if (existingData?.treatmentApproach != null) {
+      debugPrint('[UserPersonaScreen] Existing data: $existingData');
+      
+      final existingPersona = existingData?.treatmentApproach;
+      if (existingPersona != null) {
+        debugPrint(
+          '[UserPersonaScreen] Found existing persona: $existingPersona',
+        );
         setState(() {
-          _selectedPersona = existingData!.treatmentApproach;
+          _selectedPersona = existingPersona;
         });
       }
     });
   }
 
+  void _validateOnboardingSession() {
+    final isActive = ref.read(isOnboardingActiveProvider);
+    final currentProgress = ref.read(onboardingProgressProvider);
+    
+    debugPrint('[UserPersonaScreen] Session validation:');
+    debugPrint('  - Is active: $isActive');
+    debugPrint('  - Current progress: $currentProgress');
+    
+    if (!isActive || currentProgress == null) {
+      debugPrint('[UserPersonaScreen] ERROR: No active onboarding session!');
+      
+      // Try to recover by going back to welcome screen
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _showErrorSnackBar(
+            'Onboarding session expired. Redirecting to start...',
+          );
+          
+          // Delay navigation slightly to show the error message
+          Future.delayed(const Duration(milliseconds: 1500), () {
+            if (mounted && context.mounted) {
+              context.go('/onboarding/welcome');
+            }
+          });
+        }
+      });
+    } else {
+      debugPrint('[UserPersonaScreen] Session validation successful');
+    }
+  }
+
   Future<void> _handlePersonaSelection(UserPersona persona) async {
     if (_isProcessingSelection) return;
+
+    debugPrint('[UserPersonaScreen] Persona selected: ${persona.name}');
 
     setState(() {
       _selectedPersona = persona;
@@ -49,6 +92,7 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
     });
 
     // Track selection in analytics
+    debugPrint('[UserPersonaScreen] Tracking analytics...');
     await ref.read(analyticsServiceDirectProvider).trackFeatureUsed(
       featureName: 'persona_selected',
       additionalParams: {
@@ -61,30 +105,64 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
     final currentData = ref.read(onboardingDataProvider) ??
         const OnboardingData.empty();
     final userId = ref.read(currentUserProvider)?.id;
+    
+    debugPrint('[UserPersonaScreen] Current data: $currentData');
+    debugPrint('[UserPersonaScreen] User ID: $userId');
 
     final updatedData = currentData.copyWith(
       userId: userId,
       treatmentApproach: persona,
     );
+    
+    debugPrint('[UserPersonaScreen] Updated data: $updatedData');
+    debugPrint('[UserPersonaScreen] Calling updateData...');
 
-    // Save the data and move to next step
+    // Save the data first
     final success = await ref
         .read(onboardingProvider.notifier)
         .updateData(updatedData);
+        
+    debugPrint('[UserPersonaScreen] updateData result: $success');
 
     if (success && mounted) {
-      // Move to next step
+      debugPrint('[UserPersonaScreen] Data updated successfully');
+      
+      // Check current progress step
+      final currentProgress = ref.read(onboardingProgressProvider);
+      debugPrint(
+        '[UserPersonaScreen] Current progress step: '
+        '${currentProgress?.currentStep}',
+      );
+      
+      // If we're not on userPersona step, fix the progress
+      if (currentProgress?.currentStep != OnboardingStepType.userPersona) {
+        debugPrint(
+          '[UserPersonaScreen] Progress step mismatch! '
+          'Fixing by setting to userPersona step...',
+        );
+        await ref
+            .read(onboardingProvider.notifier)
+            .setCurrentStep(OnboardingStepType.userPersona);
+      }
+      
+      // Now move to next step
+      debugPrint('[UserPersonaScreen] Moving to next step...');
       final moveSuccess = await ref
           .read(onboardingProvider.notifier)
           .moveToNextStep();
+          
+      debugPrint('[UserPersonaScreen] moveToNextStep result: $moveSuccess');
 
       if (moveSuccess && mounted) {
+        debugPrint('[UserPersonaScreen] Navigating to pet basics screen');
+        
         // Navigate to pet basics screen
         if (context.mounted) {
           context.go('/onboarding/basics');
         }
       } else {
         // Handle error moving to next step
+        debugPrint('[UserPersonaScreen] Failed to move to next step');
         setState(() {
           _isProcessingSelection = false;
         });
@@ -96,6 +174,7 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
       }
     } else {
       // Handle error updating data
+      debugPrint('[UserPersonaScreen] Failed to update data');
       setState(() {
         _selectedPersona = null;
         _isProcessingSelection = false;

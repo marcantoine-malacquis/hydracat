@@ -101,7 +101,6 @@ class _PersonaSelectionCardState extends State<PersonaSelectionCard>
     if (widget.isLoading) return;
 
     _animationController.reverse();
-    widget.onTap();
   }
 
   void _onTapCancel() {
@@ -118,6 +117,7 @@ class _PersonaSelectionCardState extends State<PersonaSelectionCard>
         return Transform.scale(
           scale: _scaleAnimation.value,
           child: GestureDetector(
+            onTap: widget.isLoading ? null : widget.onTap,
             onTapDown: _onTapDown,
             onTapUp: _onTapUp,
             onTapCancel: _onTapCancel,

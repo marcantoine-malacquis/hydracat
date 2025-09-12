@@ -299,6 +299,32 @@ class OnboardingService {
     }
   }
 
+  /// Sets the current step in the onboarding flow
+  ///
+  /// Used to fix progress mismatches between UI state and onboarding progress.
+  Future<OnboardingResult> setCurrentStep(OnboardingStepType step) async {
+    try {
+      if (_currentProgress == null) {
+        return const OnboardingFailure(
+          OnboardingServiceException('No active onboarding session'),
+        );
+      }
+
+      _currentProgress = _currentProgress!.moveToStep(step);
+
+      // Notify listeners
+      _progressController.add(_currentProgress);
+
+      return const OnboardingSuccess();
+    } on Exception {
+      return OnboardingFailure(
+        OnboardingServiceException(
+          'Failed to set current step to ${step.name}',
+        ),
+      );
+    }
+  }
+
   /// Completes the onboarding flow and creates the pet profile
   ///
   /// Integrates with PetService to create the final pet profile

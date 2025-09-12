@@ -10,7 +10,13 @@ import 'package:hydracat/providers/onboarding_provider.dart';
 /// Screen for setting up medication treatments
 class TreatmentMedicationScreen extends ConsumerStatefulWidget {
   /// Creates a [TreatmentMedicationScreen]
-  const TreatmentMedicationScreen({super.key});
+  const TreatmentMedicationScreen({
+    super.key,
+    this.onBack,
+  });
+
+  /// Optional callback for back navigation
+  final VoidCallback? onBack;
 
   @override
   ConsumerState<TreatmentMedicationScreen> createState() =>
@@ -205,7 +211,11 @@ class _TreatmentMedicationScreenState
   }
 
   void _onBackPressed() {
-    Navigator.of(context).pop();
+    if (widget.onBack != null) {
+      widget.onBack!();
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   Future<void> _onAddMedication() async {

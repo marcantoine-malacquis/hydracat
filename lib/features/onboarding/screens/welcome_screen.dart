@@ -10,6 +10,7 @@ import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/providers/onboarding_provider.dart';
 
 /// The welcome screen that introduces users to the onboarding flow.
 /// This is the entry point for new users to set up their CKD management.
@@ -140,25 +141,96 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
     );
   }
 
-  void _handleGetStarted(BuildContext context, WidgetRef ref) {
+  Future<void> _handleGetStarted(BuildContext context, WidgetRef ref) async {
     // Get current user for analytics
     final currentUser = ref.read(currentUserProvider);
+    final userId = currentUser?.id;
+
+    if (userId == null) {
+      debugPrint('[OnboardingWelcome] Error: No current user found');
+      if (context.mounted) {
+        _showErrorSnackBar(
+          context, 
+          'Authentication error. Please try logging in again.',
+        );
+      }
+      return;
+    }
+
+    debugPrint('[OnboardingWelcome] Starting onboarding for user: $userId');
 
     // Track onboarding started
-    ref
-        .read(analyticsServiceDirectProvider)
-        .trackOnboardingStarted(
-          userId: currentUser?.id ?? 'unknown',
-          timestamp: DateTime.now().toIso8601String(),
-        );
+    unawaited(
+      ref
+          .read(analyticsServiceDirectProvider)
+          .trackOnboardingStarted(
+            userId: userId,
+            timestamp: DateTime.now().toIso8601String(),
+          ),
+    );
 
+    // Try to initialize onboarding session
+    final onboardingNotifier = ref.read(onboardingProvider.notifier);
+    
+    // First, check if user has incomplete onboarding and try to resume
+    debugPrint('[OnboardingWelcome] Checking for incomplete onboarding...');
+    final hasIncomplete = await onboardingNotifier
+        .hasIncompleteOnboarding(userId);
+    
+    final sessionSuccess = hasIncomplete
+        ? await _resumeOnboarding(onboardingNotifier, userId)
+        : await _startNewOnboarding(onboardingNotifier, userId);
+
+    if (!sessionSuccess) {
+      debugPrint('[OnboardingWelcome] Failed to initialize onboarding session');
+      if (context.mounted) {
+        _showErrorSnackBar(
+          context, 
+          'Failed to start onboarding. Please try again.',
+        );
+      }
+      return;
+    }
+
+    debugPrint(
+      '[OnboardingWelcome] Onboarding session initialized successfully',
+    );
+
+    if (!context.mounted) return;
+    
     final route = ModalRoute.of(context);
     if (route is PopupRoute) {
       Navigator.of(context).pop('start');
     } else {
       // Normal routing path (no dialog)
+      debugPrint('[OnboardingWelcome] Navigating to persona screen');
       context.go('/onboarding/persona');
     }
+  }
+
+  Future<bool> _resumeOnboarding(
+    OnboardingNotifier notifier, 
+    String userId,
+  ) async {
+    debugPrint('[OnboardingWelcome] Found incomplete onboarding, resuming...');
+    return notifier.resumeOnboarding(userId);
+  }
+
+  Future<bool> _startNewOnboarding(
+    OnboardingNotifier notifier, 
+    String userId,
+  ) async {
+    debugPrint('[OnboardingWelcome] Starting new onboarding session...');
+    return notifier.startOnboarding(userId);
+  }
+
+  void _showErrorSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.error,
+      ),
+    );
   }
 
   Future<void> _handleSkip(BuildContext context, WidgetRef ref) async {

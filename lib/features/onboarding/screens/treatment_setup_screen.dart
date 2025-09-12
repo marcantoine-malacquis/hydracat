@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
 import 'package:hydracat/features/onboarding/screens/treatment_fluid_screen.dart';
 import 'package:hydracat/features/onboarding/screens/treatment_medication_screen.dart';
@@ -17,6 +18,17 @@ class TreatmentSetupScreen extends ConsumerStatefulWidget {
 }
 
 class _TreatmentSetupScreenState extends ConsumerState<TreatmentSetupScreen> {
+  /// Handle back navigation from treatment screens
+  Future<void> _handleBackNavigation() async {
+    // Move back in the onboarding progress
+    await ref.read(onboardingProvider.notifier).moveToPreviousStep();
+    
+    if (mounted) {
+      // Navigate to the previous onboarding screen
+      context.go('/onboarding/medical');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final onboardingData = ref.watch(onboardingDataProvider);
@@ -32,10 +44,15 @@ class _TreatmentSetupScreenState extends ConsumerState<TreatmentSetupScreen> {
 
     // Route to appropriate treatment setup flow based on persona
     return switch (persona) {
-      UserPersona.medicationOnly => const TreatmentMedicationScreen(),
-      UserPersona.fluidTherapyOnly => const TreatmentFluidScreen(),
+      UserPersona.medicationOnly => TreatmentMedicationScreen(
+          onBack: _handleBackNavigation,
+        ),
+      UserPersona.fluidTherapyOnly => TreatmentFluidScreen(
+          onBack: _handleBackNavigation,
+        ),
       UserPersona.medicationAndFluidTherapy => _CombinedTreatmentFlow(
           onboardingData: onboardingData,
+          onBack: _handleBackNavigation,
         ),
     };
   }
@@ -99,10 +116,14 @@ class _CombinedTreatmentFlow extends ConsumerStatefulWidget {
   /// Creates a [_CombinedTreatmentFlow]
   const _CombinedTreatmentFlow({
     required this.onboardingData,
+    required this.onBack,
   });
 
   /// Current onboarding data
   final OnboardingData? onboardingData;
+  
+  /// Callback for back navigation
+  final VoidCallback onBack;
 
   @override
   ConsumerState<_CombinedTreatmentFlow> createState() => 
@@ -120,16 +141,31 @@ class _CombinedTreatmentFlowState
     // Determine which screen to show based on current progress
     if (!hasMedications) {
       // First: show medication setup
-      return const TreatmentMedicationScreen();
+      return TreatmentMedicationScreen(
+        onBack: widget.onBack,
+      );
     } else if (!hasFluidTherapy) {
       // Second: show fluid therapy setup  
-      return const TreatmentFluidScreen();
+      return TreatmentFluidScreen(
+        onBack: _handleFluidTherapyBack,
+      );
     } else {
       // Both complete, go to completion
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.of(context).pushReplacementNamed('/onboarding/completion');
       });
       return _buildLoadingScreen();
+    }
+  }
+
+  /// Handles back navigation from fluid therapy screen in combined flow
+  void _handleFluidTherapyBack() {
+    // Clear medications to go back to medication setup
+    final currentData = ref.read(onboardingDataProvider);
+    if (currentData != null) {
+      ref.read(onboardingProvider.notifier).updateData(
+        currentData.copyWith(medications: []),
+      );
     }
   }
 

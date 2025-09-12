@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/extensions/string_extensions.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
@@ -246,8 +247,12 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
   }
 
   /// Navigate back to previous step
-  void _goBack() {
-    ref.read(onboardingProvider.notifier).moveToPreviousStep();
+  Future<void> _goBack() async {
+    await ref.read(onboardingProvider.notifier).moveToPreviousStep();
+    if (mounted) {
+      // Navigate to previous screen (user persona)
+      context.go('/onboarding/persona');
+    }
   }
 
   @override
