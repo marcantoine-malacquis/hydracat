@@ -10,7 +10,36 @@ Before you create the plan, please ask any and all questions you have in order t
 
 Please let me know if this makes sense or contradict itself, the prd or existing code. Coherence is extremely important. Let's me know if you need any more clarifications to feel confident in proceeding with the implementation.
 
-Please add only the important informations to remember about what we implemented in this step for future reference in 
+Please update and add only the important informations to remember about what we implemented in this step for future reference in 
+
+
+1. a)if you think it is enough to simply call this service to ensure proper validation, it might be overkill to add more validation logic.
+b) you can add a spinning wheel on the "finish" button if you think this will take more than 1 second to update firebase.
+2. a) the existing "onboarding_completed" event is sufficient
+b) automatically navigate to the home screen
+3. a) stay on completion screen with error messaging
+b) purely celebratory
+4. a) encouraging
+b) keep it minimal
+c) for now don't put anything but I will add an illustration in the future
+5. a) so to be clear: during onboarding, the only time there will be writing on Firebase will be when the user press the "Finish" button. Everything else is local.
+b) One-time attempt with error handling
+Please let me know if this makes sense or contradict itself, the prd or existing code. Coherence is extremely important. Let's me know if you need any more clarifications to feel confident in proceeding with the implementation.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 1. a) So I think for better UX, the user should have the option to add a medication (+ button) to a list of medication. When the user press the + button a pop-up appears to input the name of the medication (string) and unit (rotating wheel. it should support pill, drops, sachets, injections, capsules, micrograms, miligrams, ampoules, mililiters, tablespoon, teaspoon, portion. In alphabetical order). There will be a "Next" button at the bottom of this popup that leads to another popup to select the frequency with a list to select either once daily, twice daily, thrice daily, every other day, every 3 days (specific to mirtazapine). I will expand this list later. There will be a "Next" button at the bottom of this popup that leads to another popup to select the reminder time.On this "set reminder" popup, there will be time of day selection (rotating wheel like it is standard on IPhone). The number of time of day selections will depend on the number of intake per day previously selected (First intake, Second intake, Third intake). At the bottom of this "set reminder" popup there will be a "Save" button that will save the data locally and close the popup to go back to the medication list. On this list, the user will be able to see the name of the medication and a summary (for example: "One pill daily" or "1/2 pill twice a day"). At the bottom of the screen, there will be a "Next" button that leads to the Completion screen
 b) For fluid therapy, the user should input all on the same screen (scrollable if needed) : frequency, volume per administration, prefered location on the cat (rotating wheel to select among shoulder blade level - left, shoulder blade level - right, hipbones level - left, hipbones level - right), needle gauge.
