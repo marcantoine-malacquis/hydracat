@@ -455,21 +455,29 @@ if (petId != null) {
 
 ## Phase 4: Router & Navigation Integration
 
-### Step 4.1: Update Router for Onboarding Flow
-**Location:** `lib/app/`
-**Files to modify:**
-- `router.dart` - Add onboarding routes and guards
-- Add onboarding route definitions
-- Update authentication guards for onboarding status
+✅### Step 4.1: Update Router for Onboarding Flow [COMPLETED]
+**Location:** `lib/app/`, `lib/shared/widgets/`, `lib/features/onboarding/screens/`
+**Files implemented:**
+- Extended `AppUser` model with `hasSkippedOnboarding` field and JSON serialization
+- Updated `auth_provider.dart` with skip state management and new providers
+- Created `SlideTransitionPage` and `AppPageTransitions` for smooth animations
+- Created `OnboardingCtaEmptyState` widget with predefined configurations
+- Updated `router.dart` with nested onboarding routes and enhanced redirect logic
+- Updated `app_shell.dart` for conditional navigation and FAB redirect logic
+- Updated `welcome_screen.dart` with proper skip functionality
+- Implemented content gating in `home_screen.dart`, `progress_screen.dart`, `profile_screen.dart`
 
-**Key Requirements:**
-- Add `/onboarding` route with nested step routes
-- Implement onboarding completion guards
-- Handle back navigation between onboarding steps
-- Redirect logic based on auth and onboarding state
-- Deep link handling for partial onboarding
+**Key Implementation Completed:**
+- **Nested Routes**: `/onboarding/welcome`, `/onboarding/persona`, `/onboarding/pet-basics`, `/onboarding/medical-info`, `/onboarding/treatment-setup`, `/onboarding/completion`
+- **Authentication Guards**: Enhanced redirect logic checks onboarding completion and skip status
+- **Skip Functionality**: Industry-standard freemium-like access with limited app features
+- **Slide Animations**: Right-to-left and left-to-right transitions with `SlideDirection` enum
+- **Content Gating**: Empty states with onboarding CTAs for incomplete users across all main screens
+- **State Management**: Optimized providers (`hasSkippedOnboardingProvider`, `hasCompletedOnboardingProvider`)
+- **Navigation Logic**: Hide bottom nav during onboarding, FAB redirects to onboarding for incomplete users
+- **Firebase Cost Optimization**: Zero reads during onboarding flow redirect logic
 
-**Learning Goal:** Complex routing with conditional navigation
+**Learning Goal:** Complex routing with conditional navigation and state-driven UI adaptation
 
 ### Step 4.2: Update App Shell for Onboarding
 **Location:** `lib/app/`

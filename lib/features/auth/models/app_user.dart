@@ -30,6 +30,7 @@ class AppUser {
     this.createdAt,
     this.lastSignInAt,
     this.hasCompletedOnboarding = false,
+    this.hasSkippedOnboarding = false,
     this.primaryPetId,
   });
 
@@ -52,6 +53,7 @@ class AppUser {
           ? DateTime.parse(json['lastSignInAt'] as String)
           : null,
       hasCompletedOnboarding: json['hasCompletedOnboarding'] as bool? ?? false,
+      hasSkippedOnboarding: json['hasSkippedOnboarding'] as bool? ?? false,
       primaryPetId: json['primaryPetId'] as String?,
     );
   }
@@ -112,6 +114,9 @@ class AppUser {
   /// Whether the user has completed the onboarding flow
   final bool hasCompletedOnboarding;
 
+  /// Whether the user has deliberately skipped the onboarding flow
+  final bool hasSkippedOnboarding;
+
   /// ID of the user's primary pet profile
   final String? primaryPetId;
 
@@ -127,6 +132,7 @@ class AppUser {
       'createdAt': createdAt?.toIso8601String(),
       'lastSignInAt': lastSignInAt?.toIso8601String(),
       'hasCompletedOnboarding': hasCompletedOnboarding,
+      'hasSkippedOnboarding': hasSkippedOnboarding,
       'primaryPetId': primaryPetId,
     };
   }
@@ -142,6 +148,7 @@ class AppUser {
     DateTime? createdAt,
     DateTime? lastSignInAt,
     bool? hasCompletedOnboarding,
+    bool? hasSkippedOnboarding,
     String? primaryPetId,
   }) {
     return AppUser(
@@ -155,6 +162,8 @@ class AppUser {
       lastSignInAt: lastSignInAt ?? this.lastSignInAt,
       hasCompletedOnboarding: hasCompletedOnboarding ?? 
           this.hasCompletedOnboarding,
+      hasSkippedOnboarding: hasSkippedOnboarding ?? 
+          this.hasSkippedOnboarding,
       primaryPetId: primaryPetId ?? this.primaryPetId,
     );
   }
@@ -173,6 +182,7 @@ class AppUser {
         other.createdAt == createdAt &&
         other.lastSignInAt == lastSignInAt &&
         other.hasCompletedOnboarding == hasCompletedOnboarding &&
+        other.hasSkippedOnboarding == hasSkippedOnboarding &&
         other.primaryPetId == primaryPetId;
   }
 
@@ -188,6 +198,7 @@ class AppUser {
       createdAt,
       lastSignInAt,
       hasCompletedOnboarding,
+      hasSkippedOnboarding,
       primaryPetId,
     );
   }
@@ -204,6 +215,7 @@ class AppUser {
         'createdAt: $createdAt, '
         'lastSignInAt: $lastSignInAt, '
         'hasCompletedOnboarding: $hasCompletedOnboarding, '
+        'hasSkippedOnboarding: $hasSkippedOnboarding, '
         'primaryPetId: $primaryPetId'
         ')';
   }

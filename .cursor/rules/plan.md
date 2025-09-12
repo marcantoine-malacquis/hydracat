@@ -13,20 +13,22 @@ Please let me know if this makes sense or contradict itself, the prd or existing
 Please update and add only the important informations to remember about what we implemented in this step for future reference in 
 
 
-1. a)if you think it is enough to simply call this service to ensure proper validation, it might be overkill to add more validation logic.
-b) you can add a spinning wheel on the "finish" button if you think this will take more than 1 second to update firebase.
-2. a) the existing "onboarding_completed" event is sufficient
-b) automatically navigate to the home screen
-3. a) stay on completion screen with error messaging
-b) purely celebratory
-4. a) encouraging
-b) keep it minimal
-c) for now don't put anything but I will add an illustration in the future
-5. a) so to be clear: during onboarding, the only time there will be writing on Firebase will be when the user press the "Finish" button. Everything else is local.
-b) One-time attempt with error handling
-Please let me know if this makes sense or contradict itself, the prd or existing code. Coherence is extremely important. Let's me know if you need any more clarifications to feel confident in proceeding with the implementation.
+1. a) Nested into a parent /onboarding route with sub-routes
+b) Please do what makes the most sense for my project, have a clean code structure and a solution that is future-proof and industry standard.
+2. a) Authenticated users who have not completed onboarding should be automatically redirected to the onboarding flow. If, for example, they lost connection or they closed the app, but users who skipped the onboarding willingly, so with the skip button, should not be reverted directly to the onboarding flow. They should be allowed to go to the home screen where they will have a limited option of exploration of the app into the different navigation icons to discover a bit what the apps look like, but the usage will be very limited.
+b) Yes, exactly. So users who willingly skip the onboarding using the skip button will have access to the main app features with very limited functionality. 
+c) If a user is in the middle of onboarding, but closes and reopens the app, they should resume from their last step. 
+3. a) Only the UI back button in the onboarding screen. 
+b) Their later progress should be preserved.
+4. I am not familiar with the deep links and deep linking. This is the first time I hear this. Can you please provide an explanation related to your questions about what it would bring to my app and user experience and your advice if I should bother at the moment already about deep links?  
+5. a) Authentication is mandatory to use the app. Can you please point to me where you may have found that authentication is not mandatory?
+b) Then the onboarding goes back to the first onboarding screen, but the data that is already saved should be already inputted as it was when it was saved.
+6. a) Yes, I want slide animations between onboarding screens. 
+b) We will probably reuse this slide animation code if. So make it future proof for the rest of the app if possible. 
 
-
+1. Do what you think makes the most sense for my project and what is industry standard.
+2. They will see the same home screen UI With limited functionality. 
+3. So they can navigate between the different screens using the navigation bar. They can have access to particularly the educational content in the learn section. But every other screen will pretty much be blank for them with an illustration that I will put later telling them that they need to complete the onboarding to get access to all the functionality. Especially if they click on the logging FAB button in the middle of the navigation bar, they should be redirected automatically to the start of the onboarding. 
 
 
 

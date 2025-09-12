@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
+import 'package:hydracat/providers/auth_provider.dart';
 
 /// The welcome screen that introduces users to the onboarding flow.
 /// This is the entry point for new users to set up their CKD management.
@@ -136,72 +140,57 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
   }
 
   void _handleGetStarted(BuildContext context, WidgetRef ref) {
+    // Get current user for analytics
+    final currentUser = ref.read(currentUserProvider);
+    
     // Track onboarding started
-    // TODO(onboarding): Get actual user ID from auth
     ref
         .read(analyticsServiceDirectProvider)
         .trackOnboardingStarted(
-          userId: 'current_user', // Replace with actual user ID
+          userId: currentUser?.id ?? 'unknown',
           timestamp: DateTime.now().toIso8601String(),
         );
 
-    // Navigate to next screen (user persona selection)
-    // TODO(navigation): Implement navigation to user persona screen
-    // Navigator.of(context).pushReplacement(
-    //   MaterialPageRoute(
-    //     builder: (_) => const OnboardingUserPersonaScreen(),
-    //   ),
-    // );
-
-    // For now, show a placeholder message and close modal if in development
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigation to user persona screen - TODO'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-
-    // Close modal after a delay for development testing
-    Future.delayed(const Duration(seconds: 2), () {
-      if (context.mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-      }
-    });
+    // Navigate to user persona selection screen
+    context.go('/onboarding/persona');
   }
 
-  void _handleSkip(BuildContext context, WidgetRef ref) {
+  Future<void> _handleSkip(BuildContext context, WidgetRef ref) async {
+    // Get current user for analytics
+    final currentUser = ref.read(currentUserProvider);
+    
     // Track onboarding skipped/abandoned
-    // TODO(onboarding): Get actual user ID from auth
-    ref
-        .read(analyticsServiceDirectProvider)
-        .trackOnboardingAbandoned(
-          userId: 'current_user', // Replace with actual user ID
-          lastStep: 'welcome',
-          progressPercentage: 0,
-          timeSpentSeconds: 0,
-        );
-
-    // Navigate to main app with limited functionality
-    // TODO(navigation): Implement navigation to main app
-    // Navigator.of(context).pushReplacement(
-    //   MaterialPageRoute(
-    //     builder: (_) => const MainAppScreen(limitedAccess: true),
-    //   ),
-    // );
-
-    // For now, show a placeholder message and close modal if in development
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigation to main app with limited access - TODO'),
-        duration: Duration(seconds: 2),
-      ),
+    unawaited(
+      ref
+          .read(analyticsServiceDirectProvider)
+          .trackOnboardingAbandoned(
+            userId: currentUser?.id ?? 'unknown',
+            lastStep: 'welcome',
+            progressPercentage: 0,
+            timeSpentSeconds: 0,
+          ),
     );
 
-    // Close modal after a delay for development testing
-    Future.delayed(const Duration(seconds: 2), () {
+    // Mark onboarding as skipped in auth state
+    final success = await ref
+        .read(authProvider.notifier)
+        .markOnboardingSkipped();
+    
+    if (success) {
+      // Navigate to main app with limited functionality
+      // The router will handle showing appropriate content based on skip state
       if (context.mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
+        context.go('/');
       }
-    });
+    } else {
+      // Handle error case
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to skip onboarding. Please try again.'),
+          ),
+        );
+      }
+    }
   }
 }

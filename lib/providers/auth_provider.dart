@@ -266,12 +266,40 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Mark onboarding as skipped for the current user
+  ///
+  /// Updates both local state and Firestore with onboarding skip status.
+  /// Returns true if successful, false otherwise.
+  Future<bool> markOnboardingSkipped() async {
+    final currentUser = _authService.currentUser;
+    if (currentUser == null) return false;
+
+    try {
+      // Update user data in Firestore
+      await _updateUserDataInFirestore(
+        currentUser.id,
+        hasSkippedOnboarding: true,
+      );
+
+      // Update local state
+      final updatedUser = currentUser.copyWith(
+        hasSkippedOnboarding: true,
+      );
+      state = AuthStateAuthenticated(user: updatedUser);
+
+      return true;
+    } on Exception {
+      return false;
+    }
+  }
+
   /// Update onboarding status for the current user
   ///
   /// More flexible method for updating onboarding state and pet ID.
   /// Returns true if successful, false otherwise.
   Future<bool> updateOnboardingStatus({
     bool? hasCompletedOnboarding,
+    bool? hasSkippedOnboarding,
     String? primaryPetId,
   }) async {
     final currentUser = _authService.currentUser;
@@ -282,12 +310,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _updateUserDataInFirestore(
         currentUser.id,
         hasCompletedOnboarding: hasCompletedOnboarding,
+        hasSkippedOnboarding: hasSkippedOnboarding,
         primaryPetId: primaryPetId,
       );
 
       // Update local state
       final updatedUser = currentUser.copyWith(
         hasCompletedOnboarding: hasCompletedOnboarding,
+        hasSkippedOnboarding: hasSkippedOnboarding,
         primaryPetId: primaryPetId,
       );
       state = AuthStateAuthenticated(user: updatedUser);
@@ -304,6 +334,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> _updateUserDataInFirestore(
     String userId, {
     bool? hasCompletedOnboarding,
+    bool? hasSkippedOnboarding,
     String? primaryPetId,
   }) async {
     final userDoc = _firestore.collection('users').doc(userId);
@@ -311,6 +342,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final updateData = <String, dynamic>{};
     if (hasCompletedOnboarding != null) {
       updateData['hasCompletedOnboarding'] = hasCompletedOnboarding;
+    }
+    if (hasSkippedOnboarding != null) {
+      updateData['hasSkippedOnboarding'] = hasSkippedOnboarding;
     }
     if (primaryPetId != null) {
       updateData['primaryPetId'] = primaryPetId;
@@ -379,6 +413,15 @@ final authErrorProvider = Provider<AuthStateError?>((ref) {
 final hasCompletedOnboardingProvider = Provider<bool>((ref) {
   return ref.watch(authProvider.select((state) => 
     state.user?.hasCompletedOnboarding ?? false));
+});
+
+/// Optimized provider to check if user has skipped onboarding
+///
+/// Returns true if user has deliberately skipped onboarding, false otherwise.
+/// Only rebuilds when onboarding skip status changes.
+final hasSkippedOnboardingProvider = Provider<bool>((ref) {
+  return ref.watch(authProvider.select((state) => 
+    state.user?.hasSkippedOnboarding ?? false));
 });
 
 /// Optimized provider to get user's primary pet ID

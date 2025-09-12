@@ -59,6 +59,12 @@ class _AppShellState extends ConsumerState<AppShell> {
     if (currentLocation == '/logging') {
       return -1;
     }
+    
+    // If in onboarding flow, don't highlight any nav item
+    if (currentLocation.startsWith('/onboarding')) {
+      return -1;
+    }
+    
     return 0; // Default to home
   }
 
@@ -70,7 +76,16 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 
   void _onFabPressed() {
-    context.go('/logging');
+    // Check if user has completed onboarding
+    final hasCompletedOnboarding = ref.read(hasCompletedOnboardingProvider);
+    
+    if (hasCompletedOnboarding) {
+      // User can access logging normally
+      context.go('/logging');
+    } else {
+      // Redirect to onboarding for users who haven't completed setup
+      context.go('/onboarding/welcome');
+    }
   }
 
   @override
@@ -78,13 +93,17 @@ class _AppShellState extends ConsumerState<AppShell> {
     final isLoading = ref.watch(authIsLoadingProvider);
     final currentUser = ref.watch(currentUserProvider);
     final isVerified = currentUser?.emailVerified ?? false;
+    final currentLocation = GoRouterState.of(context).uri.path;
+    final isInOnboardingFlow = currentLocation.startsWith('/onboarding');
 
     return Scaffold(
       body: Column(
         children: [
           // Show verification banner for verified users only 
-          // (not during loading)
-          if (currentUser != null && !currentUser.emailVerified)
+          // (not during loading or onboarding)
+          if (currentUser != null && 
+              !currentUser.emailVerified && 
+              !isInOnboardingFlow)
             _buildVerificationBanner(context, currentUser.email),
           Expanded(
             child: isLoading
@@ -93,16 +112,19 @@ class _AppShellState extends ConsumerState<AppShell> {
           ),
         ],
       ),
-      bottomNavigationBar: HydraNavigationBar(
-        items: _navigationItems,
-        // No selection during loading
-        currentIndex: isLoading ? -1 : _currentIndex,
-        // Disable navigation during loading
-        onTap: isLoading ? (_) {} : _onNavigationTap,
-        // Disable FAB during loading
-        onFabPressed: isLoading ? null : _onFabPressed,
-        showVerificationBadge: !isLoading && !isVerified,
-      ),
+      // Hide bottom navigation during onboarding flow
+      bottomNavigationBar: isInOnboardingFlow 
+          ? null 
+          : HydraNavigationBar(
+              items: _navigationItems,
+              // No selection during loading
+              currentIndex: isLoading ? -1 : _currentIndex,
+              // Disable navigation during loading
+              onTap: isLoading ? (_) {} : _onNavigationTap,
+              // Disable FAB during loading
+              onFabPressed: isLoading ? null : _onFabPressed,
+              showVerificationBadge: !isLoading && !isVerified,
+            ),
     );
   }
 
