@@ -23,7 +23,7 @@ import 'package:hydracat/features/progress/screens/progress_screen.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/shared/widgets/navigation/app_page_transitions.dart';
 
-/// Listenable that triggers GoRouter refreshes from a Stream
+/// Listenable that triggers GoRouter refreshes from multiple sources
 class GoRouterRefreshStream extends ChangeNotifier {
   /// Creates a [GoRouterRefreshStream] instance
   GoRouterRefreshStream(Stream<dynamic> stream) {
@@ -34,12 +34,25 @@ class GoRouterRefreshStream extends ChangeNotifier {
 
   late final StreamSubscription<dynamic> _subscription;
 
+  /// Manually trigger a refresh (useful for Riverpod state changes)
+  void refresh() {
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _subscription.cancel();
     super.dispose();
   }
 }
+
+/// Provider for the router refresh stream
+final routerRefreshStreamProvider = Provider<GoRouterRefreshStream>((ref) {
+  final authService = ref.read(authServiceProvider);
+  final refreshStream = GoRouterRefreshStream(authService.authStateChanges);
+  ref.onDispose(refreshStream.dispose);
+  return refreshStream;
+});
 
 /// Provider for the app router with authentication logic
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -50,13 +63,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     // Watch onboarding state changes for redirect decisions
     ..watch(hasCompletedOnboardingProvider)
     ..watch(hasSkippedOnboardingProvider);
-  final authService = ref.read(authServiceProvider);
 
-  // Create and store the refresh stream to ensure proper disposal
-  final refreshStream = GoRouterRefreshStream(authService.authStateChanges);
-
-  // Register disposal callback to prevent memory leaks
-  ref.onDispose(refreshStream.dispose);
+  // Get the refresh stream
+  final refreshStream = ref.watch(routerRefreshStreamProvider);
 
   return GoRouter(
     initialLocation: '/',
@@ -75,6 +84,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       final isAuthenticated = authState is AuthStateAuthenticated;
       final currentLocation = state.matchedLocation;
+
 
       // Define page types for cleaner logic
       final isOnAuthPage = [
@@ -228,9 +238,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Onboarding flow routes - nested under /onboarding
       GoRoute(
         path: '/onboarding',
+        redirect: (context, state) {
+          // Only redirect when the parent '/onboarding' is targeted directly
+          final fullPath = state.fullPath;
+          if (fullPath == '/onboarding') {
+            return '/onboarding/welcome';
+          }
+          return null;
+        },
         routes: [
           GoRoute(
-            path: '/welcome',
+            path: 'welcome',
             name: 'onboarding-welcome',
             pageBuilder: (context, state) =>
                 AppPageTransitions.onboardingForward(
@@ -239,7 +257,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 ),
           ),
           GoRoute(
-            path: '/persona',
+            path: 'persona',
             name: 'onboarding-persona',
             pageBuilder: (context, state) =>
                 AppPageTransitions.onboardingForward(
@@ -248,7 +266,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 ),
           ),
           GoRoute(
-            path: '/basics',
+            path: 'basics',
             name: 'onboarding-basics',
             pageBuilder: (context, state) =>
                 AppPageTransitions.onboardingForward(
@@ -257,7 +275,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 ),
           ),
           GoRoute(
-            path: '/medical',
+            path: 'medical',
             name: 'onboarding-medical',
             pageBuilder: (context, state) =>
                 AppPageTransitions.onboardingForward(
@@ -266,7 +284,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 ),
           ),
           GoRoute(
-            path: '/treatment',
+            path: 'treatment',
             name: 'onboarding-treatment',
             pageBuilder: (context, state) =>
                 AppPageTransitions.onboardingForward(
@@ -275,7 +293,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 ),
           ),
           GoRoute(
-            path: '/completion',
+            path: 'completion',
             name: 'onboarding-completion',
             pageBuilder: (context, state) =>
                 AppPageTransitions.onboardingForward(

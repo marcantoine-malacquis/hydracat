@@ -25,7 +25,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   final AuthService _authService;
   bool _hasRecentError = false;
-  
+
   /// Firestore instance for user data persistence
   FirebaseFirestore get _firestore => FirebaseService().firestore;
 
@@ -42,10 +42,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // Now listen to auth state changes
       _listenToAuthChanges();
 
-      // Set initial state based on current user
+      // Set initial state based on current user with Firestore data
       final currentUser = _authService.currentUser;
       if (currentUser != null) {
-        state = AuthStateAuthenticated(user: currentUser);
+        final completeUser = await _loadCompleteUserData(currentUser);
+        state = AuthStateAuthenticated(user: completeUser);
       } else {
         state = const AuthStateUnauthenticated();
       }
@@ -57,12 +58,45 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Load complete user data by merging Firebase Auth data with Firestore data
+  Future<AppUser> _loadCompleteUserData(AppUser firebaseUser) async {
+    try {
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(firebaseUser.id)
+          .get();
+
+      if (userDoc.exists) {
+        final firestoreData = userDoc.data()!;
+        return firebaseUser.copyWith(
+          hasCompletedOnboarding:
+              firestoreData['hasCompletedOnboarding'] as bool? ?? false,
+          hasSkippedOnboarding:
+              firestoreData['hasSkippedOnboarding'] as bool? ?? false,
+          primaryPetId: firestoreData['primaryPetId'] as String?,
+        );
+      } else {
+        // No Firestore document yet, return Firebase auth data with defaults
+        return firebaseUser;
+      }
+    } on Exception {
+      // If Firestore fetch fails, return Firebase auth data with defaults
+      return firebaseUser;
+    }
+  }
+
   /// Listen to Firebase auth state changes and update the state accordingly
   void _listenToAuthChanges() {
-    _authService.authStateChanges.listen((user) {
+    _authService.authStateChanges.listen((user) async {
       if (user != null) {
         _hasRecentError = false; // Clear error flag on successful auth
-        state = AuthStateAuthenticated(user: user);
+        try {
+          final completeUser = await _loadCompleteUserData(user);
+          state = AuthStateAuthenticated(user: completeUser);
+        } on Exception {
+          // If Firestore fetch fails, use Firebase auth data only
+          state = AuthStateAuthenticated(user: user);
+        }
       } else {
         // Only set to unauthenticated if we don't have a recent error
         // This prevents auth state changes from overriding error messages
@@ -271,21 +305,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Updates both local state and Firestore with onboarding skip status.
   /// Returns true if successful, false otherwise.
   Future<bool> markOnboardingSkipped() async {
-    final currentUser = _authService.currentUser;
+    // Prefer user from current auth state; fallback to auth service
+    final stateUser = state.user;
+    final currentUser = stateUser ?? _authService.currentUser;
     if (currentUser == null) return false;
 
     try {
-      // Update user data in Firestore
-      await _updateUserDataInFirestore(
-        currentUser.id,
-        hasSkippedOnboarding: true,
-      );
-
-      // Update local state
+      // Update local state immediately (offline-first UX)
       final updatedUser = currentUser.copyWith(
         hasSkippedOnboarding: true,
       );
       state = AuthStateAuthenticated(user: updatedUser);
+
+      // Persist to Firestore (best-effort)
+      try {
+        await _updateUserDataInFirestore(
+          currentUser.id,
+          hasSkippedOnboarding: true,
+        );
+      } on Exception {
+        // Ignore persistence failures here; state will sync later
+      }
 
       return true;
     } on Exception {
@@ -328,6 +368,38 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Reset onboarding status for the current user
+  ///
+  /// This method resets both completion and skip flags to false, allowing
+  /// the user to go through onboarding again. Useful for testing or
+  /// when users want to restart their setup.
+  /// Returns true if successful, false otherwise.
+  Future<bool> resetOnboardingStatus() async {
+    final currentUser = _authService.currentUser;
+    if (currentUser == null) return false;
+
+    try {
+      // Update user data in Firestore
+      await _updateUserDataInFirestore(
+        currentUser.id,
+        hasCompletedOnboarding: false,
+        hasSkippedOnboarding: false,
+        primaryPetId: '', // Use empty string to clear the field
+      );
+
+      // Update local state
+      final updatedUser = currentUser.copyWith(
+        hasCompletedOnboarding: false,
+        hasSkippedOnboarding: false,
+      );
+      state = AuthStateAuthenticated(user: updatedUser);
+
+      return true;
+    } on Exception {
+      return false;
+    }
+  }
+
   /// Update user data in Firestore
   ///
   /// Private helper method to persist user data changes to Firestore.
@@ -338,7 +410,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     String? primaryPetId,
   }) async {
     final userDoc = _firestore.collection('users').doc(userId);
-    
+
     final updateData = <String, dynamic>{};
     if (hasCompletedOnboarding != null) {
       updateData['hasCompletedOnboarding'] = hasCompletedOnboarding;
@@ -349,7 +421,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (primaryPetId != null) {
       updateData['primaryPetId'] = primaryPetId;
     }
-    
+
     if (updateData.isNotEmpty) {
       updateData['updatedAt'] = FieldValue.serverTimestamp();
       await userDoc.set(updateData, SetOptions(merge: true));
@@ -402,8 +474,9 @@ final authIsLoadingProvider = Provider<bool>((ref) {
 /// Returns the current error if in error state, null otherwise.
 /// Only rebuilds when error state changes.
 final authErrorProvider = Provider<AuthStateError?>((ref) {
-  return ref.watch(authProvider.select((state) => 
-    state is AuthStateError ? state : null));
+  return ref.watch(
+    authProvider.select((state) => state is AuthStateError ? state : null),
+  );
 });
 
 /// Optimized provider to check if user has completed onboarding
@@ -411,8 +484,9 @@ final authErrorProvider = Provider<AuthStateError?>((ref) {
 /// Returns true if user has completed onboarding, false otherwise.
 /// Only rebuilds when onboarding completion status changes.
 final hasCompletedOnboardingProvider = Provider<bool>((ref) {
-  return ref.watch(authProvider.select((state) => 
-    state.user?.hasCompletedOnboarding ?? false));
+  return ref.watch(
+    authProvider.select((state) => state.user?.hasCompletedOnboarding ?? false),
+  );
 });
 
 /// Optimized provider to check if user has skipped onboarding
@@ -420,8 +494,9 @@ final hasCompletedOnboardingProvider = Provider<bool>((ref) {
 /// Returns true if user has deliberately skipped onboarding, false otherwise.
 /// Only rebuilds when onboarding skip status changes.
 final hasSkippedOnboardingProvider = Provider<bool>((ref) {
-  return ref.watch(authProvider.select((state) => 
-    state.user?.hasSkippedOnboarding ?? false));
+  return ref.watch(
+    authProvider.select((state) => state.user?.hasSkippedOnboarding ?? false),
+  );
 });
 
 /// Optimized provider to get user's primary pet ID
@@ -429,6 +504,5 @@ final hasSkippedOnboardingProvider = Provider<bool>((ref) {
 /// Returns the primary pet ID if set, null otherwise.
 /// Only rebuilds when primary pet ID changes.
 final primaryPetIdProvider = Provider<String?>((ref) {
-  return ref.watch(authProvider.select((state) => 
-    state.user?.primaryPetId));
+  return ref.watch(authProvider.select((state) => state.user?.primaryPetId));
 });

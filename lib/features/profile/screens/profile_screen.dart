@@ -25,6 +25,25 @@ class ProfileScreen extends ConsumerWidget {
           title: const Text('Profile'),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           actions: [
+            // DEBUG: Temporary button to reset onboarding status
+            IconButton(
+              onPressed: () async {
+                final success = await ref
+                    .read(authProvider.notifier)
+                    .resetOnboardingStatus();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(success
+                          ? 'Onboarding status reset successfully!'
+                          : 'Failed to reset onboarding status'),
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Reset Onboarding (Debug)',
+            ),
             IconButton(
               onPressed: () => ref.read(authProvider.notifier).signOut(),
               icon: const Icon(Icons.logout),

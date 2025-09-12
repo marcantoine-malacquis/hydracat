@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -97,8 +99,8 @@ class HomeScreen extends ConsumerWidget {
   }
 
   /// Shows the onboarding flow in a modal dialog (development only).
-  void _showOnboardingModal(BuildContext context) {
-    showDialog<void>(
+  Future<void> _showOnboardingModal(BuildContext context) async {
+    final result = await showDialog<String>(
       context: context,
       barrierDismissible: false, // Prevent dismissing during onboarding
       builder: (BuildContext context) {
@@ -107,6 +109,10 @@ class HomeScreen extends ConsumerWidget {
         );
       },
     );
+
+    if (context.mounted && result == 'start') {
+      context.goNamed('onboarding-persona');
+    }
   }
 
   /// Shows the persona screen in a modal dialog (development only).

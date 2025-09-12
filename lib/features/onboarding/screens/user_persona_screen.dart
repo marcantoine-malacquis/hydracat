@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
@@ -80,7 +81,7 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
       if (moveSuccess && mounted) {
         // Navigate to pet basics screen
         if (context.mounted) {
-          await Navigator.of(context).pushNamed('/onboarding/pet-basics');
+          context.go('/onboarding/basics');
         }
       } else {
         // Handle error moving to next step
@@ -119,7 +120,7 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
   Future<void> _handleBackNavigation() async {
     // Navigate back to welcome screen
     if (context.mounted) {
-      Navigator.of(context).pop();
+      context.go('/onboarding/welcome');
     }
   }
 

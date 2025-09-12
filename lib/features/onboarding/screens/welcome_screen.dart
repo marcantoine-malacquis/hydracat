@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/app/router.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
@@ -142,7 +143,7 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
   void _handleGetStarted(BuildContext context, WidgetRef ref) {
     // Get current user for analytics
     final currentUser = ref.read(currentUserProvider);
-    
+
     // Track onboarding started
     ref
         .read(analyticsServiceDirectProvider)
@@ -151,14 +152,19 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
           timestamp: DateTime.now().toIso8601String(),
         );
 
-    // Navigate to user persona selection screen
-    context.go('/onboarding/persona');
+    final route = ModalRoute.of(context);
+    if (route is PopupRoute) {
+      Navigator.of(context).pop('start');
+    } else {
+      // Normal routing path (no dialog)
+      context.go('/onboarding/persona');
+    }
   }
 
   Future<void> _handleSkip(BuildContext context, WidgetRef ref) async {
     // Get current user for analytics
     final currentUser = ref.read(currentUserProvider);
-    
+
     // Track onboarding skipped/abandoned
     unawaited(
       ref
@@ -175,12 +181,18 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
     final success = await ref
         .read(authProvider.notifier)
         .markOnboardingSkipped();
-    
+
     if (success) {
-      // Navigate to main app with limited functionality
-      // The router will handle showing appropriate content based on skip state
+      // Manually trigger router refresh to ensure state changes are detected
+      ref.read(routerRefreshStreamProvider).refresh();
+
       if (context.mounted) {
-        context.go('/');
+        // Navigate to home first (updates underlying route)
+        context.goNamed('home');
+        // Give router a moment, then close any dev modal/dialog if present
+        final rootNavigator = Navigator.of(context, rootNavigator: true);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await rootNavigator.maybePop();
       }
     } else {
       // Handle error case

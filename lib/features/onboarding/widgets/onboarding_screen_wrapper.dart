@@ -6,6 +6,7 @@ import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_progress_indicator.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
+import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
 
 /// A wrapper widget that provides consistent layout and navigation for 
@@ -255,7 +256,7 @@ class _OnboardingScreenWrapperState
 
 /// A specialized wrapper for the welcome screen that includes skip
 /// functionality
-class OnboardingWelcomeWrapper extends StatelessWidget {
+class OnboardingWelcomeWrapper extends ConsumerWidget {
   /// Creates an [OnboardingWelcomeWrapper].
   const OnboardingWelcomeWrapper({
     required this.child,
@@ -282,20 +283,41 @@ class OnboardingWelcomeWrapper extends StatelessWidget {
   final VoidCallback? onSkip;
 
   @override
-  Widget build(BuildContext context) {
-    return OnboardingScreenWrapper(
-      currentStep: 0,
-      totalSteps: OnboardingStepType.totalSteps,
-      title: title,
-      subtitle: subtitle,
-      showBackButton: false,
-      nextButtonText: 'Get Started',
-      onNextPressed: onGetStarted,
-      stepName: 'welcome',
-      skipAction: onSkip != null
-          ? _buildSkipButton()
-          : null,
-      child: child,
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        actions: [
+          // Logout button in top-right corner
+          Padding(
+            padding: const EdgeInsets.only(right: AppSpacing.md),
+            child: IconButton(
+              onPressed: () => ref.read(authProvider.notifier).signOut(),
+              icon: const Icon(Icons.logout),
+              tooltip: 'Sign Out',
+              iconSize: 20,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+      body: OnboardingScreenWrapper(
+        currentStep: 0,
+        totalSteps: OnboardingStepType.totalSteps,
+        title: title,
+        subtitle: subtitle,
+        showBackButton: false,
+        nextButtonText: 'Get Started',
+        onNextPressed: onGetStarted,
+        stepName: 'welcome',
+        skipAction: onSkip != null
+            ? _buildSkipButton()
+            : null,
+        child: child,
+      ),
     );
   }
 

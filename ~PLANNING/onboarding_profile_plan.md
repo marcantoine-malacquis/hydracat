@@ -817,3 +817,25 @@ Create persona-adaptive treatment setup screens with complex medication manageme
 - ✅ Zero Firebase operations during treatment setup (cost optimized)
 - ✅ Professional medical presentation with "update later" messaging
 - ✅ Seamless integration with existing onboarding flow and completion
+
+---
+
+## Bug fixing
+
+### Onboarding “Skip for now” didn’t navigate to Home
+
+- Symptoms: Button pressed with animation, showed snackbar “Failed to skip onboarding. Please try again.” and stayed on the welcome screen (more evident when launched via the dev modal).
+
+- Root causes:
+  - markOnboardingSkipped() returned false when it couldn’t synchronously fetch a current user (race with auth state) or when the Firestore write failed, triggering the error Snackbar path.
+  - Child routes under `/onboarding` were defined with leading slashes, so they were treated as absolute instead of nested. The parent redirect to `/onboarding/welcome` didn’t match a child route, breaking expected navigation semantics.
+  - When opened via the dev fullscreen modal, navigation could succeed but the dialog still covered the new route.
+
+- Fixes implemented:
+  - Routing: Converted onboarding child paths to relative (`welcome`, `persona`, `basics`, `medical`, `treatment`, `completion`) so they correctly resolve under `/onboarding`.
+  - Auth flow: Made `markOnboardingSkipped()` offline-first. It now updates local auth state immediately, persists to Firestore best‑effort, and uses `state.user ?? _authService.currentUser` to avoid null-user races.
+  - UI flow: After a successful skip, force a router refresh, navigate via `goNamed('home')`, and close any dev dialog with `maybePop()` so the route change is visible.
+
+- Impact:
+  - Skip now reliably navigates authenticated and verified users to Home.
+  - Works both when onboarding is opened via routes and via the development modal.
