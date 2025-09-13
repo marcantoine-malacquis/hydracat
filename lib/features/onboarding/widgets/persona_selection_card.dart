@@ -51,7 +51,6 @@ class _PersonaSelectionCardState extends State<PersonaSelectionCard>
   late Animation<double> _elevationAnimation;
   late Animation<double> _scaleAnimation;
 
-
   @override
   void initState() {
     super.initState();
@@ -139,7 +138,13 @@ class _PersonaSelectionCardState extends State<PersonaSelectionCard>
                   children: [
                     // Main content
                     Padding(
-                      padding: const EdgeInsets.all(AppSpacing.md),
+                      padding: widget.layout == CardLayout.rectangle
+                          ? const EdgeInsets.symmetric(
+                              horizontal:
+                                  AppSpacing.md, // Some padding for content
+                              vertical: AppSpacing.md,
+                            )
+                          : const EdgeInsets.all(AppSpacing.md),
                       child: _buildContent(),
                     ),
 
@@ -161,22 +166,22 @@ class _PersonaSelectionCardState extends State<PersonaSelectionCard>
       children: [
         // Icon placeholder for future illustrations
         Container(
-          width: widget.layout == CardLayout.square ? 48 : 56,
-          height: widget.layout == CardLayout.square ? 48 : 56,
+          width: widget.layout == CardLayout.square ? 40 : 56,
+          height: widget.layout == CardLayout.square ? 40 : 56,
           decoration: BoxDecoration(
             color: AppColors.primaryLight.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
             _getPersonaIcon(),
-            size: widget.layout == CardLayout.square ? 24 : 28,
+            size: widget.layout == CardLayout.square ? 20 : 28,
             color: AppColors.primary,
           ),
         ),
 
         SizedBox(
           height: widget.layout == CardLayout.square
-              ? AppSpacing.sm
+              ? AppSpacing.xs
               : AppSpacing.md,
         ),
 
@@ -189,28 +194,17 @@ class _PersonaSelectionCardState extends State<PersonaSelectionCard>
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
                 )
-              : AppTextStyles.h3.copyWith(
+              : AppTextStyles.body.copyWith(
+                  fontSize: 16, // Smaller font size for rectangle
+                  fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
                 ),
           textAlign: TextAlign.center,
-          maxLines: widget.layout == CardLayout.square ? 2 : 1,
+          maxLines: widget.layout == CardLayout.square
+              ? 2
+              : 2, // Limit to 2 lines for rectangle
           overflow: TextOverflow.ellipsis,
         ),
-
-        if (widget.layout == CardLayout.rectangle) ...[
-          const SizedBox(height: AppSpacing.xs),
-
-          // Description for rectangle cards
-          Text(
-            widget.persona.description,
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
       ],
     );
   }

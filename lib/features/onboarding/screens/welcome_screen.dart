@@ -11,6 +11,7 @@ import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.d
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/onboarding_provider.dart';
+import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
 
 /// The welcome screen that introduces users to the onboarding flow.
 /// This is the entry point for new users to set up their CKD management.
@@ -22,15 +23,16 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return OnboardingWelcomeWrapper(
       title: 'Welcome to HydraCat',
-      subtitle: "Let's set up your CKD management toolkit in just a few steps",
       onGetStarted: () => _handleGetStarted(context, ref),
       onSkip: () => _handleSkip(context, ref),
-      child: _buildWelcomeContent(context),
+      child: _buildWelcomeContent(context, ref),
     );
   }
 
-  Widget _buildWelcomeContent(BuildContext context) {
+  Widget _buildWelcomeContent(BuildContext context, WidgetRef ref) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: AppSpacing.xl),
 
@@ -42,12 +44,17 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
         // Welcome message
         _buildWelcomeMessage(),
 
-        const SizedBox(height: AppSpacing.lg),
-
-        // Benefits list
-        _buildBenefitsList(),
-
         const SizedBox(height: AppSpacing.xl),
+
+        // Get Started button
+        HydraButton(
+          onPressed: () => _handleGetStarted(context, ref),
+          isFullWidth: true,
+          size: HydraButtonSize.large,
+          child: const Text('Get Started'),
+        ),
+
+        const SizedBox(height: AppSpacing.lg),
       ],
     );
   }
@@ -96,50 +103,6 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBenefitsList() {
-    const benefits = [
-      'Track fluid therapy and medications',
-      "Monitor your cat's progress over time",
-      'Generate reports for vet visits',
-      'Set reminders and stay organized',
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: benefits.map(_buildBenefitItem).toList(),
-    );
-  }
-
-  Widget _buildBenefitItem(String benefit) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            margin: const EdgeInsets.only(
-              top: 8,
-              right: AppSpacing.sm,
-            ),
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.primary,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              benefit,
-              style: AppTextStyles.body.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Future<void> _handleGetStarted(BuildContext context, WidgetRef ref) async {
     // Get current user for analytics

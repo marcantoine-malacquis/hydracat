@@ -6,10 +6,9 @@ import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_progress_indicator.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
-import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
 
-/// A wrapper widget that provides consistent layout and navigation for 
+/// A wrapper widget that provides consistent layout and navigation for
 /// onboarding screens with automatic analytics tracking.
 class OnboardingScreenWrapper extends ConsumerStatefulWidget {
   /// Creates an [OnboardingScreenWrapper].
@@ -78,11 +77,11 @@ class OnboardingScreenWrapper extends ConsumerStatefulWidget {
   final String? stepName;
 
   @override
-  ConsumerState<OnboardingScreenWrapper> createState() => 
+  ConsumerState<OnboardingScreenWrapper> createState() =>
       _OnboardingScreenWrapperState();
 }
 
-class _OnboardingScreenWrapperState 
+class _OnboardingScreenWrapperState
     extends ConsumerState<OnboardingScreenWrapper> {
   late DateTime _screenStartTime;
   AnalyticsService? _analyticsService;
@@ -103,7 +102,7 @@ class _OnboardingScreenWrapperState
 
   void _trackScreenView() {
     final stepName = widget.stepName ?? 'step_${widget.currentStep}';
-    
+
     _analyticsService?.trackScreenView(
       screenName: 'onboarding_$stepName',
       screenClass: 'OnboardingScreen',
@@ -112,10 +111,10 @@ class _OnboardingScreenWrapperState
 
   void _trackScreenTiming() {
     if (!mounted || _analyticsService == null) return;
-    
+
     final duration = DateTime.now().difference(_screenStartTime);
     final stepName = widget.stepName ?? 'step_${widget.currentStep}';
-    
+
     // Track as a feature usage with timing data
     _analyticsService!.trackFeatureUsed(
       featureName: 'onboarding_screen_timing',
@@ -132,21 +131,42 @@ class _OnboardingScreenWrapperState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: _buildAppBar(),
       body: SafeArea(
         child: Column(
           children: [
             // Header with progress indicator
             _buildHeader(),
-            
+
             // Main content area
             Expanded(
               child: _buildContent(),
             ),
-            
+
             // Navigation buttons
             _buildNavigation(),
           ],
         ),
+      ),
+    );
+  }
+
+  PreferredSizeWidget? _buildAppBar() {
+    // Only show app bar if we have a back button to show
+    if (!widget.showBackButton || widget.onBackPressed == null) {
+      return null;
+    }
+
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      automaticallyImplyLeading: false,
+      leading: IconButton(
+        onPressed: widget.isLoading ? null : widget.onBackPressed,
+        icon: const Icon(Icons.arrow_back_ios),
+        iconSize: 20,
+        color: AppColors.textSecondary,
+        tooltip: widget.backButtonText,
       ),
     );
   }
@@ -161,7 +181,7 @@ class _OnboardingScreenWrapperState
             currentStep: widget.currentStep,
             totalSteps: widget.totalSteps,
           ),
-          
+
           if (widget.title != null) ...[
             const SizedBox(height: AppSpacing.xl),
             Text(
@@ -172,7 +192,7 @@ class _OnboardingScreenWrapperState
               textAlign: TextAlign.center,
             ),
           ],
-          
+
           if (widget.subtitle != null) ...[
             const SizedBox(height: AppSpacing.md),
             Text(
@@ -183,7 +203,7 @@ class _OnboardingScreenWrapperState
               textAlign: TextAlign.center,
             ),
           ],
-          
+
           if (widget.skipAction != null) ...[
             const SizedBox(height: AppSpacing.lg),
             widget.skipAction!,
@@ -201,11 +221,20 @@ class _OnboardingScreenWrapperState
   }
 
   Widget _buildNavigation() {
-    // Don't show navigation if both buttons are hidden
+    // Don't show bottom navigation if both buttons are hidden
     if (!widget.showBackButton && !widget.showNextButton) {
       return const SizedBox(height: AppSpacing.lg);
     }
 
+    // If only back button is shown and we have app bar,
+    // don't show bottom navigation
+    if (widget.showBackButton &&
+        !widget.showNextButton &&
+        widget.onBackPressed != null) {
+      return const SizedBox(height: AppSpacing.lg);
+    }
+
+    // Show bottom navigation for next button or when both buttons are needed
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: const BoxDecoration(
@@ -219,8 +248,10 @@ class _OnboardingScreenWrapperState
       child: SafeArea(
         child: Row(
           children: [
-            // Back button or spacer
-            if (widget.showBackButton && widget.onBackPressed != null)
+            // Back button or spacer (only if no app bar back button)
+            if (widget.showBackButton &&
+                widget.onBackPressed != null &&
+                widget.showNextButton)
               Expanded(
                 child: HydraButton(
                   onPressed: widget.isLoading ? null : widget.onBackPressed,
@@ -228,19 +259,19 @@ class _OnboardingScreenWrapperState
                   child: Text(widget.backButtonText),
                 ),
               )
-            else
+            else if (widget.showNextButton)
               const Expanded(child: SizedBox()),
 
             // Spacing between buttons
-            if (widget.showBackButton && widget.showNextButton) 
+            if (widget.showBackButton && widget.showNextButton)
               const SizedBox(width: AppSpacing.md),
 
             // Next button or spacer
             if (widget.showNextButton && widget.onNextPressed != null)
               Expanded(
                 child: HydraButton(
-                  onPressed: (widget.isLoading || !widget.nextButtonEnabled) 
-                      ? null 
+                  onPressed: (widget.isLoading || !widget.nextButtonEnabled)
+                      ? null
                       : widget.onNextPressed,
                   child: Text(widget.nextButtonText),
                 ),
@@ -291,17 +322,19 @@ class OnboardingWelcomeWrapper extends ConsumerWidget {
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [
-          // Logout button in top-right corner
-          Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.md),
-            child: IconButton(
-              onPressed: () => ref.read(authProvider.notifier).signOut(),
-              icon: const Icon(Icons.logout),
-              tooltip: 'Sign Out',
-              iconSize: 20,
-              color: AppColors.textSecondary,
+          // Skip button in top-right corner
+          if (onSkip != null)
+            Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.md),
+              child: TextButton(
+                onPressed: onSkip,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.textSecondary,
+                  textStyle: AppTextStyles.body,
+                ),
+                child: const Text('Skip'),
+              ),
             ),
-          ),
         ],
       ),
       body: OnboardingScreenWrapper(
@@ -310,28 +343,9 @@ class OnboardingWelcomeWrapper extends ConsumerWidget {
         title: title,
         subtitle: subtitle,
         showBackButton: false,
-        nextButtonText: 'Get Started',
-        onNextPressed: onGetStarted,
+        showNextButton: false,
         stepName: 'welcome',
-        skipAction: onSkip != null
-            ? _buildSkipButton()
-            : null,
         child: child,
-      ),
-    );
-  }
-
-  Widget _buildSkipButton() {
-    return TextButton(
-      onPressed: onSkip,
-      style: TextButton.styleFrom(
-        foregroundColor: AppColors.textTertiary,
-        textStyle: AppTextStyles.caption,
-      ),
-      child: const Text(
-"Skip for now\n(You'll have limited access to tracking "
-        'features until you complete setup)',
-        textAlign: TextAlign.center,
       ),
     );
   }
