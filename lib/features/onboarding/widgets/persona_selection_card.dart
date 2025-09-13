@@ -51,7 +51,6 @@ class _PersonaSelectionCardState extends State<PersonaSelectionCard>
   late Animation<double> _elevationAnimation;
   late Animation<double> _scaleAnimation;
 
-
   @override
   void initState() {
     super.initState();
@@ -138,9 +137,18 @@ class _PersonaSelectionCardState extends State<PersonaSelectionCard>
                 child: Stack(
                   children: [
                     // Main content
-                    Padding(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      child: _buildContent(),
+                    Positioned.fill(
+                      child: Padding(
+                        padding: widget.layout == CardLayout.rectangle
+                            ? const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.md,
+                                vertical: AppSpacing.md,
+                              )
+                            : const EdgeInsets.all(AppSpacing.md),
+                        child: Center(
+                          child: _buildContent(),
+                        ),
+                      ),
                     ),
 
                     // Loading overlay
@@ -157,27 +165,27 @@ class _PersonaSelectionCardState extends State<PersonaSelectionCard>
 
   Widget _buildContent() {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
         // Icon placeholder for future illustrations
         Container(
-          width: widget.layout == CardLayout.square ? 48 : 56,
-          height: widget.layout == CardLayout.square ? 48 : 56,
+          width: widget.layout == CardLayout.square ? 40 : 56,
+          height: widget.layout == CardLayout.square ? 40 : 56,
           decoration: BoxDecoration(
             color: AppColors.primaryLight.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
             _getPersonaIcon(),
-            size: widget.layout == CardLayout.square ? 24 : 28,
+            size: widget.layout == CardLayout.square ? 20 : 28,
             color: AppColors.primary,
           ),
         ),
 
         SizedBox(
           height: widget.layout == CardLayout.square
-              ? AppSpacing.sm
-              : AppSpacing.md,
+              ? AppSpacing.xs
+              : AppSpacing.sm,
         ),
 
         // Title
@@ -185,32 +193,21 @@ class _PersonaSelectionCardState extends State<PersonaSelectionCard>
           _getPersonaTitle(),
           style: widget.layout == CardLayout.square
               ? AppTextStyles.body.copyWith(
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
+                  height: 1.2,
                 )
-              : AppTextStyles.h3.copyWith(
+              : AppTextStyles.body.copyWith(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
+                  height: 1.3,
                 ),
           textAlign: TextAlign.center,
-          maxLines: widget.layout == CardLayout.square ? 2 : 1,
+          maxLines: widget.layout == CardLayout.square ? 3 : 3,
           overflow: TextOverflow.ellipsis,
         ),
-
-        if (widget.layout == CardLayout.rectangle) ...[
-          const SizedBox(height: AppSpacing.xs),
-
-          // Description for rectangle cards
-          Text(
-            widget.persona.description,
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
       ],
     );
   }
@@ -243,9 +240,9 @@ class _PersonaSelectionCardState extends State<PersonaSelectionCard>
   String _getPersonaTitle() {
     return switch (widget.persona) {
       UserPersona.medicationOnly => 'Medication\nOnly',
-      UserPersona.fluidTherapyOnly => 'Subcutaneous\nFluid Therapy\nOnly',
+      UserPersona.fluidTherapyOnly => 'Fluid Therapy\nOnly',
       UserPersona.medicationAndFluidTherapy =>
-        'Medication &\nSubcutaneous Fluid\nTherapy',
+        'Medication &\nFluid Therapy',
     };
   }
 }

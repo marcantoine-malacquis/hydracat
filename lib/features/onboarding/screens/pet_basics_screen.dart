@@ -11,6 +11,7 @@ import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.d
 import 'package:hydracat/features/onboarding/widgets/weight_unit_selector.dart';
 import 'package:hydracat/features/profile/services/profile_validation_service.dart';
 import 'package:hydracat/providers/onboarding_provider.dart';
+import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
 
 /// Pet basics collection screen - Step 3 of onboarding flow
 class PetBasicsScreen extends ConsumerStatefulWidget {
@@ -26,18 +27,18 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
   final _nameController = TextEditingController();
   final _breedController = TextEditingController();
   final _validationService = const ProfileValidationService();
-  
+
   DateTime? _selectedDateOfBirth;
   String? _selectedGender;
   double? _weightValue;
   String _weightUnit = 'kg';
-  
+
   // Error states
   String? _nameError;
   String? _dateOfBirthError;
   String? _genderError;
   String? _weightError;
-  
+
   bool _isLoading = false;
 
   @override
@@ -57,16 +58,16 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
   /// Load any previously saved pet basics data
   Future<void> _loadSavedData() async {
     final onboardingData = ref.read(onboardingDataProvider);
-    
-    if (onboardingData?.petName != null && 
+
+    if (onboardingData?.petName != null &&
         onboardingData!.petName!.isNotEmpty) {
       _nameController.text = onboardingData.petName!;
     }
-    
+
     // Note: OnboardingData doesn't have dateOfBirth/gender/breed fields yet
     // These will be handled locally until the model is updated
-    
-    if (onboardingData?.petWeightKg != null && 
+
+    if (onboardingData?.petWeightKg != null &&
         onboardingData!.petWeightKg! > 0) {
       _weightValue = onboardingData.petWeightKg;
     }
@@ -98,7 +99,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
   Future<void> _selectDateOfBirth() async {
     final now = DateTime.now();
     final firstDate = DateTime(now.year - 25, now.month, now.day);
-    
+
     final selectedDate = await showDatePicker(
       context: context,
       initialDate: _selectedDateOfBirth ?? DateTime(now.year - 2),
@@ -115,7 +116,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
         );
       },
     );
-    
+
     if (selectedDate != null) {
       setState(() {
         _selectedDateOfBirth = selectedDate;
@@ -132,9 +133,9 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
       _genderError = null;
       _weightError = null;
     });
-    
+
     var isValid = true;
-    
+
     // Validate name (required)
     final nameResult = _validationService.validatePetName(_nameController.text);
     if (!nameResult.isValid) {
@@ -143,7 +144,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
       });
       isValid = false;
     }
-    
+
     // Validate date of birth (required)
     if (_selectedDateOfBirth == null) {
       setState(() {
@@ -161,7 +162,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
         isValid = false;
       }
     }
-    
+
     // Validate gender (required)
     if (_selectedGender == null || _selectedGender!.isEmpty) {
       setState(() {
@@ -169,13 +170,13 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
       });
       isValid = false;
     }
-    
+
     // Validate weight (optional, but validate if provided)
     if (_weightValue != null) {
-      final weightInKg = _weightUnit == 'lbs' 
-          ? _weightValue! / 2.20462 
+      final weightInKg = _weightUnit == 'lbs'
+          ? _weightValue! / 2.20462
           : _weightValue!;
-      
+
       final weightResult = _validationService.validateWeight(weightInKg);
       if (!weightResult.isValid) {
         setState(() {
@@ -184,7 +185,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
         isValid = false;
       }
     }
-    
+
     return isValid;
   }
 
@@ -193,41 +194,40 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
     if (!_validateForm()) {
       return;
     }
-    
+
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       // Convert weight to kg if needed
       final weightInKg = _weightValue != null && _weightUnit == 'lbs'
           ? _weightValue! / 2.20462
           : _weightValue;
-      
+
       // Calculate age from date of birth
       final ageYears = AppDateUtils.calculateAge(_selectedDateOfBirth!);
-      
+
       // Create updated onboarding data with available fields
-      final currentData = ref.read(onboardingDataProvider) ?? 
-          const OnboardingData.empty();
-      
+      final currentData =
+          ref.read(onboardingDataProvider) ?? const OnboardingData.empty();
+
       final updatedData = currentData.copyWith(
         petName: _nameController.text.capitalize,
         petAge: ageYears, // OnboardingData uses petAge (int) not ageYears
         petWeightKg: weightInKg,
       );
-      
+
       // Update onboarding data
       await ref.read(onboardingProvider.notifier).updateData(updatedData);
-      
-      // TODO(dev): Store additional fields (dateOfBirth, ageInMonths, 
+
+      // TODO(dev): Store additional fields (dateOfBirth, ageInMonths,
       // gender, breed) when OnboardingData model is extended
-      
+
       // Navigate to next step (treatment setup)
       if (mounted) {
         await ref.read(onboardingProvider.notifier).moveToNextStep();
       }
-      
     } on Exception catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -261,17 +261,14 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
       currentStep: 2,
       totalSteps: OnboardingStepType.totalSteps,
       title: 'Tell us about your cat',
-      subtitle: 'We need some basic information to personalize your experience',
       onBackPressed: _goBack,
-      onNextPressed: _saveAndContinue,
-      nextButtonText: 'Save & Continue',
-      nextButtonEnabled: !_isLoading,
-      isLoading: _isLoading,
+      showNextButton: false,
       stepName: 'pet_basics',
+      showProgressInAppBar: true,
       child: Form(
         key: _formKey,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Pet Name (Required)
             _buildSectionLabel('Pet Name', isRequired: true),
@@ -315,9 +312,9 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
                 ),
               ),
             ],
-            
+
             const SizedBox(height: AppSpacing.lg),
-            
+
             // Date of Birth (Required)
             _buildSectionLabel('Date of Birth', isRequired: true),
             const SizedBox(height: AppSpacing.sm),
@@ -328,8 +325,8 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: _dateOfBirthError != null 
-                        ? AppColors.error 
+                    color: _dateOfBirthError != null
+                        ? AppColors.error
                         : AppColors.border,
                   ),
                   borderRadius: BorderRadius.circular(8),
@@ -338,8 +335,8 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
                   children: [
                     Icon(
                       Icons.calendar_today,
-                      color: _selectedDateOfBirth != null 
-                          ? AppColors.primary 
+                      color: _selectedDateOfBirth != null
+                          ? AppColors.primary
                           : AppColors.textSecondary,
                     ),
                     const SizedBox(width: AppSpacing.md),
@@ -366,9 +363,9 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
                 ),
               ),
             ],
-            
+
             const SizedBox(height: AppSpacing.lg),
-            
+
             // Gender (Required)
             _buildSectionLabel('Gender', isRequired: true),
             const SizedBox(height: AppSpacing.sm),
@@ -382,9 +379,9 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
               },
               errorText: _genderError,
             ),
-            
+
             const SizedBox(height: AppSpacing.lg),
-            
+
             // Weight (Optional)
             _buildSectionLabel('Weight', isRequired: false),
             const SizedBox(height: AppSpacing.sm),
@@ -405,9 +402,9 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
               },
               errorText: _weightError,
             ),
-            
+
             const SizedBox(height: AppSpacing.lg),
-            
+
             // Breed (Optional)
             _buildSectionLabel('Breed', isRequired: false),
             const SizedBox(height: AppSpacing.sm),
@@ -430,8 +427,29 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: AppSpacing.xl),
+
+            // Save & Continue Button
+            HydraButton(
+              onPressed: _isLoading ? null : _saveAndContinue,
+              isFullWidth: true,
+              size: HydraButtonSize.large,
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.surface,
+                        ),
+                      ),
+                    )
+                  : const Text('Save & Continue'),
+            ),
+
+            const SizedBox(height: AppSpacing.lg),
           ],
         ),
       ),

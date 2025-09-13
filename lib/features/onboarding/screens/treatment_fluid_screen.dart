@@ -74,6 +74,7 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
     return OnboardingScreenWrapper(
       currentStep: 5,
       totalSteps: 6,
+      showProgressInAppBar: true,
       child: Scaffold(
         backgroundColor: theme.colorScheme.surface,
         appBar: AppBar(

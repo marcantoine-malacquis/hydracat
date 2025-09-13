@@ -7,10 +7,12 @@ import 'package:hydracat/app/router.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/onboarding_provider.dart';
+import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
 
 /// The welcome screen that introduces users to the onboarding flow.
 /// This is the entry point for new users to set up their CKD management.
@@ -20,17 +22,46 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return OnboardingWelcomeWrapper(
+    return OnboardingScreenWrapper(
+      currentStep: 0,
+      totalSteps: OnboardingStepType.totalSteps,
       title: 'Welcome to HydraCat',
-      subtitle: "Let's set up your CKD management toolkit in just a few steps",
-      onGetStarted: () => _handleGetStarted(context, ref),
-      onSkip: () => _handleSkip(context, ref),
-      child: _buildWelcomeContent(context),
+      subtitle: 'Managing chronic kidney disease can feel overwhelming, but '
+          "you're not alone. HydraCat helps you track treatments, monitor "
+          'progress, and stay connected with your vet.',
+      showBackButton: false,
+      showNextButton: false,
+      showProgressInAppBar: true,
+      stepName: 'welcome',
+      appBarActions: [
+        Container(
+          height: 20, // Match progress indicator height
+          alignment: Alignment.center,
+          margin: const EdgeInsets.only(right: 16),
+          child: TextButton(
+            onPressed: () => _handleSkip(context, ref),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.textSecondary,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: Size.zero, // Remove default minimums
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              textStyle: const TextStyle(
+                fontSize: 17, // Slightly larger than progress dots
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            child: const Text('Skip'),
+          ),
+        ),
+      ],
+      child: _buildWelcomeContent(context, ref),
     );
   }
 
-  Widget _buildWelcomeContent(BuildContext context) {
+  Widget _buildWelcomeContent(BuildContext context, WidgetRef ref) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: AppSpacing.xl),
 
@@ -39,15 +70,26 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
 
         const SizedBox(height: AppSpacing.xl),
 
-        // Welcome message
-        _buildWelcomeMessage(),
-
-        const SizedBox(height: AppSpacing.lg),
-
-        // Benefits list
-        _buildBenefitsList(),
+        // Additional welcome message (now that subtitle is in wrapper)
+        Text(
+          'Your CKD Journey Starts Here',
+          style: AppTextStyles.h2.copyWith(
+            color: AppColors.textPrimary,
+          ),
+          textAlign: TextAlign.center,
+        ),
 
         const SizedBox(height: AppSpacing.xl),
+
+        // Get Started button
+        HydraButton(
+          onPressed: () => _handleGetStarted(context, ref),
+          isFullWidth: true,
+          size: HydraButtonSize.large,
+          child: const Text('Get Started'),
+        ),
+
+        const SizedBox(height: AppSpacing.lg),
       ],
     );
   }
@@ -68,75 +110,6 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
         Icons.pets,
         size: 80,
         color: AppColors.primary.withValues(alpha: 0.6),
-      ),
-    );
-  }
-
-  Widget _buildWelcomeMessage() {
-    return Column(
-      children: [
-        Text(
-          'Your CKD Journey Starts Here',
-          style: AppTextStyles.h2.copyWith(
-            color: AppColors.textPrimary,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          "Managing chronic kidney disease can feel overwhelming, but you're "
-          'not alone. HydraCat helps you track treatments, monitor progress, '
-          'and stay connected with your vet.',
-          style: AppTextStyles.body.copyWith(
-            color: AppColors.textSecondary,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBenefitsList() {
-    const benefits = [
-      'Track fluid therapy and medications',
-      "Monitor your cat's progress over time",
-      'Generate reports for vet visits',
-      'Set reminders and stay organized',
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: benefits.map(_buildBenefitItem).toList(),
-    );
-  }
-
-  Widget _buildBenefitItem(String benefit) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            margin: const EdgeInsets.only(
-              top: 8,
-              right: AppSpacing.sm,
-            ),
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.primary,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              benefit,
-              style: AppTextStyles.body.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

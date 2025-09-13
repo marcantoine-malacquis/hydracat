@@ -99,9 +99,9 @@ features/[feature]/
 
 - **Initial project setup**: `~PLANNING/DONE/SETUP.md`
 - **Authentication**: `~PLANNING/auth_implementation_plan.md`
+- **Onboarding & Pet profile**: `~PLANNING/onboarding_profile_plan.md`
 
 Once planning files are completed, they are moved from `~PLANNING` to `~PLANNING/DONE`
-
 
 ## Important Notes
 

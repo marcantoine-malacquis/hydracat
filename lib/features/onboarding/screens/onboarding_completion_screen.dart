@@ -38,6 +38,7 @@ class _OnboardingCompletionScreenState
       showBackButton: false,
       showNextButton: false,
       stepName: 'completion',
+      showProgressInAppBar: true,
       child: Column(
         children: [
           const SizedBox(height: AppSpacing.xl),

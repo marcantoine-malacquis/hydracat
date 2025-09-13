@@ -48,13 +48,19 @@ class HydraButton extends StatelessWidget {
 
   Widget _buildButton(BuildContext context) {
     final buttonStyle = _getButtonStyle(context);
+    final minHeight = _getMinHeight();
 
     return SizedBox(
       width: isFullWidth ? double.infinity : null,
+      height: minHeight,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: buttonStyle,
-        child: _buildButtonContent(),
+        child: Container(
+          height: minHeight,
+          alignment: Alignment.center,
+          child: _buildButtonContent(),
+        ),
       ),
     );
   }
@@ -87,6 +93,10 @@ class HydraButton extends StatelessWidget {
           shadowColor: AppColors.primary.withValues(alpha: 0.3),
           padding: buttonPadding,
           minimumSize: Size(0, minHeight),
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
@@ -125,7 +135,7 @@ class HydraButton extends StatelessWidget {
       case HydraButtonSize.medium:
         return const EdgeInsets.symmetric(horizontal: 16, vertical: 12);
       case HydraButtonSize.large:
-        return const EdgeInsets.symmetric(horizontal: 20, vertical: 16);
+        return const EdgeInsets.symmetric(horizontal: 20);
     }
   }
 
@@ -136,7 +146,7 @@ class HydraButton extends StatelessWidget {
       case HydraButtonSize.medium:
         return 44;
       case HydraButtonSize.large:
-        return 48;
+        return 54;
     }
   }
 }

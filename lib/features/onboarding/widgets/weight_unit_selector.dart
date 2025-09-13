@@ -43,7 +43,7 @@ class WeightUnitSelector extends StatelessWidget {
           children: [
             // Weight input field
             Expanded(
-              flex: 2,
+              flex: 3,
               child: TextFormField(
                 initialValue: weight?.toStringAsFixed(2),
                 keyboardType: const TextInputType.numberWithOptions(
@@ -87,9 +87,12 @@ class WeightUnitSelector extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.sm),
             // Unit selector
-            _UnitToggle(
-              selectedUnit: unit,
-              onUnitChanged: onUnitChanged,
+            Expanded(
+              flex: 2,
+              child: _UnitToggle(
+                selectedUnit: unit,
+                onUnitChanged: onUnitChanged,
+              ),
             ),
           ],
         ),
@@ -125,19 +128,22 @@ class _UnitToggle extends StatelessWidget {
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          _UnitButton(
-            label: 'kg',
-            isSelected: selectedUnit == 'kg',
-            onTap: () => onUnitChanged('kg'),
-            isFirst: true,
+          Expanded(
+            child: _UnitButton(
+              label: 'kg',
+              isSelected: selectedUnit == 'kg',
+              onTap: () => onUnitChanged('kg'),
+              isFirst: true,
+            ),
           ),
-          _UnitButton(
-            label: 'lbs',
-            isSelected: selectedUnit == 'lbs',
-            onTap: () => onUnitChanged('lbs'),
-            isLast: true,
+          Expanded(
+            child: _UnitButton(
+              label: 'lbs',
+              isSelected: selectedUnit == 'lbs',
+              onTap: () => onUnitChanged('lbs'),
+              isLast: true,
+            ),
           ),
         ],
       ),
@@ -182,6 +188,7 @@ class _UnitButton extends StatelessWidget {
           ),
           child: Text(
             label,
+            textAlign: TextAlign.center,
             style: AppTextStyles.caption.copyWith(
               color: isSelected ? Colors.white : AppColors.textSecondary,
               fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,

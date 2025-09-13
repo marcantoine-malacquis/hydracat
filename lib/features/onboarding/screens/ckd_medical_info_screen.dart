@@ -269,6 +269,7 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
       nextButtonEnabled: !_isLoading,
       isLoading: _isLoading,
       stepName: 'ckd_medical_info',
+      showProgressInAppBar: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

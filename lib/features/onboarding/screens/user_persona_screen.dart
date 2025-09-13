@@ -30,14 +30,14 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
   void initState() {
     super.initState();
     debugPrint('[UserPersonaScreen] Screen initialized');
-    
+
     // Load existing selection if resuming onboarding
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _validateOnboardingSession();
-      
+
       final existingData = ref.read(onboardingDataProvider);
       debugPrint('[UserPersonaScreen] Existing data: $existingData');
-      
+
       final existingPersona = existingData?.treatmentApproach;
       if (existingPersona != null) {
         debugPrint(
@@ -53,21 +53,21 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
   void _validateOnboardingSession() {
     final isActive = ref.read(isOnboardingActiveProvider);
     final currentProgress = ref.read(onboardingProgressProvider);
-    
+
     debugPrint('[UserPersonaScreen] Session validation:');
     debugPrint('  - Is active: $isActive');
     debugPrint('  - Current progress: $currentProgress');
-    
+
     if (!isActive || currentProgress == null) {
       debugPrint('[UserPersonaScreen] ERROR: No active onboarding session!');
-      
+
       // Try to recover by going back to welcome screen
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _showErrorSnackBar(
             'Onboarding session expired. Redirecting to start...',
           );
-          
+
           // Delay navigation slightly to show the error message
           Future.delayed(const Duration(milliseconds: 1500), () {
             if (mounted && context.mounted) {
@@ -93,19 +93,21 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
 
     // Track selection in analytics
     debugPrint('[UserPersonaScreen] Tracking analytics...');
-    await ref.read(analyticsServiceDirectProvider).trackFeatureUsed(
-      featureName: 'persona_selected',
-      additionalParams: {
-        'persona': persona.name,
-        'display_name': persona.displayName,
-      },
-    );
+    await ref
+        .read(analyticsServiceDirectProvider)
+        .trackFeatureUsed(
+          featureName: 'persona_selected',
+          additionalParams: {
+            'persona': persona.name,
+            'display_name': persona.displayName,
+          },
+        );
 
     // Update onboarding data with selected persona
-    final currentData = ref.read(onboardingDataProvider) ??
-        const OnboardingData.empty();
+    final currentData =
+        ref.read(onboardingDataProvider) ?? const OnboardingData.empty();
     final userId = ref.read(currentUserProvider)?.id;
-    
+
     debugPrint('[UserPersonaScreen] Current data: $currentData');
     debugPrint('[UserPersonaScreen] User ID: $userId');
 
@@ -113,7 +115,7 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
       userId: userId,
       treatmentApproach: persona,
     );
-    
+
     debugPrint('[UserPersonaScreen] Updated data: $updatedData');
     debugPrint('[UserPersonaScreen] Calling updateData...');
 
@@ -121,19 +123,19 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
     final success = await ref
         .read(onboardingProvider.notifier)
         .updateData(updatedData);
-        
+
     debugPrint('[UserPersonaScreen] updateData result: $success');
 
     if (success && mounted) {
       debugPrint('[UserPersonaScreen] Data updated successfully');
-      
+
       // Check current progress step
       final currentProgress = ref.read(onboardingProgressProvider);
       debugPrint(
         '[UserPersonaScreen] Current progress step: '
         '${currentProgress?.currentStep}',
       );
-      
+
       // If we're not on userPersona step, fix the progress
       if (currentProgress?.currentStep != OnboardingStepType.userPersona) {
         debugPrint(
@@ -144,18 +146,18 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
             .read(onboardingProvider.notifier)
             .setCurrentStep(OnboardingStepType.userPersona);
       }
-      
+
       // Now move to next step
       debugPrint('[UserPersonaScreen] Moving to next step...');
       final moveSuccess = await ref
           .read(onboardingProvider.notifier)
           .moveToNextStep();
-          
+
       debugPrint('[UserPersonaScreen] moveToNextStep result: $moveSuccess');
 
       if (moveSuccess && mounted) {
         debugPrint('[UserPersonaScreen] Navigating to pet basics screen');
-        
+
         // Navigate to pet basics screen
         if (context.mounted) {
           context.go('/onboarding/basics');
@@ -169,7 +171,8 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
 
         if (mounted) {
           _showErrorSnackBar(
-              'Unable to proceed to next step. Please try again.');
+            'Unable to proceed to next step. Please try again.',
+          );
         }
       }
     } else {
@@ -181,8 +184,7 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
       });
 
       if (mounted) {
-        _showErrorSnackBar(
-            'Unable to save your selection. Please try again.');
+        _showErrorSnackBar('Unable to save your selection. Please try again.');
       }
     }
   }
@@ -206,14 +208,15 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
   @override
   Widget build(BuildContext context) {
     return OnboardingScreenWrapper(
-      currentStep: 1, // Step 2 of 5 (0-indexed)
+      currentStep: 1,
       totalSteps: OnboardingStepType.totalSteps,
       title: "How do you manage your pet's CKD?",
       subtitle: 'Choose the approach that best matches your current '
           'treatment plan',
+      onBackPressed: _isProcessingSelection ? null : _handleBackNavigation,
+      showNextButton: false,
       stepName: 'user_persona',
-      onBackPressed: _handleBackNavigation,
-      showNextButton: false, // We handle navigation automatically
+      showProgressInAppBar: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -248,64 +251,79 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
   }
 
   Widget _buildPersonaCards() {
-    return Column(
-      children: [
-        // Top row: Two square cards horizontally
-        Row(
-          children: [
-            // Medication Only card
-            Expanded(
-              child: AspectRatio(
-                aspectRatio: 1, // Square aspect ratio
-                child: PersonaSelectionCard(
-                  persona: UserPersona.medicationOnly,
-                  isSelected:
-                      _selectedPersona == UserPersona.medicationOnly,
-                  isLoading: _isProcessingSelection &&
-                      _selectedPersona == UserPersona.medicationOnly,
-                  onTap: () => _handlePersonaSelection(
-                      UserPersona.medicationOnly),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Column(
+        children: [
+          // Top row: Two square cards horizontally
+          Row(
+            children: [
+              // Medication Only card
+              Expanded(
+                child: AspectRatio(
+                  aspectRatio: 1, // Square aspect ratio
+                  child: PersonaSelectionCard(
+                    persona: UserPersona.medicationOnly,
+                    isSelected: _selectedPersona == UserPersona.medicationOnly,
+                    isLoading:
+                        _isProcessingSelection &&
+                        _selectedPersona == UserPersona.medicationOnly,
+                    onTap: () =>
+                        _handlePersonaSelection(UserPersona.medicationOnly),
+                  ),
                 ),
               ),
-            ),
 
-            const SizedBox(width: AppSpacing.md),
+              const SizedBox(width: AppSpacing.md),
 
-            // Fluid Therapy Only card
-            Expanded(
-              child: AspectRatio(
-                aspectRatio: 1, // Square aspect ratio
-                child: PersonaSelectionCard(
-                  persona: UserPersona.fluidTherapyOnly,
-                  isSelected:
-                      _selectedPersona == UserPersona.fluidTherapyOnly,
-                  isLoading: _isProcessingSelection &&
-                      _selectedPersona == UserPersona.fluidTherapyOnly,
-                  onTap: () => _handlePersonaSelection(
-                      UserPersona.fluidTherapyOnly),
+              // Fluid Therapy Only card
+              Expanded(
+                child: AspectRatio(
+                  aspectRatio: 1, // Square aspect ratio
+                  child: PersonaSelectionCard(
+                    persona: UserPersona.fluidTherapyOnly,
+                    isSelected:
+                        _selectedPersona == UserPersona.fluidTherapyOnly,
+                    isLoading:
+                        _isProcessingSelection &&
+                        _selectedPersona == UserPersona.fluidTherapyOnly,
+                    onTap: () =>
+                        _handlePersonaSelection(UserPersona.fluidTherapyOnly),
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: AppSpacing.md),
-
-        // Bottom: Full-width rectangle card
-        SizedBox(
-          height: 100, // Fixed height for rectangle card
-          child: PersonaSelectionCard(
-            persona: UserPersona.medicationAndFluidTherapy,
-            layout: CardLayout.rectangle,
-            isSelected: _selectedPersona ==
-                UserPersona.medicationAndFluidTherapy,
-            isLoading: _isProcessingSelection &&
-                _selectedPersona == UserPersona.medicationAndFluidTherapy,
-            onTap: () => _handlePersonaSelection(
-                UserPersona.medicationAndFluidTherapy),
+            ],
           ),
-        ),
-      ],
+
+          const SizedBox(height: AppSpacing.md),
+
+          // Bottom: Rectangle card with same width as top cards combined
+          // Use Expanded to take full available width
+          SizedBox(
+            height: 160, // Increased height to accommodate full text
+            child: Row(
+              children: [
+                Expanded(
+                  child: PersonaSelectionCard(
+                    persona: UserPersona.medicationAndFluidTherapy,
+                    layout: CardLayout.rectangle,
+                    isSelected:
+                        _selectedPersona ==
+                        UserPersona.medicationAndFluidTherapy,
+                    isLoading:
+                        _isProcessingSelection &&
+                        _selectedPersona ==
+                            UserPersona.medicationAndFluidTherapy,
+                    onTap: () => _handlePersonaSelection(
+                      UserPersona.medicationAndFluidTherapy,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
