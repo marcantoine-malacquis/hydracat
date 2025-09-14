@@ -36,7 +36,6 @@ class _OnboardingCompletionScreenState
       totalSteps: OnboardingStepType.totalSteps,
       title: "You're all set!",
       subtitle: "Ready to start tracking $petName's care journey",
-      showBackButton: true,
       onBackPressed: _goBack,
       showNextButton: false,
       stepName: 'completion',

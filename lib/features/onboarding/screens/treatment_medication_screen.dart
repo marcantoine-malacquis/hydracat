@@ -48,11 +48,12 @@ class _TreatmentMedicationScreenState
           _buildHeader(context, theme),
 
           // Content sections
-          medications.isEmpty
-              ? EmptyMedicationState(
-                  onAddMedication: _onAddMedication,
-                )
-              : _buildMedicationList(medications),
+          if (medications.isEmpty)
+            EmptyMedicationState(
+              onAddMedication: _onAddMedication,
+            )
+          else
+            _buildMedicationList(medications),
 
           const SizedBox(height: 32),
 
@@ -126,6 +127,8 @@ class _TreatmentMedicationScreenState
 
   Widget _buildMedicationList(List<MedicationData> medications) {
     return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: medications.length,
       itemBuilder: (context, index) {

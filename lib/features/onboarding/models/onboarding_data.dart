@@ -97,12 +97,13 @@ class OnboardingData {
           : null,
       medications: json['medications'] != null
           ? (json['medications'] as List<dynamic>)
-              .map((e) => MedicationData.fromJson(e as Map<String, dynamic>))
-              .toList()
+                .map((e) => MedicationData.fromJson(e as Map<String, dynamic>))
+                .toList()
           : null,
       fluidTherapy: json['fluidTherapy'] != null
           ? FluidTherapyData.fromJson(
-              json['fluidTherapy'] as Map<String, dynamic>)
+              json['fluidTherapy'] as Map<String, dynamic>,
+            )
           : null,
     );
   }
@@ -173,10 +174,7 @@ class OnboardingData {
 
   /// Whether basic pet info is complete
   bool get hasBasicPetInfo =>
-      petName != null &&
-      petName!.isNotEmpty &&
-      petAge != null &&
-      petAge! > 0;
+      petName != null && petName!.isNotEmpty && petAge != null && petAge! > 0;
 
   /// Whether we have minimum required data for first checkpoint
   bool get hasMinimumData => hasPersonaSelection && hasBasicPetInfo;
@@ -189,8 +187,7 @@ class OnboardingData {
       creatinineMgDl != null || bunMgDl != null || sdmaMcgDl != null;
 
   /// Whether lab values have complete data (values + bloodwork date)
-  bool get hasCompleteLabData =>
-      hasLabValues && bloodworkDate != null;
+  bool get hasCompleteLabData => hasLabValues && bloodworkDate != null;
 
   /// Whether medical info has any data
   bool get hasMedicalInfo =>
@@ -210,18 +207,27 @@ class OnboardingData {
     if (treatmentApproach == null) return false;
 
     return switch (treatmentApproach!) {
-      UserPersona.medicationOnly => 
+      UserPersona.medicationOnly =>
         medications != null && medications!.isNotEmpty,
-      UserPersona.fluidTherapyOnly => 
-        fluidTherapy != null,
-      UserPersona.medicationAndFluidTherapy => 
+      UserPersona.fluidTherapyOnly => fluidTherapy != null,
+      UserPersona.medicationAndFluidTherapy =>
         medications != null && medications!.isNotEmpty && fluidTherapy != null,
     };
   }
 
   /// Whether data is complete enough for final profile creation
-  bool get isReadyForProfileCreation =>
-      hasMinimumData && (hasMedicalInfo || ckdDiagnosisDate != null);
+  bool get isReadyForProfileCreation {
+    if (!hasMinimumData) return false;
+
+    // For treatment-only personas, medical info is optional
+    if (treatmentApproach == UserPersona.fluidTherapyOnly) {
+      return isTreatmentSetupComplete;
+    }
+
+    // For other personas, require medical info OR treatment setup
+    return (hasMedicalInfo || ckdDiagnosisDate != null) &&
+        (!needsTreatmentSetup || isTreatmentSetupComplete);
+  }
 
   /// Converts [OnboardingData] to JSON data
   Map<String, dynamic> toJson() {
@@ -444,28 +450,34 @@ class OnboardingData {
       errors.add('Fluid therapy has invalid data');
     }
 
-    // Validate treatment completeness based on persona 
+    // Validate treatment completeness based on persona
     // (skip validation during onboarding)
     if (treatmentApproach != null && isReadyForProfileCreation) {
       switch (treatmentApproach!) {
         case UserPersona.medicationOnly:
           if (medications == null || medications!.isEmpty) {
-            errors.add('At least one medication is required for '
-                'medication-only treatment');
+            errors.add(
+              'At least one medication is required for '
+              'medication-only treatment',
+            );
           }
         case UserPersona.fluidTherapyOnly:
           if (fluidTherapy == null) {
             errors.add(
-                'Fluid therapy setup is required for fluid therapy treatment');
+              'Fluid therapy setup is required for fluid therapy treatment',
+            );
           }
         case UserPersona.medicationAndFluidTherapy:
           if (medications == null || medications!.isEmpty) {
-            errors.add('At least one medication is required for '
-                'combination treatment');
+            errors.add(
+              'At least one medication is required for '
+              'combination treatment',
+            );
           }
           if (fluidTherapy == null) {
             errors.add(
-                'Fluid therapy setup is required for combination treatment');
+              'Fluid therapy setup is required for combination treatment',
+            );
           }
       }
     }
