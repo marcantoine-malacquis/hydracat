@@ -18,6 +18,9 @@ class OnboardingData {
     this.treatmentApproach,
     this.petName,
     this.petAge,
+    this.petDateOfBirth,
+    this.petGender,
+    this.petBreed,
     this.petWeightKg,
     this.ckdDiagnosisDate,
     this.irisStage,
@@ -38,6 +41,9 @@ class OnboardingData {
       treatmentApproach = null,
       petName = null,
       petAge = null,
+      petDateOfBirth = null,
+      petGender = null,
+      petBreed = null,
       petWeightKg = null,
       ckdDiagnosisDate = null,
       irisStage = null,
@@ -60,6 +66,11 @@ class OnboardingData {
           : null,
       petName: json['petName'] as String?,
       petAge: json['petAge'] as int?,
+      petDateOfBirth: json['petDateOfBirth'] != null
+          ? DateTime.parse(json['petDateOfBirth'] as String)
+          : null,
+      petGender: json['petGender'] as String?,
+      petBreed: json['petBreed'] as String?,
       petWeightKg: json['petWeightKg'] != null
           ? (json['petWeightKg'] as num).toDouble()
           : null,
@@ -107,6 +118,15 @@ class OnboardingData {
 
   /// Pet's age in years
   final int? petAge;
+
+  /// Pet's date of birth
+  final DateTime? petDateOfBirth;
+
+  /// Pet's gender ('male' or 'female')
+  final String? petGender;
+
+  /// Pet's breed
+  final String? petBreed;
 
   /// Pet's weight in kilograms
   final double? petWeightKg;
@@ -210,6 +230,9 @@ class OnboardingData {
       'treatmentApproach': treatmentApproach?.name,
       'petName': petName,
       'petAge': petAge,
+      'petDateOfBirth': petDateOfBirth?.toIso8601String(),
+      'petGender': petGender,
+      'petBreed': petBreed,
       'petWeightKg': petWeightKg,
       'ckdDiagnosisDate': ckdDiagnosisDate?.toIso8601String(),
       'irisStage': irisStage?.name,
@@ -231,6 +254,9 @@ class OnboardingData {
     UserPersona? treatmentApproach,
     String? petName,
     int? petAge,
+    DateTime? petDateOfBirth,
+    String? petGender,
+    String? petBreed,
     double? petWeightKg,
     DateTime? ckdDiagnosisDate,
     IrisStage? irisStage,
@@ -249,6 +275,9 @@ class OnboardingData {
       treatmentApproach: treatmentApproach ?? this.treatmentApproach,
       petName: petName ?? this.petName,
       petAge: petAge ?? this.petAge,
+      petDateOfBirth: petDateOfBirth ?? this.petDateOfBirth,
+      petGender: petGender ?? this.petGender,
+      petBreed: petBreed ?? this.petBreed,
       petWeightKg: petWeightKg ?? this.petWeightKg,
       ckdDiagnosisDate: ckdDiagnosisDate ?? this.ckdDiagnosisDate,
       irisStage: irisStage ?? this.irisStage,
@@ -510,6 +539,9 @@ class OnboardingData {
         other.treatmentApproach == treatmentApproach &&
         other.petName == petName &&
         other.petAge == petAge &&
+        other.petDateOfBirth == petDateOfBirth &&
+        other.petGender == petGender &&
+        other.petBreed == petBreed &&
         other.petWeightKg == petWeightKg &&
         other.ckdDiagnosisDate == ckdDiagnosisDate &&
         other.irisStage == irisStage &&
@@ -531,6 +563,9 @@ class OnboardingData {
       treatmentApproach,
       petName,
       petAge,
+      petDateOfBirth,
+      petGender,
+      petBreed,
       petWeightKg,
       ckdDiagnosisDate,
       irisStage,
@@ -553,6 +588,9 @@ class OnboardingData {
         'treatmentApproach: $treatmentApproach, '
         'petName: $petName, '
         'petAge: $petAge, '
+        'petDateOfBirth: $petDateOfBirth, '
+        'petGender: $petGender, '
+        'petBreed: $petBreed, '
         'petWeightKg: $petWeightKg, '
         'ckdDiagnosisDate: $ckdDiagnosisDate, '
         'irisStage: $irisStage, '

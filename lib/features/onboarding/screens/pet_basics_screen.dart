@@ -58,18 +58,41 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
   /// Load any previously saved pet basics data
   Future<void> _loadSavedData() async {
     final onboardingData = ref.read(onboardingDataProvider);
+    if (onboardingData == null) return;
 
-    if (onboardingData?.petName != null &&
-        onboardingData!.petName!.isNotEmpty) {
+    // Load pet name
+    if (onboardingData.petName != null &&
+        onboardingData.petName!.isNotEmpty) {
       _nameController.text = onboardingData.petName!;
     }
 
-    // Note: OnboardingData doesn't have dateOfBirth/gender/breed fields yet
-    // These will be handled locally until the model is updated
+    // Load date of birth (prefer date of birth over age)
+    if (onboardingData.petDateOfBirth != null) {
+      setState(() {
+        _selectedDateOfBirth = onboardingData.petDateOfBirth;
+      });
+    }
 
-    if (onboardingData?.petWeightKg != null &&
-        onboardingData!.petWeightKg! > 0) {
-      _weightValue = onboardingData.petWeightKg;
+    // Load gender
+    if (onboardingData.petGender != null &&
+        onboardingData.petGender!.isNotEmpty) {
+      setState(() {
+        _selectedGender = onboardingData.petGender;
+      });
+    }
+
+    // Load breed
+    if (onboardingData.petBreed != null &&
+        onboardingData.petBreed!.isNotEmpty) {
+      _breedController.text = onboardingData.petBreed!;
+    }
+
+    // Load weight
+    if (onboardingData.petWeightKg != null &&
+        onboardingData.petWeightKg! > 0) {
+      setState(() {
+        _weightValue = onboardingData.petWeightKg;
+      });
     }
   }
 
@@ -214,7 +237,12 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
 
       final updatedData = currentData.copyWith(
         petName: _nameController.text.capitalize,
-        petAge: ageYears, // OnboardingData uses petAge (int) not ageYears
+        petAge: ageYears, // Keep for backwards compatibility
+        petDateOfBirth: _selectedDateOfBirth, // Store original date of birth
+        petGender: _selectedGender,
+        petBreed: _breedController.text.trim().isEmpty
+            ? null
+            : _breedController.text.trim(),
         petWeightKg: weightInKg,
       );
 
@@ -222,16 +250,18 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
       await ref.read(onboardingProvider.notifier).updateData(updatedData);
 
       // Debug logging to confirm data is stored correctly
-      print('Pet Basics - Data stored successfully:');
-      print('  Pet Name: ${_nameController.text.capitalize}');
-      print('  Age: $ageYears years');
-      print('  Gender: $_selectedGender');
+      debugPrint('Pet Basics - Data stored successfully:');
+      debugPrint('  Pet Name: ${_nameController.text.capitalize}');
+      debugPrint('  Date of Birth: $_selectedDateOfBirth');
+      debugPrint('  Age: $ageYears years');
+      debugPrint('  Gender: $_selectedGender');
+      final breedText = _breedController.text.trim().isEmpty
+          ? 'Not specified'
+          : _breedController.text.trim();
+      debugPrint('  Breed: $breedText');
       if (weightInKg != null) {
-        print('  Weight: ${weightInKg.toStringAsFixed(1)} kg');
+        debugPrint('  Weight: ${weightInKg.toStringAsFixed(1)} kg');
       }
-
-      // TODO(dev): Store additional fields (dateOfBirth, ageInMonths,
-      // gender, breed) when OnboardingData model is extended
 
       // Navigate to next step (medical information)
       if (mounted) {
