@@ -22,9 +22,11 @@ class HydraTouchTarget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: minSize,
-      height: minSize,
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minWidth: minSize,
+        minHeight: minSize,
+      ),
       child: Align(
         alignment: alignment,
         child: child,

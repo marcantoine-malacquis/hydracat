@@ -156,9 +156,7 @@ class OnboardingData {
       petName != null &&
       petName!.isNotEmpty &&
       petAge != null &&
-      petAge! > 0 &&
-      petWeightKg != null &&
-      petWeightKg! > 0;
+      petAge! > 0;
 
   /// Whether we have minimum required data for first checkpoint
   bool get hasMinimumData => hasPersonaSelection && hasBasicPetInfo;

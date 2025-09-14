@@ -221,12 +221,28 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
       // Update onboarding data
       await ref.read(onboardingProvider.notifier).updateData(updatedData);
 
+      // Debug logging to confirm data is stored correctly
+      print('Pet Basics - Data stored successfully:');
+      print('  Pet Name: ${_nameController.text.capitalize}');
+      print('  Age: $ageYears years');
+      print('  Gender: $_selectedGender');
+      if (weightInKg != null) {
+        print('  Weight: ${weightInKg.toStringAsFixed(1)} kg');
+      }
+
       // TODO(dev): Store additional fields (dateOfBirth, ageInMonths,
       // gender, breed) when OnboardingData model is extended
 
-      // Navigate to next step (treatment setup)
+      // Navigate to next step (medical information)
       if (mounted) {
-        await ref.read(onboardingProvider.notifier).moveToNextStep();
+        final moveSuccess = await ref
+            .read(onboardingProvider.notifier)
+            .moveToNextStep();
+
+        if (moveSuccess && mounted) {
+          // Navigate to medical information screen
+          context.go('/onboarding/medical');
+        }
       }
     } on Exception catch (e) {
       if (mounted) {

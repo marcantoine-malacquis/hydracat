@@ -279,6 +279,8 @@ class _OnboardingScreenWrapperState
                 child: HydraButton(
                   onPressed: widget.isLoading ? null : widget.onBackPressed,
                   variant: HydraButtonVariant.secondary,
+                  isFullWidth: true,
+                  size: HydraButtonSize.large,
                   child: Text(widget.backButtonText),
                 ),
               )
@@ -296,6 +298,8 @@ class _OnboardingScreenWrapperState
                   onPressed: (widget.isLoading || !widget.nextButtonEnabled)
                       ? null
                       : widget.onNextPressed,
+                  isFullWidth: true,
+                  size: HydraButtonSize.large,
                   child: Text(widget.nextButtonText),
                 ),
               )

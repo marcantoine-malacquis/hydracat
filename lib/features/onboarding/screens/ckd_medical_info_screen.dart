@@ -9,6 +9,7 @@ import 'package:hydracat/features/onboarding/widgets/lab_values_input.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.dart';
 import 'package:hydracat/features/profile/models/medical_info.dart';
 import 'package:hydracat/providers/onboarding_provider.dart';
+import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
 
 /// CKD Medical Information collection screen - Step 4 of onboarding flow
 class CkdMedicalInfoScreen extends ConsumerStatefulWidget {
@@ -262,12 +263,8 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
       currentStep: 3,
       totalSteps: OnboardingStepType.totalSteps,
       title: 'Last Bloodwork Results',
-      subtitle: "Help us understand your cat's current health status",
       onBackPressed: _goBack,
-      onNextPressed: _saveAndContinue,
-      nextButtonText: 'Continue',
-      nextButtonEnabled: !_isLoading,
-      isLoading: _isLoading,
+      showNextButton: false,
       stepName: 'ckd_medical_info',
       showProgressInAppBar: true,
       child: Column(
@@ -295,11 +292,13 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
                       size: 20,
                     ),
                     const SizedBox(width: AppSpacing.sm),
-                    Text(
-                      'We understand this can be overwhelming',
-                      style: AppTextStyles.body.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                    Expanded(
+                      child: Text(
+                        'We understand this can be overwhelming',
+                        style: AppTextStyles.body.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
                   ],
@@ -461,6 +460,27 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
           ),
 
           const SizedBox(height: AppSpacing.xl),
+
+          // Continue Button
+          HydraButton(
+            onPressed: _isLoading ? null : _saveAndContinue,
+            isFullWidth: true,
+            size: HydraButtonSize.large,
+            child: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.surface,
+                      ),
+                    ),
+                  )
+                : const Text('Continue'),
+          ),
+
+          const SizedBox(height: AppSpacing.lg),
 
           // Skip option
           Center(
