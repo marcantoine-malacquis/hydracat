@@ -10,6 +10,7 @@ class IrisStageSelector extends StatelessWidget {
     required this.onStageChanged,
     super.key,
     this.errorText,
+    this.hasUserSelected = false,
   });
 
   /// Currently selected IRIS stage
@@ -20,6 +21,10 @@ class IrisStageSelector extends StatelessWidget {
 
   /// Optional error text to display
   final String? errorText;
+
+  /// Whether the user has made any selection (to distinguish between
+  /// no selection and Unknown selected)
+  final bool hasUserSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +101,7 @@ class IrisStageSelector extends StatelessWidget {
               ],
             ),
           ),
-        ] else if (selectedStage == null && _isUnknownSelected()) ...[
+        ] else if (selectedStage == null && hasUserSelected) ...[
           const SizedBox(height: AppSpacing.sm),
           Container(
             width: double.infinity,
@@ -110,7 +115,7 @@ class IrisStageSelector extends StatelessWidget {
             ),
             child: Text(
               "That's okay! You can add this information later when "
-              "you have your pet's most recent lab results.",
+              "you have your pet's most recent results.",
               style: AppTextStyles.caption.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -141,8 +146,11 @@ class IrisStageSelector extends StatelessWidget {
     bool isLast = false,
     bool isUnknown = false,
   }) {
-    final isSelected = stage == selectedStage || 
-        (stage == null && selectedStage == null && _isUnknownSelected());
+    // Only select the button if it matches the selectedStage exactly
+    // For the "Unknown" button (stage == null), only select if user
+    //has made a selection
+    final isSelected =
+        stage == selectedStage && (stage != null || hasUserSelected);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -153,12 +161,10 @@ class IrisStageSelector extends StatelessWidget {
         child: ElevatedButton(
           onPressed: () => onStageChanged(stage),
           style: ElevatedButton.styleFrom(
-            backgroundColor: isSelected 
+            backgroundColor: isSelected
                 ? (isUnknown ? AppColors.textSecondary : AppColors.primary)
                 : AppColors.surface,
-            foregroundColor: isSelected
-                ? Colors.white
-                : AppColors.textPrimary,
+            foregroundColor: isSelected ? Colors.white : AppColors.textPrimary,
             elevation: isSelected ? 2 : 0,
             side: BorderSide(
               color: isSelected
@@ -177,24 +183,11 @@ class IrisStageSelector extends StatelessWidget {
             label,
             style: AppTextStyles.body.copyWith(
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              color: isSelected
-                  ? Colors.white
-                  : AppColors.textPrimary,
+              color: isSelected ? Colors.white : AppColors.textPrimary,
             ),
           ),
         ),
       ),
     );
-  }
-
-  /// Check if "Unknown" option is conceptually selected
-  bool _isUnknownSelected() {
-    // This is a bit tricky - we need to track if user explicitly selected
-    // "Unknown" vs just having no selection. For now, we'll assume null
-    // selection means user hasn't made a choice yet.
-    // In the actual implementation, the parent widget might need to track this
-    // with a separate boolean or use a sealed class/enum for the selection
-    // state.
-    return selectedStage == null;
   }
 }

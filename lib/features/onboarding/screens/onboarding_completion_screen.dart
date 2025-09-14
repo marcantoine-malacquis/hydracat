@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
@@ -35,7 +36,8 @@ class _OnboardingCompletionScreenState
       totalSteps: OnboardingStepType.totalSteps,
       title: "You're all set!",
       subtitle: "Ready to start tracking $petName's care journey",
-      showBackButton: false,
+      showBackButton: true,
+      onBackPressed: _goBack,
       showNextButton: false,
       stepName: 'completion',
       showProgressInAppBar: true,
@@ -234,6 +236,15 @@ class _OnboardingCompletionScreenState
         );
         _isCompleting = false;
       });
+    }
+  }
+
+  /// Navigate back to previous step
+  Future<void> _goBack() async {
+    await ref.read(onboardingProvider.notifier).moveToPreviousStep();
+    if (mounted) {
+      // Navigate to previous screen (treatment setup)
+      context.go('/onboarding/treatment');
     }
   }
 }

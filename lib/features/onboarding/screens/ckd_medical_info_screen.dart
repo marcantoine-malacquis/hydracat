@@ -22,9 +22,9 @@ class CkdMedicalInfoScreen extends ConsumerStatefulWidget {
 }
 
 class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
-
   // Form state
   IrisStage? _selectedIrisStage;
+  bool _hasSelectedIrisStage = false; // Track if user has made any selection
   LabValueData _labValues = const LabValueData();
   DateTime? _lastCheckupDate;
   String _notes = '';
@@ -51,6 +51,7 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
     if (onboardingData != null) {
       setState(() {
         _selectedIrisStage = onboardingData.irisStage;
+        _hasSelectedIrisStage = onboardingData.irisStage != null;
         _labValues = LabValueData(
           creatinine: onboardingData.creatinineMgDl,
           bun: onboardingData.bunMgDl,
@@ -80,7 +81,8 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
       // Validate bloodwork date is required if lab values provided
       if (_labValues.hasValues && _labValues.bloodworkDate == null) {
         setState(() {
-          _bloodworkDateError = 'Bloodwork date is required when lab values '
+          _bloodworkDateError =
+              'Bloodwork date is required when lab values '
               'are provided';
         });
         isValid = false;
@@ -119,8 +121,7 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
     }
 
     // Validate last checkup date
-    if (_lastCheckupDate != null &&
-        _lastCheckupDate!.isAfter(DateTime.now())) {
+    if (_lastCheckupDate != null && _lastCheckupDate!.isAfter(DateTime.now())) {
       setState(() {
         _lastCheckupError = 'Last checkup date cannot be in the future';
       });
@@ -142,8 +143,8 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
 
     try {
       // Create updated onboarding data
-      final currentData = ref.read(onboardingDataProvider) ??
-          const OnboardingData.empty();
+      final currentData =
+          ref.read(onboardingDataProvider) ?? const OnboardingData.empty();
 
       final updatedData = currentData.copyWith(
         irisStage: _selectedIrisStage,
@@ -159,7 +160,14 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
 
       // Navigate to next step (treatment setup)
       if (mounted) {
-        await ref.read(onboardingProvider.notifier).moveToNextStep();
+        final moveSuccess = await ref
+            .read(onboardingProvider.notifier)
+            .moveToNextStep();
+
+        if (moveSuccess && mounted) {
+          // Navigate to treatment setup screen
+          context.go('/onboarding/treatment');
+        }
       }
     } on Exception catch (e) {
       if (mounted) {
@@ -208,8 +216,8 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
 
     if (shouldSkip ?? false) {
       // Clear any medical data and continue
-      final currentData = ref.read(onboardingDataProvider) ??
-          const OnboardingData.empty();
+      final currentData =
+          ref.read(onboardingDataProvider) ?? const OnboardingData.empty();
 
       final clearedData = currentData.clearMedicalInfo();
       await ref.read(onboardingProvider.notifier).updateData(clearedData);
@@ -295,6 +303,7 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
                     Expanded(
                       child: Text(
                         'We understand this can be overwhelming',
+                        textAlign: TextAlign.center,
                         style: AppTextStyles.body.copyWith(
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
@@ -336,9 +345,11 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
           const SizedBox(height: AppSpacing.md),
           IrisStageSelector(
             selectedStage: _selectedIrisStage,
+            hasUserSelected: _hasSelectedIrisStage,
             onStageChanged: (stage) {
               setState(() {
                 _selectedIrisStage = stage;
+                _hasSelectedIrisStage = true;
                 _irisStageError = null;
               });
             },
@@ -439,7 +450,8 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
             maxLines: 4,
             textCapitalization: TextCapitalization.sentences,
             decoration: InputDecoration(
-              hintText: 'Any other relevant medical information or notes '
+              hintText:
+                  'Any other relevant medical information or notes '
                   'from your vet (optional)...',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),

@@ -61,8 +61,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
     if (onboardingData == null) return;
 
     // Load pet name
-    if (onboardingData.petName != null &&
-        onboardingData.petName!.isNotEmpty) {
+    if (onboardingData.petName != null && onboardingData.petName!.isNotEmpty) {
       _nameController.text = onboardingData.petName!;
     }
 
@@ -88,8 +87,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
     }
 
     // Load weight
-    if (onboardingData.petWeightKg != null &&
-        onboardingData.petWeightKg! > 0) {
+    if (onboardingData.petWeightKg != null && onboardingData.petWeightKg! > 0) {
       setState(() {
         _weightValue = onboardingData.petWeightKg;
       });
@@ -428,29 +426,6 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
 
             const SizedBox(height: AppSpacing.lg),
 
-            // Weight (Optional)
-            _buildSectionLabel('Weight', isRequired: false),
-            const SizedBox(height: AppSpacing.sm),
-            WeightUnitSelector(
-              weight: _weightValue,
-              unit: _weightUnit,
-              onWeightChanged: (weight) {
-                setState(() {
-                  _weightValue = weight;
-                  _weightError = null;
-                });
-              },
-              onUnitChanged: (unit) async {
-                setState(() {
-                  _weightUnit = unit;
-                });
-                await _saveWeightUnitPreference(unit);
-              },
-              errorText: _weightError,
-            ),
-
-            const SizedBox(height: AppSpacing.lg),
-
             // Breed (Optional)
             _buildSectionLabel('Breed', isRequired: false),
             const SizedBox(height: AppSpacing.sm),
@@ -472,6 +447,29 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
                   borderSide: const BorderSide(color: AppColors.primary),
                 ),
               ),
+            ),
+
+            const SizedBox(height: AppSpacing.lg),
+
+            // Weight (Optional)
+            _buildSectionLabel('Weight', isRequired: false),
+            const SizedBox(height: AppSpacing.sm),
+            WeightUnitSelector(
+              weight: _weightValue,
+              unit: _weightUnit,
+              onWeightChanged: (weight) {
+                setState(() {
+                  _weightValue = weight;
+                  _weightError = null;
+                });
+              },
+              onUnitChanged: (unit) async {
+                setState(() {
+                  _weightUnit = unit;
+                });
+                await _saveWeightUnitPreference(unit);
+              },
+              errorText: _weightError,
             ),
 
             const SizedBox(height: AppSpacing.xl),

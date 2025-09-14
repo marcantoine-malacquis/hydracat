@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.dart';
 import 'package:hydracat/features/onboarding/widgets/rotating_wheel_picker.dart';
@@ -74,48 +75,31 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
     return OnboardingScreenWrapper(
       currentStep: 5,
       totalSteps: 6,
+      title: 'Fluid Therapy Setup',
+      onBackPressed: _onBackPressed,
+      showNextButton: false,
       showProgressInAppBar: true,
-      child: Scaffold(
-        backgroundColor: theme.colorScheme.surface,
-        appBar: AppBar(
-          title: const Text('Fluid Therapy Setup'),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: _onBackPressed,
-          ),
-        ),
-        body: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              // Header section
-              _buildHeader(context, theme),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header section
+            _buildHeader(context, theme),
 
-              // Content section
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildFrequencySection(theme),
-                      const SizedBox(height: 32),
-                      _buildVolumeSection(theme),
-                      const SizedBox(height: 32),
-                      _buildLocationSection(theme),
-                      const SizedBox(height: 32),
-                      _buildNeedleGaugeSection(theme),
-                    ],
-                  ),
-                ),
-              ),
+            // Content sections
+            _buildFrequencySection(theme),
+            const SizedBox(height: 32),
+            _buildVolumeSection(theme),
+            const SizedBox(height: 32),
+            _buildLocationSection(theme),
+            const SizedBox(height: 32),
+            _buildNeedleGaugeSection(theme),
+            const SizedBox(height: 32),
 
-              // Footer with next button
-              _buildFooter(context, theme),
-            ],
-          ),
+            // Footer with next button
+            _buildFooter(context, theme),
+          ],
         ),
       ),
     );
@@ -469,15 +453,7 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
   Widget _buildFooter(BuildContext context, ThemeData theme) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(
-          top: BorderSide(
-            color: theme.colorScheme.outline.withValues(alpha: 0.2),
-          ),
-        ),
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       child: ElevatedButton(
         onPressed: _isLoading ? null : _onNext,
         style: ElevatedButton.styleFrom(
@@ -532,12 +508,13 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
       }
 
       // Move to next step
-      await ref.read(onboardingProvider.notifier).moveToNextStep();
+      final moveSuccess = await ref
+          .read(onboardingProvider.notifier)
+          .moveToNextStep();
 
-      if (mounted) {
-        await Navigator.of(context).pushReplacementNamed(
-          '/onboarding/completion',
-        );
+      if (moveSuccess && mounted) {
+        // Navigate to completion screen
+        context.go('/onboarding/completion');
       }
     } on Exception catch (e) {
       if (mounted) {

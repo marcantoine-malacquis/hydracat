@@ -22,93 +22,94 @@ enum OnboardingStepType {
 
   /// User-friendly display name for the step
   String get displayName => switch (this) {
-        OnboardingStepType.welcome => 'Welcome',
-        OnboardingStepType.userPersona => 'Treatment Approach',
-        OnboardingStepType.petBasics => 'Pet Information',
-        OnboardingStepType.ckdMedicalInfo => 'Medical Information',
-        OnboardingStepType.treatmentSetup => 'Treatment Setup',
-        OnboardingStepType.completion => 'Complete',
-      };
+    OnboardingStepType.welcome => 'Welcome',
+    OnboardingStepType.userPersona => 'Treatment Approach',
+    OnboardingStepType.petBasics => 'Pet Information',
+    OnboardingStepType.ckdMedicalInfo => 'Medical Information',
+    OnboardingStepType.treatmentSetup => 'Treatment Setup',
+    OnboardingStepType.completion => 'Complete',
+  };
 
   /// Analytics event name for this step
   String get analyticsEventName => switch (this) {
-        OnboardingStepType.welcome => 'onboarding_welcome_viewed',
-        OnboardingStepType.userPersona => 'onboarding_persona_viewed',
-        OnboardingStepType.petBasics => 'onboarding_basics_viewed',
-        OnboardingStepType.ckdMedicalInfo => 'onboarding_medical_viewed',
-        OnboardingStepType.treatmentSetup => 'onboarding_treatment_viewed',
-        OnboardingStepType.completion => 'onboarding_completion_viewed',
-      };
+    OnboardingStepType.welcome => 'onboarding_welcome_viewed',
+    OnboardingStepType.userPersona => 'onboarding_persona_viewed',
+    OnboardingStepType.petBasics => 'onboarding_basics_viewed',
+    OnboardingStepType.ckdMedicalInfo => 'onboarding_medical_viewed',
+    OnboardingStepType.treatmentSetup => 'onboarding_treatment_viewed',
+    OnboardingStepType.completion => 'onboarding_completion_viewed',
+  };
 
   /// Route name for navigation
   String get routeName => switch (this) {
-        OnboardingStepType.welcome => '/onboarding/welcome',
-        OnboardingStepType.userPersona => '/onboarding/persona',
-        OnboardingStepType.petBasics => '/onboarding/basics',
-        OnboardingStepType.ckdMedicalInfo => '/onboarding/medical',
-        OnboardingStepType.treatmentSetup => '/onboarding/treatment',
-        OnboardingStepType.completion => '/onboarding/completion',
-      };
+    OnboardingStepType.welcome => '/onboarding/welcome',
+    OnboardingStepType.userPersona => '/onboarding/persona',
+    OnboardingStepType.petBasics => '/onboarding/basics',
+    OnboardingStepType.ckdMedicalInfo => '/onboarding/medical',
+    OnboardingStepType.treatmentSetup => '/onboarding/treatment',
+    OnboardingStepType.completion => '/onboarding/completion',
+  };
 
   /// Whether this step can be skipped
   bool get canSkip => switch (this) {
-        OnboardingStepType.welcome => true,
-        OnboardingStepType.userPersona => false,
-        OnboardingStepType.petBasics => false,
-        OnboardingStepType.ckdMedicalInfo => true,
-        OnboardingStepType.treatmentSetup => true,
-        OnboardingStepType.completion => false,
-      };
+    OnboardingStepType.welcome => true,
+    OnboardingStepType.userPersona => false,
+    OnboardingStepType.petBasics => false,
+    OnboardingStepType.ckdMedicalInfo => true,
+    OnboardingStepType.treatmentSetup => true,
+    OnboardingStepType.completion => false,
+  };
 
   /// Whether user can navigate back from this step
   bool get canGoBack => switch (this) {
-        OnboardingStepType.welcome => false,
-        OnboardingStepType.userPersona => true,
-        OnboardingStepType.petBasics => true,
-        OnboardingStepType.ckdMedicalInfo => true,
-        OnboardingStepType.treatmentSetup => true,
-        OnboardingStepType.completion => false,
-      };
+    OnboardingStepType.welcome => false,
+    OnboardingStepType.userPersona => true,
+    OnboardingStepType.petBasics => true,
+    OnboardingStepType.ckdMedicalInfo => true,
+    OnboardingStepType.treatmentSetup => true,
+    OnboardingStepType.completion =>
+      true, // Allow back navigation to review settings
+  };
 
   /// Whether this step triggers a checkpoint save
   bool get isCheckpoint => switch (this) {
-        OnboardingStepType.welcome => false,
-        OnboardingStepType.userPersona => true, // First checkpoint
-        OnboardingStepType.petBasics => true,   // Second checkpoint
-        OnboardingStepType.ckdMedicalInfo => false,
-        OnboardingStepType.treatmentSetup => false,
-        OnboardingStepType.completion => true,  // Final save
-      };
+    OnboardingStepType.welcome => false,
+    OnboardingStepType.userPersona => true, // First checkpoint
+    OnboardingStepType.petBasics => true, // Second checkpoint
+    OnboardingStepType.ckdMedicalInfo => false,
+    OnboardingStepType.treatmentSetup => false,
+    OnboardingStepType.completion => true, // Final save
+  };
 
   /// Step index in the flow (0-based)
   int get stepIndex => switch (this) {
-        OnboardingStepType.welcome => 0,
-        OnboardingStepType.userPersona => 1,
-        OnboardingStepType.petBasics => 2,
-        OnboardingStepType.ckdMedicalInfo => 3,
-        OnboardingStepType.treatmentSetup => 4,
-        OnboardingStepType.completion => 5,
-      };
+    OnboardingStepType.welcome => 0,
+    OnboardingStepType.userPersona => 1,
+    OnboardingStepType.petBasics => 2,
+    OnboardingStepType.ckdMedicalInfo => 3,
+    OnboardingStepType.treatmentSetup => 4,
+    OnboardingStepType.completion => 5,
+  };
 
   /// Next step in the flow (null if this is the last step)
   OnboardingStepType? get nextStep => switch (this) {
-        OnboardingStepType.welcome => OnboardingStepType.userPersona,
-        OnboardingStepType.userPersona => OnboardingStepType.petBasics,
-        OnboardingStepType.petBasics => OnboardingStepType.ckdMedicalInfo,
-        OnboardingStepType.ckdMedicalInfo => OnboardingStepType.treatmentSetup,
-        OnboardingStepType.treatmentSetup => OnboardingStepType.completion,
-        OnboardingStepType.completion => null,
-      };
+    OnboardingStepType.welcome => OnboardingStepType.userPersona,
+    OnboardingStepType.userPersona => OnboardingStepType.petBasics,
+    OnboardingStepType.petBasics => OnboardingStepType.ckdMedicalInfo,
+    OnboardingStepType.ckdMedicalInfo => OnboardingStepType.treatmentSetup,
+    OnboardingStepType.treatmentSetup => OnboardingStepType.completion,
+    OnboardingStepType.completion => null,
+  };
 
   /// Previous step in the flow (null if this is the first step)
   OnboardingStepType? get previousStep => switch (this) {
-        OnboardingStepType.welcome => null,
-        OnboardingStepType.userPersona => OnboardingStepType.welcome,
-        OnboardingStepType.petBasics => OnboardingStepType.userPersona,
-        OnboardingStepType.ckdMedicalInfo => OnboardingStepType.petBasics,
-        OnboardingStepType.treatmentSetup => OnboardingStepType.ckdMedicalInfo,
-        OnboardingStepType.completion => OnboardingStepType.treatmentSetup,
-      };
+    OnboardingStepType.welcome => null,
+    OnboardingStepType.userPersona => OnboardingStepType.welcome,
+    OnboardingStepType.petBasics => OnboardingStepType.userPersona,
+    OnboardingStepType.ckdMedicalInfo => OnboardingStepType.petBasics,
+    OnboardingStepType.treatmentSetup => OnboardingStepType.ckdMedicalInfo,
+    OnboardingStepType.completion => OnboardingStepType.treatmentSetup,
+  };
 
   /// Total number of steps in the onboarding flow
   static int get totalSteps => OnboardingStepType.values.length;
@@ -143,16 +144,17 @@ class OnboardingStep {
 
   /// Creates an initial step that hasn't been started
   const OnboardingStep.initial(this.type)
-      : isCompleted = false,
-        isValid = false,
-        startedAt = null,
-        completedAt = null,
-        validationErrors = const [];
+    : isCompleted = false,
+      isValid = false,
+      startedAt = null,
+      completedAt = null,
+      validationErrors = const [];
 
   /// Creates an [OnboardingStep] from JSON data
   factory OnboardingStep.fromJson(Map<String, dynamic> json) {
     return OnboardingStep(
-      type: OnboardingStepType.fromString(json['type'] as String) ??
+      type:
+          OnboardingStepType.fromString(json['type'] as String) ??
           OnboardingStepType.welcome,
       isCompleted: json['isCompleted'] as bool? ?? false,
       isValid: json['isValid'] as bool? ?? false,
@@ -162,7 +164,8 @@ class OnboardingStep {
       completedAt: json['completedAt'] != null
           ? DateTime.parse(json['completedAt'] as String)
           : null,
-      validationErrors: (json['validationErrors'] as List<dynamic>?)
+      validationErrors:
+          (json['validationErrors'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],

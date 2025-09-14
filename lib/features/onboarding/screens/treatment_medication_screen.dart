@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/onboarding/screens/add_medication_screen.dart';
 import 'package:hydracat/features/onboarding/widgets/medication_summary_card.dart';
@@ -36,36 +37,28 @@ class _TreatmentMedicationScreenState
     return OnboardingScreenWrapper(
       currentStep: 5,
       totalSteps: 6,
+      title: 'Medication Setup',
+      onBackPressed: _onBackPressed,
+      showNextButton: false,
       showProgressInAppBar: true,
-      child: Scaffold(
-        backgroundColor: theme.colorScheme.surface,
-        appBar: AppBar(
-          title: const Text('Medication Setup'),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: _onBackPressed,
-          ),
-        ),
-        body: Column(
-          children: [
-            // Header section
-            _buildHeader(context, theme),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header section
+          _buildHeader(context, theme),
 
-            // Content section
-            Expanded(
-              child: medications.isEmpty
-                  ? EmptyMedicationState(
-                      onAddMedication: _onAddMedication,
-                    )
-                  : _buildMedicationList(medications),
-            ),
+          // Content sections
+          medications.isEmpty
+              ? EmptyMedicationState(
+                  onAddMedication: _onAddMedication,
+                )
+              : _buildMedicationList(medications),
 
-            // Footer with add button and navigation
-            _buildFooter(context, theme, medications.isNotEmpty),
-          ],
-        ),
+          const SizedBox(height: 32),
+
+          // Footer with add button and navigation
+          _buildFooter(context, theme, medications.isNotEmpty),
+        ],
       ),
     );
   }
@@ -150,15 +143,7 @@ class _TreatmentMedicationScreenState
   Widget _buildFooter(BuildContext context, ThemeData theme, bool hasItems) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(
-          top: BorderSide(
-            color: theme.colorScheme.outline.withValues(alpha: 0.2),
-          ),
-        ),
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -290,13 +275,14 @@ class _TreatmentMedicationScreenState
     setState(() => _isLoading = true);
 
     try {
-      // Save current step progress locally
-      await ref.read(onboardingProvider.notifier).moveToNextStep();
+      // Move to next step
+      final moveSuccess = await ref
+          .read(onboardingProvider.notifier)
+          .moveToNextStep();
 
-      if (mounted) {
-        await Navigator.of(
-          context,
-        ).pushReplacementNamed('/onboarding/completion');
+      if (moveSuccess && mounted) {
+        // Navigate to completion screen
+        context.go('/onboarding/completion');
       }
     } on Exception catch (e) {
       if (mounted) {
