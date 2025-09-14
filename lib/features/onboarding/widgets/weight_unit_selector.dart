@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/core/utils/number_input_utils.dart';
 import 'package:hydracat/shared/widgets/accessibility/hydra_touch_target.dart';
+
 
 /// Weight input widget with unit selection (kg/lbs) and preference storage
 class WeightUnitSelector extends StatelessWidget {
@@ -49,9 +50,7 @@ class WeightUnitSelector extends StatelessWidget {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-                ],
+                inputFormatters: NumberInputUtils.getDecimalFormatters(),
                 decoration: InputDecoration(
                   hintText: isRequired ? null : 'Optional',
                   border: OutlineInputBorder(
@@ -76,12 +75,8 @@ class WeightUnitSelector extends StatelessWidget {
                   ),
                 ),
                 onChanged: (value) {
-                  if (value.isEmpty) {
-                    onWeightChanged(null);
-                  } else {
-                    final parsedValue = double.tryParse(value);
-                    onWeightChanged(parsedValue);
-                  }
+                  final parsedValue = NumberInputUtils.parseDecimal(value);
+                  onWeightChanged(parsedValue);
                 },
               ),
             ),

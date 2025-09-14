@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/core/utils/number_input_utils.dart';
+
 
 /// Model for lab value input data
 class LabValueData {
@@ -83,6 +84,9 @@ class _LabValuesInputState extends State<LabValuesInput> {
   final _bunController = TextEditingController();
   final _sdmaController = TextEditingController();
 
+  // Flag to prevent controller updates during user input
+  bool _isUserTyping = false;
+
   @override
   void initState() {
     super.initState();
@@ -92,7 +96,9 @@ class _LabValuesInputState extends State<LabValuesInput> {
   @override
   void didUpdateWidget(LabValuesInput oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.labValues != widget.labValues) {
+    // Only update controllers if values changed from external source
+    // (not during user input)
+    if (oldWidget.labValues != widget.labValues && !_isUserTyping) {
       _updateControllers();
     }
   }
@@ -106,38 +112,71 @@ class _LabValuesInputState extends State<LabValuesInput> {
   }
 
   void _initializeControllers() {
-    _creatinineController.text = widget.labValues.creatinine?.toString() ?? '';
-    _bunController.text = widget.labValues.bun?.toString() ?? '';
-    _sdmaController.text = widget.labValues.sdma?.toString() ?? '';
+    _creatinineController.text = NumberInputUtils.formatForInput(
+      widget.labValues.creatinine,
+    );
+    _bunController.text = NumberInputUtils.formatForInput(
+      widget.labValues.bun,
+    );
+    _sdmaController.text = NumberInputUtils.formatForInput(
+      widget.labValues.sdma,
+    );
   }
 
   void _updateControllers() {
-    if (_creatinineController.text !=
-        (widget.labValues.creatinine?.toString() ?? '')) {
-      _creatinineController.text =
-          widget.labValues.creatinine?.toString() ?? '';
+    final creatinineText = NumberInputUtils.formatForInput(
+      widget.labValues.creatinine,
+    );
+    final bunText = NumberInputUtils.formatForInput(widget.labValues.bun);
+    final sdmaText = NumberInputUtils.formatForInput(widget.labValues.sdma);
+
+    if (_creatinineController.text != creatinineText) {
+      _creatinineController.text = creatinineText;
     }
-    if (_bunController.text != (widget.labValues.bun?.toString() ?? '')) {
-      _bunController.text = widget.labValues.bun?.toString() ?? '';
+    if (_bunController.text != bunText) {
+      _bunController.text = bunText;
     }
-    if (_sdmaController.text != (widget.labValues.sdma?.toString() ?? '')) {
-      _sdmaController.text = widget.labValues.sdma?.toString() ?? '';
+    if (_sdmaController.text != sdmaText) {
+      _sdmaController.text = sdmaText;
     }
   }
 
   void _onCreatinineChanged(String value) {
-    final parsedValue = _parseDecimal(value);
-    widget.onValuesChanged(widget.labValues.copyWith(creatinine: parsedValue));
+    _isUserTyping = true;
+    final parsedValue = NumberInputUtils.parseDecimal(value);
+    widget.onValuesChanged(
+      widget.labValues.copyWith(creatinine: parsedValue),
+    );
+    // Reset typing flag after a brief delay
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _isUserTyping = false;
+      }
+    });
   }
 
   void _onBunChanged(String value) {
-    final parsedValue = _parseDecimal(value);
+    _isUserTyping = true;
+    final parsedValue = NumberInputUtils.parseDecimal(value);
     widget.onValuesChanged(widget.labValues.copyWith(bun: parsedValue));
+    // Reset typing flag after a brief delay
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _isUserTyping = false;
+      }
+    });
   }
 
   void _onSdmaChanged(String value) {
-    final parsedValue = _parseDecimal(value);
+    _isUserTyping = true;
+    final parsedValue = NumberInputUtils.parseDecimal(value);
     widget.onValuesChanged(widget.labValues.copyWith(sdma: parsedValue));
+    // Reset typing flag after a brief delay
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _isUserTyping = false;
+      }
+    });
   }
 
   /// Select bloodwork date
@@ -167,19 +206,6 @@ class _LabValuesInputState extends State<LabValuesInput> {
     }
   }
 
-  /// Parse decimal value with validation
-  double? _parseDecimal(String value) {
-    if (value.trim().isEmpty) return null;
-
-    // Remove any non-digit/decimal characters except for the decimal point
-    final cleanValue = value.replaceAll(RegExp(r'[^\d.]'), '');
-
-    // Validate decimal format (max 2 decimal places)
-    final decimalRegex = RegExp(r'^\d*\.?\d{0,2}$');
-    if (!decimalRegex.hasMatch(cleanValue)) return null;
-
-    return double.tryParse(cleanValue);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -321,10 +347,10 @@ class _LabValuesInputState extends State<LabValuesInput> {
         const SizedBox(height: AppSpacing.sm),
         TextFormField(
           controller: controller,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-          ],
+          keyboardType: const TextInputType.numberWithOptions(
+            decimal: true,
+          ),
+          inputFormatters: NumberInputUtils.getDecimalFormatters(),
           decoration: InputDecoration(
             hintText: hintText,
             suffixText: unit,
