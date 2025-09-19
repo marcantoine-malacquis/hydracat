@@ -6,6 +6,7 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -14,6 +15,7 @@ import 'package:hydracat/features/profile/exceptions/profile_exceptions.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/services/profile_validation_service.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Result type for pet service operations
 sealed class PetResult {
@@ -64,6 +66,11 @@ class PetService {
   String? _cachedPrimaryPetUserId;
   DateTime? _cacheTimestamp;
   static const Duration _cacheTimeout = Duration(minutes: 30);
+
+  // Persistent cache keys
+  static const String _persistentCacheKey = 'primary_pet_cache';
+  static const String _persistentCacheTimestampKey =
+      'primary_pet_cache_timestamp';
 
   // Multi-pet cache (for the 10% with multiple pets)
   final Map<String, CatProfile> _multiPetCache = {};
@@ -137,6 +144,9 @@ class PetService {
       _cachedPrimaryPetUserId = userId;
       _cacheTimestamp = now;
 
+      // Save to persistent cache (fire and forget)
+      unawaited(_saveToPersistentCache(finalProfile, userId));
+
       // Clear name conflict cache
       _nameConflictCache.clear();
 
@@ -152,13 +162,26 @@ class PetService {
   ///
   /// Heavily optimized for single-pet users with aggressive caching.
   /// Returns cached result for 90% of users after initial load.
-  Future<CatProfile?> getPrimaryPet() async {
+  /// Includes persistent cache fallback for offline scenarios.
+  Future<CatProfile?> getPrimaryPet({bool forceRefresh = false}) async {
     final userId = _currentUserId;
     if (userId == null) return null;
 
-    // Check cache first (90% of calls return here)
-    if (_isPrimaryCacheValid(userId)) {
+    // Check memory cache first (90% of calls return here)
+    if (!forceRefresh && _isPrimaryCacheValid(userId)) {
       return _cachedPrimaryPet;
+    }
+
+    // Check persistent cache if memory cache is invalid
+    if (!forceRefresh) {
+      final persistentPet = await _loadFromPersistentCache(userId);
+      if (persistentPet != null) {
+        // Load into memory cache
+        _cachedPrimaryPet = persistentPet;
+        _cachedPrimaryPetUserId = userId;
+        _cacheTimestamp = DateTime.now();
+        return persistentPet;
+      }
     }
 
     try {
@@ -179,14 +202,27 @@ class PetService {
         'id': petDoc.id,
       });
 
+      // Update both memory and persistent cache
       _cachedPrimaryPet = pet;
       _cachedPrimaryPetUserId = userId;
       _cacheTimestamp = DateTime.now();
 
+      // Save to persistent cache (fire and forget)
+      unawaited(_saveToPersistentCache(pet, userId));
+
       return pet;
     } on FirebaseException catch (e) {
       debugPrint('Error getting primary pet: ${e.message}');
-      return null;
+
+      // Try to return persistent cache as fallback
+      final persistentPet = await _loadFromPersistentCache(userId);
+      if (persistentPet != null) {
+        _cachedPrimaryPet = persistentPet;
+        _cachedPrimaryPetUserId = userId;
+        _cacheTimestamp = DateTime.now();
+      }
+
+      return persistentPet;
     }
   }
 
@@ -321,6 +357,9 @@ class PetService {
       if (_cachedPrimaryPet?.id == finalProfile.id) {
         _cachedPrimaryPet = finalProfile;
         _cacheTimestamp = DateTime.now();
+
+        // Save to persistent cache (fire and forget)
+        unawaited(_saveToPersistentCache(finalProfile, userId));
       }
       _multiPetCache[finalProfile.id] = finalProfile;
       _multiPetCacheTimestamps[finalProfile.id] = DateTime.now();
@@ -402,6 +441,88 @@ class PetService {
     _multiPetCache.clear();
     _multiPetCacheTimestamps.clear();
     _nameConflictCache.clear();
+
+    // Clear persistent cache too
+    _clearPersistentCache();
+  }
+
+  /// Gets the timestamp when the cached pet data was last updated
+  DateTime? getCacheTimestamp() {
+    return _cacheTimestamp;
+  }
+
+  /// Loads pet data from persistent cache
+  Future<CatProfile?> _loadFromPersistentCache(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final petJson = prefs.getString('${_persistentCacheKey}_$userId');
+      final timestampStr = prefs.getString(
+        '${_persistentCacheTimestampKey}_$userId',
+      );
+
+      if (petJson == null || timestampStr == null) {
+        return null;
+      }
+
+      // Check if persistent cache is not too old (24 hours)
+      final timestamp = DateTime.parse(timestampStr);
+      if (DateTime.now().difference(timestamp) > const Duration(hours: 24)) {
+        // Clear expired persistent cache
+        await _clearPersistentCacheForUser(userId);
+        return null;
+      }
+
+      final petData = json.decode(petJson) as Map<String, dynamic>;
+      return CatProfile.fromJson(petData);
+    } on Exception catch (e) {
+      debugPrint('Error loading from persistent cache: $e');
+      return null;
+    }
+  }
+
+  /// Saves pet data to persistent cache
+  Future<void> _saveToPersistentCache(CatProfile pet, String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final petJson = json.encode(pet.toJson());
+      final timestamp = DateTime.now().toIso8601String();
+
+      await prefs.setString('${_persistentCacheKey}_$userId', petJson);
+      await prefs.setString(
+        '${_persistentCacheTimestampKey}_$userId',
+        timestamp,
+      );
+    } on Exception catch (e) {
+      debugPrint('Error saving to persistent cache: $e');
+    }
+  }
+
+  /// Clears persistent cache for all users
+  Future<void> _clearPersistentCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs.getKeys();
+
+      for (final key in keys) {
+        if (key.startsWith(_persistentCacheKey) ||
+            key.startsWith(_persistentCacheTimestampKey)) {
+          await prefs.remove(key);
+        }
+      }
+    } on Exception catch (e) {
+      debugPrint('Error clearing persistent cache: $e');
+    }
+  }
+
+  /// Clears persistent cache for a specific user
+  Future<void> _clearPersistentCacheForUser(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('${_persistentCacheKey}_$userId');
+      await prefs.remove('${_persistentCacheTimestampKey}_$userId');
+    } on Exception catch (e) {
+      debugPrint('Error clearing persistent cache for user: $e');
+    }
   }
 
   /// Validates whether primary cache is still valid

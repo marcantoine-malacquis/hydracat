@@ -348,7 +348,7 @@ class OnboardingData {
     final updatedMedications = List<MedicationData>.from(medications!)
       ..removeAt(index);
     return copyWith(
-      medications: updatedMedications.isEmpty ? null : updatedMedications,
+      medications: updatedMedications,
     );
   }
 
@@ -519,6 +519,8 @@ class OnboardingData {
       medicalInfo: medicalInfo,
       createdAt: now,
       updatedAt: now,
+      gender: petGender,
+      breed: petBreed,
     );
   }
 
@@ -539,6 +541,8 @@ class OnboardingData {
       treatmentApproach: treatmentApproach!,
       createdAt: now,
       updatedAt: now,
+      gender: petGender,
+      breed: petBreed,
     );
   }
 

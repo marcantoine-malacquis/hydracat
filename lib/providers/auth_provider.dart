@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/features/auth/models/app_user.dart';
 import 'package:hydracat/features/auth/models/auth_state.dart';
@@ -29,6 +30,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Firestore instance for user data persistence
   FirebaseFirestore get _firestore => FirebaseService().firestore;
 
+  /// Cache for user data to reduce Firestore calls
+  AppUser? _cachedUserData;
+  DateTime? _cacheTimestamp;
+  String? _cachedUserId;
+
+  /// Cache TTL in minutes (default: 5 minutes)
+  static const int _cacheTTLMinutes = 5;
+
   /// Callback for handling authentication errors in UI
   void Function(AuthStateError)? errorCallback;
 
@@ -58,29 +67,83 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Check if cached user data is valid and not expired
+  bool _isCacheValid(String userId) {
+    if (_cachedUserData == null ||
+        _cacheTimestamp == null ||
+        _cachedUserId != userId) {
+      return false;
+    }
+
+    final now = DateTime.now();
+    final cacheAge = now.difference(_cacheTimestamp!);
+    return cacheAge.inMinutes < _cacheTTLMinutes;
+  }
+
+  /// Update cache with new user data
+  void _updateCache(AppUser userData) {
+    _cachedUserData = userData;
+    _cacheTimestamp = DateTime.now();
+    _cachedUserId = userData.id;
+
+    if (kDebugMode) {
+      debugPrint('Auth cache updated for user: ${userData.id}');
+    }
+  }
+
+  /// Clear the user data cache
+  void _clearCache() {
+    _cachedUserData = null;
+    _cacheTimestamp = null;
+    _cachedUserId = null;
+
+    if (kDebugMode) {
+      debugPrint('Auth cache cleared');
+    }
+  }
+
   /// Load complete user data by merging Firebase Auth data with Firestore data
+  /// Uses in-memory cache to reduce Firestore calls
   Future<AppUser> _loadCompleteUserData(AppUser firebaseUser) async {
+    // Check if we have valid cached data for this user
+    if (_isCacheValid(firebaseUser.id)) {
+      if (kDebugMode) {
+        debugPrint('Using cached user data for: ${firebaseUser.id}');
+      }
+      return _cachedUserData!;
+    }
+
+    if (kDebugMode) {
+      debugPrint(
+        'Fetching fresh user data from Firestore for: ${firebaseUser.id}',
+      );
+    }
+
     try {
       final userDoc = await _firestore
           .collection('users')
           .doc(firebaseUser.id)
           .get();
 
+      final AppUser completeUser;
       if (userDoc.exists) {
         final firestoreData = userDoc.data()!;
-        return firebaseUser.copyWith(
+        completeUser = firebaseUser.copyWith(
           hasCompletedOnboarding:
               firestoreData['hasCompletedOnboarding'] as bool? ?? false,
-          hasSkippedOnboarding:
-              firestoreData['hasSkippedOnboarding'] as bool? ?? false,
           primaryPetId: firestoreData['primaryPetId'] as String?,
         );
       } else {
         // No Firestore document yet, return Firebase auth data with defaults
-        return firebaseUser;
+        completeUser = firebaseUser;
       }
+
+      // Cache the result
+      _updateCache(completeUser);
+      return completeUser;
     } on Exception {
       // If Firestore fetch fails, return Firebase auth data with defaults
+      // Don't cache failed results
       return firebaseUser;
     }
   }
@@ -178,6 +241,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> signOut() async {
     state = const AuthStateLoading();
 
+    // Clear cache on sign out
+    _clearCache();
+
     final success = await _authService.signOut();
     if (!success) {
       state = const AuthStateError(
@@ -274,128 +340,175 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Mark onboarding as complete for the current user
   ///
   /// Updates both local state and Firestore with onboarding completion
-  /// and primary pet ID. Returns true if successful, false otherwise.
+  /// and primary pet ID. Uses optimistic updates for better UX.
+  /// Returns true if successful, false otherwise.
   Future<bool> markOnboardingComplete(String primaryPetId) async {
     final currentUser = _authService.currentUser;
-    if (currentUser == null) return false;
+    if (currentUser == null) {
+      if (kDebugMode) {
+        debugPrint('WARNING: markOnboardingComplete called with null user');
+      }
+      return false;
+    }
+
+    // Create updated user with new data (optimistic update)
+    final updatedUser = currentUser.copyWith(
+      hasCompletedOnboarding: true,
+      primaryPetId: primaryPetId,
+    );
+
+    // Update cache and local state immediately (optimistic)
+    _updateCache(updatedUser);
+    state = AuthStateAuthenticated(user: updatedUser);
 
     try {
-      // Update user data in Firestore
+      // Update user data in Firestore in the background
       await _updateUserDataInFirestore(
         currentUser.id,
         hasCompletedOnboarding: true,
         primaryPetId: primaryPetId,
       );
 
-      // Update local state
-      final updatedUser = currentUser.copyWith(
-        hasCompletedOnboarding: true,
-        primaryPetId: primaryPetId,
-      );
-      state = AuthStateAuthenticated(user: updatedUser);
-
+      if (kDebugMode) {
+        debugPrint('Successfully synced onboarding completion to Firestore');
+      }
       return true;
-    } on Exception {
-      return false;
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          'ERROR: Failed to sync onboarding completion to Firestore: $e',
+        );
+      }
+      // Even if Firestore update fails, we keep the optimistic update
+      // The user sees the change immediately, and it will retry later
+      return true; // Return true because user sees the update
     }
   }
 
   /// Mark onboarding as skipped for the current user
   ///
-  /// Updates both local state and Firestore with onboarding skip status.
+  /// Updates local state only (not persisted to Firestore).
   /// Returns true if successful, false otherwise.
   Future<bool> markOnboardingSkipped() async {
     // Prefer user from current auth state; fallback to auth service
     final stateUser = state.user;
     final currentUser = stateUser ?? _authService.currentUser;
-    if (currentUser == null) return false;
+
+    if (currentUser == null) {
+      if (kDebugMode) {
+        debugPrint('WARNING: markOnboardingSkipped called with null user');
+      }
+      return false;
+    }
 
     try {
-      // Update local state immediately (offline-first UX)
+      // Create updated user with skip flag
       final updatedUser = currentUser.copyWith(
         hasSkippedOnboarding: true,
       );
+
+      // Update cache with new data (local state only)
+      _updateCache(updatedUser);
+
+      // Update local state only (no Firestore persistence)
       state = AuthStateAuthenticated(user: updatedUser);
 
-      // Persist to Firestore (best-effort)
-      try {
-        await _updateUserDataInFirestore(
-          currentUser.id,
-          hasSkippedOnboarding: true,
-        );
-      } on Exception {
-        // Ignore persistence failures here; state will sync later
-      }
-
       return true;
-    } on Exception {
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('ERROR: Failed to mark onboarding as skipped: $e');
+      }
       return false;
     }
   }
 
   /// Update onboarding status for the current user
   ///
-  /// More flexible method for updating onboarding state and pet ID.
+  /// Updates completion status and pet ID (skip status handled separately).
+  /// Uses optimistic updates for better UX.
   /// Returns true if successful, false otherwise.
   Future<bool> updateOnboardingStatus({
     bool? hasCompletedOnboarding,
-    bool? hasSkippedOnboarding,
     String? primaryPetId,
   }) async {
     final currentUser = _authService.currentUser;
-    if (currentUser == null) return false;
+    if (currentUser == null) {
+      if (kDebugMode) {
+        debugPrint('WARNING: updateOnboardingStatus called with null user');
+      }
+      return false;
+    }
+
+    // Create updated user with new data (optimistic update)
+    final updatedUser = currentUser.copyWith(
+      hasCompletedOnboarding: hasCompletedOnboarding,
+      primaryPetId: primaryPetId,
+    );
+
+    // Update cache and local state immediately (optimistic)
+    _updateCache(updatedUser);
+    state = AuthStateAuthenticated(user: updatedUser);
 
     try {
-      // Update user data in Firestore
+      // Update user data in Firestore in the background
       await _updateUserDataInFirestore(
         currentUser.id,
         hasCompletedOnboarding: hasCompletedOnboarding,
-        hasSkippedOnboarding: hasSkippedOnboarding,
         primaryPetId: primaryPetId,
       );
 
-      // Update local state
-      final updatedUser = currentUser.copyWith(
-        hasCompletedOnboarding: hasCompletedOnboarding,
-        hasSkippedOnboarding: hasSkippedOnboarding,
-        primaryPetId: primaryPetId,
-      );
-      state = AuthStateAuthenticated(user: updatedUser);
-
+      if (kDebugMode) {
+        debugPrint('Successfully synced onboarding status to Firestore');
+      }
       return true;
-    } on Exception {
-      return false;
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('ERROR: Failed to sync onboarding status to Firestore: $e');
+      }
+      // Keep optimistic update even if Firestore sync fails
+      return true;
     }
   }
 
   /// Reset onboarding status for the current user
   ///
-  /// This method resets both completion and skip flags to false, allowing
-  /// the user to go through onboarding again. Useful for testing or
-  /// when users want to restart their setup.
+  /// This method resets completion flag to false and clears pet ID, allowing
+  /// the user to go through onboarding again. Skip status is reset locally.
   /// Returns true if successful, false otherwise.
   Future<bool> resetOnboardingStatus() async {
     final currentUser = _authService.currentUser;
-    if (currentUser == null) return false;
+    if (currentUser == null) {
+      if (kDebugMode) {
+        debugPrint('WARNING: resetOnboardingStatus called with null user');
+      }
+      return false;
+    }
 
     try {
       // Update user data in Firestore
       await _updateUserDataInFirestore(
         currentUser.id,
         hasCompletedOnboarding: false,
-        hasSkippedOnboarding: false,
         primaryPetId: '', // Use empty string to clear the field
       );
 
-      // Update local state
+      // Create updated user with reset data
       final updatedUser = currentUser.copyWith(
         hasCompletedOnboarding: false,
         hasSkippedOnboarding: false,
       );
+
+      // Update cache with new data
+      _updateCache(updatedUser);
+
+      // Update local state (including resetting skip status locally)
       state = AuthStateAuthenticated(user: updatedUser);
 
       return true;
-    } on Exception {
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('ERROR: Failed to reset onboarding status: $e');
+      }
       return false;
     }
   }
@@ -406,7 +519,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> _updateUserDataInFirestore(
     String userId, {
     bool? hasCompletedOnboarding,
-    bool? hasSkippedOnboarding,
     String? primaryPetId,
   }) async {
     final userDoc = _firestore.collection('users').doc(userId);
@@ -415,16 +527,31 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (hasCompletedOnboarding != null) {
       updateData['hasCompletedOnboarding'] = hasCompletedOnboarding;
     }
-    if (hasSkippedOnboarding != null) {
-      updateData['hasSkippedOnboarding'] = hasSkippedOnboarding;
-    }
     if (primaryPetId != null) {
       updateData['primaryPetId'] = primaryPetId;
     }
 
     if (updateData.isNotEmpty) {
       updateData['updatedAt'] = FieldValue.serverTimestamp();
+
+      if (kDebugMode) {
+        debugPrint(
+          'Updating user data in Firestore for user: $userId '
+          'with data: $updateData',
+        );
+      }
+
       await userDoc.set(updateData, SetOptions(merge: true));
+
+      if (kDebugMode) {
+        debugPrint('Successfully updated user data in Firestore');
+      }
+    } else {
+      if (kDebugMode) {
+        debugPrint(
+          'No data to update in Firestore for user: $userId',
+        );
+      }
     }
   }
 
@@ -433,6 +560,32 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Helper method to get the current user from the auth state.
   AppUser? getCurrentUser() {
     return state.user;
+  }
+
+  /// Debug method to reset user state for testing onboarding flows
+  /// Clears onboarding status and primary pet ID while keeping authentication
+  /// Only intended for development/testing purposes
+  Future<void> debugResetUserState() async {
+    final currentUser = _authService.currentUser;
+    if (currentUser == null) {
+      throw Exception('No authenticated user found');
+    }
+
+    try {
+      // Reset user state to fresh user (no onboarding, no primary pet)
+      await updateOnboardingStatus(
+        hasCompletedOnboarding: false,
+        primaryPetId: '', // Clear primary pet ID
+      );
+
+      if (kDebugMode) {
+        debugPrint(
+          'Debug: Reset user state to fresh user for ${currentUser.id}',
+        );
+      }
+    } catch (e) {
+      throw Exception('Failed to reset user state: $e');
+    }
   }
 }
 

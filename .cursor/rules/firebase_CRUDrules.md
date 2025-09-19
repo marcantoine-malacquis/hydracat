@@ -68,7 +68,7 @@ This way analytics queries only need a handful of docs instead of hundreds.
 
 ## Monitoring
 
-- **Track usage regularly**  
+- **Track usage regularly**
   Monitor Firestore usage in the Firebase Console and set up Google Cloud budget alerts.
-- **Audit queries**     
- Regularly review queries to ensure no accidental “fetch all” patterns are introduced.
+- **Audit queries**
+ Regularly review queries to ensure no accidental "fetch all" patterns are introduced.

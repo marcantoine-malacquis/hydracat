@@ -20,7 +20,6 @@ class CatProfile {
     this.photoUrl,
     this.breed,
     this.gender,
-    this.isNeutered,
   });
 
   /// Creates a [CatProfile] from JSON data
@@ -42,7 +41,6 @@ class CatProfile {
       photoUrl: json['photoUrl'] as String?,
       breed: json['breed'] as String?,
       gender: json['gender'] as String?,
-      isNeutered: json['isNeutered'] as bool?,
     );
   }
 
@@ -82,8 +80,6 @@ class CatProfile {
   /// Pet's gender (optional)
   final String? gender;
 
-  /// Whether the pet is neutered/spayed (optional)
-  final bool? isNeutered;
 
   /// Pet's weight in pounds (converted from kg)
   double get weightLbs => weightKg * 2.20462;
@@ -113,7 +109,6 @@ class CatProfile {
       'photoUrl': photoUrl,
       'breed': breed,
       'gender': gender,
-      'isNeutered': isNeutered,
     };
   }
 
@@ -131,7 +126,6 @@ class CatProfile {
     String? photoUrl,
     String? breed,
     String? gender,
-    bool? isNeutered,
   }) {
     return CatProfile(
       id: id ?? this.id,
@@ -146,7 +140,6 @@ class CatProfile {
       photoUrl: photoUrl ?? this.photoUrl,
       breed: breed ?? this.breed,
       gender: gender ?? this.gender,
-      isNeutered: isNeutered ?? this.isNeutered,
     );
   }
 
@@ -220,8 +213,7 @@ class CatProfile {
         other.updatedAt == updatedAt &&
         other.photoUrl == photoUrl &&
         other.breed == breed &&
-        other.gender == gender &&
-        other.isNeutered == isNeutered;
+        other.gender == gender;
   }
 
   @override
@@ -239,7 +231,6 @@ class CatProfile {
       photoUrl,
       breed,
       gender,
-      isNeutered,
     );
   }
 
@@ -257,8 +248,7 @@ class CatProfile {
         'updatedAt: $updatedAt, '
         'photoUrl: $photoUrl, '
         'breed: $breed, '
-        'gender: $gender, '
-        'isNeutered: $isNeutered'
+        'gender: $gender'
         ')';
   }
 }

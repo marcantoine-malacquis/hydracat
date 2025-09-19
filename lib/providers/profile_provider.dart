@@ -5,6 +5,21 @@ import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/services/pet_service.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 
+/// Cache status enum to track data freshness
+enum CacheStatus {
+  /// Data is fresh from Firestore
+  fresh,
+
+  /// Data is from cache but still valid
+  cached,
+
+  /// Data is from cache but may be stale (offline)
+  stale,
+
+  /// No data available
+  empty,
+}
+
 /// Profile state that holds pet profile information
 @immutable
 class ProfileState {
@@ -12,23 +27,29 @@ class ProfileState {
   const ProfileState({
     this.primaryPet,
     this.isLoading = false,
+    this.isRefreshing = false,
     this.error,
     this.lastUpdated,
+    this.cacheStatus = CacheStatus.fresh,
   });
 
   /// Creates initial empty state
   const ProfileState.initial()
       : primaryPet = null,
         isLoading = false,
+        isRefreshing = false,
         error = null,
-        lastUpdated = null;
+        lastUpdated = null,
+        cacheStatus = CacheStatus.empty;
 
   /// Creates loading state
   const ProfileState.loading()
       : primaryPet = null,
         isLoading = true,
+        isRefreshing = false,
         error = null,
-        lastUpdated = null;
+        lastUpdated = null,
+        cacheStatus = CacheStatus.empty;
 
   /// Current primary pet profile
   final CatProfile? primaryPet;
@@ -36,11 +57,17 @@ class ProfileState {
   /// Whether a profile operation is in progress
   final bool isLoading;
 
+  /// Whether a manual refresh is in progress
+  final bool isRefreshing;
+
   /// Current error if any
   final ProfileException? error;
 
   /// When the profile was last updated
   final DateTime? lastUpdated;
+
+  /// Status of the cached data
+  final CacheStatus cacheStatus;
 
   /// Whether user has a pet profile
   bool get hasPetProfile => primaryPet != null;
@@ -61,14 +88,18 @@ class ProfileState {
   ProfileState copyWith({
     CatProfile? primaryPet,
     bool? isLoading,
+    bool? isRefreshing,
     ProfileException? error,
     DateTime? lastUpdated,
+    CacheStatus? cacheStatus,
   }) {
     return ProfileState(
       primaryPet: primaryPet ?? this.primaryPet,
       isLoading: isLoading ?? this.isLoading,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
       error: error ?? this.error,
       lastUpdated: lastUpdated ?? this.lastUpdated,
+      cacheStatus: cacheStatus ?? this.cacheStatus,
     );
   }
 
@@ -89,8 +120,10 @@ class ProfileState {
     return other is ProfileState &&
         other.primaryPet == primaryPet &&
         other.isLoading == isLoading &&
+        other.isRefreshing == isRefreshing &&
         other.error == error &&
-        other.lastUpdated == lastUpdated;
+        other.lastUpdated == lastUpdated &&
+        other.cacheStatus == cacheStatus;
   }
 
   @override
@@ -98,8 +131,10 @@ class ProfileState {
     return Object.hash(
       primaryPet,
       isLoading,
+      isRefreshing,
       error,
       lastUpdated,
+      cacheStatus,
     );
   }
 
@@ -108,8 +143,10 @@ class ProfileState {
     return 'ProfileState('
         'primaryPet: $primaryPet, '
         'isLoading: $isLoading, '
+        'isRefreshing: $isRefreshing, '
         'error: $error, '
-        'lastUpdated: $lastUpdated'
+        'lastUpdated: $lastUpdated, '
+        'cacheStatus: $cacheStatus'
         ')';
   }
 }
@@ -129,18 +166,49 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 
     try {
       final pet = await _petService.getPrimaryPet();
-      
+      final cacheTimestamp = _petService.getCacheTimestamp();
+
       state = state.copyWith(
         primaryPet: pet,
         isLoading: false,
-        lastUpdated: DateTime.now(),
+        lastUpdated: cacheTimestamp ?? DateTime.now(),
+        cacheStatus: pet != null ? CacheStatus.cached : CacheStatus.empty,
       );
-      
+
       return pet != null;
     } on Exception catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: PetServiceException('Failed to load pet profile: $e'),
+        cacheStatus: CacheStatus.empty,
+      );
+      return false;
+    }
+  }
+
+  /// Manually refresh the primary pet profile from Firestore
+  Future<bool> refreshPrimaryPet() async {
+    state = state.copyWith(isRefreshing: true);
+
+    try {
+      final pet = await _petService.getPrimaryPet(forceRefresh: true);
+
+      state = state.copyWith(
+        primaryPet: pet,
+        isRefreshing: false,
+        lastUpdated: DateTime.now(),
+        cacheStatus: pet != null ? CacheStatus.fresh : CacheStatus.empty,
+      );
+
+      return pet != null;
+    } on Exception catch (e) {
+      // Don't clear existing pet data if refresh fails
+      state = state.copyWith(
+        isRefreshing: false,
+        error: PetServiceException('Failed to refresh pet profile: $e'),
+        cacheStatus: state.primaryPet != null
+            ? CacheStatus.stale
+            : CacheStatus.empty,
       );
       return false;
     }
@@ -158,6 +226,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
           primaryPet: pet,
           isLoading: false,
           lastUpdated: DateTime.now(),
+          cacheStatus: CacheStatus.fresh,
         );
         return true;
 
@@ -165,6 +234,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         state = state.copyWith(
           isLoading: false,
           error: exception,
+          cacheStatus: CacheStatus.empty,
         );
         return false;
     }
@@ -182,6 +252,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
           primaryPet: pet,
           isLoading: false,
           lastUpdated: DateTime.now(),
+          cacheStatus: CacheStatus.fresh,
         );
         return true;
 
@@ -189,6 +260,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         state = state.copyWith(
           isLoading: false,
           error: exception,
+          // Keep current cache status if update fails
         );
         return false;
     }
@@ -203,10 +275,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     switch (result) {
       case PetSuccess():
         // Clear the primary pet and update auth state
-        state = state.copyWith(
-          isLoading: false,
-          lastUpdated: DateTime.now(),
-        );
+        state = const ProfileState.initial();
         
         // Update auth to reflect no primary pet
         final authNotifier = _ref.read(authProvider.notifier);
@@ -274,6 +343,11 @@ final profileIsLoadingProvider = Provider<bool>((ref) {
   return ref.watch(profileProvider.select((state) => state.isLoading));
 });
 
+/// Optimized provider to check if profile is refreshing
+final profileIsRefreshingProvider = Provider<bool>((ref) {
+  return ref.watch(profileProvider.select((state) => state.isRefreshing));
+});
+
 /// Optimized provider to get current profile error
 final profileErrorProvider = Provider<ProfileException?>((ref) {
   return ref.watch(profileProvider.select((state) => state.error));
@@ -302,6 +376,11 @@ final treatmentApproachProvider = Provider<String?>((ref) {
 /// Optimized provider to get when profile was last updated
 final profileLastUpdatedProvider = Provider<DateTime?>((ref) {
   return ref.watch(profileProvider.select((state) => state.lastUpdated));
+});
+
+/// Optimized provider to get cache status
+final profileCacheStatusProvider = Provider<CacheStatus>((ref) {
+  return ref.watch(profileProvider.select((state) => state.cacheStatus));
 });
 
 /// Integration provider to determine if onboarding should be shown
