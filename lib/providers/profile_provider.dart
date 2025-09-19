@@ -35,21 +35,21 @@ class ProfileState {
 
   /// Creates initial empty state
   const ProfileState.initial()
-      : primaryPet = null,
-        isLoading = false,
-        isRefreshing = false,
-        error = null,
-        lastUpdated = null,
-        cacheStatus = CacheStatus.empty;
+    : primaryPet = null,
+      isLoading = false,
+      isRefreshing = false,
+      error = null,
+      lastUpdated = null,
+      cacheStatus = CacheStatus.empty;
 
   /// Creates loading state
   const ProfileState.loading()
-      : primaryPet = null,
-        isLoading = true,
-        isRefreshing = false,
-        error = null,
-        lastUpdated = null,
-        cacheStatus = CacheStatus.empty;
+    : primaryPet = null,
+      isLoading = true,
+      isRefreshing = false,
+      error = null,
+      lastUpdated = null,
+      cacheStatus = CacheStatus.empty;
 
   /// Current primary pet profile
   final CatProfile? primaryPet;
@@ -155,7 +155,7 @@ class ProfileState {
 class ProfileNotifier extends StateNotifier<ProfileState> {
   /// Creates a [ProfileNotifier] with the provided dependencies
   ProfileNotifier(this._petService, this._ref)
-      : super(const ProfileState.initial());
+    : super(const ProfileState.initial());
 
   final PetService _petService;
   final Ref _ref;
@@ -276,13 +276,13 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       case PetSuccess():
         // Clear the primary pet and update auth state
         state = const ProfileState.initial();
-        
+
         // Update auth to reflect no primary pet
         final authNotifier = _ref.read(authProvider.notifier);
         await authNotifier.updateOnboardingStatus(
           hasCompletedOnboarding: false,
         );
-        
+
         return true;
 
       case PetFailure(exception: final exception):
@@ -322,8 +322,9 @@ final petServiceProvider = Provider<PetService>((ref) {
 });
 
 /// Provider for the profile state notifier
-final profileProvider =
-    StateNotifierProvider<ProfileNotifier, ProfileState>((ref) {
+final profileProvider = StateNotifierProvider<ProfileNotifier, ProfileState>((
+  ref,
+) {
   final service = ref.read(petServiceProvider);
   return ProfileNotifier(service, ref);
 });
@@ -387,7 +388,7 @@ final profileCacheStatusProvider = Provider<CacheStatus>((ref) {
 final shouldShowOnboardingProvider = Provider<bool>((ref) {
   final hasCompletedOnboarding = ref.watch(hasCompletedOnboardingProvider);
   final hasPet = ref.watch(hasPetProfileProvider);
-  
+
   // Show onboarding if user hasn't completed it AND doesn't have a pet
   return !hasCompletedOnboarding && !hasPet;
 });
@@ -397,21 +398,7 @@ final needsProfileCompletionProvider = Provider<bool>((ref) {
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
   final hasCompletedOnboarding = ref.watch(hasCompletedOnboardingProvider);
   final hasPet = ref.watch(hasPetProfileProvider);
-  
+
   // User needs to complete profile if authenticated but no onboarding/pet
   return isAuthenticated && (!hasCompletedOnboarding || !hasPet);
-});
-
-/// Future provider to automatically load primary pet when user is authenticated
-final autoLoadPrimaryPetProvider = FutureProvider<CatProfile?>((ref) async {
-  final isAuthenticated = ref.watch(isAuthenticatedProvider);
-  
-  if (!isAuthenticated) {
-    return null;
-  }
-  
-  final profileNotifier = ref.read(profileProvider.notifier);
-  await profileNotifier.loadPrimaryPet();
-  
-  return ref.read(primaryPetProvider);
 });

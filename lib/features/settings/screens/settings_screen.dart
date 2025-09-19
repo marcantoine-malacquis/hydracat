@@ -112,6 +112,32 @@ class SettingsScreen extends ConsumerWidget {
 
           const SizedBox(height: AppSpacing.xl),
 
+          // Logout button
+          SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: ElevatedButton(
+              onPressed: () => ref.read(authProvider.notifier).signOut(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                foregroundColor: AppColors.error,
+                elevation: 0,
+                side: const BorderSide(color: AppColors.error, width: 1.5),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              child: const Text('Log Out'),
+            ),
+          ),
+
+          const SizedBox(height: AppSpacing.xl),
+
           // User email at bottom
           Consumer(
             builder: (context, ref, _) {

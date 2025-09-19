@@ -1,12 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/core/theme/theme.dart';
-import 'package:hydracat/features/onboarding/screens/user_persona_screen.dart';
-import 'package:hydracat/features/onboarding/screens/welcome_screen.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/shared/widgets/empty_states/onboarding_cta_empty_state.dart';
 import 'package:hydracat/shared/widgets/status/connection_status_widget.dart';
@@ -74,56 +69,10 @@ class HomeScreen extends ConsumerWidget {
               isFullWidth: true,
               child: const Text('View Component Demo'),
             ),
-
-            // Development-only onboarding test button
-            if (FlavorConfig.isDevelopment) ...[
-              const SizedBox(height: AppSpacing.md),
-              HydraButton(
-                onPressed: () => _showOnboardingModal(context),
-                variant: HydraButtonVariant.secondary,
-                isFullWidth: true,
-                child: const Text('🧪 Test Onboarding'),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              HydraButton(
-                onPressed: () => _showPersonaModal(context),
-                variant: HydraButtonVariant.secondary,
-                isFullWidth: true,
-                child: const Text('🧪 Test Persona Screen'),
-              ),
-            ],
           ],
         ),
       ),
     );
   }
 
-  /// Shows the onboarding flow in a modal dialog (development only).
-  Future<void> _showOnboardingModal(BuildContext context) async {
-    final result = await showDialog<String>(
-      context: context,
-      barrierDismissible: false, // Prevent dismissing during onboarding
-      builder: (BuildContext context) {
-        return const Dialog.fullscreen(
-          child: OnboardingWelcomeScreen(),
-        );
-      },
-    );
-
-    if (context.mounted && result == 'start') {
-      context.goNamed('onboarding-persona');
-    }
-  }
-
-  /// Shows the persona screen in a modal dialog (development only).
-  void _showPersonaModal(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return const Dialog.fullscreen(
-          child: UserPersonaScreen(),
-        );
-      },
-    );
-  }
 }

@@ -17,6 +17,19 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasCompletedOnboarding = ref.watch(hasCompletedOnboardingProvider);
+    final isAuthenticated = ref.watch(isAuthenticatedProvider);
+    final primaryPet = ref.watch(primaryPetProvider);
+    final isLoading = ref.watch(profileIsLoadingProvider);
+
+    // Trigger automatic loading if conditions are met
+    if (hasCompletedOnboarding &&
+        isAuthenticated &&
+        primaryPet == null &&
+        !isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(profileProvider.notifier).loadPrimaryPet();
+      });
+    }
 
     return DevBanner(
       child: Scaffold(
@@ -29,11 +42,6 @@ class ProfileScreen extends ConsumerWidget {
               onPressed: () => context.go('/settings'),
               icon: const Icon(Icons.settings),
               tooltip: 'Settings',
-            ),
-            IconButton(
-              onPressed: () => ref.read(authProvider.notifier).signOut(),
-              icon: const Icon(Icons.logout),
-              tooltip: 'Sign Out',
             ),
           ],
         ),
