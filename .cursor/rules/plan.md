@@ -17,14 +17,19 @@ Please update and add only the important informations to remember about what we 
 Don't try to run the app yourself. Just tell me when it's needed and I will run it manually.
 
 
-1. a) most frequent is by far User State Testing: Fresh user → partial onboarding → completed onboarding
-2. Drawer Item in the profile screen
-3. I don't need presets, I only want to be able to restart as a fresh experience but using the same authentication and email I've used so far (my own personal email). I want to be able to manually restart a fresh experience with the same account and input another pet, schedule, ... to test stuff.
-4. the core data I think. Please keep this to a minimum to achieve what I want (fresh expereience with the same account)
-5. Standalone Tool: Independent debug panel with Hot Reload Integration: Works with Flutter hot reload
-6. nothing more for now
-
-Does that make sense ? Is this debug panel still the best option to achieve what I want ? (fresh expereience with the same account)
+1. a) Yes, a completely empty placeholder screen with just a basic app bar and "Coming Soon" text similar to other placeholder screens in the app
+2. a) it should be a standalone screen accessed only from the profile screen, please find the best way to 
+b) let's create a /features/settings so a new settings folder in the already existing features folder
+3. a) before the logout icon in the app bar
+b) let's use the standard Material Design settings icon
+4. a) a new settings feature directory
+b) yes create the standard subdirectories
+5. a) yes follow the same styling patterns as other screens. For context, I
+it will be a very simple navigable list that we will implement later. For now, it stays empty
+b) it should be simpler since it's accessed from an already protected screen
+6. a) yes, your understanding is correct. NO reads/writes involved in firestore.
+b) there will be no future settings that would interact with firebase
+Please let me know if this makes sense or contradict itself, the prd, the CRUD rules or existing code. Coherence is extremely important. Let's me know if you need any more clarifications to feel confident in proceeding with the implementation.
 
 
 

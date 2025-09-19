@@ -20,6 +20,7 @@ import 'package:hydracat/features/onboarding/screens/user_persona_screen.dart';
 import 'package:hydracat/features/onboarding/screens/welcome_screen.dart';
 import 'package:hydracat/features/profile/screens/profile_screen.dart';
 import 'package:hydracat/features/progress/screens/progress_screen.dart';
+import 'package:hydracat/features/settings/screens/settings_screen.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/shared/widgets/navigation/app_page_transitions.dart';
 
@@ -211,6 +212,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
         ],
+      ),
+      GoRoute(
+        path: '/settings',
+        name: 'settings',
+        builder: (context, state) => const SettingsScreen(),
       ),
       GoRoute(
         path: '/login',
