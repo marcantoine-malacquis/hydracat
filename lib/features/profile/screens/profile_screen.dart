@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/widgets/debug_panel.dart';
+import 'package:hydracat/features/profile/widgets/profile_section_item.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/widgets/empty_states/onboarding_cta_empty_state.dart';
@@ -75,6 +76,11 @@ class ProfileScreen extends ConsumerWidget {
           children: [
           // Pet information section
           _buildPetInfoCard(context, ref),
+
+          const SizedBox(height: AppSpacing.xl),
+
+          // Profile sections
+          _buildProfileSections(context, ref),
 
         ],
       ),
@@ -513,6 +519,38 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  /// Builds the profile sections list
+  Widget _buildProfileSections(BuildContext context, WidgetRef ref) {
+    final primaryPet = ref.watch(primaryPetProvider);
+    final petName = primaryPet?.name ?? 'Your Cat';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header
+        Text(
+          'Profile',
+          style: AppTextStyles.h3.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+
+        // CKD Profile section
+        ProfileSectionItem(
+          title: "$petName's CKD Profile",
+          subtitle: 'Medical information and lab results',
+          icon: Icons.medical_information,
+          onTap: () => context.go('/profile/ckd'),
+        ),
+
+        // Future sections will be added here
+        // Example: My Schedule, Treatment Plan, etc.
+      ],
     );
   }
 }
