@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/features/auth/models/app_user.dart';
 import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/features/auth/services/auth_service.dart';
+import 'package:hydracat/features/onboarding/services/onboarding_service.dart';
+import 'package:hydracat/features/profile/services/pet_service.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
 
 /// Provider for the AuthService instance
@@ -576,11 +578,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // First, delete all pet documents from the user's pets collection
       await _deleteAllUserPets(currentUser.id);
 
+      // Clear all pet service caches (memory and persistent)
+      await _clearPetServiceCaches();
+
+      // Clear any existing onboarding data
+      await _clearOnboardingData(currentUser.id);
+
       // Then reset user state to fresh user (no onboarding, no primary pet)
       await updateOnboardingStatus(
         hasCompletedOnboarding: false,
         primaryPetId: '', // Clear primary pet ID
       );
+
+      // Clear auth cache to ensure fresh data on next load
+      _clearCache();
 
       if (kDebugMode) {
         debugPrint(
@@ -589,6 +600,40 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
     } catch (e) {
       throw Exception('Failed to reset user state: $e');
+    }
+  }
+
+  /// Helper method to clear all pet service caches (debug only)
+  Future<void> _clearPetServiceCaches() async {
+    try {
+      // Import PetService to clear its caches
+      PetService().clearCache();
+
+      if (kDebugMode) {
+        debugPrint('Debug: Cleared PetService caches (memory and persistent)');
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('Debug: Error clearing PetService caches: $e');
+      }
+      // Don't throw here - continue with reset even if cache clearing fails
+    }
+  }
+
+  /// Helper method to clear onboarding data (debug only)
+  Future<void> _clearOnboardingData(String userId) async {
+    try {
+      await OnboardingService().clearOnboardingData(userId);
+
+      if (kDebugMode) {
+        debugPrint('Debug: Cleared onboarding data for user $userId');
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('Debug: Error clearing onboarding data: $e');
+      }
+      // Don't throw here - continue with reset even if onboarding
+      //clearing fails
     }
   }
 

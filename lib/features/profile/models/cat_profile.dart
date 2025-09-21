@@ -12,10 +12,10 @@ class CatProfile {
     required this.userId,
     required this.name,
     required this.ageYears,
-    required this.weightKg,
     required this.treatmentApproach,
     required this.createdAt,
     required this.updatedAt,
+    this.weightKg,
     this.medicalInfo = const MedicalInfo(),
     this.photoUrl,
     this.breed,
@@ -29,7 +29,9 @@ class CatProfile {
       userId: json['userId'] as String,
       name: json['name'] as String,
       ageYears: json['ageYears'] as int,
-      weightKg: (json['weightKg'] as num).toDouble(),
+      weightKg: json['weightKg'] != null
+          ? (json['weightKg'] as num).toDouble()
+          : null,
       treatmentApproach:
           UserPersona.fromString(json['treatmentApproach'] as String) ??
           UserPersona.medicationOnly,
@@ -56,8 +58,8 @@ class CatProfile {
   /// Pet's age in years
   final int ageYears;
 
-  /// Pet's weight in kilograms
-  final double weightKg;
+  /// Pet's weight in kilograms (optional)
+  final double? weightKg;
 
   /// Treatment approach/persona for this pet
   final UserPersona treatmentApproach;
@@ -80,15 +82,14 @@ class CatProfile {
   /// Pet's gender (optional)
   final String? gender;
 
-
   /// Pet's weight in pounds (converted from kg)
-  double get weightLbs => weightKg * 2.20462;
+  double? get weightLbs => weightKg != null ? weightKg! * 2.20462 : null;
 
   /// Pet's age in months (approximate)
   int get ageMonths => ageYears * 12;
 
   /// Whether this profile has essential information
-  bool get hasEssentialInfo => name.isNotEmpty && ageYears > 0 && weightKg > 0;
+  bool get hasEssentialInfo => name.isNotEmpty && ageYears > 0;
 
   /// Whether this profile is considered complete
   bool get isComplete =>
@@ -118,11 +119,11 @@ class CatProfile {
     String? userId,
     String? name,
     int? ageYears,
-    double? weightKg,
     UserPersona? treatmentApproach,
-    MedicalInfo? medicalInfo,
     DateTime? createdAt,
     DateTime? updatedAt,
+    double? weightKg,
+    MedicalInfo? medicalInfo,
     String? photoUrl,
     String? breed,
     String? gender,
@@ -132,11 +133,11 @@ class CatProfile {
       userId: userId ?? this.userId,
       name: name ?? this.name,
       ageYears: ageYears ?? this.ageYears,
-      weightKg: weightKg ?? this.weightKg,
       treatmentApproach: treatmentApproach ?? this.treatmentApproach,
-      medicalInfo: medicalInfo ?? this.medicalInfo,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      weightKg: weightKg ?? this.weightKg,
+      medicalInfo: medicalInfo ?? this.medicalInfo,
       photoUrl: photoUrl ?? this.photoUrl,
       breed: breed ?? this.breed,
       gender: gender ?? this.gender,
@@ -174,11 +175,13 @@ class CatProfile {
       errors.add('Age seems unrealistic (over 25 years)');
     }
 
-    // Weight validation
-    if (weightKg <= 0) {
-      errors.add('Weight must be greater than 0');
-    } else if (weightKg > 15) {
-      errors.add('Weight seems unrealistic (over 15kg for a cat)');
+    // Weight validation (optional)
+    if (weightKg != null) {
+      if (weightKg! <= 0) {
+        errors.add('Weight must be greater than 0');
+      } else if (weightKg! > 15) {
+        errors.add('Weight seems unrealistic (over 15kg for a cat)');
+      }
     }
 
     // Medical info validation

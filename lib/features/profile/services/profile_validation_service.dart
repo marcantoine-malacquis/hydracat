@@ -71,9 +71,11 @@ class ProfileValidationService {
     if (!ageResult.isValid) errors.addAll(ageResult.errors);
     warnings.addAll(ageResult.warnings);
 
-    final weightResult = validateWeight(profile.weightKg);
-    if (!weightResult.isValid) errors.addAll(weightResult.errors);
-    warnings.addAll(weightResult.warnings);
+    if (profile.weightKg != null) {
+      final weightResult = validateWeight(profile.weightKg!);
+      if (!weightResult.isValid) errors.addAll(weightResult.errors);
+      warnings.addAll(weightResult.warnings);
+    }
 
     // Validate medical information
     final medicalResult = validateMedicalInfo(profile.medicalInfo);
@@ -239,7 +241,6 @@ class ProfileValidationService {
       }
     }
 
-
     if (errors.isNotEmpty) {
       return ValidationResult.failure(errors);
     } else if (warnings.isNotEmpty) {
@@ -329,13 +330,15 @@ class ProfileValidationService {
     }
 
     // Weight vs age consistency warnings
-    if (profile.ageYears < 1 && profile.weightKg > 6) {
-      warnings.add('Weight seems high for a kitten under 1 year old');
-    } else if (profile.ageYears > 15 && profile.weightKg < 2.0) {
-      warnings.add(
-        'Weight seems low for a senior cat. '
-        'Consider monitoring nutrition closely',
-      );
+    if (profile.weightKg != null) {
+      if (profile.ageYears < 1 && profile.weightKg! > 6) {
+        warnings.add('Weight seems high for a kitten under 1 year old');
+      } else if (profile.ageYears > 15 && profile.weightKg! < 2.0) {
+        warnings.add(
+          'Weight seems low for a senior cat. '
+          'Consider monitoring nutrition closely',
+        );
+      }
     }
 
     if (errors.isNotEmpty) {

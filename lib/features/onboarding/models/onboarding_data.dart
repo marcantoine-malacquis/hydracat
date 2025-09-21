@@ -514,7 +514,7 @@ class OnboardingData {
       userId: userId!,
       name: petName!,
       ageYears: petAge!,
-      weightKg: petWeightKg!,
+      weightKg: petWeightKg, // Optional weight
       treatmentApproach: treatmentApproach!,
       medicalInfo: medicalInfo,
       createdAt: now,
@@ -537,7 +537,7 @@ class OnboardingData {
       userId: userId!,
       name: petName!,
       ageYears: petAge!,
-      weightKg: petWeightKg!,
+      weightKg: petWeightKg, // Optional weight
       treatmentApproach: treatmentApproach!,
       createdAt: now,
       updatedAt: now,
