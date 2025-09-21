@@ -57,6 +57,30 @@ class AppPageTransitions {
     );
   }
 
+  /// Creates a bidirectional slide transition page
+  ///
+  /// Automatically handles both forward (right-to-left) and back
+  /// (left-to-right) navigation with appropriate slide directions.
+  /// This is the recommended approach for most navigation flows as it
+  /// provides consistent UX.
+  static SlideTransitionPage<T> bidirectionalSlide<T>({
+    required Widget child,
+    LocalKey? key,
+    String? name,
+    Object? arguments,
+    String? restorationId,
+    Duration duration = defaultDuration,
+  }) {
+    return SlideTransitionPage<T>(
+      key: key,
+      name: name,
+      arguments: arguments,
+      restorationId: restorationId,
+      child: child,
+      duration: duration,
+    );
+  }
+
   /// Creates a slide transition page for modal-like screens
   ///
   /// Used for screens that appear from bottom like modals or sheets

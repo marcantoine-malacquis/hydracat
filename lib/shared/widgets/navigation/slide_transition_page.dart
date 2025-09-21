@@ -50,77 +50,77 @@ class SlideTransitionPage<T> extends CustomTransitionPage<T> {
          },
        );
 
-  /// Builds the slide transition animation
+  /// Builds the slide transition animation with automatic direction reversal
   static Widget _buildSlideTransition({
     required Animation<double> animation,
     required Animation<double> secondaryAnimation,
     required Widget child,
     required SlideDirection slideDirection,
   }) {
-    // Calculate the slide offset based on direction
-    final beginOffset = _getBeginOffset(slideDirection);
-    const endOffset = Offset.zero;
+    // For forward navigation: slide in from right, slide out to left
+    // For back navigation: slide in from left, slide out to right
+    // The key insight: when going back, the roles of animation and
+    // secondaryAnimation are swapped by GoRouter
 
-    // Create slide animation
-    final slideAnimation =
-        Tween<Offset>(
-          begin: beginOffset,
-          end: endOffset,
-        ).animate(
-          CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeInOut,
-          ),
-        );
+    final forwardBeginOffset = _getBeginOffset(slideDirection);
+    final reverseBeginOffset =
+        _getBeginOffset(_getReverseDirection(slideDirection));
 
-    // Create fade animation for smooth appearance
-    final fadeAnimation =
-        Tween<double>(
-          begin: 0,
-          end: 1,
-        ).animate(
-          CurvedAnimation(
-            parent: animation,
-            curve: const Interval(0, 0.3),
-          ),
-        );
+    // Create the main slide animation (incoming page)
+    final slideAnimation = Tween<Offset>(
+      begin: forwardBeginOffset,
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeInOut,
+      ),
+    );
 
-    // Create outgoing slide animation for the previous page
-    final outgoingSlideAnimation =
-        Tween<Offset>(
-          begin: Offset.zero,
-          end: _getOutgoingOffset(slideDirection),
-        ).animate(
-          CurvedAnimation(
-            parent: secondaryAnimation,
-            curve: Curves.easeInOut,
-          ),
-        );
+    // Create the reverse slide animation (for when this page is being popped)
+    final reverseSlideAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: reverseBeginOffset,
+    ).animate(
+      CurvedAnimation(
+        parent: secondaryAnimation,
+        curve: Curves.easeInOut,
+      ),
+    );
 
-    return Stack(
-      children: [
-        // Outgoing page
-        if (secondaryAnimation.status != AnimationStatus.dismissed)
-          SlideTransition(
-            position: outgoingSlideAnimation,
-            child: FadeTransition(
-              opacity: Tween<double>(
-                begin: 1,
-                end: 0.8,
-              ).animate(secondaryAnimation),
-              child: Container(), // Placeholder for previous page
-            ),
-          ),
+    // Create fade animations
+    final fadeInAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(
+      CurvedAnimation(
+        parent: animation,
+        curve: const Interval(0, 0.3),
+      ),
+    );
 
-        // Incoming page
-        SlideTransition(
-          position: slideAnimation,
+    final fadeOutAnimation = Tween<double>(
+      begin: 1,
+      end: 0,
+    ).animate(
+      CurvedAnimation(
+        parent: secondaryAnimation,
+        curve: const Interval(0.7, 1),
+      ),
+    );
+
+    return SlideTransition(
+      position: slideAnimation,
+      child: SlideTransition(
+        position: reverseSlideAnimation,
+        child: FadeTransition(
+          opacity: fadeInAnimation,
           child: FadeTransition(
-            opacity: fadeAnimation,
+            opacity: fadeOutAnimation,
             child: child,
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -138,17 +138,17 @@ class SlideTransitionPage<T> extends CustomTransitionPage<T> {
     }
   }
 
-  /// Gets the outgoing offset for the previous page
-  static Offset _getOutgoingOffset(SlideDirection direction) {
+  /// Gets the reverse direction for bidirectional animations
+  static SlideDirection _getReverseDirection(SlideDirection direction) {
     switch (direction) {
       case SlideDirection.rightToLeft:
-        return const Offset(-0.3, 0);
+        return SlideDirection.leftToRight;
       case SlideDirection.leftToRight:
-        return const Offset(0.3, 0);
+        return SlideDirection.rightToLeft;
       case SlideDirection.bottomToTop:
-        return const Offset(0, -0.3);
+        return SlideDirection.topToBottom;
       case SlideDirection.topToBottom:
-        return const Offset(0, 0.3);
+        return SlideDirection.bottomToTop;
     }
   }
 }

@@ -101,19 +101,51 @@ class OnboardingService {
   /// Returns [OnboardingSuccess] if started successfully,
   /// [OnboardingFailure] if user already has completed onboarding.
   Future<OnboardingResult> startOnboarding(String userId) async {
+    if (kDebugMode) {
+      debugPrint('[OnboardingService] Starting onboarding for user: $userId');
+    }
+
     try {
-      // Check if user already completed onboarding by
-      //checking for existing pets
+      // Check if user already completed onboarding by checking for existing
+      // pets
+      if (kDebugMode) {
+        debugPrint('[OnboardingService] Checking for existing pets...');
+      }
+
       final existingPet = await _petService.getPrimaryPet();
+
+      if (kDebugMode) {
+        final resultMessage = existingPet != null
+            ? 'Found pet ${existingPet.name}'
+            : 'No pets found';
+        debugPrint(
+          '[OnboardingService] Existing pet check result: $resultMessage',
+        );
+      }
+
       if (existingPet != null) {
+        if (kDebugMode) {
+          debugPrint(
+            '[OnboardingService] Onboarding blocked - user already has pet: '
+            '${existingPet.name}',
+          );
+        }
         return const OnboardingFailure(
           OnboardingAlreadyCompletedException(),
         );
       }
 
+      if (kDebugMode) {
+        debugPrint('[OnboardingService] Initializing fresh onboarding data...');
+      }
+
       // Initialize fresh onboarding data and progress
       _currentData = const OnboardingData.empty().copyWith(userId: userId);
       _currentProgress = OnboardingProgress.initial(userId: userId);
+
+      if (kDebugMode) {
+        debugPrint('[OnboardingService] Tracking analytics event...');
+      }
 
       // Track analytics
       await _trackAnalyticsEvent('onboarding_started', {
@@ -121,14 +153,32 @@ class OnboardingService {
         'timestamp': DateTime.now().toIso8601String(),
       });
 
+      if (kDebugMode) {
+        debugPrint('[OnboardingService] Saving initial checkpoint...');
+      }
+
       // Save initial state
       await _saveCheckpoint();
+
+      if (kDebugMode) {
+        debugPrint('[OnboardingService] Notifying progress listeners...');
+      }
 
       // Notify listeners
       _progressController.add(_currentProgress);
 
+      if (kDebugMode) {
+        debugPrint('[OnboardingService] Onboarding started successfully');
+      }
+
       return const OnboardingSuccess();
     } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[OnboardingService] ERROR: Failed to start onboarding: $e',
+        );
+        debugPrint('[OnboardingService] Stack trace: ${StackTrace.current}');
+      }
       return OnboardingFailure(
         OnboardingServiceException('Failed to start onboarding: $e'),
       );

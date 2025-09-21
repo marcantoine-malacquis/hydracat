@@ -165,11 +165,11 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
           title: Text("$petName's CKD Profile"),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           leading: IconButton(
-            onPressed: () => context.go('/profile'),
+            onPressed: () => context.pop(),
             icon: const Icon(Icons.arrow_back_ios),
             iconSize: 20,
             color: AppColors.textSecondary,
-            tooltip: 'Back to Profile',
+            tooltip: 'Back',
           ),
         ),
         body: RefreshIndicator(

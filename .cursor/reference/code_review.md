@@ -6,11 +6,12 @@
 
   📋 Analysis Scope
 
-  Primary Focus Areas:
-  1. Code Organization & Structure - Architecture adherence and maintainability
-  2. Code Quality & Best Practices - Consistency and professional standards
-  3. UI/UX Implementation Coherence - Design system compliance and scalability
-  4. Firebase Integration Standards - Cost optimization and performance
+Primary Focus Areas:
+1. Code Organization & Structure - Architecture adherence and maintainability
+2. Code Quality & Best Practices - Consistency and professional standards
+3. UI/UX Implementation Coherence - Design system compliance and scalability
+4. Firebase Integration Standards - Cost optimization and performance
+5. Built-in vs Custom Solutions - Preference for scalable, maintained solutions over custom implementations
 
   🎯 Reference Documents Analysis
 
@@ -21,15 +22,17 @@
 
   🔬 Detailed Analysis Requirements
 
-  1. Architectural Coherence
+1. Architectural Coherence
 
-  - Feature Structure Consistency: Verify all features follow the same domain-driven
-  structure (/models/, /services/, /exceptions/, /screens/, /widgets/)
-  - Service Layer Patterns: Check for consistent Result pattern implementation
-  (Success/Failure types)
-  - Exception Handling: Validate uniform exception hierarchies and error messaging
-  - Core Infrastructure Usage: Ensure proper utilization of lib/core/ directory
-  components
+- Feature Structure Consistency: Verify all features follow the same domain-driven
+structure (/models/, /services/, /exceptions/, /screens/, /widgets/)
+- Service Layer Patterns: Check for consistent Result pattern implementation
+(Success/Failure types)
+- Exception Handling: Validate uniform exception hierarchies and error messaging
+- Core Infrastructure Usage: Ensure proper utilization of lib/core/ directory
+components
+- Built-in Solution Preference: Verify usage of Flutter/Dart built-ins, established packages,
+and platform-native features over custom implementations where applicable
 
   2. Firebase Implementation Compliance
 
@@ -58,12 +61,14 @@
   - User Persona Support: Ensure features support all defined personas
   - Premium Feature Gating: Validate free vs. premium feature boundaries
 
-  5. Developer Experience & Scalability
+5. Developer Experience & Scalability
 
-  - Import Pattern Consistency: Check for uniform import conventions across features
-  - Documentation Coverage: Verify comprehensive code comments and documentation
-  - Testing Structure: Validate test organization and coverage patterns
-  - State Management: Ensure consistent Riverpod usage and patterns
+- Import Pattern Consistency: Check for uniform import conventions across features
+- Documentation Coverage: Verify comprehensive code comments and documentation
+- Testing Structure: Validate test organization and coverage patterns
+- State Management: Ensure consistent Riverpod usage and patterns
+- Solution Scalability: Verify preference for battle-tested, maintained solutions over
+custom implementations to reduce maintenance burden and improve reliability
 
   📊 Required Report Format
 
@@ -109,12 +114,14 @@
 
   🎯 Success Criteria
 
-  The analysis should identify:
-  - ✅ All architectural pattern deviations that could confuse new developers
-  - ✅ Firebase usage patterns that could cause cost scaling issues
-  - ✅ UI/UX implementation gaps that break design system coherence
-  - ✅ Feature implementations that deviate from PRD specifications
-  - ✅ Code quality issues that impact maintainability and team velocity
+The analysis should identify:
+- ✅ All architectural pattern deviations that could confuse new developers
+- ✅ Firebase usage patterns that could cause cost scaling issues
+- ✅ UI/UX implementation gaps that break design system coherence
+- ✅ Feature implementations that deviate from PRD specifications
+- ✅ Code quality issues that impact maintainability and team velocity
+- ✅ Custom implementations that should be replaced with built-in or established solutions
+- ✅ Opportunities to leverage Flutter/Dart ecosystem and platform-native capabilities
 
   Prioritization Logic:
   1. Critical: Issues that prevent scaling or cause major developer confusion

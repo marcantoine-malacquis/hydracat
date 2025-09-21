@@ -564,6 +564,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// Debug method to reset user state for testing onboarding flows
   /// Clears onboarding status and primary pet ID while keeping authentication
+  /// Also deletes all pet documents from the user's pets collection
   /// Only intended for development/testing purposes
   Future<void> debugResetUserState() async {
     final currentUser = _authService.currentUser;
@@ -572,7 +573,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
 
     try {
-      // Reset user state to fresh user (no onboarding, no primary pet)
+      // First, delete all pet documents from the user's pets collection
+      await _deleteAllUserPets(currentUser.id);
+
+      // Then reset user state to fresh user (no onboarding, no primary pet)
       await updateOnboardingStatus(
         hasCompletedOnboarding: false,
         primaryPetId: '', // Clear primary pet ID
@@ -585,6 +589,50 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
     } catch (e) {
       throw Exception('Failed to reset user state: $e');
+    }
+  }
+
+  /// Helper method to delete all pet documents for a user (debug only)
+  Future<void> _deleteAllUserPets(String userId) async {
+    final firestore = FirebaseFirestore.instance;
+    final petsCollection = firestore
+        .collection('users')
+        .doc(userId)
+        .collection('pets');
+
+    try {
+      // Get all pet documents
+      final snapshot = await petsCollection.get();
+
+      if (snapshot.docs.isNotEmpty) {
+        if (kDebugMode) {
+          debugPrint(
+            'Debug: Deleting ${snapshot.docs.length} pet document(s) '
+            'for user $userId',
+          );
+        }
+
+        // Delete all pet documents in batch
+        final batch = firestore.batch();
+        for (final doc in snapshot.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+
+        if (kDebugMode) {
+          debugPrint('Debug: Successfully deleted all pet documents');
+        }
+      } else {
+        if (kDebugMode) {
+          debugPrint('Debug: No pet documents found to delete');
+        }
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('Debug: Error deleting pet documents: $e');
+      }
+      // Don't throw here - continue with user state reset even if pet
+      // deletion fails
     }
   }
 }

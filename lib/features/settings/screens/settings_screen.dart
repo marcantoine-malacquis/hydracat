@@ -18,11 +18,11 @@ class SettingsScreen extends ConsumerWidget {
         title: const Text('Settings'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         leading: IconButton(
-          onPressed: () => context.go('/profile'),
+          onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back_ios),
           iconSize: 20,
           color: AppColors.textSecondary,
-          tooltip: 'Back to Profile',
+          tooltip: 'Back',
         ),
       ),
       body: ListView(
@@ -57,9 +57,8 @@ class SettingsScreen extends ConsumerWidget {
                     final isDark = currentTheme == ThemeMode.dark;
 
                     return GestureDetector(
-                      onTap: () => ref
-                          .read(themeProvider.notifier)
-                          .toggleTheme(),
+                      onTap: () =>
+                          ref.read(themeProvider.notifier).toggleTheme(),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.sm,
@@ -67,9 +66,7 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                         decoration: BoxDecoration(
                           color: isDark
-                              ? Theme.of(context)
-                                  .colorScheme
-                                  .primaryContainer
+                              ? Theme.of(context).colorScheme.primaryContainer
                               : Theme.of(context).colorScheme.secondary,
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -80,24 +77,20 @@ class SettingsScreen extends ConsumerWidget {
                               isDark ? Icons.dark_mode : Icons.light_mode,
                               size: 16,
                               color: isDark
-                                  ? Theme.of(context)
-                                      .colorScheme
-                                      .onPrimaryContainer
-                                  : Theme.of(context)
-                                      .colorScheme
-                                      .onSecondary,
+                                  ? Theme.of(
+                                      context,
+                                    ).colorScheme.onPrimaryContainer
+                                  : Theme.of(context).colorScheme.onSecondary,
                             ),
                             const SizedBox(width: AppSpacing.xs),
                             Text(
                               isDark ? 'Dark' : 'Light',
                               style: AppTextStyles.caption.copyWith(
                                 color: isDark
-                                    ? Theme.of(context)
-                                        .colorScheme
-                                        .onPrimaryContainer
-                                    : Theme.of(context)
-                                        .colorScheme
-                                        .onSecondary,
+                                    ? Theme.of(
+                                        context,
+                                      ).colorScheme.onPrimaryContainer
+                                    : Theme.of(context).colorScheme.onSecondary,
                               ),
                             ),
                           ],

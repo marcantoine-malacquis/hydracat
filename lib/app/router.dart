@@ -58,13 +58,11 @@ final routerRefreshStreamProvider = Provider<GoRouterRefreshStream>((ref) {
 
 /// Provider for the app router with authentication logic
 final appRouterProvider = Provider<GoRouter>((ref) {
-  // Only refresh router when authentication status toggles,
-  // not for transient states like loading or error
-  ref
-    ..watch(isAuthenticatedProvider)
-    // Watch onboarding state changes for redirect decisions
-    ..watch(hasCompletedOnboardingProvider)
-    ..watch(hasSkippedOnboardingProvider);
+  // Watch auth state and onboarding status to trigger router rebuilds
+  final authState = ref.watch(authProvider);
+  final hasCompletedOnboarding = ref.watch(hasCompletedOnboardingProvider);
+  final hasSkippedOnboarding = ref.watch(hasSkippedOnboardingProvider);
+  final currentUser = ref.watch(currentUserProvider);
 
   // Get the refresh stream
   final refreshStream = ref.watch(routerRefreshStreamProvider);
@@ -74,19 +72,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     // Ensure redirects are re-evaluated when auth state changes
     refreshListenable: refreshStream,
     redirect: (context, state) async {
-      // Read auth state and onboarding status
-      final authState = ref.read(authProvider);
-      final hasCompletedOnboarding = ref.read(hasCompletedOnboardingProvider);
-      final hasSkippedOnboarding = ref.read(hasSkippedOnboardingProvider);
+      // Use the watched values instead of ref.read() to avoid timing conflicts
 
       // Don't redirect while auth is still loading/initializing
       if (authState is AuthStateLoading) {
+        if (kDebugMode) {
+          debugPrint('[Router] Auth still loading, no redirect');
+        }
         return null;
       }
 
       final isAuthenticated = authState is AuthStateAuthenticated;
       final currentLocation = state.matchedLocation;
 
+      if (kDebugMode) {
+        debugPrint(
+          '[Router] Evaluating redirect: '
+          'location=$currentLocation, '
+          'isAuth=$isAuthenticated, '
+          'hasOnboarding=$hasCompletedOnboarding, '
+          'hasSkipped=$hasSkippedOnboarding',
+        );
+      }
 
       // Define page types for cleaner logic
       final isOnAuthPage = [
@@ -101,14 +108,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // 1. Authentication check - redirect unauthenticated users to login
       if (!isAuthenticated && !isOnAuthPage && !isOnVerificationPage) {
+        if (kDebugMode) {
+          debugPrint('[Router] Redirecting unauthenticated user to login');
+        }
         return '/login';
       }
 
       // 2. For authenticated users, check email verification
       if (isAuthenticated && !isOnVerificationPage) {
-        final authService = ref.read(authServiceProvider);
-        final currentUser = authService.currentUser;
-
         if (currentUser != null && !currentUser.emailVerified) {
           // User is authenticated but email not verified
           if (!isOnAuthPage) {
@@ -119,14 +126,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // 3. Onboarding flow logic for authenticated & verified users
       if (isAuthenticated) {
-        final authService = ref.read(authServiceProvider);
-        final currentUser = authService.currentUser;
         final isEmailVerified = currentUser?.emailVerified ?? false;
 
         // Only apply onboarding logic if email is verified
         if (isEmailVerified) {
           // Users who completed onboarding should not be in onboarding flow
           if (hasCompletedOnboarding && isOnOnboardingPage) {
+            if (kDebugMode) {
+              debugPrint(
+                '[Router] Redirecting completed user away from onboarding '
+                'to home',
+              );
+            }
             return '/';
           }
 
@@ -136,6 +147,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               !hasSkippedOnboarding &&
               !isOnOnboardingPage &&
               !isOnAuthPage) {
+            if (kDebugMode) {
+              debugPrint('[Router] Redirecting fresh user to onboarding');
+            }
             // Resume onboarding from appropriate step
             // For now, start from welcome - could be enhanced to resume
             // from last step
@@ -154,6 +168,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       // No redirect needed
+      if (kDebugMode) {
+        debugPrint('[Router] No redirect needed, staying at $currentLocation');
+      }
       return null;
     },
     routes: [
@@ -176,6 +193,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) => const NoTransitionPage(
               child: ProfileScreen(),
             ),
+            routes: [
+              GoRoute(
+                path: 'settings',
+                name: 'profile-settings',
+                pageBuilder: (context, state) =>
+                    AppPageTransitions.bidirectionalSlide(
+                      child: const SettingsScreen(),
+                      key: state.pageKey,
+                    ),
+              ),
+              GoRoute(
+                path: 'ckd',
+                name: 'profile-ckd',
+                pageBuilder: (context, state) =>
+                    AppPageTransitions.bidirectionalSlide(
+                      child: const CkdProfileScreen(),
+                      key: state.pageKey,
+                    ),
+              ),
+            ],
           ),
           GoRoute(
             path: '/learn',
@@ -213,16 +250,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
         ],
-      ),
-      GoRoute(
-        path: '/settings',
-        name: 'settings',
-        builder: (context, state) => const SettingsScreen(),
-      ),
-      GoRoute(
-        path: '/profile/ckd',
-        name: 'profile-ckd',
-        builder: (context, state) => const CkdProfileScreen(),
       ),
       GoRoute(
         path: '/login',
@@ -263,7 +290,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: 'welcome',
             name: 'onboarding-welcome',
             pageBuilder: (context, state) =>
-                AppPageTransitions.onboardingForward(
+                AppPageTransitions.bidirectionalSlide(
                   child: const OnboardingWelcomeScreen(),
                   key: state.pageKey,
                 ),
@@ -272,7 +299,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: 'persona',
             name: 'onboarding-persona',
             pageBuilder: (context, state) =>
-                AppPageTransitions.onboardingForward(
+                AppPageTransitions.bidirectionalSlide(
                   child: const UserPersonaScreen(),
                   key: state.pageKey,
                 ),
@@ -281,7 +308,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: 'basics',
             name: 'onboarding-basics',
             pageBuilder: (context, state) =>
-                AppPageTransitions.onboardingForward(
+                AppPageTransitions.bidirectionalSlide(
                   child: const PetBasicsScreen(),
                   key: state.pageKey,
                 ),
@@ -290,7 +317,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: 'medical',
             name: 'onboarding-medical',
             pageBuilder: (context, state) =>
-                AppPageTransitions.onboardingForward(
+                AppPageTransitions.bidirectionalSlide(
                   child: const CkdMedicalInfoScreen(),
                   key: state.pageKey,
                 ),
@@ -299,7 +326,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: 'treatment',
             name: 'onboarding-treatment',
             pageBuilder: (context, state) =>
-                AppPageTransitions.onboardingForward(
+                AppPageTransitions.bidirectionalSlide(
                   child: const TreatmentSetupScreen(),
                   key: state.pageKey,
                 ),
@@ -308,7 +335,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: 'completion',
             name: 'onboarding-completion',
             pageBuilder: (context, state) =>
-                AppPageTransitions.onboardingForward(
+                AppPageTransitions.bidirectionalSlide(
                   child: const OnboardingCompletionScreen(),
                   key: state.pageKey,
                 ),

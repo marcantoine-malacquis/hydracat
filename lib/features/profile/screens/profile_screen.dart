@@ -40,7 +40,7 @@ class ProfileScreen extends ConsumerWidget {
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           actions: [
             IconButton(
-              onPressed: () => context.go('/settings'),
+              onPressed: () => context.go('/profile/settings'),
               icon: const Icon(Icons.settings),
               tooltip: 'Settings',
             ),
@@ -74,17 +74,16 @@ class ProfileScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-          // Pet information section
-          _buildPetInfoCard(context, ref),
+            // Pet information section
+            _buildPetInfoCard(context, ref),
 
-          const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.xl),
 
-          // Profile sections
-          _buildProfileSections(context, ref),
-
-        ],
+            // Profile sections
+            _buildProfileSections(context, ref),
+          ],
+        ),
       ),
-    ),
     );
   }
 
@@ -326,10 +325,9 @@ class ProfileScreen extends ConsumerWidget {
                 width: 20,
                 height: 20,
                 decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.1),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -338,10 +336,9 @@ class ProfileScreen extends ConsumerWidget {
                 width: 120,
                 height: 16,
                 decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.1),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -379,10 +376,9 @@ class ProfileScreen extends ConsumerWidget {
             width: 80,
             height: 12,
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.1),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -391,10 +387,9 @@ class ProfileScreen extends ConsumerWidget {
             width: 60,
             height: 16,
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.1),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -490,10 +485,9 @@ class ProfileScreen extends ConsumerWidget {
                     return Text(
                       currentUser?.email ?? 'No email',
                       style: AppTextStyles.caption.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onPrimary
-                            .withValues(alpha: 0.8),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onPrimary.withValues(alpha: 0.8),
                       ),
                     );
                   },
