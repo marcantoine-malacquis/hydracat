@@ -2,7 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/features/profile/exceptions/profile_exceptions.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
+import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/features/profile/services/pet_service.dart';
+import 'package:hydracat/features/profile/services/schedule_service.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 
 /// Cache status enum to track data freshness
@@ -26,8 +28,10 @@ class ProfileState {
   /// Creates a [ProfileState] instance
   const ProfileState({
     this.primaryPet,
+    this.fluidSchedule,
     this.isLoading = false,
     this.isRefreshing = false,
+    this.scheduleIsLoading = false,
     this.error,
     this.lastUpdated,
     this.cacheStatus = CacheStatus.fresh,
@@ -36,8 +40,10 @@ class ProfileState {
   /// Creates initial empty state
   const ProfileState.initial()
     : primaryPet = null,
+      fluidSchedule = null,
       isLoading = false,
       isRefreshing = false,
+      scheduleIsLoading = false,
       error = null,
       lastUpdated = null,
       cacheStatus = CacheStatus.empty;
@@ -45,8 +51,10 @@ class ProfileState {
   /// Creates loading state
   const ProfileState.loading()
     : primaryPet = null,
+      fluidSchedule = null,
       isLoading = true,
       isRefreshing = false,
+      scheduleIsLoading = false,
       error = null,
       lastUpdated = null,
       cacheStatus = CacheStatus.empty;
@@ -54,11 +62,17 @@ class ProfileState {
   /// Current primary pet profile
   final CatProfile? primaryPet;
 
+  /// Current cached fluid schedule
+  final Schedule? fluidSchedule;
+
   /// Whether a profile operation is in progress
   final bool isLoading;
 
   /// Whether a manual refresh is in progress
   final bool isRefreshing;
+
+  /// Whether a schedule operation is in progress
+  final bool scheduleIsLoading;
 
   /// Current error if any
   final ProfileException? error;
@@ -84,19 +98,32 @@ class ProfileState {
   /// Pet's treatment approach if available
   String? get treatmentApproach => primaryPet?.treatmentApproach.displayName;
 
+  /// Whether user has a fluid schedule
+  bool get hasFluidSchedule => fluidSchedule != null;
+
+  /// Fluid schedule frequency if available
+  String? get scheduleFrequency => fluidSchedule?.frequency.displayName;
+
+  /// Fluid schedule volume if available
+  double? get scheduleVolume => fluidSchedule?.targetVolume;
+
   /// Creates a copy of this [ProfileState] with the given fields replaced
   ProfileState copyWith({
     CatProfile? primaryPet,
+    Schedule? fluidSchedule,
     bool? isLoading,
     bool? isRefreshing,
+    bool? scheduleIsLoading,
     ProfileException? error,
     DateTime? lastUpdated,
     CacheStatus? cacheStatus,
   }) {
     return ProfileState(
       primaryPet: primaryPet ?? this.primaryPet,
+      fluidSchedule: fluidSchedule ?? this.fluidSchedule,
       isLoading: isLoading ?? this.isLoading,
       isRefreshing: isRefreshing ?? this.isRefreshing,
+      scheduleIsLoading: scheduleIsLoading ?? this.scheduleIsLoading,
       error: error ?? this.error,
       lastUpdated: lastUpdated ?? this.lastUpdated,
       cacheStatus: cacheStatus ?? this.cacheStatus,
@@ -119,8 +146,10 @@ class ProfileState {
 
     return other is ProfileState &&
         other.primaryPet == primaryPet &&
+        other.fluidSchedule == fluidSchedule &&
         other.isLoading == isLoading &&
         other.isRefreshing == isRefreshing &&
+        other.scheduleIsLoading == scheduleIsLoading &&
         other.error == error &&
         other.lastUpdated == lastUpdated &&
         other.cacheStatus == cacheStatus;
@@ -130,8 +159,10 @@ class ProfileState {
   int get hashCode {
     return Object.hash(
       primaryPet,
+      fluidSchedule,
       isLoading,
       isRefreshing,
+      scheduleIsLoading,
       error,
       lastUpdated,
       cacheStatus,
@@ -142,8 +173,10 @@ class ProfileState {
   String toString() {
     return 'ProfileState('
         'primaryPet: $primaryPet, '
+        'fluidSchedule: $fluidSchedule, '
         'isLoading: $isLoading, '
         'isRefreshing: $isRefreshing, '
+        'scheduleIsLoading: $scheduleIsLoading, '
         'error: $error, '
         'lastUpdated: $lastUpdated, '
         'cacheStatus: $cacheStatus'
@@ -154,10 +187,11 @@ class ProfileState {
 /// Notifier class for managing profile state
 class ProfileNotifier extends StateNotifier<ProfileState> {
   /// Creates a [ProfileNotifier] with the provided dependencies
-  ProfileNotifier(this._petService, this._ref)
+  ProfileNotifier(this._petService, this._scheduleService, this._ref)
     : super(const ProfileState.initial());
 
   final PetService _petService;
+  final ScheduleService _scheduleService;
   final Ref _ref;
 
   /// Load the primary pet profile
@@ -314,6 +348,163 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     _petService.clearCache();
     state = const ProfileState.initial();
   }
+
+  /// Clear only schedule cache
+  void clearScheduleCache() {
+    if (state.fluidSchedule != null) {
+      state = state.copyWith();
+    }
+  }
+
+  /// Load the fluid schedule for the primary pet
+  Future<bool> loadFluidSchedule() async {
+    final primaryPet = state.primaryPet;
+    if (primaryPet == null) {
+      state = state.copyWith(scheduleIsLoading: false);
+      return false;
+    }
+
+    final currentUser = _ref.read(currentUserProvider);
+    if (currentUser == null) {
+      state = state.copyWith(scheduleIsLoading: false);
+      return false;
+    }
+
+    state = state.copyWith(scheduleIsLoading: true);
+
+    try {
+      final schedule = await _scheduleService.getFluidSchedule(
+        userId: currentUser.id,
+        petId: primaryPet.id,
+      );
+
+      state = state.copyWith(
+        fluidSchedule: schedule,
+        scheduleIsLoading: false,
+        lastUpdated: DateTime.now(),
+      );
+
+      return schedule != null;
+    } on FormatException catch (e) {
+      // Handle serialization/parsing errors specifically
+      state = state.copyWith(
+        scheduleIsLoading: false,
+        error: const PetServiceException(
+          'Schedule data format error. '
+          'Please contact support if this persists.',
+        ),
+      );
+      if (kDebugMode) {
+        debugPrint('[ProfileNotifier] Schedule serialization error: $e');
+      }
+      return false;
+    } on Exception catch (e) {
+      state = state.copyWith(
+        scheduleIsLoading: false,
+        error: PetServiceException('Failed to load fluid schedule: $e'),
+      );
+      if (kDebugMode) {
+        debugPrint('[ProfileNotifier] Error loading fluid schedule: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Manually refresh the fluid schedule from Firestore
+  Future<bool> refreshFluidSchedule() async {
+    final primaryPet = state.primaryPet;
+    if (primaryPet == null) return false;
+
+    final currentUser = _ref.read(currentUserProvider);
+    if (currentUser == null) return false;
+
+    state = state.copyWith(scheduleIsLoading: true);
+
+    try {
+      final schedule = await _scheduleService.getFluidSchedule(
+        userId: currentUser.id,
+        petId: primaryPet.id,
+      );
+
+      state = state.copyWith(
+        fluidSchedule: schedule,
+        scheduleIsLoading: false,
+        lastUpdated: DateTime.now(),
+      );
+
+      return schedule != null;
+    } on FormatException catch (e) {
+      // Handle serialization/parsing errors specifically
+      state = state.copyWith(
+        scheduleIsLoading: false,
+        error: const PetServiceException(
+          'Schedule data format error. '
+          'Please contact support if this persists.',
+        ),
+      );
+      if (kDebugMode) {
+        debugPrint(
+          '[ProfileNotifier] Schedule serialization error on refresh: $e',
+        );
+      }
+      return false;
+    } on Exception catch (e) {
+      // Don't clear existing schedule data if refresh fails for other reasons
+      state = state.copyWith(
+        scheduleIsLoading: false,
+        error: PetServiceException('Failed to refresh fluid schedule: $e'),
+      );
+      if (kDebugMode) {
+        debugPrint('[ProfileNotifier] Error refreshing fluid schedule: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Get the fluid schedule for the primary pet (deprecated - use cached data)
+  @Deprecated('Use cached schedule data from state instead')
+  Future<Schedule?> getFluidSchedule() async {
+    await loadFluidSchedule();
+    return state.fluidSchedule;
+  }
+
+  /// Update a fluid schedule
+  Future<bool> updateFluidSchedule(Schedule schedule) async {
+    final primaryPet = state.primaryPet;
+    if (primaryPet == null) return false;
+
+    final currentUser = _ref.read(currentUserProvider);
+    if (currentUser == null) return false;
+
+    state = state.copyWith(scheduleIsLoading: true);
+
+    try {
+      await _scheduleService.updateSchedule(
+        userId: currentUser.id,
+        petId: primaryPet.id,
+        scheduleId: schedule.id,
+        updates: schedule.toJson(),
+      );
+
+      // Update the cache with the new schedule data
+      state = state.copyWith(
+        fluidSchedule: schedule,
+        scheduleIsLoading: false,
+        lastUpdated: DateTime.now(),
+      );
+
+      return true;
+    } on Exception catch (e) {
+      state = state.copyWith(
+        scheduleIsLoading: false,
+        error: PetServiceException('Failed to update fluid schedule: $e'),
+      );
+      if (kDebugMode) {
+        debugPrint('[ProfileNotifier] Error updating fluid schedule: $e');
+      }
+      return false;
+    }
+  }
 }
 
 /// Provider for the PetService instance
@@ -321,12 +512,18 @@ final petServiceProvider = Provider<PetService>((ref) {
   return PetService();
 });
 
+/// Provider for the ScheduleService instance
+final scheduleServiceProvider = Provider<ScheduleService>((ref) {
+  return const ScheduleService();
+});
+
 /// Provider for the profile state notifier
 final profileProvider = StateNotifierProvider<ProfileNotifier, ProfileState>((
   ref,
 ) {
-  final service = ref.read(petServiceProvider);
-  return ProfileNotifier(service, ref);
+  final petService = ref.read(petServiceProvider);
+  final scheduleService = ref.read(scheduleServiceProvider);
+  return ProfileNotifier(petService, scheduleService, ref);
 });
 
 /// Optimized provider to get the primary pet
@@ -401,4 +598,29 @@ final needsProfileCompletionProvider = Provider<bool>((ref) {
 
   // User needs to complete profile if authenticated but no onboarding/pet
   return isAuthenticated && (!hasCompletedOnboarding || !hasPet);
+});
+
+/// Optimized provider to get the cached fluid schedule
+final fluidScheduleProvider = Provider<Schedule?>((ref) {
+  return ref.watch(profileProvider.select((state) => state.fluidSchedule));
+});
+
+/// Optimized provider to check if the pet has a fluid schedule
+final hasFluidScheduleProvider = Provider<bool>((ref) {
+  return ref.watch(profileProvider.select((state) => state.hasFluidSchedule));
+});
+
+/// Optimized provider to check if schedule is loading
+final scheduleIsLoadingProvider = Provider<bool>((ref) {
+  return ref.watch(profileProvider.select((state) => state.scheduleIsLoading));
+});
+
+/// Optimized provider to get schedule frequency
+final scheduleFrequencyProvider = Provider<String?>((ref) {
+  return ref.watch(profileProvider.select((state) => state.scheduleFrequency));
+});
+
+/// Optimized provider to get schedule volume
+final scheduleVolumeProvider = Provider<double?>((ref) {
+  return ref.watch(profileProvider.select((state) => state.scheduleVolume));
 });

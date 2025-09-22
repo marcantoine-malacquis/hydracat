@@ -19,6 +19,7 @@ import 'package:hydracat/features/onboarding/screens/treatment_setup_screen.dart
 import 'package:hydracat/features/onboarding/screens/user_persona_screen.dart';
 import 'package:hydracat/features/onboarding/screens/welcome_screen.dart';
 import 'package:hydracat/features/profile/screens/ckd_profile_screen.dart';
+import 'package:hydracat/features/profile/screens/fluid_schedule_screen.dart';
 import 'package:hydracat/features/profile/screens/profile_screen.dart';
 import 'package:hydracat/features/progress/screens/progress_screen.dart';
 import 'package:hydracat/features/settings/screens/settings_screen.dart';
@@ -209,6 +210,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 pageBuilder: (context, state) =>
                     AppPageTransitions.bidirectionalSlide(
                       child: const CkdProfileScreen(),
+                      key: state.pageKey,
+                    ),
+              ),
+              GoRoute(
+                path: 'fluid',
+                name: 'profile-fluid',
+                pageBuilder: (context, state) =>
+                    AppPageTransitions.bidirectionalSlide(
+                      child: const FluidScheduleScreen(),
                       key: state.pageKey,
                     ),
               ),

@@ -542,8 +542,19 @@ class ProfileScreen extends ConsumerWidget {
           onTap: () => context.go('/profile/ckd'),
         ),
 
+        // Fluid Schedule section (only for personas that include fluid therapy)
+        if (primaryPet?.treatmentApproach.includesFluidTherapy ?? false) ...[
+          const SizedBox(height: AppSpacing.sm),
+          ProfileSectionItem(
+            title: "$petName's Fluid Schedule",
+            subtitle: 'Fluid therapy settings and reminders',
+            icon: Icons.water_drop,
+            onTap: () => context.go('/profile/fluid'),
+          ),
+        ],
+
         // Future sections will be added here
-        // Example: My Schedule, Treatment Plan, etc.
+        // Example: Treatment Plan, etc.
       ],
     );
   }

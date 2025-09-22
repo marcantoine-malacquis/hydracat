@@ -5,7 +5,7 @@ description: Ask clarifying questions
 alwaysApply: false
 ---
 
-After analysing the situation and looking at the relevant code, please ultrathink to come up with the most appropriate plan to achieve this. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself.
+After analysing the situation and looking at the relevant code, please ultrathink to come up with the most appropriate plan to fix this issue. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself.
 
 Please ultrathink to come up with the most appropriate plan to achieve this. After analysing the situation and looking at the relevant code, please ask me any question you would need to feel confident about solving the issues. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself.
 
@@ -16,38 +16,30 @@ Please let me know if this makes sense or contradict itself, the prd, the CRUD r
 
 Please update and add only the important informations to remember about what we implemented in this step for future reference in 
 
+Please follow Firebase and Flutter best practices and use built-in solutions whenever possible instead of more complex custom solutions.
+
 Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself.
 
 
-1. a) from the completed pet profile (CatProfile.medicalInfo)
-b) show empty state for each element. for example "CKD IRIS stage: no information" or something like that. For each of this items, there will be on the right an industry standard small "pen" button to edit each information manually whithout going though the onboarding. This will be useful for example, if they didn't provide just one information, they will still be able to see all the other ones and fill in manually the last one whenever they want/can.
-c) Rely entirely on the existing primaryPetProvider cache. They thing is that we will need to update the stored data when they press a "Save" button at the bottom of the screen that appears only if they edited at least one information. would this be the industry standard and best way to do this ?
-2. a) nested in the profile route
-b) only through the profile screen navigation
-c) standard back button behavior, no navigation bar, a "Save" button at the bottom of the screen that appears only if they edited at least one information.
-3. a) let's try an elegant simplistic Material 3 ListTile that suits my UI guidelines
-b) let's use the same layout structure as profile_screen.dart
-c) in a separate section with other profile-related items I plan to add later
-4. a) show empty state for each element. for example "CKD IRIS stage: no information" or something like that. Please do something similar to industry standards.
-b) empty/missing values be displayed as "no information" or something like that, that is industry standard
-c) no need for visual indicators for data freshness for now
-5. a) show "no information" or something like that for every element
-b) no need for any validation or warnings if medical data seems outdated. I don't need that
-c) wrap to multiple lines. thanks this is a very good question I didn't think about.
-6. a) yes,create a reusable component architecture. for more context, the other ones will be for example "My Schedule" to modify the planned schedule but we will implement them later on.
-b) it should be editable already now with an industry standard small "pen" button to edit each information manually.
-c) the static cached approach is sufficient now
-Please let me know if this makes sense or contradict itself, the prd, the CRUD rules or existing code. Coherence is extremely important. Let's me know if you need any more clarifications to feel confident in proceeding with the implementation. 
-
-1. yes, same validation logic as onboarding 
-2. show an error message and keep the local edits
-3. ProfileSectionItem
-4. Yes, let's use the exact same edit types as onboarding so we also ensure the data is in a consistent style 
+1. Please refer to the firestore schema (/Users/marc-antoinemalacquis/Development/projects/hydracat/.cursor/rules/firestore_schema.md). a) Indeed all the schedule informations should be stored inside a dedicated schedule subcollection as you can see in the schema. b) just as it is the case for the ckd profile, when pressing on the fluid schedule card in Profile, the user will be redirected to a new fluid schedule screen where each field will show the information inputed during onboarding (or show "no information" for each field that was not inputed). Each of this field, just like the ckd profile screen, will have a small industry standard pen icon to edit the associated information.
+2. a) please refer to the firestore schema (.cursor/rules/firestore_schema.md) and let me know if something is unclear or contradict itself. There should be a dedicated schedule subcollection inside of pet collection if I am not mistaken. b) no
+3. a) yes, follow the example of ckd profile
+b) editing should happen on the same screen thanks to the small edit button (pen incon) exactly like the ckd profile screen
+4. a) yes, right after the CKD profile card
+b) yes, similar UI elements and design patterns for coherence which is very important
+5. a) please tell me what would be the most appropriate, simple and industry-standard solution. b) follow a similar synchronisation pattern as the ckd profile information if this makes sense
+6. a) If a user initially selects "medication only" but later changes to include fluid therapy, the fluid therapy card will now appear in the Profile screen. We will handle this specific case another time. I am not sure yet, but I think the user will be redirected to the onboarding screen to input the fluid schedule data when he will include fluid therapy. Don't worry about this for now.
+b) for now, the only way to add
+  fluid therapy data post-onboarding for users who initially chose "medication only" will be thanks to this new fluid schedule screen in Profile. Later on, as I said I might redirect the user to the onboarding fluid therapy screen but not for now so don't worry about that.
+Please let me know if this makes sense or contradict itself, the prd, the CRUD rules or existing code. Coherence is extremely important. Let's me know if you need any more clarifications to feel confident in proceeding with the implementation.  
 
 
-
-
-
-
-
-
+regarding the schedules subcollection, a) preferredLocation (FluidLocation enum)
+and needleGauge (string) should be stored in the schedule document as well. b) for now, let's assume there will only be one single reminder time for fluids.
+Perfect, let's Extend the existing ProfileProvider with schedule-specific
+   methods as you recommended.
+Regarding the Questions for Final Clarification:
+1. let's assume there will only be one single reminder time for fluids for now. so let's Create one schedule document for the fluid therapy with additional fields for preferredLocation and needleGauge
+2. There will be only one fluid schedule for the pet for now.
+3. At the end of the onboarding like all the other data, there is a "Finish" button on the completion screen. Please make it so additionally it also save the schedule document as well as the rest of the information like the basic pet profile.
+According to the CRUD rules, should those schedule informations be locally stored since they are not going to be changed very regularily ?

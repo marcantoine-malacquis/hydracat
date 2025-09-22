@@ -405,6 +405,28 @@ class FluidTherapyData {
     );
   }
 
+  /// Converts this [FluidTherapyData] to a schedule document
+  ///
+  /// Creates a fluid therapy schedule with a default reminder time of 9:00 AM
+  /// The schedule ID should be set when saving to Firestore
+  Map<String, dynamic> toSchedule({String? scheduleId}) {
+    final now = DateTime.now();
+    final defaultReminderTime = DateTime(now.year, now.month, now.day, 9);
+
+    return {
+      if (scheduleId != null) 'id': scheduleId,
+      'treatmentType': 'fluid',
+      'frequency': frequency.name,
+      'targetVolume': volumePerAdministration,
+      'preferredLocation': preferredLocation.name,
+      'needleGauge': needleGauge,
+      'reminderTimes': [defaultReminderTime.toIso8601String()],
+      'isActive': true,
+      'createdAt': now.toIso8601String(),
+      'updatedAt': now.toIso8601String(),
+    };
+  }
+
   @override
   String toString() {
     return 'FluidTherapyData('

@@ -13,6 +13,7 @@ import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_progress.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/profile/services/pet_service.dart';
+import 'package:hydracat/features/profile/services/schedule_service.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
 import 'package:hydracat/shared/services/secure_preferences_service.dart';
 
@@ -64,6 +65,9 @@ class OnboardingService {
 
   /// Pet service for profile operations
   final PetService _petService = PetService();
+
+  /// Schedule service for treatment schedule operations
+  final ScheduleService _scheduleService = const ScheduleService();
 
   /// Secure preferences for local storage
   final SecurePreferencesService _preferences = SecurePreferencesService();
@@ -408,6 +412,34 @@ class OnboardingService {
       }
 
       final petProfile = (petResult as PetSuccess).pet;
+
+      // Create fluid therapy schedule if applicable
+      if (_currentData!.fluidTherapy != null &&
+          _currentData!.treatmentApproach!.includesFluidTherapy) {
+        try {
+          final scheduleData = _currentData!.fluidTherapy!.toSchedule();
+          await _scheduleService.createSchedule(
+            userId: _currentData!.userId!,
+            petId: petProfile.id,
+            scheduleData: scheduleData,
+          );
+
+          if (kDebugMode) {
+            debugPrint(
+              '[OnboardingService] Successfully created fluid schedule '
+              'for pet ${petProfile.id}',
+            );
+          }
+        } on Exception catch (e) {
+          // Log the error but don't fail the entire onboarding
+          if (kDebugMode) {
+            debugPrint(
+              '[OnboardingService] Failed to create fluid schedule: $e',
+            );
+          }
+          // Could optionally track this as a non-fatal error
+        }
+      }
 
       // Mark onboarding as completed
       _currentProgress = _currentProgress!.markCompleted();
