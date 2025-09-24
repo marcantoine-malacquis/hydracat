@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/onboarding/widgets/rotating_wheel_picker.dart';
 import 'package:hydracat/features/onboarding/widgets/time_picker_group.dart';
@@ -29,7 +30,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
   final TextEditingController _dosageController = TextEditingController();
 
   int _currentStep = 1;
-  static const int _totalSteps = 3;
+  static const int _totalSteps = 4;
 
   // Form data
   String _medicationName = '';
@@ -93,25 +94,31 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MedicationStepPopup(
-      title: _getStepTitle(),
-      currentStep: _currentStep,
-      totalSteps: _totalSteps,
-      onPrevious: _currentStep > 1 ? _onPrevious : null,
-      onNext: _currentStep < _totalSteps ? _onNext : null,
-      onSave: _currentStep == _totalSteps ? _onSave : null,
-      isNextEnabled: _isCurrentStepValid(),
-      isLoading: _isLoading,
-      child: SizedBox(
-        height: 400,
-        child: PageView(
-          controller: _pageController,
-          physics: const NeverScrollableScrollPhysics(),
-          children: [
-            _buildNameAndUnitStep(),
-            _buildFrequencyStep(),
-            _buildReminderTimesStep(),
-          ],
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Center(
+        child: MedicationStepPopup(
+          title: _getStepTitle(),
+          currentStep: _currentStep,
+          totalSteps: _totalSteps,
+          onPrevious: _currentStep > 1 ? _onPrevious : null,
+          onNext: _currentStep < _totalSteps ? _onNext : null,
+          onSave: _currentStep == _totalSteps ? _onSave : null,
+          isNextEnabled: _isCurrentStepValid(),
+          isLoading: _isLoading,
+          child: SizedBox(
+            height: 400,
+            child: PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                _buildNameAndUnitStep(),
+                _buildDosageStep(),
+                _buildFrequencyStep(),
+                _buildReminderTimesStep(),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -121,8 +128,9 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     return switch (_currentStep) {
       1 =>
         widget.isEditing ? 'Edit Medication Details' : 'Add Medication Details',
-      2 => 'Set Frequency',
-      3 => 'Set Reminder Times',
+      2 => 'Set Dosage',
+      3 => 'Set Frequency',
+      4 => 'Set Reminder Times',
       _ => 'Add Medication',
     };
   }
@@ -168,26 +176,6 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
             ),
             textCapitalization: TextCapitalization.words,
           ),
-          const SizedBox(height: 16),
-
-          // Dosage
-          TextFormField(
-            controller: _dosageController,
-            onChanged: (value) {
-              setState(() {
-                _dosage = value.trim();
-              });
-            },
-            decoration: InputDecoration(
-              labelText: 'Dosage',
-              hintText: '1, 1/2, 2.5',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              prefixIcon: const Icon(Icons.straighten),
-              helperText: 'Optional: amount per administration',
-            ),
-          ),
           const SizedBox(height: 24),
 
           // Unit selector
@@ -222,6 +210,61 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                   _selectedUnit = MedicationUnit.values[index];
                 });
               },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDosageStep() {
+    final theme = Theme.of(context);
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Dosage',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          Text(
+            'Enter the amount per administration. The unit you selected is shown to the right.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          TextFormField(
+            controller: _dosageController,
+            onChanged: (value) {
+              setState(() {
+                _dosage = value.trim();
+              });
+            },
+            decoration: InputDecoration(
+              labelText: 'Dosage *',
+              hintText: '1, 1/2, 2.5',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              prefixIcon: const Icon(Icons.straighten),
+              suffix: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Text(
+                  _selectedUnit.shortForm,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              helperText: 'Required: amount per administration',
             ),
           ),
         ],
@@ -364,8 +407,9 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
   bool _isCurrentStepValid() {
     return switch (_currentStep) {
       1 => _medicationName.isNotEmpty,
-      2 => true, // Frequency is always selected
-      3 => _reminderTimes.length == _selectedFrequency.administrationsPerDay,
+      2 => _dosage.trim().isNotEmpty,
+      3 => true,
+      4 => _reminderTimes.length == _selectedFrequency.administrationsPerDay,
       _ => false,
     };
   }

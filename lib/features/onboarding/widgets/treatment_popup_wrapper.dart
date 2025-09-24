@@ -241,6 +241,9 @@ class MedicationStepPopup extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Add slight top spacing so the step indicator sits lower
+          //under the header
+          const SizedBox(height: 12),
           // Step indicator
           _buildStepIndicator(context),
           const SizedBox(height: 24),

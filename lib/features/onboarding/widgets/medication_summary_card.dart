@@ -113,25 +113,11 @@ class MedicationSummaryCard extends StatelessWidget {
 
               const SizedBox(height: 8),
 
-              // Frequency and schedule details
-              Row(
-                children: [
-                  Icon(
-                    Icons.schedule,
-                    size: 16,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    medication.frequency.displayName,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-                    ),
-                  ),
-                  const Spacer(),
-
-                  // Reminder times count
-                  if (medication.reminderTimes.isNotEmpty) ...[
+              // Compact reminders row on a single line
+              if (medication.reminderTimes.isNotEmpty)
+                Row(
+                  children: [
+                    // Left: bell + count
                     Icon(
                       Icons.notifications_outlined,
                       size: 16,
@@ -147,16 +133,34 @@ class MedicationSummaryCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ],
-                ],
-              ),
 
-              // Reminder times chips (if not too many)
-              if (medication.reminderTimes.isNotEmpty &&
-                  medication.reminderTimes.length <= 3) ...[
-                const SizedBox(height: 12),
-                _buildReminderTimes(context),
-              ],
+                    const SizedBox(width: 12),
+
+                    // Right: reminder time chips (max 3, with +N)
+                    Flexible(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          reverse: true,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children:
+                                _buildCompactReminderChips(
+                                      context,
+                                      theme,
+                                    )
+                                    .expand(
+                                      (w) => [w, const SizedBox(width: 6)],
+                                    )
+                                    .toList()
+                                  ..removeLast(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -180,17 +184,7 @@ class MedicationSummaryCard extends StatelessWidget {
     };
   }
 
-  Widget _buildReminderTimes(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Wrap(
-      spacing: 6,
-      runSpacing: 4,
-      children: medication.reminderTimes
-          .map((time) => _buildTimeChip(context, time, theme))
-          .toList(),
-    );
-  }
+  // Removed old _buildReminderTimes; logic moved to _buildCompactReminderChips
 
   Widget _buildTimeChip(BuildContext context, DateTime time, ThemeData theme) {
     final timeOfDay = TimeOfDay.fromDateTime(time);
@@ -212,6 +206,15 @@ class MedicationSummaryCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildCompactReminderChips(
+    BuildContext context,
+    ThemeData theme,
+  ) {
+    return medication.reminderTimes
+        .map((t) => _buildTimeChip(context, t, theme))
+        .toList();
   }
 }
 

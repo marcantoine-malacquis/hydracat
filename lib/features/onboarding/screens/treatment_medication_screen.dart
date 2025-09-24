@@ -72,15 +72,6 @@ class _TreatmentMedicationScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Your Medications',
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          Text(
             'Add the medications your cat currently takes. '
             'This helps us create personalized reminders and tracking.',
             style: theme.textTheme.bodyLarge?.copyWith(
@@ -150,24 +141,26 @@ class _TreatmentMedicationScreenState
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Add medication button
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _onAddMedication,
-              icon: const Icon(Icons.add),
-              label: const Text('Add Medication'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                side: BorderSide(
-                  color: theme.colorScheme.primary,
-                  width: 2,
+          // Add medication button (large outlined) appears only
+          //when there are items
+          if (hasItems)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _onAddMedication,
+                icon: const Icon(Icons.add),
+                label: const Text('Add Medication'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: BorderSide(
+                    color: theme.colorScheme.primary,
+                    width: 2,
+                  ),
                 ),
               ),
             ),
-          ),
 
-          const SizedBox(height: 16),
+          if (hasItems) const SizedBox(height: 16),
 
           // Next button
           SizedBox(

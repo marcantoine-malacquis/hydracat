@@ -205,7 +205,18 @@ class MedicationData {
     final dosageText = dosage ?? '1';
     final unitText = _getUnitText(dosageText);
 
-    return '$dosageText $unitText ${frequency.displayName.toLowerCase()}';
+    return '$dosageText $unitText ${_summaryFrequencyText()}';
+  }
+
+  /// Frequency phrasing tailored for card summaries
+  String _summaryFrequencyText() {
+    return switch (frequency) {
+      TreatmentFrequency.onceDaily => 'once a day',
+      TreatmentFrequency.twiceDaily => 'twice per day',
+      TreatmentFrequency.thriceDaily => 'three times per day',
+      TreatmentFrequency.everyOtherDay => 'every other day',
+      TreatmentFrequency.every3Days => 'every 3 days',
+    };
   }
 
   /// Get the appropriate unit text based on dosage
