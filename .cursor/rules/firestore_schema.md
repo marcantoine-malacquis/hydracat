@@ -213,11 +213,20 @@ users/
                         │
                         └── {scheduleId}
                               ├── treatmentType: string      # "fluid", "medication"
-                              ├── medicationName: string     # only for medication schedules
-                              ├── frequency: string          # daily, alternate_days, twice_daily, etc.
-                              ├── targetVolume: number       # ml, for fluid schedules
-                              ├── targetDosage: number       # for medication schedules
-                              ├── reminderTimes: array       # array of time strings
+                              │
+                              # Fluid Schedule Fields
+                              ├── targetVolume: number       # ml, for fluid schedules only
+                              ├── preferredLocation: string  # for fluid schedules only
+                              ├── needleGauge: string       # for fluid schedules only
+                              │
+                              # Medication Schedule Fields
+                              ├── medicationName: string     # for medication schedules only
+                              ├── targetDosage: string       # "1", "1/2", "2.5" - preserve original format
+                              ├── medicationUnit: string     # "pills", "ml", "mg", "drops", "capsules", etc.
+                              │
+                              # Common Schedule Fields
+                              ├── frequency: string          # "onceDaily", "twiceDaily", "thriceDaily", etc.
+                              ├── reminderTimes: array       # ["08:00", "20:00"] - time strings in HH:MM format
                               ├── isActive: boolean
                               ├── createdAt: Timestamp
                               └── updatedAt: Timestamp

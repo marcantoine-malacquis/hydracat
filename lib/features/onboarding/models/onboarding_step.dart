@@ -77,7 +77,7 @@ enum OnboardingStepType {
     OnboardingStepType.userPersona => true, // First checkpoint
     OnboardingStepType.petBasics => true, // Second checkpoint
     OnboardingStepType.ckdMedicalInfo => false,
-    OnboardingStepType.treatmentSetup => false,
+    OnboardingStepType.treatmentSetup => true, // Saves medications
     OnboardingStepType.completion => true, // Final save
   };
 

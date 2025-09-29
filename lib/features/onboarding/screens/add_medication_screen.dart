@@ -233,7 +233,8 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
           const SizedBox(height: 8),
 
           Text(
-            'Enter the amount per administration. The unit you selected is shown to the right.',
+            'Enter the amount per administration. '
+            'The unit you selected is shown to the right.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),

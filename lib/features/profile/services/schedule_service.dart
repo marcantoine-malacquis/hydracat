@@ -238,6 +238,20 @@ class ScheduleService {
     return schedules.isNotEmpty ? schedules.first : null;
   }
 
+  /// Gets all active medication schedules for a pet
+  Future<List<Schedule>> getMedicationSchedules({
+    required String userId,
+    required String petId,
+  }) async {
+    final schedules = await getSchedules(
+      userId: userId,
+      petId: petId,
+      treatmentType: TreatmentType.medication,
+    );
+
+    return schedules;
+  }
+
   /// Deactivates a schedule (soft delete)
   Future<void> deactivateSchedule({
     required String userId,

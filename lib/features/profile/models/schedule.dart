@@ -41,6 +41,7 @@ class Schedule {
     this.needleGauge,
     this.medicationName,
     this.targetDosage,
+    this.medicationUnit,
   });
 
   /// Creates a [Schedule] from JSON data
@@ -67,9 +68,8 @@ class Schedule {
           : null,
       needleGauge: json['needleGauge'] as String?,
       medicationName: json['medicationName'] as String?,
-      targetDosage: json['targetDosage'] != null
-          ? (json['targetDosage'] as num).toDouble()
-          : null,
+      targetDosage: json['targetDosage'] as String?,
+      medicationUnit: json['medicationUnit'] as String?,
     );
   }
 
@@ -123,8 +123,11 @@ class Schedule {
   /// Medication name for medication schedules
   final String? medicationName;
 
-  /// Target dosage for medication schedules
-  final double? targetDosage;
+  /// Target dosage for medication schedules (as string to preserve format like "1/2", "2.5")
+  final String? targetDosage;
+
+  /// Medication unit for medication schedules
+  final String? medicationUnit;
 
   /// Whether this is a fluid therapy schedule
   bool get isFluidTherapy => treatmentType == TreatmentType.fluid;
@@ -138,11 +141,63 @@ class Schedule {
       return '${targetVolume!.toInt()}ml '
           '${frequency.displayName.toLowerCase()}';
     } else if (isMedication && medicationName != null) {
-      final dosageText = targetDosage != null ? '${targetDosage!}mg ' : '';
+      final dosageText = targetDosage != null && medicationUnit != null
+          ? '$targetDosage ${_getUnitText(targetDosage!, medicationUnit!)} '
+          : '';
       return '$dosageText$medicationName '
           '${frequency.displayName.toLowerCase()}';
     }
     return frequency.displayName;
+  }
+
+  /// Get the appropriate unit text based on dosage and unit
+  String _getUnitText(String dosageText, String unit) {
+    // Handle fractional dosages
+    if (dosageText.contains('/')) {
+      return _getShortForm(unit);
+    }
+
+    // Handle plural/singular forms
+    try {
+      final dosageNum = double.parse(dosageText);
+      if (dosageNum == 1.0) {
+        return _getShortForm(unit);
+      } else {
+        // For most units, just add 's' for plural
+        return switch (unit) {
+          'drops' => 'drops',
+          'pills' => 'pills',
+          'capsules' => 'capsules',
+          'ampoules' => 'ampoules',
+          'injections' => 'injections',
+          'portions' => 'portions',
+          'sachets' => 'sachets',
+          // Units that don't change in plural
+          _ => _getShortForm(unit),
+        };
+      }
+    } on FormatException {
+      return _getShortForm(unit);
+    }
+  }
+
+  /// Get short form of medication unit
+  String _getShortForm(String unit) {
+    return switch (unit) {
+      'ampoules' => 'ampoule',
+      'capsules' => 'capsule',
+      'drops' => 'drop',
+      'injections' => 'injection',
+      'micrograms' => 'mcg',
+      'milligrams' => 'mg',
+      'milliliters' => 'ml',
+      'pills' => 'pill',
+      'portions' => 'portion',
+      'sachets' => 'sachet',
+      'tablespoon' => 'tbsp',
+      'teaspoon' => 'tsp',
+      _ => unit,
+    };
   }
 
   /// Whether this schedule has valid data
@@ -157,14 +212,18 @@ class Schedule {
     } else if (treatmentType == TreatmentType.medication) {
       return medicationName != null &&
           medicationName!.isNotEmpty &&
+          targetDosage != null &&
+          targetDosage!.isNotEmpty &&
+          medicationUnit != null &&
+          medicationUnit!.isNotEmpty &&
           reminderTimes.isNotEmpty;
     }
     return false;
   }
 
-  /// Converts [Schedule] to JSON data
+  /// Converts [Schedule] to JSON data with treatment-type-specific fields
   Map<String, dynamic> toJson() {
-    return {
+    final baseFields = {
       'id': id,
       'treatmentType': treatmentType.name,
       'frequency': frequency.name,
@@ -172,12 +231,27 @@ class Schedule {
       'isActive': isActive,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
-      'targetVolume': targetVolume,
-      'preferredLocation': preferredLocation?.name,
-      'needleGauge': needleGauge,
-      'medicationName': medicationName,
-      'targetDosage': targetDosage,
     };
+
+    // Add treatment-specific fields based on type
+    if (treatmentType == TreatmentType.medication) {
+      return {
+        ...baseFields,
+        'medicationName': medicationName,
+        'targetDosage': targetDosage,
+        'medicationUnit': medicationUnit,
+      };
+    } else if (treatmentType == TreatmentType.fluid) {
+      return {
+        ...baseFields,
+        'targetVolume': targetVolume,
+        'preferredLocation': preferredLocation?.name,
+        'needleGauge': needleGauge,
+      };
+    }
+
+    // Fallback - should not happen with proper validation
+    return baseFields;
   }
 
   /// Creates a copy of this [Schedule] with the given fields replaced
@@ -193,7 +267,8 @@ class Schedule {
     FluidLocation? preferredLocation,
     String? needleGauge,
     String? medicationName,
-    double? targetDosage,
+    String? targetDosage,
+    String? medicationUnit,
   }) {
     return Schedule(
       id: id ?? this.id,
@@ -208,6 +283,7 @@ class Schedule {
       needleGauge: needleGauge ?? this.needleGauge,
       medicationName: medicationName ?? this.medicationName,
       targetDosage: targetDosage ?? this.targetDosage,
+      medicationUnit: medicationUnit ?? this.medicationUnit,
     );
   }
 
@@ -227,7 +303,8 @@ class Schedule {
         other.preferredLocation == preferredLocation &&
         other.needleGauge == needleGauge &&
         other.medicationName == medicationName &&
-        other.targetDosage == targetDosage;
+        other.targetDosage == targetDosage &&
+        other.medicationUnit == medicationUnit;
   }
 
   @override
@@ -245,6 +322,7 @@ class Schedule {
       needleGauge,
       medicationName,
       targetDosage,
+      medicationUnit,
     );
   }
 
@@ -260,7 +338,8 @@ class Schedule {
         'preferredLocation: $preferredLocation, '
         'needleGauge: $needleGauge, '
         'medicationName: $medicationName, '
-        'targetDosage: $targetDosage'
+        'targetDosage: $targetDosage, '
+        'medicationUnit: $medicationUnit'
         ')';
   }
 }

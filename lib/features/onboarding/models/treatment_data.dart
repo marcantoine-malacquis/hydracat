@@ -256,6 +256,33 @@ class MedicationData {
         reminderTimes.length == frequency.administrationsPerDay;
   }
 
+  /// Converts this [MedicationData] to a schedule document
+  ///
+  /// Creates a medication schedule with reminder times as
+  ///  full DateTime objects.
+  /// The schedule ID should be set when saving to Firestore
+  Map<String, dynamic> toSchedule({String? scheduleId}) {
+    final now = DateTime.now();
+
+    // Store reminder times as full DateTime ISO strings (consistent with fluid)
+    final reminderTimeStrings = reminderTimes
+        .map((dateTime) => dateTime.toIso8601String())
+        .toList();
+
+    return {
+      if (scheduleId != null) 'id': scheduleId,
+      'treatmentType': 'medication',
+      'medicationName': name,
+      'targetDosage': dosage ?? '1',
+      'medicationUnit': unit.name,
+      'frequency': frequency.name,
+      'reminderTimes': reminderTimeStrings,
+      'isActive': true,
+      'createdAt': now.toIso8601String(),
+      'updatedAt': now.toIso8601String(),
+    };
+  }
+
   /// Converts [MedicationData] to JSON data
   Map<String, dynamic> toJson() {
     return {

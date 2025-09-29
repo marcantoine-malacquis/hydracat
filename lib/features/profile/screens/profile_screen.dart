@@ -553,6 +553,18 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ],
 
+        // Medication Schedule section
+        // (only for personas that include medication)
+        if (primaryPet?.treatmentApproach.includesMedication ?? false) ...[
+          const SizedBox(height: AppSpacing.sm),
+          ProfileSectionItem(
+            title: "$petName's Medication Schedule",
+            subtitle: 'Medication settings and reminders',
+            icon: Icons.medication,
+            onTap: () => context.go('/profile/medication'),
+          ),
+        ],
+
         // Future sections will be added here
         // Example: Treatment Plan, etc.
       ],

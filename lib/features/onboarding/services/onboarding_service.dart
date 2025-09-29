@@ -441,6 +441,52 @@ class OnboardingService {
         }
       }
 
+      // Create medication schedules if applicable
+      if (_currentData!.medications != null &&
+          _currentData!.medications!.isNotEmpty) {
+        try {
+          if (kDebugMode) {
+            debugPrint(
+              '[OnboardingService] Creating '
+              '${_currentData!.medications!.length} medication schedules '
+              'for pet ${petProfile.id}',
+            );
+          }
+
+          // Create schedules for each medication using batch operation
+          for (final medication in _currentData!.medications!) {
+            final scheduleData = medication.toSchedule();
+            await _scheduleService.createSchedule(
+              userId: _currentData!.userId!,
+              petId: petProfile.id,
+              scheduleData: scheduleData,
+            );
+
+            if (kDebugMode) {
+              debugPrint(
+                '[OnboardingService] Successfully created schedule for '
+                'medication: ${medication.name}',
+              );
+            }
+          }
+
+          if (kDebugMode) {
+            debugPrint(
+              '[OnboardingService] Successfully created all medication '
+              'schedules for pet ${petProfile.id}',
+            );
+          }
+        } on Exception catch (e) {
+          // Log the error but don't fail the entire onboarding
+          if (kDebugMode) {
+            debugPrint(
+              '[OnboardingService] Failed to create medication schedules: $e',
+            );
+          }
+          // Could optionally track this as a non-fatal error
+        }
+      }
+
       // Mark onboarding as completed
       _currentProgress = _currentProgress!.markCompleted();
 

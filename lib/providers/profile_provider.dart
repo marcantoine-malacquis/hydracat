@@ -29,6 +29,7 @@ class ProfileState {
   const ProfileState({
     this.primaryPet,
     this.fluidSchedule,
+    this.medicationSchedules,
     this.isLoading = false,
     this.isRefreshing = false,
     this.scheduleIsLoading = false,
@@ -41,6 +42,7 @@ class ProfileState {
   const ProfileState.initial()
     : primaryPet = null,
       fluidSchedule = null,
+      medicationSchedules = null,
       isLoading = false,
       isRefreshing = false,
       scheduleIsLoading = false,
@@ -52,6 +54,7 @@ class ProfileState {
   const ProfileState.loading()
     : primaryPet = null,
       fluidSchedule = null,
+      medicationSchedules = null,
       isLoading = true,
       isRefreshing = false,
       scheduleIsLoading = false,
@@ -64,6 +67,9 @@ class ProfileState {
 
   /// Current cached fluid schedule
   final Schedule? fluidSchedule;
+
+  /// Current cached medication schedules
+  final List<Schedule>? medicationSchedules;
 
   /// Whether a profile operation is in progress
   final bool isLoading;
@@ -107,10 +113,18 @@ class ProfileState {
   /// Fluid schedule volume if available
   double? get scheduleVolume => fluidSchedule?.targetVolume;
 
+  /// Whether user has medication schedules
+  bool get hasMedicationSchedules =>
+      medicationSchedules != null && medicationSchedules!.isNotEmpty;
+
+  /// Number of medication schedules
+  int get medicationScheduleCount => medicationSchedules?.length ?? 0;
+
   /// Creates a copy of this [ProfileState] with the given fields replaced
   ProfileState copyWith({
     CatProfile? primaryPet,
     Schedule? fluidSchedule,
+    List<Schedule>? medicationSchedules,
     bool? isLoading,
     bool? isRefreshing,
     bool? scheduleIsLoading,
@@ -121,6 +135,7 @@ class ProfileState {
     return ProfileState(
       primaryPet: primaryPet ?? this.primaryPet,
       fluidSchedule: fluidSchedule ?? this.fluidSchedule,
+      medicationSchedules: medicationSchedules ?? this.medicationSchedules,
       isLoading: isLoading ?? this.isLoading,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       scheduleIsLoading: scheduleIsLoading ?? this.scheduleIsLoading,
@@ -147,6 +162,7 @@ class ProfileState {
     return other is ProfileState &&
         other.primaryPet == primaryPet &&
         other.fluidSchedule == fluidSchedule &&
+        listEquals(other.medicationSchedules, medicationSchedules) &&
         other.isLoading == isLoading &&
         other.isRefreshing == isRefreshing &&
         other.scheduleIsLoading == scheduleIsLoading &&
@@ -160,6 +176,7 @@ class ProfileState {
     return Object.hash(
       primaryPet,
       fluidSchedule,
+      Object.hashAll(medicationSchedules ?? []),
       isLoading,
       isRefreshing,
       scheduleIsLoading,
@@ -174,6 +191,7 @@ class ProfileState {
     return 'ProfileState('
         'primaryPet: $primaryPet, '
         'fluidSchedule: $fluidSchedule, '
+        'medicationSchedules: $medicationSchedules, '
         'isLoading: $isLoading, '
         'isRefreshing: $isRefreshing, '
         'scheduleIsLoading: $scheduleIsLoading, '
@@ -351,7 +369,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 
   /// Clear only schedule cache
   void clearScheduleCache() {
-    if (state.fluidSchedule != null) {
+    if (state.fluidSchedule != null || state.medicationSchedules != null) {
       state = state.copyWith();
     }
   }
@@ -505,6 +523,251 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       return false;
     }
   }
+
+  /// Load medication schedules for the primary pet
+  Future<bool> loadMedicationSchedules() async {
+    final primaryPet = state.primaryPet;
+    if (primaryPet == null) {
+      state = state.copyWith(scheduleIsLoading: false);
+      return false;
+    }
+
+    final currentUser = _ref.read(currentUserProvider);
+    if (currentUser == null) {
+      state = state.copyWith(scheduleIsLoading: false);
+      return false;
+    }
+
+    state = state.copyWith(scheduleIsLoading: true);
+
+    try {
+      final schedules = await _scheduleService.getMedicationSchedules(
+        userId: currentUser.id,
+        petId: primaryPet.id,
+      );
+
+      state = state.copyWith(
+        medicationSchedules: schedules,
+        scheduleIsLoading: false,
+        lastUpdated: DateTime.now(),
+      );
+
+      return schedules.isNotEmpty;
+    } on FormatException catch (e) {
+      // Handle serialization/parsing errors specifically
+      state = state.copyWith(
+        scheduleIsLoading: false,
+        error: const PetServiceException(
+          'Medication schedule data format error. '
+          'Please contact support if this persists.',
+        ),
+      );
+      if (kDebugMode) {
+        debugPrint(
+          '[ProfileNotifier] Medication schedule '
+          'serialization error: $e',
+        );
+      }
+      return false;
+    } on Exception catch (e) {
+      state = state.copyWith(
+        scheduleIsLoading: false,
+        error: PetServiceException('Failed to load medication schedules: $e'),
+      );
+      if (kDebugMode) {
+        debugPrint('[ProfileNotifier] Error loading medication schedules: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Manually refresh medication schedules from Firestore
+  Future<bool> refreshMedicationSchedules() async {
+    final primaryPet = state.primaryPet;
+    if (primaryPet == null) return false;
+
+    final currentUser = _ref.read(currentUserProvider);
+    if (currentUser == null) return false;
+
+    state = state.copyWith(scheduleIsLoading: true);
+
+    try {
+      final schedules = await _scheduleService.getMedicationSchedules(
+        userId: currentUser.id,
+        petId: primaryPet.id,
+      );
+
+      state = state.copyWith(
+        medicationSchedules: schedules,
+        scheduleIsLoading: false,
+        lastUpdated: DateTime.now(),
+      );
+
+      return schedules.isNotEmpty;
+    } on FormatException catch (e) {
+      // Handle serialization/parsing errors specifically
+      state = state.copyWith(
+        scheduleIsLoading: false,
+        error: const PetServiceException(
+          'Medication schedule data format error. '
+          'Please contact support if this persists.',
+        ),
+      );
+      if (kDebugMode) {
+        debugPrint(
+          '[ProfileNotifier] Medication schedule serialization error '
+          'on refresh: $e',
+        );
+      }
+      return false;
+    } on Exception catch (e) {
+      // Don't clear existing schedule data if refresh fails for other reasons
+      state = state.copyWith(
+        scheduleIsLoading: false,
+        error: PetServiceException(
+          'Failed to refresh medication schedules: $e',
+        ),
+      );
+      if (kDebugMode) {
+        debugPrint(
+          '[ProfileNotifier] Error refreshing medication '
+          'schedules: $e',
+        );
+      }
+      return false;
+    }
+  }
+
+  /// Update a medication schedule
+  Future<bool> updateMedicationSchedule(Schedule schedule) async {
+    final primaryPet = state.primaryPet;
+    if (primaryPet == null) return false;
+
+    final currentUser = _ref.read(currentUserProvider);
+    if (currentUser == null) return false;
+
+    state = state.copyWith(scheduleIsLoading: true);
+
+    try {
+      await _scheduleService.updateSchedule(
+        userId: currentUser.id,
+        petId: primaryPet.id,
+        scheduleId: schedule.id,
+        updates: schedule.toJson(),
+      );
+
+      // Update the cache with the new schedule data
+      final currentSchedules = state.medicationSchedules ?? [];
+      final updatedSchedules = currentSchedules.map((s) {
+        return s.id == schedule.id ? schedule : s;
+      }).toList();
+
+      state = state.copyWith(
+        medicationSchedules: updatedSchedules,
+        scheduleIsLoading: false,
+        lastUpdated: DateTime.now(),
+      );
+
+      return true;
+    } on Exception catch (e) {
+      state = state.copyWith(
+        scheduleIsLoading: false,
+        error: PetServiceException('Failed to update medication schedule: $e'),
+      );
+      if (kDebugMode) {
+        debugPrint(
+          '[ProfileNotifier] Error updating medication '
+          'schedule: $e',
+        );
+      }
+      return false;
+    }
+  }
+
+  /// Add a new medication schedule
+  Future<bool> addMedicationSchedule(Schedule schedule) async {
+    final primaryPet = state.primaryPet;
+    if (primaryPet == null) return false;
+
+    final currentUser = _ref.read(currentUserProvider);
+    if (currentUser == null) return false;
+
+    state = state.copyWith(scheduleIsLoading: true);
+
+    try {
+      final scheduleId = await _scheduleService.createSchedule(
+        userId: currentUser.id,
+        petId: primaryPet.id,
+        scheduleData: schedule.toJson(),
+      );
+
+      // Create the new schedule with the assigned ID
+      final newSchedule = schedule.copyWith(id: scheduleId);
+
+      // Add to the cache
+      final currentSchedules = state.medicationSchedules ?? [];
+      final updatedSchedules = [...currentSchedules, newSchedule];
+
+      state = state.copyWith(
+        medicationSchedules: updatedSchedules,
+        scheduleIsLoading: false,
+        lastUpdated: DateTime.now(),
+      );
+
+      return true;
+    } on Exception catch (e) {
+      state = state.copyWith(
+        scheduleIsLoading: false,
+        error: PetServiceException('Failed to add medication schedule: $e'),
+      );
+      if (kDebugMode) {
+        debugPrint('[ProfileNotifier] Error adding medication schedule: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Delete a medication schedule
+  Future<bool> deleteMedicationSchedule(String scheduleId) async {
+    final primaryPet = state.primaryPet;
+    if (primaryPet == null) return false;
+
+    final currentUser = _ref.read(currentUserProvider);
+    if (currentUser == null) return false;
+
+    state = state.copyWith(scheduleIsLoading: true);
+
+    try {
+      await _scheduleService.deleteSchedule(
+        userId: currentUser.id,
+        petId: primaryPet.id,
+        scheduleId: scheduleId,
+      );
+
+      // Remove from the cache
+      final currentSchedules = state.medicationSchedules ?? [];
+      final updatedSchedules = currentSchedules
+          .where((s) => s.id != scheduleId)
+          .toList();
+
+      state = state.copyWith(
+        medicationSchedules: updatedSchedules,
+        scheduleIsLoading: false,
+        lastUpdated: DateTime.now(),
+      );
+
+      return true;
+    } on Exception catch (e) {
+      state = state.copyWith(
+        scheduleIsLoading: false,
+        error: PetServiceException('Failed to delete medication schedule: $e'),
+      );
+      if (kDebugMode) {
+        debugPrint('[ProfileNotifier] Error deleting medication schedule: $e');
+      }
+      return false;
+    }
+  }
 }
 
 /// Provider for the PetService instance
@@ -623,4 +886,25 @@ final scheduleFrequencyProvider = Provider<String?>((ref) {
 /// Optimized provider to get schedule volume
 final scheduleVolumeProvider = Provider<double?>((ref) {
   return ref.watch(profileProvider.select((state) => state.scheduleVolume));
+});
+
+/// Optimized provider to get the cached medication schedules
+final medicationSchedulesProvider = Provider<List<Schedule>?>((ref) {
+  return ref.watch(
+    profileProvider.select((state) => state.medicationSchedules),
+  );
+});
+
+/// Optimized provider to check if the pet has medication schedules
+final hasMedicationSchedulesProvider = Provider<bool>((ref) {
+  return ref.watch(
+    profileProvider.select((state) => state.hasMedicationSchedules),
+  );
+});
+
+/// Optimized provider to get medication schedule count
+final medicationScheduleCountProvider = Provider<int>((ref) {
+  return ref.watch(
+    profileProvider.select((state) => state.medicationScheduleCount),
+  );
 });
