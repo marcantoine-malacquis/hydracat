@@ -217,88 +217,191 @@ class ProfileScreen extends ConsumerWidget {
       _PetInfoItem(
         label: 'Name',
         value: pet.name,
-        icon: Icons.label,
+        icon: Icons.pets,
+        color: AppColors.primary,
       ),
       _PetInfoItem(
         label: 'Age',
         value: '${pet.ageYears} years',
         icon: Icons.cake,
+        color: AppColors.success,
       ),
       _PetInfoItem(
         label: 'Gender',
         value: pet.gender ?? 'Unknown',
-        icon: Icons.pets,
+        icon: Icons.female,
+        color: AppColors.warning,
       ),
       _PetInfoItem(
         label: 'Breed',
         value: pet.breed ?? 'Unknown',
         icon: Icons.category,
+        color: AppColors.primaryDark,
       ),
       _PetInfoItem(
         label: 'CKD Stage',
         value: pet.medicalInfo.irisStage?.displayName ?? 'Unknown',
         icon: Icons.medical_information,
+        color: AppColors.primaryLight,
       ),
     ];
 
     return Column(
       children: [
-        for (int i = 0; i < infoItems.length; i += 2) ...[
-          Row(
-            children: [
-              Expanded(
-                child: _buildInfoItem(context, infoItems[i]),
+        // First row - Name and Age (most prominent)
+        Row(
+          children: [
+            Expanded(
+              child: _buildPremiumInfoItem(
+                context,
+                infoItems[0],
+                isHighlighted: true,
               ),
-              if (i + 1 < infoItems.length) ...[
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: _buildInfoItem(context, infoItems[i + 1]),
-                ),
-              ],
-            ],
-          ),
-          if (i + 2 < infoItems.length) const SizedBox(height: AppSpacing.md),
-        ],
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: _buildPremiumInfoItem(
+                context,
+                infoItems[1],
+                isHighlighted: true,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+
+        // Second row - Gender and Breed
+        Row(
+          children: [
+            Expanded(
+              child: _buildPremiumInfoItem(context, infoItems[2]),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: _buildPremiumInfoItem(context, infoItems[3]),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+
+        // Third row - CKD Stage (full width, special treatment)
+        _buildPremiumInfoItem(
+          context,
+          infoItems[4],
+          isFullWidth: true,
+          isMedical: true,
+        ),
       ],
     );
   }
 
-  /// Builds an individual info item
-  Widget _buildInfoItem(BuildContext context, _PetInfoItem item) {
+  /// Builds a premium info item with water-themed styling
+  Widget _buildPremiumInfoItem(
+    BuildContext context,
+    _PetInfoItem item, {
+    bool isHighlighted = false,
+    bool isFullWidth = false,
+    bool isMedical = false,
+  }) {
+    final theme = Theme.of(context);
+
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.sm),
+      padding: EdgeInsets.all(isHighlighted ? AppSpacing.md : AppSpacing.sm),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(6),
+        gradient: isHighlighted
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  item.color.withValues(alpha: 0.1),
+                  item.color.withValues(alpha: 0.05),
+                ],
+              )
+            : null,
+        color: isHighlighted ? null : theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(isFullWidth ? 12 : 10),
+        border: Border.all(
+          color: isHighlighted
+              ? item.color.withValues(alpha: 0.3)
+              : theme.colorScheme.outline.withValues(alpha: 0.2),
+          width: isHighlighted ? 1.5 : 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isHighlighted
+                ? item.color.withValues(alpha: 0.15)
+                : Colors.black.withValues(alpha: 0.04),
+            blurRadius: isHighlighted ? 8 : 4,
+            offset: Offset(0, isHighlighted ? 2 : 1),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Icon and label row
           Row(
             children: [
-              Icon(
-                item.icon,
-                size: 16,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.xs),
+                decoration: BoxDecoration(
+                  color: item.color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  item.icon,
+                  size: isHighlighted ? 20 : 18,
+                  color: item.color,
+                ),
               ),
-              const SizedBox(width: AppSpacing.xs),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
-                  item.label,
-                  style: AppTextStyles.caption.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  item.label.toUpperCase(),
+                  style: AppTextStyles.small.copyWith(
+                    color: item.color,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            item.value,
-            style: AppTextStyles.body.copyWith(
-              fontWeight: FontWeight.w500,
+
+          const SizedBox(height: AppSpacing.sm),
+
+          // Value with special treatment for medical info
+          if (isMedical)
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xs,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Text(
+                item.value,
+                style: AppTextStyles.clinicalData.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          else
+            Text(
+              item.value,
+              style: AppTextStyles.body.copyWith(
+                fontWeight: isHighlighted ? FontWeight.w600 : FontWeight.w500,
+                color: isHighlighted
+                    ? AppColors.textPrimary
+                    : AppColors.textSecondary,
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -347,13 +450,26 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.md),
           // Grid skeleton
           for (int i = 0; i < 3; i++) ...[
-            Row(
-              children: [
-                Expanded(child: _buildInfoItemSkeleton(context)),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(child: _buildInfoItemSkeleton(context)),
-              ],
-            ),
+            if (i == 2) // Full width item for medical info
+              _buildPremiumInfoItemSkeleton(context, isFullWidth: true)
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildPremiumInfoItemSkeleton(
+                      context,
+                      isHighlighted: i == 0,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: _buildPremiumInfoItemSkeleton(
+                      context,
+                      isHighlighted: i == 0,
+                    ),
+                  ),
+                ],
+              ),
             if (i < 2) const SizedBox(height: AppSpacing.md),
           ],
         ],
@@ -361,38 +477,78 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  /// Builds skeleton for individual info items
-  Widget _buildInfoItemSkeleton(BuildContext context) {
+  /// Builds premium skeleton for individual info items
+  Widget _buildPremiumInfoItemSkeleton(
+    BuildContext context, {
+    bool isHighlighted = false,
+    bool isFullWidth = false,
+  }) {
+    final theme = Theme.of(context);
+
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.sm),
+      padding: EdgeInsets.all(isHighlighted ? AppSpacing.md : AppSpacing.sm),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(6),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(isFullWidth ? 12 : 10),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          width: isHighlighted ? 1.5 : 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: isHighlighted ? 8 : 4,
+            offset: Offset(0, isHighlighted ? 2 : 1),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 80,
-            height: 12,
-            decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(4),
-            ),
+          // Icon and label skeleton
+          Row(
+            children: [
+              Container(
+                width: isHighlighted ? 36 : 32,
+                height: isHighlighted ? 36 : 32,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Container(
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Container(
-            width: 60,
-            height: 16,
-            decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(4),
+          const SizedBox(height: AppSpacing.sm),
+
+          // Value skeleton
+          if (isFullWidth)
+            Container(
+              width: double.infinity,
+              height: 32,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+            )
+          else
+            Container(
+              width: isHighlighted ? 80 : 60,
+              height: 16,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -578,9 +734,11 @@ class _PetInfoItem {
     required this.label,
     required this.value,
     required this.icon,
+    required this.color,
   });
 
   final String label;
   final String value;
   final IconData icon;
+  final Color color;
 }
