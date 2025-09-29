@@ -136,3 +136,21 @@ The analysis should identify:
   4. Prioritize issues by potential impact on team scalability
   5. Provide specific file locations and concrete recommendations
   6. Consider both current state and future developer onboarding experience
+
+
+
+
+
+  Review prompt example:
+  
+I would like to review the code related my onboarding feature in @onboarding/ to identify inconsistencies or dead code meaning:
+- two different ways of achieving the same thinh
+- custom solutions when simpler and future-proof Flutter/dart built-in solutions exist
+- dead code (code that isn't actually used anywhere)
+- deviance from industry-standards
+- incoherence with @prd.md @firebase_CRUDrules.md
+- wrong use of the file architecture including code present in @core/ 
+- useless dependencies when more robust methods could be implemented instead 
+
+Please also use the useful guidelines in @code_review.md to make sure the code is up to my standards.
+Basically, I want to make sure the onboarding code is production ready, follow best practices, industry-standards whenever possible so I can share it in the future with a developper team that will understand it easily. Create first a clear plan/to-do list that I will review before we proceed.
