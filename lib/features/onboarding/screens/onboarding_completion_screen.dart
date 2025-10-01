@@ -150,7 +150,10 @@ class _OnboardingCompletionScreenState
           const SizedBox(height: AppSpacing.sm),
 
           Text(
-            _completionError?.message ?? 'An unexpected error occurred',
+            _completionError != null
+                ? ref.read(onboardingProvider.notifier)
+                    .getErrorMessage(_completionError!)
+                : 'An unexpected error occurred',
             style: AppTextStyles.body.copyWith(
               color: AppColors.error,
             ),
@@ -244,10 +247,13 @@ class _OnboardingCompletionScreenState
 
   /// Navigate back to previous step
   Future<void> _goBack() async {
-    await ref.read(onboardingProvider.notifier).moveToPreviousStep();
-    if (mounted) {
-      // Navigate to previous screen (treatment setup)
-      context.go(OnboardingStepType.treatmentSetup.routeName);
+    final previousRoute = await ref
+        .read(onboardingProvider.notifier)
+        .navigatePrevious();
+
+    if (previousRoute != null && mounted && context.mounted) {
+      // Navigate to previous screen
+      context.go(previousRoute);
     }
   }
 }

@@ -160,10 +160,12 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
     if (!sessionSuccess) {
       debugPrint('[OnboardingWelcome] Failed to initialize onboarding session');
       if (context.mounted) {
-        _showErrorSnackBar(
-          context, 
-          'Failed to start onboarding. Please try again.',
-        );
+        // Check if there's a specific error in state
+        final error = ref.read(onboardingErrorProvider);
+        final errorMessage = error != null
+            ? onboardingNotifier.getErrorMessage(error)
+            : 'Failed to start onboarding. Please try again.';
+        _showErrorSnackBar(context, errorMessage);
       }
       return;
     }
@@ -173,14 +175,17 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
     );
 
     if (!context.mounted) return;
-    
+
     final route = ModalRoute.of(context);
     if (route is PopupRoute) {
       Navigator.of(context).pop('start');
     } else {
       // Normal routing path (no dialog)
-      debugPrint('[OnboardingWelcome] Navigating to persona screen');
-      context.go(OnboardingStepType.userPersona.routeName);
+      debugPrint('[OnboardingWelcome] Navigating to next step');
+      final nextRoute = await onboardingNotifier.navigateNext();
+      if (nextRoute != null && context.mounted) {
+        context.go(nextRoute);
+      }
     }
   }
 

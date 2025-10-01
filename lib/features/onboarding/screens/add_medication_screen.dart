@@ -458,11 +458,14 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
       if (mounted) {
         Navigator.of(context).pop(medication);
       }
-    } on Exception catch (e) {
+    } on Exception {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.failedToSaveMedication(e.toString())),
+            content: const Text(
+              'Failed to save medication. '
+              'Please check all fields and try again.',
+            ),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );

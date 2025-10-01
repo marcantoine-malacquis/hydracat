@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
-import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/screens/treatment_fluid_screen.dart';
 import 'package:hydracat/features/onboarding/screens/treatment_medication_screen.dart';
 import 'package:hydracat/features/profile/models/user_persona.dart';
@@ -15,7 +14,7 @@ class TreatmentSetupScreen extends ConsumerStatefulWidget {
   const TreatmentSetupScreen({super.key});
 
   @override
-  ConsumerState<TreatmentSetupScreen> createState() => 
+  ConsumerState<TreatmentSetupScreen> createState() =>
       _TreatmentSetupScreenState();
 }
 
@@ -23,11 +22,13 @@ class _TreatmentSetupScreenState extends ConsumerState<TreatmentSetupScreen> {
   /// Handle back navigation from treatment screens
   Future<void> _handleBackNavigation() async {
     // Move back in the onboarding progress
-    await ref.read(onboardingProvider.notifier).moveToPreviousStep();
-    
-    if (mounted) {
+    final previousRoute = await ref
+        .read(onboardingProvider.notifier)
+        .navigatePrevious();
+
+    if (previousRoute != null && mounted && context.mounted) {
       // Navigate to the previous onboarding screen
-      context.go(OnboardingStepType.ckdMedicalInfo.routeName);
+      context.go(previousRoute);
     }
   }
 
@@ -47,15 +48,15 @@ class _TreatmentSetupScreenState extends ConsumerState<TreatmentSetupScreen> {
     // Route to appropriate treatment setup flow based on persona
     return switch (persona) {
       UserPersona.medicationOnly => TreatmentMedicationScreen(
-          onBack: _handleBackNavigation,
-        ),
+        onBack: _handleBackNavigation,
+      ),
       UserPersona.fluidTherapyOnly => TreatmentFluidScreen(
-          onBack: _handleBackNavigation,
-        ),
+        onBack: _handleBackNavigation,
+      ),
       UserPersona.medicationAndFluidTherapy => _CombinedTreatmentFlow(
-          onboardingData: onboardingData,
-          onBack: _handleBackNavigation,
-        ),
+        onboardingData: onboardingData,
+        onBack: _handleBackNavigation,
+      ),
     };
   }
 
@@ -124,16 +125,16 @@ class _CombinedTreatmentFlow extends ConsumerStatefulWidget {
 
   /// Current onboarding data
   final OnboardingData? onboardingData;
-  
+
   /// Callback for back navigation
   final VoidCallback onBack;
 
   @override
-  ConsumerState<_CombinedTreatmentFlow> createState() => 
+  ConsumerState<_CombinedTreatmentFlow> createState() =>
       _CombinedTreatmentFlowState();
 }
 
-class _CombinedTreatmentFlowState 
+class _CombinedTreatmentFlowState
     extends ConsumerState<_CombinedTreatmentFlow> {
   @override
   Widget build(BuildContext context) {
@@ -148,14 +149,20 @@ class _CombinedTreatmentFlowState
         onBack: widget.onBack,
       );
     } else if (!hasFluidTherapy) {
-      // Second: show fluid therapy setup  
+      // Second: show fluid therapy setup
       return TreatmentFluidScreen(
         onBack: _handleFluidTherapyBack,
       );
     } else {
       // Both complete, go to completion
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.go(OnboardingStepType.completion.routeName);
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        final nextRoute = await ref
+            .read(onboardingProvider.notifier)
+            .navigateNext();
+
+        if (nextRoute != null && mounted && context.mounted) {
+          context.go(nextRoute);
+        }
       });
       return _buildLoadingScreen();
     }
@@ -166,15 +173,17 @@ class _CombinedTreatmentFlowState
     // Clear medications to go back to medication setup
     final currentData = ref.read(onboardingDataProvider);
     if (currentData != null) {
-      ref.read(onboardingProvider.notifier).updateData(
-        currentData.copyWith(medications: []),
-      );
+      ref
+          .read(onboardingProvider.notifier)
+          .updateData(
+            currentData.copyWith(medications: []),
+          );
     }
   }
 
   Widget _buildLoadingScreen() {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       body: const Center(
@@ -202,13 +211,13 @@ class TreatmentSetupNavigator extends ConsumerWidget {
   }
 
   Widget _buildNavigationInfo(
-    BuildContext context, 
-    UserPersona persona, 
+    BuildContext context,
+    UserPersona persona,
     OnboardingData? onboardingData,
   ) {
     final theme = Theme.of(context);
     final progress = _calculateProgress(persona, onboardingData);
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.all(16),
@@ -240,7 +249,7 @@ class TreatmentSetupNavigator extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 8),
-          
+
           LinearProgressIndicator(
             value: progress,
             backgroundColor: theme.colorScheme.outline.withValues(alpha: 0.2),
@@ -249,7 +258,7 @@ class TreatmentSetupNavigator extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          
+
           Text(
             _getProgressText(persona, onboardingData),
             style: theme.textTheme.bodySmall?.copyWith(
@@ -262,13 +271,13 @@ class TreatmentSetupNavigator extends ConsumerWidget {
   }
 
   double _calculateProgress(
-    UserPersona persona, 
+    UserPersona persona,
     OnboardingData? onboardingData,
   ) {
     return switch (persona) {
-      UserPersona.medicationOnly => 
+      UserPersona.medicationOnly =>
         (onboardingData?.medications?.isNotEmpty ?? false) ? 1.0 : 0.0,
-      UserPersona.fluidTherapyOnly => 
+      UserPersona.fluidTherapyOnly =>
         (onboardingData?.fluidTherapy != null) ? 1.0 : 0.0,
       UserPersona.medicationAndFluidTherapy => () {
         final hasMeds = onboardingData?.medications?.isNotEmpty ?? false;
@@ -281,18 +290,18 @@ class TreatmentSetupNavigator extends ConsumerWidget {
   }
 
   String _getProgressText(
-    UserPersona persona, 
+    UserPersona persona,
     OnboardingData? onboardingData,
   ) {
     return switch (persona) {
-      UserPersona.medicationOnly => 
-        (onboardingData?.medications?.isNotEmpty ?? false) 
-          ? 'Medication setup complete!'
-          : 'Set up your medications',
-      UserPersona.fluidTherapyOnly => 
-        (onboardingData?.fluidTherapy != null) 
-          ? 'Fluid therapy setup complete!'
-          : 'Set up your fluid therapy',
+      UserPersona.medicationOnly =>
+        (onboardingData?.medications?.isNotEmpty ?? false)
+            ? 'Medication setup complete!'
+            : 'Set up your medications',
+      UserPersona.fluidTherapyOnly =>
+        (onboardingData?.fluidTherapy != null)
+            ? 'Fluid therapy setup complete!'
+            : 'Set up your fluid therapy',
       UserPersona.medicationAndFluidTherapy => () {
         final hasMeds = onboardingData?.medications?.isNotEmpty ?? false;
         final hasFluid = onboardingData?.fluidTherapy != null;

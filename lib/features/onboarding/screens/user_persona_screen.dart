@@ -149,31 +149,34 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
       }
 
       // Now move to next step
-      debugPrint('[UserPersonaScreen] Moving to next step...');
-      final moveSuccess = await ref
+      debugPrint('[UserPersonaScreen] Navigating to next step...');
+      final nextRoute = await ref
           .read(onboardingProvider.notifier)
-          .moveToNextStep();
+          .navigateNext();
 
-      debugPrint('[UserPersonaScreen] moveToNextStep result: $moveSuccess');
+      debugPrint('[UserPersonaScreen] navigateNext result: $nextRoute');
 
-      if (moveSuccess && mounted) {
-        debugPrint('[UserPersonaScreen] Navigating to pet basics screen');
+      if (nextRoute != null && mounted) {
+        debugPrint('[UserPersonaScreen] Navigating to $nextRoute');
 
-        // Navigate to pet basics screen
+        // Navigate to next screen
         if (context.mounted) {
-          context.go(OnboardingStepType.petBasics.routeName);
+          context.go(nextRoute);
         }
       } else {
         // Handle error moving to next step
-        debugPrint('[UserPersonaScreen] Failed to move to next step');
+        debugPrint('[UserPersonaScreen] Failed to get next route');
         setState(() {
           _isProcessingSelection = false;
         });
 
         if (mounted) {
-          _showErrorSnackBar(
-            'Unable to proceed to next step. Please try again.',
-          );
+          // Check if there's a specific error in state
+          final error = ref.read(onboardingErrorProvider);
+          final errorMessage = error != null
+              ? ref.read(onboardingProvider.notifier).getErrorMessage(error)
+              : 'Unable to proceed to next step. Please try again.';
+          _showErrorSnackBar(errorMessage);
         }
       }
     } else {
@@ -185,7 +188,12 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
       });
 
       if (mounted) {
-        _showErrorSnackBar('Unable to save your selection. Please try again.');
+        // Check if there's a specific error in state
+        final error = ref.read(onboardingErrorProvider);
+        final errorMessage = error != null
+            ? ref.read(onboardingProvider.notifier).getErrorMessage(error)
+            : 'Unable to save your selection. Please try again.';
+        _showErrorSnackBar(errorMessage);
       }
     }
   }
@@ -200,9 +208,13 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
   }
 
   Future<void> _handleBackNavigation() async {
-    // Navigate back to welcome screen
-    if (context.mounted) {
-      context.go(OnboardingStepType.welcome.routeName);
+    // Navigate back to previous screen
+    final previousRoute = await ref
+        .read(onboardingProvider.notifier)
+        .navigatePrevious();
+
+    if (previousRoute != null && mounted && context.mounted) {
+      context.go(previousRoute);
     }
   }
 

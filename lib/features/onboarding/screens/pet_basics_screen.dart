@@ -264,20 +264,22 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
 
       // Navigate to next step (medical information)
       if (mounted) {
-        final moveSuccess = await ref
+        final nextRoute = await ref
             .read(onboardingProvider.notifier)
-            .moveToNextStep();
+            .navigateNext();
 
-        if (moveSuccess && mounted) {
-          // Navigate to medical information screen
-          context.go(OnboardingStepType.ckdMedicalInfo.routeName);
+        if (nextRoute != null && mounted && context.mounted) {
+          // Navigate to next screen
+          context.go(nextRoute);
         }
       }
     } on Exception catch (e) {
       if (mounted) {
+        final errorMessage =
+            ref.read(onboardingProvider.notifier).getErrorMessage(e);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.errorSavingPetInfo(e.toString())),
+            content: Text(errorMessage),
             backgroundColor: AppColors.error,
           ),
         );
@@ -293,10 +295,13 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
 
   /// Navigate back to previous step
   Future<void> _goBack() async {
-    await ref.read(onboardingProvider.notifier).moveToPreviousStep();
-    if (mounted) {
-      // Navigate to previous screen (user persona)
-      context.go(OnboardingStepType.userPersona.routeName);
+    final previousRoute = await ref
+        .read(onboardingProvider.notifier)
+        .navigatePrevious();
+
+    if (previousRoute != null && mounted && context.mounted) {
+      // Navigate to previous screen
+      context.go(previousRoute);
     }
   }
 

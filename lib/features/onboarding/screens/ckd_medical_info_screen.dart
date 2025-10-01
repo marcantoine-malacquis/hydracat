@@ -161,20 +161,22 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
 
       // Navigate to next step (treatment setup)
       if (mounted) {
-        final moveSuccess = await ref
+        final nextRoute = await ref
             .read(onboardingProvider.notifier)
-            .moveToNextStep();
+            .navigateNext();
 
-        if (moveSuccess && mounted) {
-          // Navigate to treatment setup screen
-          context.go(OnboardingStepType.treatmentSetup.routeName);
+        if (nextRoute != null && mounted && context.mounted) {
+          // Navigate to next screen
+          context.go(nextRoute);
         }
       }
     } on Exception catch (e) {
       if (mounted) {
+        final errorMessage =
+            ref.read(onboardingProvider.notifier).getErrorMessage(e);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.errorSavingMedicalInfo(e.toString())),
+            content: Text(errorMessage),
             backgroundColor: AppColors.error,
           ),
         );
@@ -228,10 +230,13 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
 
   /// Navigate back to previous step
   Future<void> _goBack() async {
-    await ref.read(onboardingProvider.notifier).moveToPreviousStep();
-    if (mounted) {
-      // Navigate to previous screen (pet basics)
-      context.go(OnboardingStepType.petBasics.routeName);
+    final previousRoute = await ref
+        .read(onboardingProvider.notifier)
+        .navigatePrevious();
+
+    if (previousRoute != null && mounted && context.mounted) {
+      // Navigate to previous screen
+      context.go(previousRoute);
     }
   }
 

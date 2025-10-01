@@ -519,20 +519,22 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
       }
 
       // Move to next step
-      final moveSuccess = await ref
+      final nextRoute = await ref
           .read(onboardingProvider.notifier)
-          .moveToNextStep();
+          .navigateNext();
 
-      if (moveSuccess && mounted) {
-        // Navigate to completion screen
-        context.go(OnboardingStepType.completion.routeName);
+      if (nextRoute != null && mounted && context.mounted) {
+        // Navigate to next screen
+        context.go(nextRoute);
       }
     } on Exception catch (e) {
       if (mounted) {
         final theme = Theme.of(context);
+        final errorMessage =
+            ref.read(onboardingProvider.notifier).getErrorMessage(e);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.failedToSaveFluidTherapy(e.toString())),
+            content: Text(errorMessage),
             backgroundColor: theme.colorScheme.error,
           ),
         );

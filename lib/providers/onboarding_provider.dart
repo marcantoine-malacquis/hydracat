@@ -360,6 +360,112 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     state = state.clearError();
   }
 
+  /// Get the next route in the onboarding flow
+  ///
+  /// Returns the next step's route if progression is possible, null otherwise.
+  /// This is a read-only operation that doesn't change state.
+  String? getNextRoute() {
+    if (state.progress == null || state.data == null) {
+      return null;
+    }
+
+    final currentStep = state.progress!.currentStep;
+    final nextStep = currentStep.nextStep;
+
+    if (nextStep == null) {
+      return null; // At completion, no next step
+    }
+
+    // Check if can progress from current step
+    if (!state.progress!.canProgressFromCurrentStep) {
+      return null;
+    }
+
+    return nextStep.routeName;
+  }
+
+  /// Get the previous route in the onboarding flow
+  ///
+  /// Returns the previous step's route if backward navigation is allowed,
+  /// null otherwise. This is a read-only operation that doesn't change state.
+  String? getPreviousRoute() {
+    if (state.progress == null) {
+      return null;
+    }
+
+    final currentStep = state.progress!.currentStep;
+    final previousStep = currentStep.previousStep;
+
+    if (previousStep == null) {
+      return null; // At welcome, no previous step
+    }
+
+    // Check if can go back from current step
+    if (!state.progress!.canGoBack) {
+      return null;
+    }
+
+    return previousStep.routeName;
+  }
+
+  /// Navigate to the next step with validation
+  ///
+  /// Validates current step, moves to next step in the onboarding service,
+  /// and returns the target route. Returns null if navigation fails or
+  /// is not possible.
+  ///
+  /// Use this in screens instead of manually calling moveToNextStep()
+  /// and determining the route.
+  Future<String?> navigateNext() async {
+    // Validate and move to next step
+    final success = await moveToNextStep();
+
+    if (!success) {
+      return null;
+    }
+
+    // Return the route for the new current step
+    return state.currentStep?.routeName;
+  }
+
+  /// Navigate to the previous step with validation
+  ///
+  /// Validates backward navigation is allowed, moves to previous step,
+  /// and returns the target route. Returns null if navigation fails or
+  /// is not possible.
+  ///
+  /// Use this in screens instead of manually calling moveToPreviousStep()
+  /// and determining the route.
+  Future<String?> navigatePrevious() async {
+    // Move to previous step
+    final success = await moveToPreviousStep();
+
+    if (!success) {
+      return null;
+    }
+
+    // Return the route for the new current step
+    return state.currentStep?.routeName;
+  }
+
+  /// Extract user-friendly error message from any exception
+  ///
+  /// Provides detailed validation errors for [OnboardingValidationException],
+  /// user-friendly messages for other [OnboardingException] types,
+  /// and generic fallback for unexpected errors.
+  String getErrorMessage(Object error) {
+    if (error is OnboardingValidationException) {
+      // Use detailed message with bullet-point list of validation errors
+      return error.detailedMessage;
+    } else if (error is OnboardingException) {
+      // Use the exception's user-friendly message
+      return error.message;
+    } else {
+      // Fallback for unexpected errors
+      return 'An unexpected error occurred. Please try again.';
+    }
+  }
+
   /// Check if user has incomplete onboarding data
   Future<bool> hasIncompleteOnboarding(String userId) async {
     return _onboardingService.hasIncompleteOnboarding(userId);
