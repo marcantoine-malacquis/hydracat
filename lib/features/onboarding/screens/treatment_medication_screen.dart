@@ -41,6 +41,7 @@ class _TreatmentMedicationScreenState
       currentStep: 5,
       totalSteps: 6,
       title: l10n.medicationSetupTitle,
+      stepType: OnboardingStepType.treatmentSetup,
       onBackPressed: _onBackPressed,
       showNextButton: false,
       showProgressInAppBar: true,

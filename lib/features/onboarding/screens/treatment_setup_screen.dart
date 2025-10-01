@@ -155,7 +155,7 @@ class _CombinedTreatmentFlowState
     } else {
       // Both complete, go to completion
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).pushReplacementNamed('/onboarding/completion');
+        context.go(OnboardingStepType.completion.routeName);
       });
       return _buildLoadingScreen();
     }

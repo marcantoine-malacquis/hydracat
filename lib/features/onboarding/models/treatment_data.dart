@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
+import 'package:hydracat/shared/models/schedule_dto.dart';
 
 /// Enumeration of treatment frequencies
 enum TreatmentFrequency {
@@ -257,28 +258,20 @@ class MedicationData {
         reminderTimes.length == frequency.administrationsPerDay;
   }
 
-  /// Converts this [MedicationData] to a schedule document
+  /// Converts this [MedicationData] to a schedule DTO
   ///
-  /// Creates a medication schedule with reminder times as DateTime objects.
-  /// The schedule ID and timestamps will be added by ScheduleService
-  Map<String, dynamic> toSchedule({String? scheduleId}) {
-    // Store reminder times as full DateTime ISO strings (consistent with fluid)
-    final reminderTimeStrings = reminderTimes
-        .map((dateTime) => dateTime.toIso8601String())
-        .toList();
-
-    return {
-      if (scheduleId != null) 'id': scheduleId,
-      'treatmentType': 'medication',
-      'medicationName': name,
-      'targetDosage': dosage ?? '1',
-      'medicationUnit': unit.name,
-      'frequency': frequency.name,
-      'reminderTimes': reminderTimeStrings,
-      'isActive': true,
-      // createdAt and updatedAt are added by ScheduleService
-      // with server timestamps
-    };
+  /// Creates a type-safe medication schedule with reminder times as
+  /// DateTime objects. The schedule ID and timestamps will be added
+  /// by ScheduleService
+  ScheduleDto toSchedule({String? scheduleId}) {
+    return ScheduleDto.medication(
+      id: scheduleId,
+      medicationName: name,
+      targetDosage: dosage ?? '1',
+      medicationUnit: unit.name,
+      frequency: frequency,
+      reminderTimes: reminderTimes,
+    );
   }
 
   /// Converts [MedicationData] to JSON data
@@ -441,11 +434,12 @@ class FluidTherapyData {
     );
   }
 
-  /// Converts this [FluidTherapyData] to a schedule document
+  /// Converts this [FluidTherapyData] to a schedule DTO
   ///
-  /// Creates a fluid therapy schedule with default reminder times based on
-  /// frequency. The schedule ID and timestamps will be added by ScheduleService
-  Map<String, dynamic> toSchedule({String? scheduleId}) {
+  /// Creates a type-safe fluid therapy schedule with default reminder
+  /// times based on frequency. The schedule ID and timestamps will be
+  /// added by ScheduleService
+  ScheduleDto toSchedule({String? scheduleId}) {
     // Generate default reminder times based on frequency
     final defaultTimes = AppDateUtils.generateDefaultReminderTimes(
       frequency.administrationsPerDay,
@@ -456,20 +450,14 @@ class FluidTherapyData {
         .map(AppDateUtils.timeOfDayToDateTime)
         .toList();
 
-    return {
-      if (scheduleId != null) 'id': scheduleId,
-      'treatmentType': 'fluid',
-      'frequency': frequency.name,
-      'targetVolume': volumePerAdministration,
-      'preferredLocation': preferredLocation.name,
-      'needleGauge': needleGauge,
-      'reminderTimes': reminderDateTimes
-          .map((dt) => dt.toIso8601String())
-          .toList(),
-      'isActive': true,
-      // createdAt and updatedAt are added by ScheduleService
-      // with server timestamps
-    };
+    return ScheduleDto.fluid(
+      id: scheduleId,
+      targetVolume: volumePerAdministration,
+      frequency: frequency,
+      preferredLocation: preferredLocation,
+      needleGauge: needleGauge,
+      reminderTimes: reminderDateTimes,
+    );
   }
 
   @override

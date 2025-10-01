@@ -698,7 +698,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       final scheduleId = await _scheduleService.createSchedule(
         userId: currentUser.id,
         petId: primaryPet.id,
-        scheduleData: schedule.toJson(),
+        scheduleDto: schedule.toDto(),
       );
 
       // Create the new schedule with the assigned ID

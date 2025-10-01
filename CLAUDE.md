@@ -113,6 +113,7 @@ Once planning files are completed, they are moved from `~PLANNING` to `~PLANNING
   - Default: `lib/main.dart` (defaults to development)
 - **iOS Setup**: Requires manual Xcode configuration for build schemes (see iOS flavor setup instructions)
 - **Flavor Selection**: Use `--flavor` and `-t` flags when running or building the app
+- **Internationalization**: Use l10n `lib/l10n`
 
 # important-instruction-reminders
 - Do what has been asked; nothing more, nothing less.

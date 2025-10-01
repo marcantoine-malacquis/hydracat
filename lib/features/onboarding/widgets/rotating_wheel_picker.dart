@@ -2,6 +2,29 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 /// A reusable iOS-style rotating wheel picker component
+///
+/// This component provides a consistent wheel picker interface with automatic
+/// enum handling (extracts `displayName` property) and themed styling.
+///
+/// Example with default rendering (automatic enum displayName):
+/// ```dart
+/// RotatingWheelPicker<MedicationUnit>(
+///   items: MedicationUnit.values,
+///   initialIndex: 0,
+///   onSelectedItemChanged: (index) {
+///     setState(() => _selectedUnit = MedicationUnit.values[index]);
+///   },
+/// )
+/// ```
+///
+/// Example with custom rendering:
+/// ```dart
+/// RotatingWheelPicker<String>(
+///   items: ['Option 1', 'Option 2'],
+///   itemBuilder: (context, item) => Icon(Icons.check),
+///   onSelectedItemChanged: (index) { /* ... */ },
+/// )
+/// ```
 class RotatingWheelPicker<T> extends StatefulWidget {
   /// Creates a [RotatingWheelPicker]
   const RotatingWheelPicker({
@@ -12,6 +35,7 @@ class RotatingWheelPicker<T> extends StatefulWidget {
     this.diameterRatio = 1.07,
     this.useMagnifier = true,
     this.magnification = 1.0,
+    this.itemBuilder,
     super.key,
   });
 
@@ -35,6 +59,15 @@ class RotatingWheelPicker<T> extends StatefulWidget {
 
   /// Magnification factor for selected item
   final double magnification;
+
+  /// Optional custom item builder for rendering picker items
+  ///
+  /// If provided, this builder will be used to render each item instead of
+  /// the default rendering (which extracts `displayName` from enums).
+  ///
+  /// Use this when you need custom styling, icons, or complex layouts
+  /// for picker items.
+  final Widget Function(BuildContext context, T item)? itemBuilder;
 
   @override
   State<RotatingWheelPicker<T>> createState() => _RotatingWheelPickerState<T>();
@@ -73,9 +106,11 @@ class _RotatingWheelPickerState<T> extends State<RotatingWheelPicker<T>> {
         selectionOverlay: CupertinoPickerDefaultSelectionOverlay(
           background: theme.colorScheme.primary.withValues(alpha: 0.1),
         ),
-        children: widget.items
-            .map((item) => _buildPickerItem(context, item))
-            .toList(),
+        children: widget.items.map((item) {
+          // Use custom builder if provided, otherwise use default rendering
+          return widget.itemBuilder?.call(context, item) ??
+              _buildPickerItem(context, item);
+        }).toList(),
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_progress_indicator.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
+import 'package:hydracat/shared/widgets/accessibility/touch_target_icon_button.dart';
 import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
 
 /// A wrapper widget that provides consistent layout and navigation for
@@ -183,12 +184,13 @@ class _OnboardingScreenWrapperState
       elevation: 0,
       automaticallyImplyLeading: false,
       leading: (widget.showBackButton && widget.onBackPressed != null)
-          ? IconButton(
+          ? TouchTargetIconButton(
               onPressed: widget.isLoading ? null : widget.onBackPressed,
               icon: const Icon(Icons.arrow_back_ios),
               iconSize: 20,
               color: AppColors.textSecondary,
               tooltip: widget.backButtonText,
+              semanticLabel: widget.backButtonText,
             )
           : null,
       title: widget.showProgressInAppBar

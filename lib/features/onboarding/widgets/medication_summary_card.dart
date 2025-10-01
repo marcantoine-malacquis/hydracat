@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/extensions/build_context_extensions.dart';
+import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
+import 'package:hydracat/shared/widgets/accessibility/touch_target_icon_button.dart';
 
 /// A card displaying medication summary information
 class MedicationSummaryCard extends StatelessWidget {
@@ -35,7 +37,10 @@ class MedicationSummaryCard extends StatelessWidget {
     final l10n = context.l10n;
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -44,7 +49,7 @@ class MedicationSummaryCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -52,7 +57,7 @@ class MedicationSummaryCard extends StatelessWidget {
                 children: [
                   // Medication icon
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(AppSpacing.sm),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -79,7 +84,7 @@ class MedicationSummaryCard extends StatelessWidget {
                   // Action buttons
                   if (showActions) ...[
                     if (onEdit != null)
-                      IconButton(
+                      TouchTargetIconButton(
                         onPressed: onEdit,
                         icon: Icon(
                           Icons.edit_outlined,
@@ -87,9 +92,10 @@ class MedicationSummaryCard extends StatelessWidget {
                           color: theme.colorScheme.primary,
                         ),
                         tooltip: l10n.editMedicationTooltip,
+                        semanticLabel: l10n.editMedicationTooltip,
                       ),
                     if (onDelete != null)
-                      IconButton(
+                      TouchTargetIconButton(
                         onPressed: onDelete,
                         icon: Icon(
                           Icons.delete_outline,
@@ -97,6 +103,7 @@ class MedicationSummaryCard extends StatelessWidget {
                           color: theme.colorScheme.error,
                         ),
                         tooltip: l10n.deleteMedicationTooltip,
+                        semanticLabel: l10n.deleteMedicationTooltip,
                       ),
                   ],
                 ],
@@ -192,7 +199,10 @@ class MedicationSummaryCard extends StatelessWidget {
     final timeOfDay = TimeOfDay.fromDateTime(time);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
@@ -237,7 +247,7 @@ class EmptyMedicationState extends StatelessWidget {
     final l10n = context.l10n;
 
     return Container(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -275,8 +285,8 @@ class EmptyMedicationState extends StatelessWidget {
               label: Text(l10n.addMedication),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.md,
                 ),
               ),
             ),
@@ -297,13 +307,16 @@ class MedicationLoadingCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

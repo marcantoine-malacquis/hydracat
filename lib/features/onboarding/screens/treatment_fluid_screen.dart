@@ -80,6 +80,7 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
       currentStep: 5,
       totalSteps: 6,
       title: l10n.fluidTherapySetupTitle,
+      stepType: OnboardingStepType.treatmentSetup,
       onBackPressed: _onBackPressed,
       showNextButton: false,
       showProgressInAppBar: true,

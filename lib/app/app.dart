@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/app/router.dart';
 import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/core/theme/app_theme.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/theme_provider.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
 
@@ -76,7 +76,7 @@ class _HydraCatAppState extends ConsumerState<HydraCatApp> {
                     const Text(
                       'App Initialization Failed',
                       style: TextStyle(
-                        fontSize: 20, 
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                       textAlign: TextAlign.center,
@@ -111,7 +111,7 @@ class _HydraCatAppState extends ConsumerState<HydraCatApp> {
                         backgroundColor: Colors.blue,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 32, 
+                          horizontal: 32,
                           vertical: 12,
                         ),
                       ),
@@ -159,7 +159,7 @@ class _HydraCatAppState extends ConsumerState<HydraCatApp> {
     try {
       final router = ref.watch(appRouterProvider);
       final themeMode = ref.watch(themeProvider);
-      
+
       return MaterialApp.router(
         title: 'HydraCat',
         debugShowCheckedModeBanner: false,

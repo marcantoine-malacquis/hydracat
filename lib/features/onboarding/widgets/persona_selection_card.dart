@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hydracat/core/constants/app_accessibility.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
@@ -125,6 +126,10 @@ class _PersonaSelectionCardState extends State<PersonaSelectionCard>
               borderRadius: BorderRadius.circular(12),
               color: AppColors.surface,
               child: Container(
+                constraints: const BoxConstraints(
+                  minWidth: AppAccessibility.minTouchTarget,
+                  minHeight: AppAccessibility.minTouchTarget,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(

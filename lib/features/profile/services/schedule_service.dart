@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/features/profile/exceptions/profile_exceptions.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
+import 'package:hydracat/shared/models/schedule_dto.dart';
 
 /// Service for managing treatment schedules in Firestore
 class ScheduleService {
@@ -30,7 +31,7 @@ class ScheduleService {
   Future<String> createSchedule({
     required String userId,
     required String petId,
-    required Map<String, dynamic> scheduleData,
+    required ScheduleDto scheduleDto,
   }) async {
     try {
       if (kDebugMode) {
@@ -42,7 +43,8 @@ class ScheduleService {
       // Generate ID client-side to avoid two-write pattern
       final docRef = _schedulesCollection(userId, petId).doc();
 
-      // Add ID and server timestamps to data
+      // Convert DTO to JSON and add ID and server timestamps
+      final scheduleData = scheduleDto.toJson();
       final dataWithId = {
         ...scheduleData,
         'id': docRef.id,
@@ -83,12 +85,12 @@ class ScheduleService {
   Future<List<String>> createSchedulesBatch({
     required String userId,
     required String petId,
-    required List<Map<String, dynamic>> schedulesData,
+    required List<ScheduleDto> scheduleDtos,
   }) async {
     try {
       if (kDebugMode) {
         debugPrint(
-          '[ScheduleService] Creating ${schedulesData.length} schedules '
+          '[ScheduleService] Creating ${scheduleDtos.length} schedules '
           'in batch for pet $petId',
         );
       }
@@ -98,11 +100,12 @@ class ScheduleService {
       final scheduleIds = <String>[];
 
       // Add all schedules to the batch
-      for (final scheduleData in schedulesData) {
+      for (final scheduleDto in scheduleDtos) {
         // Generate ID client-side
         final docRef = _schedulesCollection(userId, petId).doc();
 
-        // Add ID and server timestamps to data
+        // Convert DTO to JSON and add ID and server timestamps
+        final scheduleData = scheduleDto.toJson();
         final dataWithId = {
           ...scheduleData,
           'id': docRef.id,

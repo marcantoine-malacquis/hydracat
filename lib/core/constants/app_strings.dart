@@ -1,6 +1,7 @@
 /// Constants for all app strings used throughout the HydraCat application.
 ///
-/// **DEPRECATED**: This class is being phased out in favor of Flutter's l10n system.
+/// **DEPRECATED**: This class is being phased out in favor of Flutter's l10n
+///  system.
 /// New code should use `context.l10n` for localized strings instead.
 ///
 /// Migration status:

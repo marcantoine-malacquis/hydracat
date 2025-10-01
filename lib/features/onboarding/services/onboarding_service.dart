@@ -417,11 +417,11 @@ class OnboardingService {
       if (_currentData!.fluidTherapy != null &&
           _currentData!.treatmentApproach!.includesFluidTherapy) {
         try {
-          final scheduleData = _currentData!.fluidTherapy!.toSchedule();
+          final scheduleDto = _currentData!.fluidTherapy!.toSchedule();
           await _scheduleService.createSchedule(
             userId: _currentData!.userId!,
             petId: petProfile.id,
-            scheduleData: scheduleData,
+            scheduleDto: scheduleDto,
           );
 
           if (kDebugMode) {
@@ -454,14 +454,14 @@ class OnboardingService {
           }
 
           // Create all schedules in a single batch operation for efficiency
-          final schedulesData = _currentData!.medications!
+          final scheduleDtos = _currentData!.medications!
               .map((medication) => medication.toSchedule())
               .toList();
 
           await _scheduleService.createSchedulesBatch(
             userId: _currentData!.userId!,
             petId: petProfile.id,
-            schedulesData: schedulesData,
+            scheduleDtos: scheduleDtos,
           );
 
           if (kDebugMode) {

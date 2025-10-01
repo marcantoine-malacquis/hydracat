@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
+import 'package:hydracat/shared/models/schedule_dto.dart';
 
 /// Enumeration of treatment types for schedules
 enum TreatmentType {
@@ -219,6 +220,33 @@ class Schedule {
           reminderTimes.isNotEmpty;
     }
     return false;
+  }
+
+  /// Converts [Schedule] to a [ScheduleDto] for creating/updating schedules
+  ///
+  /// This is useful when you need to duplicate or update an existing schedule
+  ScheduleDto toDto() {
+    if (treatmentType == TreatmentType.medication) {
+      return ScheduleDto.medication(
+        id: id,
+        medicationName: medicationName!,
+        targetDosage: targetDosage!,
+        medicationUnit: medicationUnit!,
+        frequency: frequency,
+        reminderTimes: reminderTimes,
+        isActive: isActive,
+      );
+    } else {
+      return ScheduleDto.fluid(
+        id: id,
+        targetVolume: targetVolume!,
+        frequency: frequency,
+        preferredLocation: preferredLocation!,
+        needleGauge: needleGauge!,
+        reminderTimes: reminderTimes,
+        isActive: isActive,
+      );
+    }
   }
 
   /// Converts [Schedule] to JSON data with treatment-type-specific fields

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:hydracat/core/constants/app_accessibility.dart';
 import 'package:hydracat/core/extensions/build_context_extensions.dart';
+import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
+import 'package:hydracat/shared/widgets/accessibility/hydra_touch_target.dart';
 
 /// A group of time pickers based on treatment frequency
 class TimePickerGroup extends StatefulWidget {
@@ -160,45 +163,54 @@ class CompactTimePicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return GestureDetector(
-      onTap: () => _showTimePicker(context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: theme.colorScheme.outline.withValues(alpha: 0.3),
+    return HydraTouchTarget(
+      semanticLabel: label != null ? 'Select $label' : 'Select time',
+      child: GestureDetector(
+        onTap: () => _showTimePicker(context),
+        child: Container(
+          constraints: const BoxConstraints(
+            minHeight: AppAccessibility.minTouchTarget,
           ),
-          borderRadius: BorderRadius.circular(8),
-          color: theme.colorScheme.surface,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (label != null) ...[
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.md,
+          ),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.3),
+            ),
+            borderRadius: BorderRadius.circular(8),
+            color: theme.colorScheme.surface,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (label != null) ...[
+                Text(
+                  label!,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+
+              Icon(
+                Icons.access_time,
+                size: 20,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+
               Text(
-                label!,
-                style: theme.textTheme.bodyMedium?.copyWith(
+                time.format(context),
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w500,
                   color: theme.colorScheme.onSurface,
                 ),
               ),
-              const SizedBox(width: 8),
             ],
-
-            Icon(
-              Icons.access_time,
-              size: 20,
-              color: theme.colorScheme.primary,
-            ),
-            const SizedBox(width: 8),
-
-            Text(
-              time.format(context),
-              style: theme.textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w500,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -254,7 +266,7 @@ class TimeSlotsSummary extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
@@ -302,7 +314,10 @@ class TimeSlotsSummary extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),

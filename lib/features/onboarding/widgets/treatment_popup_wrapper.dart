@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hydracat/shared/widgets/accessibility/touch_target_icon_button.dart';
 
 /// A reusable wrapper for treatment setup popups
 class TreatmentPopupWrapper extends StatelessWidget {
@@ -116,13 +117,14 @@ class TreatmentPopupWrapper extends StatelessWidget {
             ),
           ),
 
-          IconButton(
+          TouchTargetIconButton(
             onPressed: () => Navigator.of(context).pop(),
             icon: Icon(
               Icons.close,
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
             tooltip: 'Close',
+            semanticLabel: 'Close popup',
           ),
         ],
       ),

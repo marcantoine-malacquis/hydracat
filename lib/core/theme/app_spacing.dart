@@ -1,3 +1,5 @@
+import 'package:hydracat/core/constants/app_accessibility.dart';
+
 /// Spacing constants for consistent layout throughout the HydraCat application.
 /// Based on the UI guidelines spacing scale.
 class AppSpacing {
@@ -24,11 +26,18 @@ class AppSpacing {
   static const double xxl = 48;
 
   // Touch target minimums
+  // (references AppAccessibility for single source of truth)
   /// Minimum touch target size - 44px
-  static const double minTouchTarget = 44;
+  ///
+  /// References [AppAccessibility.minTouchTarget] to maintain consistency
+  /// with accessibility standards.
+  static const double minTouchTarget = AppAccessibility.minTouchTarget;
 
   /// FAB button size - 56px
-  static const double fabSize = 56;
+  ///
+  /// References [AppAccessibility.fabTouchTarget] to maintain consistency
+  /// with accessibility standards.
+  static const double fabSize = AppAccessibility.fabTouchTarget;
 
   // Layout specific spacing
   /// Screen padding minimum - 24px
