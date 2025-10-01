@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/extensions/string_extensions.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
@@ -276,7 +277,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error saving pet information: $e'),
+            content: Text(context.l10n.errorSavingPetInfo(e.toString())),
             backgroundColor: AppColors.error,
           ),
         );
@@ -301,10 +302,12 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return OnboardingScreenWrapper(
       currentStep: 2,
       totalSteps: OnboardingStepType.totalSteps,
-      title: 'Tell us about your cat',
+      title: l10n.petBasicsTitle,
       onBackPressed: _goBack,
       showNextButton: false,
       stepType: OnboardingStepType.petBasics,
@@ -315,13 +318,13 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Pet Name (Required)
-            _buildSectionLabel('Pet Name', isRequired: true),
+            _buildSectionLabel(l10n.petNameLabel, isRequired: true),
             const SizedBox(height: AppSpacing.sm),
             TextFormField(
               controller: _nameController,
               textCapitalization: TextCapitalization.words,
               decoration: InputDecoration(
-                hintText: "Enter your cat's name",
+                hintText: l10n.petNameHint,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: const BorderSide(color: AppColors.border),
@@ -360,7 +363,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
             const SizedBox(height: AppSpacing.lg),
 
             // Date of Birth (Required)
-            _buildSectionLabel('Date of Birth', isRequired: true),
+            _buildSectionLabel(l10n.petDateOfBirthLabel, isRequired: true),
             const SizedBox(height: AppSpacing.sm),
             GestureDetector(
               onTap: _selectDateOfBirth,
@@ -387,7 +390,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
                     Text(
                       _selectedDateOfBirth != null
                           ? AppDateUtils.formatDate(_selectedDateOfBirth!)
-                          : 'Select date of birth',
+                          : l10n.selectDateOfBirth,
                       style: AppTextStyles.body.copyWith(
                         color: _selectedDateOfBirth != null
                             ? AppColors.textPrimary
@@ -411,7 +414,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
             const SizedBox(height: AppSpacing.lg),
 
             // Gender (Required)
-            _buildSectionLabel('Gender', isRequired: true),
+            _buildSectionLabel(l10n.petGenderLabel, isRequired: true),
             const SizedBox(height: AppSpacing.sm),
             GenderSelector(
               selectedGender: _selectedGender,
@@ -427,13 +430,13 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
             const SizedBox(height: AppSpacing.lg),
 
             // Breed (Optional)
-            _buildSectionLabel('Breed', isRequired: false),
+            _buildSectionLabel(l10n.petBreedLabel, isRequired: false),
             const SizedBox(height: AppSpacing.sm),
             TextFormField(
               controller: _breedController,
               textCapitalization: TextCapitalization.words,
               decoration: InputDecoration(
-                hintText: 'Enter breed (optional)',
+                hintText: l10n.petBreedHint,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: const BorderSide(color: AppColors.border),
@@ -490,7 +493,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
                         ),
                       ),
                     )
-                  : const Text('Save & Continue'),
+                  : Text(l10n.saveAndContinue),
             ),
 
             const SizedBox(height: AppSpacing.lg),

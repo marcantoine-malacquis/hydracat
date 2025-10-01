@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 
@@ -60,22 +61,25 @@ class _TimePickerGroupState extends State<TimePickerGroup> {
     widget.onTimesChanged(_selectedTimes);
   }
 
-  String _getTimeLabel(int index, int total) {
+  String _getTimeLabel(BuildContext context, int index, int total) {
+    final l10n = context.l10n;
+
     switch (total) {
       case 1:
-        return 'Daily time';
+        return l10n.dailyTime;
       case 2:
-        return index == 0 ? 'First intake' : 'Second intake';
+        return index == 0 ? l10n.firstIntake : l10n.secondIntake;
       case 3:
-        return ['First intake', 'Second intake', 'Third intake'][index];
+        return [l10n.firstIntake, l10n.secondIntake, l10n.thirdIntake][index];
       default:
-        return 'Time ${index + 1}';
+        return l10n.timeNumber(index + 1);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final count = widget.frequency.administrationsPerDay;
 
     if (count == 0) {
@@ -86,7 +90,7 @@ class _TimePickerGroupState extends State<TimePickerGroup> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Reminder Times',
+          l10n.reminderTimesLabel,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
             color: theme.colorScheme.onSurface,
@@ -127,7 +131,7 @@ class _TimePickerGroupState extends State<TimePickerGroup> {
       child: CompactTimePicker(
         time: _selectedTimes[index],
         onTimeChanged: (time) => _updateTime(index, time),
-        label: _getTimeLabel(index, _selectedTimes.length),
+        label: _getTimeLabel(context, index, _selectedTimes.length),
       ),
     );
   }

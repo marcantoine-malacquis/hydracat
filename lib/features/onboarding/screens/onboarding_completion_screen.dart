@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
+import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/features/onboarding/exceptions/onboarding_exceptions.dart';
@@ -28,14 +29,15 @@ class _OnboardingCompletionScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final onboardingData = ref.watch(onboardingDataProvider);
     final petName = onboardingData?.petName ?? 'your cat';
 
     return OnboardingScreenWrapper(
       currentStep: OnboardingStepType.completion.index,
       totalSteps: OnboardingStepType.totalSteps,
-      title: "You're all set!",
-      subtitle: "Ready to start tracking $petName's care journey",
+      title: l10n.onboardingCompleteTitle,
+      subtitle: l10n.readyToStartTracking(petName),
       onBackPressed: _goBack,
       showNextButton: false,
       stepType: OnboardingStepType.completion,
@@ -169,15 +171,17 @@ class _OnboardingCompletionScreenState
   }
 
   Widget _buildFinishButton() {
+    final l10n = context.l10n;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: HydraButton(
         onPressed: _isCompleting ? null : _handleFinishPressed,
         child: _isCompleting
-            ? const Row(
+            ? Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(
+                  const SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
@@ -187,11 +191,11 @@ class _OnboardingCompletionScreenState
                       ),
                     ),
                   ),
-                  SizedBox(width: AppSpacing.sm),
-                  Text('Finishing setup...'),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(l10n.finishingSetup),
                 ],
               )
-            : Text(_completionError != null ? 'Try Again' : 'Finish'),
+            : Text(_completionError != null ? l10n.retry : 'Finish'),
       ),
     );
   }

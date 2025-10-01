@@ -1,4 +1,23 @@
 /// Constants for all app strings used throughout the HydraCat application.
+///
+/// **DEPRECATED**: This class is being phased out in favor of Flutter's l10n system.
+/// New code should use `context.l10n` for localized strings instead.
+///
+/// Migration status:
+/// - ✅ Onboarding feature: Migrated to l10n
+/// - ⚠️ Other features: Still using AppStrings (to be migrated)
+///
+/// Example usage of new l10n system:
+/// ```dart
+/// // Old way (deprecated):
+/// Text(AppStrings.appName)
+///
+/// // New way (preferred):
+/// Text(context.l10n.appName)
+/// ```
+///
+/// See: lib/l10n/app_en.arb for string definitions
+@Deprecated('Use context.l10n instead. See lib/l10n/app_localizations.dart')
 class AppStrings {
   // App information
   /// The name of the application

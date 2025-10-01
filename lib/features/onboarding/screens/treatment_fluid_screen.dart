@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.dart';
 import 'package:hydracat/features/onboarding/widgets/rotating_wheel_picker.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/onboarding_provider.dart';
 
 /// Screen for setting up fluid therapy treatment
@@ -72,11 +74,12 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return OnboardingScreenWrapper(
       currentStep: 5,
       totalSteps: 6,
-      title: 'Fluid Therapy Setup',
+      title: l10n.fluidTherapySetupTitle,
       onBackPressed: _onBackPressed,
       showNextButton: false,
       showProgressInAppBar: true,
@@ -86,27 +89,31 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header section
-            _buildHeader(context, theme),
+            _buildHeader(context, theme, l10n),
 
             // Content sections
-            _buildFrequencySection(theme),
+            _buildFrequencySection(theme, l10n),
             const SizedBox(height: 32),
-            _buildVolumeSection(theme),
+            _buildVolumeSection(theme, l10n),
             const SizedBox(height: 32),
-            _buildLocationSection(theme),
+            _buildLocationSection(theme, l10n),
             const SizedBox(height: 32),
-            _buildNeedleGaugeSection(theme),
+            _buildNeedleGaugeSection(theme, l10n),
             const SizedBox(height: 32),
 
             // Footer with next button
-            _buildFooter(context, theme),
+            _buildFooter(context, theme, l10n),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, ThemeData theme) {
+  Widget _buildHeader(
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
@@ -177,7 +184,7 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
     );
   }
 
-  Widget _buildFrequencySection(ThemeData theme) {
+  Widget _buildFrequencySection(ThemeData theme, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -221,7 +228,7 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
     );
   }
 
-  Widget _buildVolumeSection(ThemeData theme) {
+  Widget _buildVolumeSection(ThemeData theme, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -254,14 +261,14 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
             });
           },
           decoration: InputDecoration(
-            labelText: 'Volume (ml) *',
-            hintText: '100.0',
-            suffixText: 'ml',
+            labelText: l10n.volumeLabel,
+            hintText: l10n.volumeHint,
+            suffixText: l10n.milliliters,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
             prefixIcon: const Icon(Icons.local_drink),
-            helperText: 'Typical range: 50-300ml for cats',
+            helperText: l10n.volumeHelperText,
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -281,7 +288,7 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
     );
   }
 
-  Widget _buildLocationSection(ThemeData theme) {
+  Widget _buildLocationSection(ThemeData theme, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -353,7 +360,7 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
     );
   }
 
-  Widget _buildNeedleGaugeSection(ThemeData theme) {
+  Widget _buildNeedleGaugeSection(ThemeData theme, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -382,14 +389,12 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
             });
           },
           decoration: InputDecoration(
-            labelText: 'Needle Gauge *',
-            hintText: '20G, 22G, 25G',
+            labelText: l10n.needleGaugeLabel,
+            hintText: l10n.needleGaugeHint,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
             prefixIcon: const Icon(Icons.colorize),
-            helperText:
-                'Common gauges: 18G-25G (smaller numbers = larger needles)',
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -451,7 +456,11 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
     );
   }
 
-  Widget _buildFooter(BuildContext context, ThemeData theme) {
+  Widget _buildFooter(
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -522,7 +531,7 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
         final theme = Theme.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to save fluid therapy setup: $e'),
+            content: Text(context.l10n.failedToSaveFluidTherapy(e.toString())),
             backgroundColor: theme.colorScheme.error,
           ),
         );

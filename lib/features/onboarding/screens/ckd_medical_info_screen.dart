@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
@@ -173,7 +174,7 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error saving medical information: $e'),
+            content: Text(context.l10n.errorSavingMedicalInfo(e.toString())),
             backgroundColor: AppColors.error,
           ),
         );
@@ -189,26 +190,22 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
 
   /// Skip this step with caring message
   Future<void> _skipStep() async {
+    final l10n = context.l10n;
+
     // Show empathetic dialog
     final shouldSkip = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Skip Medical Information?'),
-        content: const Text(
-          "That's completely fine! You can always add this information "
-          'later in your profile settings.\n\n'
-          'Having IRIS stage and lab values helps us provide more '
-          'personalized recommendations, but you can still use all '
-          'the core features without them.',
-        ),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.skipMedicalInfoTitle),
+        content: Text(l10n.skipMedicalInfoMessage),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Go Back'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.goBack),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Skip for Now'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.skipForNow),
           ),
         ],
       ),
@@ -267,10 +264,12 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return OnboardingScreenWrapper(
       currentStep: 3,
       totalSteps: OnboardingStepType.totalSteps,
-      title: 'Last Bloodwork Results',
+      title: l10n.lastBloodworkResults,
       onBackPressed: _goBack,
       showNextButton: false,
       stepType: OnboardingStepType.ckdMedicalInfo,
@@ -489,7 +488,7 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
                       ),
                     ),
                   )
-                : const Text('Continue'),
+                : Text(l10n.continue_),
           ),
 
           const SizedBox(height: AppSpacing.lg),

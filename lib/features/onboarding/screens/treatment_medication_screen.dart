@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/onboarding/screens/add_medication_screen.dart';
@@ -32,13 +33,14 @@ class _TreatmentMedicationScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final onboardingData = ref.watch(onboardingDataProvider);
     final medications = onboardingData?.medications ?? [];
 
     return OnboardingScreenWrapper(
       currentStep: 5,
       totalSteps: 6,
-      title: 'Medication Setup',
+      title: l10n.medicationSetupTitle,
       onBackPressed: _onBackPressed,
       showNextButton: false,
       showProgressInAppBar: true,
@@ -136,6 +138,8 @@ class _TreatmentMedicationScreenState
   }
 
   Widget _buildFooter(BuildContext context, ThemeData theme, bool hasItems) {
+    final l10n = context.l10n;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -150,7 +154,7 @@ class _TreatmentMedicationScreenState
               child: OutlinedButton.icon(
                 onPressed: _onAddMedication,
                 icon: const Icon(Icons.add),
-                label: const Text('Add Medication'),
+                label: Text(l10n.addMedication),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   side: BorderSide(
@@ -283,12 +287,12 @@ class _TreatmentMedicationScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to save progress: $e'),
+            content: Text(context.l10n.failedToSaveProgress(e.toString())),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
-    } finally {
+    } finally{
       if (mounted) {
         setState(() => _isLoading = false);
       }

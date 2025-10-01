@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 
 /// A card displaying medication summary information
@@ -31,6 +32,7 @@ class MedicationSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -84,7 +86,7 @@ class MedicationSummaryCard extends StatelessWidget {
                           size: 20,
                           color: theme.colorScheme.primary,
                         ),
-                        tooltip: 'Edit medication',
+                        tooltip: l10n.editMedicationTooltip,
                       ),
                     if (onDelete != null)
                       IconButton(
@@ -94,7 +96,7 @@ class MedicationSummaryCard extends StatelessWidget {
                           size: 20,
                           color: theme.colorScheme.error,
                         ),
-                        tooltip: 'Delete medication',
+                        tooltip: l10n.deleteMedicationTooltip,
                       ),
                   ],
                 ],
@@ -232,6 +234,7 @@ class EmptyMedicationState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return Container(
       padding: const EdgeInsets.all(32),
@@ -269,7 +272,7 @@ class EmptyMedicationState extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onAddMedication,
               icon: const Icon(Icons.add),
-              label: const Text('Add Medication'),
+              label: Text(l10n.addMedication),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,

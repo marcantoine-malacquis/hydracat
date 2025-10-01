@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
+import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
@@ -207,12 +208,13 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return OnboardingScreenWrapper(
       currentStep: 1,
       totalSteps: OnboardingStepType.totalSteps,
-      title: "How do you manage your pet's CKD?",
-      subtitle: 'Choose the approach that best matches your current '
-          'treatment plan',
+      title: l10n.userPersonaTitle,
+      subtitle: l10n.userPersonaSubtitle,
       onBackPressed: _isProcessingSelection ? null : _handleBackNavigation,
       showNextButton: false,
       stepType: OnboardingStepType.userPersona,

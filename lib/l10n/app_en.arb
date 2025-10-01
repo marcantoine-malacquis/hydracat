@@ -1,0 +1,243 @@
+{
+  "@@locale": "en",
+
+  "@_GENERAL": {},
+  "appName": "HydraCat",
+  "@appName": {
+    "description": "The application name"
+  },
+  "appDescription": "Hydration tracking for cats with kidney disease",
+  "@appDescription": {
+    "description": "Description of the application"
+  },
+
+  "@_COMMON_ACTIONS": {},
+  "save": "Save",
+  "saveAndContinue": "Save & Continue",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "edit": "Edit",
+  "add": "Add",
+  "confirm": "Confirm",
+  "retry": "Retry",
+  "skip": "Skip",
+  "skipForNow": "Skip for Now",
+  "getStarted": "Get Started",
+  "goBack": "Go Back",
+  "continue_": "Continue",
+
+  "@_COMMON_MESSAGES": {},
+  "loading": "Loading...",
+  "error": "Error",
+  "success": "Success",
+  "warning": "Warning",
+  "info": "Information",
+  "finishingSetup": "Finishing setup...",
+
+  "@_ONBOARDING_WELCOME": {},
+  "welcomeTitle": "Welcome to HydraCat",
+  "@welcomeTitle": {
+    "description": "Title shown on welcome screen"
+  },
+  "welcomeSubtitle": "Managing chronic kidney disease can feel overwhelming, but you're not alone. HydraCat helps you track treatments, monitor progress, and stay connected with your vet.",
+  "@welcomeSubtitle": {
+    "description": "Subtitle on welcome screen"
+  },
+  "yourCkdJourneyStartsHere": "Your CKD Journey Starts Here",
+  "@yourCkdJourneyStartsHere": {
+    "description": "Secondary welcome message"
+  },
+  "failedToSkipOnboarding": "Failed to skip onboarding. Please try again.",
+
+  "@_ONBOARDING_PERSONA": {},
+  "userPersonaTitle": "How do you manage your pet's CKD?",
+  "@userPersonaTitle": {
+    "description": "Title for user persona selection screen"
+  },
+  "userPersonaSubtitle": "Choose the approach that best matches your current treatment plan.",
+  "@userPersonaSubtitle": {
+    "description": "Subtitle for user persona selection screen"
+  },
+
+  "@_ONBOARDING_PET_BASICS": {},
+  "petBasicsTitle": "Tell us about your cat",
+  "@petBasicsTitle": {
+    "description": "Title for pet basics screen"
+  },
+  "petNameLabel": "Pet Name *",
+  "petNameHint": "Enter your cat's name",
+  "petDateOfBirthLabel": "Date of Birth",
+  "selectDateOfBirth": "Select date of birth",
+  "petGenderLabel": "Gender *",
+  "petBreedLabel": "Breed",
+  "petBreedHint": "Enter breed (optional)",
+  "errorSavingPetInfo": "Error saving pet information: {error}",
+  "@errorSavingPetInfo": {
+    "description": "Error message when saving pet information fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Network error"
+      }
+    }
+  },
+
+  "@_ONBOARDING_MEDICAL_INFO": {},
+  "medicalInfoTitle": "Medical Information",
+  "lastBloodworkResults": "Last Bloodwork Results",
+  "lastCheckupDateLabel": "Last Checkup Date",
+  "selectLastCheckupDate": "Select last checkup date (optional)",
+  "bloodworkDateLabel": "Bloodwork Date",
+  "selectBloodworkDate": "Select bloodwork date",
+  "bunLabel": "BUN (Blood Urea Nitrogen)",
+  "creatinineLabel": "Creatinine",
+  "phosphorusLabel": "Phosphorus",
+  "skipMedicalInfoTitle": "Skip Medical Information?",
+  "skipMedicalInfoMessage": "You can add this information later from your pet's profile.",
+  "errorSavingMedicalInfo": "Error saving medical information: {error}",
+  "@errorSavingMedicalInfo": {
+    "description": "Error message when saving medical information fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "@_ONBOARDING_TREATMENT_SETUP": {},
+  "treatmentSetupTitle": "Treatment Setup",
+  "setUpYourMedications": "Set up your medications",
+  "setUpYourFluidTherapy": "Set up your fluid therapy",
+
+  "@_ONBOARDING_MEDICATION": {},
+  "medicationSetupTitle": "Medication Setup",
+  "addMedicationDetails": "Add Medication Details",
+  "editMedicationDetails": "Edit Medication Details",
+  "addMedication": "Add Medication",
+  "medicationInformation": "Medication Information",
+  "medicationInformationDesc": "Enter the name and dosage form of the medication.",
+  "medicationNameLabel": "Medication Name *",
+  "medicationNameHint": "e.g., Benazepril, Furosemide",
+  "dosageLabel": "Dosage",
+  "setDosage": "Set Dosage",
+  "dosageAmountRequired": "Required: amount per administration",
+  "unitTypeLabel": "Unit Type *",
+  "frequencyLabel": "Frequency",
+  "setFrequency": "Set Frequency",
+  "administrationFrequency": "Administration Frequency",
+  "reminderTimesTitle": "Reminder Times",
+  "setReminderTimes": "Set Reminder Times",
+  "editMedicationTooltip": "Edit medication",
+  "deleteMedicationTooltip": "Delete medication",
+  "deleteMedicationTitle": "Delete Medication",
+  "deleteMedicationMessage": "Are you sure you want to delete this medication?",
+  "failedToSaveMedication": "Failed to save medication: {error}",
+  "@failedToSaveMedication": {
+    "description": "Error message when saving medication fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToSaveProgress": "Failed to save progress: {error}",
+  "@failedToSaveProgress": {
+    "description": "Error message when saving progress fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "saveMedication": "Save Medication",
+
+  "@_ONBOARDING_FLUID_THERAPY": {},
+  "fluidTherapySetupTitle": "Fluid Therapy Setup",
+  "volumeLabel": "Volume (ml) *",
+  "volumeHint": "100.0",
+  "volumeHelperText": "Typical range: 50-300ml for cats",
+  "preferredLocationLabel": "Preferred Administration Location",
+  "needleGaugeLabel": "Needle Gauge *",
+  "needleGaugeHint": "20G, 22G, 25G",
+  "failedToSaveFluidTherapy": "Failed to save fluid therapy setup: {error}",
+  "@failedToSaveFluidTherapy": {
+    "description": "Error message when saving fluid therapy setup fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+
+  "@_ONBOARDING_COMPLETION": {},
+  "onboardingCompleteTitle": "You're All Set!",
+  "readyToStartTracking": "Ready to start tracking {petName}'s care journey",
+  "@readyToStartTracking": {
+    "description": "Message shown on completion screen",
+    "placeholders": {
+      "petName": {
+        "type": "String",
+        "example": "Fluffy"
+      }
+    }
+  },
+
+  "@_TIME_PICKER": {},
+  "dailyTime": "Daily time",
+  "firstIntake": "First intake",
+  "secondIntake": "Second intake",
+  "thirdIntake": "Third intake",
+  "timeNumber": "Time {number}",
+  "@timeNumber": {
+    "description": "Label for time picker when there are more than 3 times",
+    "placeholders": {
+      "number": {
+        "type": "int",
+        "example": "4"
+      }
+    }
+  },
+  "reminderTimesLabel": "Reminder Times",
+  "frequencyOnceDaily": "Set a time for the daily administration",
+  "frequencyTwiceDaily": "Set times for morning and evening administration (12 hours apart recommended)",
+  "frequencyThreeTimesDaily": "Set times for morning, afternoon, and evening administration (8 hours apart recommended)",
+  "frequencyEveryOtherDay": "Set a preferred time for every-other-day administration",
+  "frequencyAsNeeded": "No fixed schedule - you'll log when administered",
+
+  "@_NAVIGATION": {},
+  "home": "Home",
+  "profile": "Profile",
+  "logging": "Session Logging",
+  "progress": "Progress & Analytics",
+  "resources": "Resources & Tips",
+  "login": "Login",
+  "logout": "Logout",
+
+  "@_HYDRATION": {},
+  "hydrationSession": "Hydration Session",
+  "fluidIntake": "Fluid Intake",
+  "sessionDuration": "Session Duration",
+  "startSession": "Start Session",
+  "endSession": "End Session",
+  "sessionNotes": "Session Notes",
+
+  "@_PET_PROFILE": {},
+  "catName": "Cat Name",
+  "catAge": "Age",
+  "catWeight": "Weight",
+  "catBreed": "Breed",
+  "medicalNotes": "Medical Notes",
+
+  "@_UNITS": {},
+  "milliliters": "ml",
+  "minutes": "min",
+  "kilograms": "kg",
+  "pounds": "lbs",
+  "years": "years",
+
+  "@_PLACEHOLDERS": {},
+  "enterCatName": "Enter cat name",
+  "enterWeight": "Enter weight",
+  "enterAge": "Enter age",
+  "addNotes": "Add notes..."
+}

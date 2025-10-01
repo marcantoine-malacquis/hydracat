@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   cached_network_image: ^3.4.1
   cloud_firestore: ^6.0.0
@@ -88,6 +90,8 @@ dependency_overrides:
 
 # The following section is specific to Flutter packages.
 flutter:
+  # Enable l10n code generation
+  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

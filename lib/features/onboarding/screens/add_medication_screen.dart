@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
+import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/onboarding/widgets/rotating_wheel_picker.dart';
 import 'package:hydracat/features/onboarding/widgets/time_picker_group.dart';
 import 'package:hydracat/features/onboarding/widgets/treatment_popup_wrapper.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 
 /// Multi-step screen for adding/editing medications
 class AddMedicationScreen extends StatefulWidget {
@@ -77,11 +79,13 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Center(
         child: MedicationStepPopup(
-          title: _getStepTitle(),
+          title: _getStepTitle(l10n),
           currentStep: _currentStep,
           totalSteps: _totalSteps,
           onPrevious: _currentStep > 1 ? _onPrevious : null,
@@ -107,26 +111,28 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     );
   }
 
-  String _getStepTitle() {
+  String _getStepTitle(AppLocalizations l10n) {
     return switch (_currentStep) {
-      1 =>
-        widget.isEditing ? 'Edit Medication Details' : 'Add Medication Details',
-      2 => 'Set Dosage',
-      3 => 'Set Frequency',
-      4 => 'Set Reminder Times',
-      _ => 'Add Medication',
+      1 => widget.isEditing
+          ? l10n.editMedicationDetails
+          : l10n.addMedicationDetails,
+      2 => l10n.setDosage,
+      3 => l10n.setFrequency,
+      4 => l10n.setReminderTimes,
+      _ => l10n.addMedication,
     };
   }
 
   Widget _buildNameAndUnitStep() {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Medication Information',
+            l10n.medicationInformation,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -134,7 +140,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
           const SizedBox(height: 8),
 
           Text(
-            'Enter the name and dosage form of the medication.',
+            l10n.medicationInformationDesc,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
@@ -150,8 +156,8 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
               });
             },
             decoration: InputDecoration(
-              labelText: 'Medication Name *',
-              hintText: 'e.g., Benazepril, Furosemide',
+              labelText: l10n.medicationNameLabel,
+              hintText: l10n.medicationNameHint,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -163,7 +169,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
           // Unit selector
           Text(
-            'Unit Type *',
+            l10n.unitTypeLabel,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -456,7 +462,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to save medication: $e'),
+            content: Text(context.l10n.failedToSaveMedication(e.toString())),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );

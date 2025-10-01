@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/app/router.dart';
 import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/core/theme/app_theme.dart';
@@ -165,6 +167,15 @@ class _HydraCatAppState extends ConsumerState<HydraCatApp> {
         darkTheme: AppTheme.darkTheme,
         themeMode: themeMode,
         routerConfig: router,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('en'), // English
+        ],
         builder: (context, child) {
           return GestureDetector(
             onTap: () => FocusScope.of(context).unfocus(),

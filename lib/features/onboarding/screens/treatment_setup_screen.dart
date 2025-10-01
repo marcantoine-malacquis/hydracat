@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/screens/treatment_fluid_screen.dart';
@@ -60,11 +61,12 @@ class _TreatmentSetupScreenState extends ConsumerState<TreatmentSetupScreen> {
 
   Widget _buildErrorScreen(String title, String message) {
     final theme = Theme.of(context);
-    
+    final l10n = context.l10n;
+
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Treatment Setup'),
+        title: Text(l10n.treatmentSetupTitle),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -80,7 +82,7 @@ class _TreatmentSetupScreenState extends ConsumerState<TreatmentSetupScreen> {
                 color: theme.colorScheme.error,
               ),
               const SizedBox(height: 16),
-              
+
               Text(
                 title,
                 style: theme.textTheme.headlineSmall?.copyWith(
@@ -90,7 +92,7 @@ class _TreatmentSetupScreenState extends ConsumerState<TreatmentSetupScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              
+
               Text(
                 message,
                 style: theme.textTheme.bodyLarge?.copyWith(
@@ -99,10 +101,10 @@ class _TreatmentSetupScreenState extends ConsumerState<TreatmentSetupScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-              
+
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Go Back'),
+                child: Text(l10n.goBack),
               ),
             ],
           ),

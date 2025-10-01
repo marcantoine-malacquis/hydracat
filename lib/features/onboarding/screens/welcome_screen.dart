@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/app/router.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
+import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
@@ -22,13 +23,13 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+
     return OnboardingScreenWrapper(
       currentStep: 0,
       totalSteps: OnboardingStepType.totalSteps,
-      title: 'Welcome to HydraCat',
-      subtitle: 'Managing chronic kidney disease can feel overwhelming, but '
-          "you're not alone. HydraCat helps you track treatments, monitor "
-          'progress, and stay connected with your vet.',
+      title: l10n.welcomeTitle,
+      subtitle: l10n.welcomeSubtitle,
       showBackButton: false,
       showNextButton: false,
       showProgressInAppBar: true,
@@ -50,7 +51,7 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
-            child: const Text('Skip'),
+            child: Text(l10n.skip),
           ),
         ),
       ],
@@ -59,6 +60,8 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
   }
 
   Widget _buildWelcomeContent(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -72,7 +75,7 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
 
         // Additional welcome message (now that subtitle is in wrapper)
         Text(
-          'Your CKD Journey Starts Here',
+          l10n.yourCkdJourneyStartsHere,
           style: AppTextStyles.h2.copyWith(
             color: AppColors.textPrimary,
           ),
@@ -86,7 +89,7 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
           onPressed: () => _handleGetStarted(context, ref),
           isFullWidth: true,
           size: HydraButtonSize.large,
-          child: const Text('Get Started'),
+          child: Text(l10n.getStarted),
         ),
 
         const SizedBox(height: AppSpacing.lg),
@@ -243,8 +246,8 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
       // Handle error case
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to skip onboarding. Please try again.'),
+          SnackBar(
+            content: Text(context.l10n.failedToSkipOnboarding),
           ),
         );
       }
