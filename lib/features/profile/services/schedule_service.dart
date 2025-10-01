@@ -39,13 +39,19 @@ class ScheduleService {
         );
       }
 
-      // Add the schedule document
-      final docRef = await _schedulesCollection(userId, petId).add(
-        scheduleData,
-      );
+      // Generate ID client-side to avoid two-write pattern
+      final docRef = _schedulesCollection(userId, petId).doc();
 
-      // Update the document with its own ID
-      await docRef.update({'id': docRef.id});
+      // Add ID and server timestamps to data
+      final dataWithId = {
+        ...scheduleData,
+        'id': docRef.id,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      // Single write operation
+      await docRef.set(dataWithId);
 
       if (kDebugMode) {
         debugPrint(
@@ -64,6 +70,78 @@ class ScheduleService {
         debugPrint('[ScheduleService] Unexpected error creating schedule: $e');
       }
       throw PetServiceException('Failed to create schedule: $e');
+    }
+  }
+
+  /// Creates multiple schedules in a single atomic batch operation
+  ///
+  /// This method is optimized for creating multiple schedules at once,
+  /// reducing network round-trips and Firebase write costs.
+  /// All schedules are created atomically - either all succeed or all fail.
+  ///
+  /// Returns a list of schedule IDs in the same order as the input data
+  Future<List<String>> createSchedulesBatch({
+    required String userId,
+    required String petId,
+    required List<Map<String, dynamic>> schedulesData,
+  }) async {
+    try {
+      if (kDebugMode) {
+        debugPrint(
+          '[ScheduleService] Creating ${schedulesData.length} schedules '
+          'in batch for pet $petId',
+        );
+      }
+
+      // Create a batch write
+      final batch = firestore.batch();
+      final scheduleIds = <String>[];
+
+      // Add all schedules to the batch
+      for (final scheduleData in schedulesData) {
+        // Generate ID client-side
+        final docRef = _schedulesCollection(userId, petId).doc();
+
+        // Add ID and server timestamps to data
+        final dataWithId = {
+          ...scheduleData,
+          'id': docRef.id,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        };
+
+        // Add to batch
+        batch.set(docRef, dataWithId);
+        scheduleIds.add(docRef.id);
+      }
+
+      // Commit all writes in a single network round-trip
+      await batch.commit();
+
+      if (kDebugMode) {
+        debugPrint(
+          '[ScheduleService] Successfully created ${scheduleIds.length} '
+          'schedules in batch for pet $petId',
+        );
+      }
+
+      return scheduleIds;
+    } on FirebaseException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[ScheduleService] Firebase error creating schedules batch: $e',
+        );
+      }
+      throw PetServiceException(
+        'Failed to create schedules batch: ${e.message}',
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[ScheduleService] Unexpected error creating schedules batch: $e',
+        );
+      }
+      throw PetServiceException('Failed to create schedules batch: $e');
     }
   }
 

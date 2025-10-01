@@ -141,7 +141,7 @@ The analysis should identify:
 
 
 
-  Review prompt example:
+Review prompt example:
   
 I would like to review the code related my onboarding feature in @onboarding/ to identify inconsistencies or dead code meaning:
 - two different ways of achieving the same thinh

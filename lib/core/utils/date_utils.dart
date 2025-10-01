@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 /// Utility class for date and time formatting and manipulation.
@@ -138,5 +139,37 @@ class AppDateUtils {
     } else {
       return '${duration.inMinutes}m';
     }
+  }
+
+  /// Generates default reminder times based on frequency
+  ///
+  /// Returns evenly spaced reminder times throughout the day:
+  /// - 1x daily: 9:00 AM
+  /// - 2x daily: 9:00 AM, 9:00 PM
+  /// - 3x daily: 9:00 AM, 3:00 PM, 9:00 PM
+  static List<TimeOfDay> generateDefaultReminderTimes(
+    int administrationsPerDay,
+  ) {
+    return switch (administrationsPerDay) {
+      1 => [const TimeOfDay(hour: 9, minute: 0)], // 9:00 AM
+      2 => [
+        const TimeOfDay(hour: 9, minute: 0),  // 9:00 AM
+        const TimeOfDay(hour: 21, minute: 0), // 9:00 PM
+      ],
+      3 => [
+        const TimeOfDay(hour: 9, minute: 0),  // 9:00 AM
+        const TimeOfDay(hour: 15, minute: 0), // 3:00 PM
+        const TimeOfDay(hour: 21, minute: 0), // 9:00 PM
+      ],
+      _ => [const TimeOfDay(hour: 9, minute: 0)],
+    };
+  }
+
+  /// Converts TimeOfDay to DateTime for today
+  ///
+  /// Useful for converting picker times to DateTime objects for storage
+  static DateTime timeOfDayToDateTime(TimeOfDay time) {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day, time.hour, time.minute);
   }
 }

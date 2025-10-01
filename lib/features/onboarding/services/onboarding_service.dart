@@ -453,22 +453,16 @@ class OnboardingService {
             );
           }
 
-          // Create schedules for each medication using batch operation
-          for (final medication in _currentData!.medications!) {
-            final scheduleData = medication.toSchedule();
-            await _scheduleService.createSchedule(
-              userId: _currentData!.userId!,
-              petId: petProfile.id,
-              scheduleData: scheduleData,
-            );
+          // Create all schedules in a single batch operation for efficiency
+          final schedulesData = _currentData!.medications!
+              .map((medication) => medication.toSchedule())
+              .toList();
 
-            if (kDebugMode) {
-              debugPrint(
-                '[OnboardingService] Successfully created schedule for '
-                'medication: ${medication.name}',
-              );
-            }
-          }
+          await _scheduleService.createSchedulesBatch(
+            userId: _currentData!.userId!,
+            petId: petProfile.id,
+            schedulesData: schedulesData,
+          );
 
           if (kDebugMode) {
             debugPrint(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.dart';
 import 'package:hydracat/features/onboarding/widgets/rotating_wheel_picker.dart';
@@ -514,7 +515,7 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
 
       if (moveSuccess && mounted) {
         // Navigate to completion screen
-        context.go('/onboarding/completion');
+        context.go(OnboardingStepType.completion.routeName);
       }
     } on Exception catch (e) {
       if (mounted) {

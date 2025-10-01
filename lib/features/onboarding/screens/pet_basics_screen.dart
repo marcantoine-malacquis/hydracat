@@ -269,7 +269,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
 
         if (moveSuccess && mounted) {
           // Navigate to medical information screen
-          context.go('/onboarding/medical');
+          context.go(OnboardingStepType.ckdMedicalInfo.routeName);
         }
       }
     } on Exception catch (e) {
@@ -295,7 +295,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
     await ref.read(onboardingProvider.notifier).moveToPreviousStep();
     if (mounted) {
       // Navigate to previous screen (user persona)
-      context.go('/onboarding/persona');
+      context.go(OnboardingStepType.userPersona.routeName);
     }
   }
 
@@ -307,7 +307,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
       title: 'Tell us about your cat',
       onBackPressed: _goBack,
       showNextButton: false,
-      stepName: 'pet_basics',
+      stepType: OnboardingStepType.petBasics,
       showProgressInAppBar: true,
       child: Form(
         key: _formKey,

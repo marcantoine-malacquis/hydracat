@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
+import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/onboarding/widgets/rotating_wheel_picker.dart';
 import 'package:hydracat/features/onboarding/widgets/time_picker_group.dart';
@@ -68,27 +69,9 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
           .map(TimeOfDay.fromDateTime)
           .toList();
     } else {
-      _reminderTimes = _generateDefaultTimes(_selectedFrequency);
-    }
-  }
-
-  List<TimeOfDay> _generateDefaultTimes(TreatmentFrequency frequency) {
-    switch (frequency.administrationsPerDay) {
-      case 1:
-        return [const TimeOfDay(hour: 8, minute: 0)];
-      case 2:
-        return [
-          const TimeOfDay(hour: 8, minute: 0),
-          const TimeOfDay(hour: 20, minute: 0),
-        ];
-      case 3:
-        return [
-          const TimeOfDay(hour: 8, minute: 0),
-          const TimeOfDay(hour: 14, minute: 0),
-          const TimeOfDay(hour: 20, minute: 0),
-        ];
-      default:
-        return [const TimeOfDay(hour: 8, minute: 0)];
+      _reminderTimes = AppDateUtils.generateDefaultReminderTimes(
+        _selectedFrequency.administrationsPerDay,
+      );
     }
   }
 
@@ -312,7 +295,9 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                 setState(() {
                   _selectedFrequency = TreatmentFrequency.values[index];
                   // Update reminder times when frequency changes
-                  _reminderTimes = _generateDefaultTimes(_selectedFrequency);
+                  _reminderTimes = AppDateUtils.generateDefaultReminderTimes(
+                    _selectedFrequency.administrationsPerDay,
+                  );
                 });
               },
             ),

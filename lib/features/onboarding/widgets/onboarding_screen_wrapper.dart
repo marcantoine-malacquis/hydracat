@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_progress_indicator.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
@@ -27,7 +28,8 @@ class OnboardingScreenWrapper extends ConsumerStatefulWidget {
     this.nextButtonEnabled = true,
     this.isLoading = false,
     this.skipAction,
-    this.stepName,
+    @Deprecated('Use stepType parameter instead') this.stepName,
+    this.stepType,
     this.showProgressInAppBar = false,
     this.appBarActions,
   });
@@ -75,7 +77,12 @@ class OnboardingScreenWrapper extends ConsumerStatefulWidget {
   final Widget? skipAction;
 
   /// Optional step name for analytics tracking
+  /// (DEPRECATED: use stepType instead)
+  @Deprecated('Use stepType parameter instead')
   final String? stepName;
+
+  /// Step type for type-safe analytics tracking (preferred over stepName)
+  final OnboardingStepType? stepType;
 
   /// Whether to show the progress indicator in the app bar instead of header
   final bool showProgressInAppBar;
@@ -108,10 +115,13 @@ class _OnboardingScreenWrapperState
   }
 
   void _trackScreenView() {
-    final stepName = widget.stepName ?? 'step_${widget.currentStep}';
+    // Use stepType.analyticsEventName if available
+    final screenName =
+        widget.stepType?.analyticsEventName ??
+        'onboarding_step_${widget.currentStep}';
 
     _analyticsService?.trackScreenView(
-      screenName: 'onboarding_$stepName',
+      screenName: screenName,
       screenClass: 'OnboardingScreen',
     );
   }
@@ -120,7 +130,8 @@ class _OnboardingScreenWrapperState
     if (!mounted || _analyticsService == null) return;
 
     final duration = DateTime.now().difference(_screenStartTime);
-    final stepName = widget.stepName ?? 'step_${widget.currentStep}';
+    // Use stepType.name if available
+    final stepName = widget.stepType?.name ?? 'step_${widget.currentStep}';
 
     // Track as a feature usage with timing data
     _analyticsService!.trackFeatureUsed(

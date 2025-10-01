@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
-import 'package:hydracat/features/onboarding/widgets/rotating_wheel_picker.dart';
 
 /// A group of time pickers based on treatment frequency
 class TimePickerGroup extends StatefulWidget {
@@ -49,27 +49,7 @@ class _TimePickerGroupState extends State<TimePickerGroup> {
     if (widget.initialTimes != null && widget.initialTimes!.length == count) {
       _selectedTimes = List<TimeOfDay>.from(widget.initialTimes!);
     } else {
-      _selectedTimes = _generateDefaultTimes(count);
-    }
-  }
-
-  List<TimeOfDay> _generateDefaultTimes(int count) {
-    switch (count) {
-      case 1:
-        return [const TimeOfDay(hour: 8, minute: 0)]; // 8:00 AM
-      case 2:
-        return [
-          const TimeOfDay(hour: 8, minute: 0), // 8:00 AM
-          const TimeOfDay(hour: 20, minute: 0), // 8:00 PM
-        ];
-      case 3:
-        return [
-          const TimeOfDay(hour: 8, minute: 0), // 8:00 AM
-          const TimeOfDay(hour: 14, minute: 0), // 2:00 PM
-          const TimeOfDay(hour: 20, minute: 0), // 8:00 PM
-        ];
-      default:
-        return [const TimeOfDay(hour: 8, minute: 0)];
+      _selectedTimes = AppDateUtils.generateDefaultReminderTimes(count);
     }
   }
 
@@ -144,24 +124,10 @@ class _TimePickerGroupState extends State<TimePickerGroup> {
   Widget _buildTimePicker(int index, ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            _getTimeLabel(index, _selectedTimes.length),
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w500,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          TimePicker(
-            initialTime: _selectedTimes[index],
-            onTimeChanged: (time) => _updateTime(index, time),
-            use24HourFormat: MediaQuery.of(context).alwaysUse24HourFormat,
-          ),
-        ],
+      child: CompactTimePicker(
+        time: _selectedTimes[index],
+        onTimeChanged: (time) => _updateTime(index, time),
+        label: _getTimeLabel(index, _selectedTimes.length),
       ),
     );
   }

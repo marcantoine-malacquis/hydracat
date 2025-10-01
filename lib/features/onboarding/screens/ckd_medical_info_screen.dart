@@ -166,7 +166,7 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
 
         if (moveSuccess && mounted) {
           // Navigate to treatment setup screen
-          context.go('/onboarding/treatment');
+          context.go(OnboardingStepType.treatmentSetup.routeName);
         }
       }
     } on Exception catch (e) {
@@ -234,7 +234,7 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
     await ref.read(onboardingProvider.notifier).moveToPreviousStep();
     if (mounted) {
       // Navigate to previous screen (pet basics)
-      context.go('/onboarding/basics');
+      context.go(OnboardingStepType.petBasics.routeName);
     }
   }
 
@@ -273,7 +273,7 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
       title: 'Last Bloodwork Results',
       onBackPressed: _goBack,
       showNextButton: false,
-      stepName: 'ckd_medical_info',
+      stepType: OnboardingStepType.ckdMedicalInfo,
       showProgressInAppBar: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

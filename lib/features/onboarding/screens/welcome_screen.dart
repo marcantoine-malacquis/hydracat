@@ -32,7 +32,7 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
       showBackButton: false,
       showNextButton: false,
       showProgressInAppBar: true,
-      stepName: 'welcome',
+      stepType: OnboardingStepType.welcome,
       appBarActions: [
         Container(
           height: 20, // Match progress indicator height
@@ -177,7 +177,7 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
     } else {
       // Normal routing path (no dialog)
       debugPrint('[OnboardingWelcome] Navigating to persona screen');
-      context.go('/onboarding/persona');
+      context.go(OnboardingStepType.userPersona.routeName);
     }
   }
 

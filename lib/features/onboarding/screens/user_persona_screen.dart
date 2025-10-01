@@ -71,7 +71,7 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
           // Delay navigation slightly to show the error message
           Future.delayed(const Duration(milliseconds: 1500), () {
             if (mounted && context.mounted) {
-              context.go('/onboarding/welcome');
+              context.go(OnboardingStepType.welcome.routeName);
             }
           });
         }
@@ -160,7 +160,7 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
 
         // Navigate to pet basics screen
         if (context.mounted) {
-          context.go('/onboarding/basics');
+          context.go(OnboardingStepType.petBasics.routeName);
         }
       } else {
         // Handle error moving to next step
@@ -201,7 +201,7 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
   Future<void> _handleBackNavigation() async {
     // Navigate back to welcome screen
     if (context.mounted) {
-      context.go('/onboarding/welcome');
+      context.go(OnboardingStepType.welcome.routeName);
     }
   }
 
@@ -215,7 +215,7 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
           'treatment plan',
       onBackPressed: _isProcessingSelection ? null : _handleBackNavigation,
       showNextButton: false,
-      stepName: 'user_persona',
+      stepType: OnboardingStepType.userPersona,
       showProgressInAppBar: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

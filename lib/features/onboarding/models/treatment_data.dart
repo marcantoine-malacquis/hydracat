@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:hydracat/core/utils/date_utils.dart';
 
 /// Enumeration of treatment frequencies
 enum TreatmentFrequency {
@@ -258,12 +259,9 @@ class MedicationData {
 
   /// Converts this [MedicationData] to a schedule document
   ///
-  /// Creates a medication schedule with reminder times as
-  ///  full DateTime objects.
-  /// The schedule ID should be set when saving to Firestore
+  /// Creates a medication schedule with reminder times as DateTime objects.
+  /// The schedule ID and timestamps will be added by ScheduleService
   Map<String, dynamic> toSchedule({String? scheduleId}) {
-    final now = DateTime.now();
-
     // Store reminder times as full DateTime ISO strings (consistent with fluid)
     final reminderTimeStrings = reminderTimes
         .map((dateTime) => dateTime.toIso8601String())
@@ -278,8 +276,8 @@ class MedicationData {
       'frequency': frequency.name,
       'reminderTimes': reminderTimeStrings,
       'isActive': true,
-      'createdAt': now.toIso8601String(),
-      'updatedAt': now.toIso8601String(),
+      // createdAt and updatedAt are added by ScheduleService
+      // with server timestamps
     };
   }
 
@@ -445,11 +443,18 @@ class FluidTherapyData {
 
   /// Converts this [FluidTherapyData] to a schedule document
   ///
-  /// Creates a fluid therapy schedule with a default reminder time of 9:00 AM
-  /// The schedule ID should be set when saving to Firestore
+  /// Creates a fluid therapy schedule with default reminder times based on
+  /// frequency. The schedule ID and timestamps will be added by ScheduleService
   Map<String, dynamic> toSchedule({String? scheduleId}) {
-    final now = DateTime.now();
-    final defaultReminderTime = DateTime(now.year, now.month, now.day, 9);
+    // Generate default reminder times based on frequency
+    final defaultTimes = AppDateUtils.generateDefaultReminderTimes(
+      frequency.administrationsPerDay,
+    );
+
+    // Convert TimeOfDay to DateTime
+    final reminderDateTimes = defaultTimes
+        .map(AppDateUtils.timeOfDayToDateTime)
+        .toList();
 
     return {
       if (scheduleId != null) 'id': scheduleId,
@@ -458,10 +463,12 @@ class FluidTherapyData {
       'targetVolume': volumePerAdministration,
       'preferredLocation': preferredLocation.name,
       'needleGauge': needleGauge,
-      'reminderTimes': [defaultReminderTime.toIso8601String()],
+      'reminderTimes': reminderDateTimes
+          .map((dt) => dt.toIso8601String())
+          .toList(),
       'isActive': true,
-      'createdAt': now.toIso8601String(),
-      'updatedAt': now.toIso8601String(),
+      // createdAt and updatedAt are added by ScheduleService
+      // with server timestamps
     };
   }
 

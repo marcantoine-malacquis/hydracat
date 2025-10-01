@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/onboarding/screens/add_medication_screen.dart';
 import 'package:hydracat/features/onboarding/widgets/medication_summary_card.dart';
@@ -276,7 +277,7 @@ class _TreatmentMedicationScreenState
 
       if (moveSuccess && mounted) {
         // Navigate to completion screen
-        context.go('/onboarding/completion');
+        context.go(OnboardingStepType.completion.routeName);
       }
     } on Exception catch (e) {
       if (mounted) {

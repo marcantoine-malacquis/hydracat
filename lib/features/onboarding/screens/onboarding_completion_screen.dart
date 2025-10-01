@@ -38,7 +38,7 @@ class _OnboardingCompletionScreenState
       subtitle: "Ready to start tracking $petName's care journey",
       onBackPressed: _goBack,
       showNextButton: false,
-      stepName: 'completion',
+      stepType: OnboardingStepType.completion,
       showProgressInAppBar: true,
       child: Column(
         children: [
@@ -243,7 +243,7 @@ class _OnboardingCompletionScreenState
     await ref.read(onboardingProvider.notifier).moveToPreviousStep();
     if (mounted) {
       // Navigate to previous screen (treatment setup)
-      context.go('/onboarding/treatment');
+      context.go(OnboardingStepType.treatmentSetup.routeName);
     }
   }
 }
