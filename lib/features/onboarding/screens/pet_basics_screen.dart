@@ -12,6 +12,7 @@ import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.d
 import 'package:hydracat/features/onboarding/widgets/weight_unit_selector.dart';
 import 'package:hydracat/features/profile/services/profile_validation_service.dart';
 import 'package:hydracat/providers/onboarding_provider.dart';
+import 'package:hydracat/providers/weight_unit_provider.dart';
 import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
 
 /// Pet basics collection screen - Step 3 of onboarding flow
@@ -97,19 +98,17 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
 
   /// Load user's preferred weight unit
   Future<void> _loadWeightUnitPreference() async {
-    // For now, use default kg unit
-    // TODO(dev): Implement proper preferences when available
+    final preferredUnit = ref.read(weightUnitProvider);
     if (mounted) {
       setState(() {
-        _weightUnit = 'kg';
+        _weightUnit = preferredUnit;
       });
     }
   }
 
   /// Save weight unit preference
   Future<void> _saveWeightUnitPreference(String unit) async {
-    // For now, just update local state
-    // TODO(dev): Implement proper preferences when available
+    await ref.read(weightUnitProvider.notifier).setWeightUnit(unit);
     if (mounted) {
       setState(() {
         _weightUnit = unit;
@@ -510,22 +509,10 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
 
   /// Build section label with required indicator
   Widget _buildSectionLabel(String label, {required bool isRequired}) {
-    return RichText(
-      text: TextSpan(
-        text: label,
-        style: AppTextStyles.h3.copyWith(
-          color: AppColors.textPrimary,
-        ),
-        children: isRequired
-            ? [
-                TextSpan(
-                  text: ' *',
-                  style: AppTextStyles.h3.copyWith(
-                    color: AppColors.error,
-                  ),
-                ),
-              ]
-            : null,
+    return Text(
+      label,
+      style: AppTextStyles.h3.copyWith(
+        color: AppColors.textPrimary,
       ),
     );
   }

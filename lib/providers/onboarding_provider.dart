@@ -23,19 +23,19 @@ class OnboardingState {
 
   /// Creates initial empty state
   const OnboardingState.initial()
-      : progress = null,
-        data = null,
-        isLoading = false,
-        error = null,
-        isActive = false;
+    : progress = null,
+      data = null,
+      isLoading = false,
+      error = null,
+      isActive = false;
 
   /// Creates loading state
   const OnboardingState.loading()
-      : progress = null,
-        data = null,
-        isLoading = true,
-        error = null,
-        isActive = false;
+    : progress = null,
+      data = null,
+      isLoading = true,
+      error = null,
+      isActive = false;
 
   /// Current onboarding progress
   final OnboardingProgress? progress;
@@ -143,7 +143,7 @@ class OnboardingState {
 class OnboardingNotifier extends StateNotifier<OnboardingState> {
   /// Creates an [OnboardingNotifier] with the provided dependencies
   OnboardingNotifier(this._onboardingService, this._ref)
-      : super(const OnboardingState.initial()) {
+    : super(const OnboardingState.initial()) {
     _listenToProgressStream();
   }
 
@@ -186,7 +186,14 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
     switch (result) {
       case OnboardingSuccess():
+        // Get current progress and data directly from service
+        // (stream update might not have fired yet)
+        final progress = _onboardingService.currentProgress;
+        final data = _onboardingService.currentData;
+
         state = state.copyWith(
+          progress: progress,
+          data: data,
           isLoading: false,
           isActive: true,
         );
@@ -210,8 +217,13 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
     switch (result) {
       case OnboardingSuccess(data: final data):
+        // Get current progress directly from service
+        // (stream update might not have fired yet)
+        final progress = _onboardingService.currentProgress;
+
         state = state.copyWith(
           data: data as OnboardingData?,
+          progress: progress,
           isLoading: false,
           isActive: true,
         );
@@ -235,8 +247,14 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
     switch (result) {
       case OnboardingSuccess():
+        // Get updated progress directly from service to ensure validation
+        // state is synchronized before subsequent operations like
+        // navigateNext()
+        final updatedProgress = _onboardingService.currentProgress;
+
         state = state.copyWith(
           data: newData,
+          progress: updatedProgress,
           isLoading: false,
         );
         return true;
@@ -365,23 +383,62 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
   /// Returns the next step's route if progression is possible, null otherwise.
   /// This is a read-only operation that doesn't change state.
   String? getNextRoute() {
+    if (kDebugMode) {
+      debugPrint('[OnboardingNotifier] getNextRoute() called');
+    }
+
     if (state.progress == null || state.data == null) {
+      if (kDebugMode) {
+        debugPrint(
+          '[OnboardingNotifier] Progress or data is null - returning null',
+        );
+        debugPrint('[OnboardingNotifier] Progress: ${state.progress}');
+        debugPrint('[OnboardingNotifier] Data: ${state.data}');
+      }
       return null;
     }
 
     final currentStep = state.progress!.currentStep;
     final nextStep = currentStep.nextStep;
 
+    if (kDebugMode) {
+      debugPrint('[OnboardingNotifier] Current step: $currentStep');
+      debugPrint('[OnboardingNotifier] Next step: $nextStep');
+    }
+
     if (nextStep == null) {
+      if (kDebugMode) {
+        debugPrint(
+          '[OnboardingNotifier] No next step available - returning null',
+        );
+      }
       return null; // At completion, no next step
     }
 
     // Check if can progress from current step
-    if (!state.progress!.canProgressFromCurrentStep) {
+    final canProgress = state.progress!.canProgressFromCurrentStep;
+    if (kDebugMode) {
+      debugPrint(
+        '[OnboardingNotifier] Can progress from current step: $canProgress',
+      );
+      debugPrint(
+        '[OnboardingNotifier] Current step details: '
+        '${state.progress!.currentStepDetails}',
+      );
+    }
+
+    if (!canProgress) {
+      if (kDebugMode) {
+        debugPrint('[OnboardingNotifier] Cannot progress - returning null');
+      }
       return null;
     }
 
-    return nextStep.routeName;
+    final route = nextStep.routeName;
+    if (kDebugMode) {
+      debugPrint('[OnboardingNotifier] Returning route: $route');
+    }
+    return route;
   }
 
   /// Get the previous route in the onboarding flow
@@ -417,15 +474,59 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
   /// Use this in screens instead of manually calling moveToNextStep()
   /// and determining the route.
   Future<String?> navigateNext() async {
-    // Validate and move to next step
+    if (kDebugMode) {
+      debugPrint('[OnboardingNotifier] navigateNext() called');
+      debugPrint('[OnboardingNotifier] Current state: ${state.currentStep}');
+      debugPrint('[OnboardingNotifier] Progress: ${state.progress}');
+      debugPrint(
+        '[OnboardingNotifier] Data: ${state.data != null ? "present" : "null"}',
+      );
+      debugPrint(
+        '[OnboardingNotifier] Can progress: '
+        '${state.canProgressFromCurrentStep}',
+      );
+    }
+
+    // Get the next route BEFORE moving (while still on current step)
+    final nextRoute = getNextRoute();
+
+    if (kDebugMode) {
+      debugPrint('[OnboardingNotifier] Next route determined: $nextRoute');
+    }
+
+    if (nextRoute == null) {
+      if (kDebugMode) {
+        debugPrint(
+          '[OnboardingNotifier] Cannot get next route - returning null',
+        );
+      }
+      return null; // Can't progress from current step
+    }
+
+    // Now move to the next step
+    if (kDebugMode) {
+      debugPrint('[OnboardingNotifier] Calling moveToNextStep()...');
+    }
     final success = await moveToNextStep();
 
+    if (kDebugMode) {
+      debugPrint('[OnboardingNotifier] moveToNextStep() result: $success');
+    }
+
     if (!success) {
+      if (kDebugMode) {
+        debugPrint(
+          '[OnboardingNotifier] Move to next step failed - returning null',
+        );
+      }
       return null;
     }
 
-    // Return the route for the new current step
-    return state.currentStep?.routeName;
+    // Return the route we determined before moving
+    if (kDebugMode) {
+      debugPrint('[OnboardingNotifier] Returning next route: $nextRoute');
+    }
+    return nextRoute;
   }
 
   /// Navigate to the previous step with validation
@@ -437,15 +538,22 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
   /// Use this in screens instead of manually calling moveToPreviousStep()
   /// and determining the route.
   Future<String?> navigatePrevious() async {
-    // Move to previous step
+    // Get the previous route BEFORE moving (while still on current step)
+    final previousRoute = getPreviousRoute();
+
+    if (previousRoute == null) {
+      return null; // Can't go back from current step
+    }
+
+    // Now move to the previous step
     final success = await moveToPreviousStep();
 
     if (!success) {
       return null;
     }
 
-    // Return the route for the new current step
-    return state.currentStep?.routeName;
+    // Return the route we determined before moving
+    return previousRoute;
   }
 
   /// Extract user-friendly error message from any exception
@@ -474,7 +582,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
   /// Clear all onboarding data for a user
   Future<void> clearOnboardingData(String userId) async {
     await _onboardingService.clearOnboardingData(userId);
-    
+
     // Reset state if clearing current user's data
     final currentUserId = _ref.read(currentUserProvider)?.id;
     if (currentUserId == userId) {
@@ -498,9 +606,9 @@ final onboardingServiceProvider = Provider<OnboardingService>((ref) {
 /// Provider for the onboarding state notifier
 final onboardingProvider =
     StateNotifierProvider<OnboardingNotifier, OnboardingState>((ref) {
-  final service = ref.read(onboardingServiceProvider);
-  return OnboardingNotifier(service, ref);
-});
+      final service = ref.read(onboardingServiceProvider);
+      return OnboardingNotifier(service, ref);
+    });
 
 /// Optimized provider to get current onboarding progress
 final onboardingProgressProvider = Provider<OnboardingProgress?>((ref) {
@@ -534,9 +642,11 @@ final currentOnboardingStepProvider = Provider<OnboardingStepType?>((ref) {
 
 /// Optimized provider to check if can progress from current step
 final canProgressFromCurrentStepProvider = Provider<bool>((ref) {
-  return ref.watch(onboardingProvider.select(
-    (state) => state.canProgressFromCurrentStep,
-  ));
+  return ref.watch(
+    onboardingProvider.select(
+      (state) => state.canProgressFromCurrentStep,
+    ),
+  );
 });
 
 /// Optimized provider to check if can go back from current step
@@ -546,23 +656,29 @@ final canGoBackFromCurrentStepProvider = Provider<bool>((ref) {
 
 /// Optimized provider to check if can skip current step
 final canSkipCurrentStepProvider = Provider<bool>((ref) {
-  return ref.watch(onboardingProvider.select(
-    (state) => state.canSkipCurrentStep,
-  ));
+  return ref.watch(
+    onboardingProvider.select(
+      (state) => state.canSkipCurrentStep,
+    ),
+  );
 });
 
 /// Optimized provider to get onboarding progress percentage
 final onboardingProgressPercentageProvider = Provider<double>((ref) {
-  return ref.watch(onboardingProvider.select(
-    (state) => state.progressPercentage,
-  ));
+  return ref.watch(
+    onboardingProvider.select(
+      (state) => state.progressPercentage,
+    ),
+  );
 });
 
 /// Optimized provider to get completed steps count
 final completedStepsCountProvider = Provider<int>((ref) {
-  return ref.watch(onboardingProvider.select(
-    (state) => state.completedStepsCount,
-  ));
+  return ref.watch(
+    onboardingProvider.select(
+      (state) => state.completedStepsCount,
+    ),
+  );
 });
 
 /// Optimized provider to check if onboarding is complete

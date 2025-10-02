@@ -7,6 +7,7 @@ import 'package:hydracat/features/profile/widgets/debug_panel.dart';
 import 'package:hydracat/features/profile/widgets/profile_section_item.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
+import 'package:hydracat/providers/weight_unit_provider.dart';
 import 'package:hydracat/shared/widgets/empty_states/onboarding_cta_empty_state.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 
@@ -218,44 +219,49 @@ class ProfileScreen extends ConsumerWidget {
         label: 'Name',
         value: pet.name,
         icon: Icons.pets,
-        color: AppColors.primary,
+        color: AppColors.info,
       ),
       _PetInfoItem(
         label: 'Age',
         value: '${pet.ageYears} years',
         icon: Icons.cake,
-        color: AppColors.success,
+        color: AppColors.info,
       ),
       _PetInfoItem(
         label: 'Gender',
         value: pet.gender ?? 'Unknown',
         icon: Icons.female,
-        color: AppColors.warning,
+        color: AppColors.info,
       ),
       _PetInfoItem(
         label: 'Breed',
         value: pet.breed ?? 'Unknown',
         icon: Icons.category,
-        color: AppColors.primaryDark,
+        color: AppColors.info,
       ),
       _PetInfoItem(
         label: 'CKD Stage',
         value: pet.medicalInfo.irisStage?.displayName ?? 'Unknown',
         icon: Icons.medical_information,
-        color: AppColors.primaryLight,
+        color: AppColors.info,
+      ),
+      _PetInfoItem(
+        label: 'Weight',
+        value: pet.weightKg != null ? '' : 'Unknown', // Will be formatted below
+        icon: Icons.scale,
+        color: AppColors.info,
       ),
     ];
 
     return Column(
       children: [
-        // First row - Name and Age (most prominent)
+        // First row - Name and Age
         Row(
           children: [
             Expanded(
               child: _buildPremiumInfoItem(
                 context,
                 infoItems[0],
-                isHighlighted: true,
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -263,7 +269,6 @@ class ProfileScreen extends ConsumerWidget {
               child: _buildPremiumInfoItem(
                 context,
                 infoItems[1],
-                isHighlighted: true,
               ),
             ),
           ],
@@ -284,12 +289,30 @@ class ProfileScreen extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.md),
 
-        // Third row - CKD Stage (full width, special treatment)
-        _buildPremiumInfoItem(
-          context,
-          infoItems[4],
-          isFullWidth: true,
-          isMedical: true,
+        // Third row - CKD Stage and Weight
+        Consumer(
+          builder: (context, ref, _) {
+            final weightUnit = ref.watch(weightUnitProvider);
+            final weightItem = infoItems[5].copyWith(
+              value: _formatWeight(pet.weightKg, weightUnit),
+            );
+
+            return Row(
+              children: [
+                Expanded(
+                  child: _buildPremiumInfoItem(
+                    context,
+                    infoItems[4],
+                    isMedical: true,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: _buildPremiumInfoItem(context, weightItem),
+                ),
+              ],
+            );
+          },
         ),
       ],
     );
@@ -375,7 +398,7 @@ class ProfileScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.sm,
-                vertical: AppSpacing.xs,
+                vertical: 2,
               ),
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
@@ -386,9 +409,9 @@ class ProfileScreen extends ConsumerWidget {
               ),
               child: Text(
                 item.value,
-                style: AppTextStyles.clinicalData.copyWith(
+                style: AppTextStyles.body.copyWith(
                   color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             )
@@ -450,26 +473,23 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.md),
           // Grid skeleton
           for (int i = 0; i < 3; i++) ...[
-            if (i == 2) // Full width item for medical info
-              _buildPremiumInfoItemSkeleton(context, isFullWidth: true)
-            else
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildPremiumInfoItemSkeleton(
-                      context,
-                      isHighlighted: i == 0,
-                    ),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildPremiumInfoItemSkeleton(
+                    context,
+                    isHighlighted: i == 0,
                   ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: _buildPremiumInfoItemSkeleton(
-                      context,
-                      isHighlighted: i == 0,
-                    ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: _buildPremiumInfoItemSkeleton(
+                    context,
+                    isHighlighted: i == 0,
                   ),
-                ],
-              ),
+                ),
+              ],
+            ),
             if (i < 2) const SizedBox(height: AppSpacing.md),
           ],
         ],
@@ -481,7 +501,6 @@ class ProfileScreen extends ConsumerWidget {
   Widget _buildPremiumInfoItemSkeleton(
     BuildContext context, {
     bool isHighlighted = false,
-    bool isFullWidth = false,
   }) {
     final theme = Theme.of(context);
 
@@ -489,7 +508,7 @@ class ProfileScreen extends ConsumerWidget {
       padding: EdgeInsets.all(isHighlighted ? AppSpacing.md : AppSpacing.sm),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(isFullWidth ? 12 : 10),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: theme.colorScheme.outline.withValues(alpha: 0.2),
           width: isHighlighted ? 1.5 : 1.0,
@@ -531,24 +550,14 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.sm),
 
           // Value skeleton
-          if (isFullWidth)
-            Container(
-              width: double.infinity,
-              height: 32,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(6),
-              ),
-            )
-          else
-            Container(
-              width: isHighlighted ? 80 : 60,
-              height: 16,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
+          Container(
+            width: isHighlighted ? 80 : 60,
+            height: 16,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(4),
             ),
+          ),
         ],
       ),
     );
@@ -605,6 +614,20 @@ class ProfileScreen extends ConsumerWidget {
       return '${difference.inHours}h ago';
     } else {
       return '${difference.inDays}d ago';
+    }
+  }
+
+  /// Formats weight with proper unit conversion and decimal places
+  String _formatWeight(double? weightKg, String unit) {
+    if (weightKg == null) {
+      return 'Unknown';
+    }
+
+    if (unit == 'lbs') {
+      final weightLbs = weightKg * 2.20462;
+      return '${weightLbs.toStringAsFixed(2)} lbs';
+    } else {
+      return '${weightKg.toStringAsFixed(2)} kg';
     }
   }
 
@@ -741,4 +764,19 @@ class _PetInfoItem {
   final String value;
   final IconData icon;
   final Color color;
+
+  /// Creates a copy with updated values
+  _PetInfoItem copyWith({
+    String? label,
+    String? value,
+    IconData? icon,
+    Color? color,
+  }) {
+    return _PetInfoItem(
+      label: label ?? this.label,
+      value: value ?? this.value,
+      icon: icon ?? this.icon,
+      color: color ?? this.color,
+    );
+  }
 }

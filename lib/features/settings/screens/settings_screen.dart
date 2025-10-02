@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/features/settings/widgets/weight_unit_selector.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/theme_provider.dart';
 
@@ -28,6 +29,11 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
+          // Weight unit selector section
+          const WeightUnitSelector(),
+
+          const SizedBox(height: AppSpacing.lg),
+
           // Theme toggle section
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),

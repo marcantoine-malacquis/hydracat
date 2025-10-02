@@ -66,7 +66,7 @@
   },
   "petNameLabel": "Pet Name *",
   "petNameHint": "Enter your cat's name",
-  "petDateOfBirthLabel": "Date of Birth",
+  "petDateOfBirthLabel": "Date of Birth *",
   "selectDateOfBirth": "Select date of birth",
   "petGenderLabel": "Gender *",
   "petBreedLabel": "Breed",

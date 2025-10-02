@@ -21,6 +21,17 @@ class OnboardingProgress {
         .map(OnboardingStep.initial)
         .toList();
 
+    // Mark welcome step as started and valid since user is already
+    // on that screen and it has no validation requirements
+    final welcomeStepIndex = allSteps.indexWhere(
+      (step) => step.type == OnboardingStepType.welcome,
+    );
+    if (welcomeStepIndex != -1) {
+      allSteps[welcomeStepIndex] = allSteps[welcomeStepIndex]
+          .markStarted()
+          .updateValidation(isValid: true);
+    }
+
     return OnboardingProgress(
       currentStep: OnboardingStepType.welcome,
       steps: allSteps,

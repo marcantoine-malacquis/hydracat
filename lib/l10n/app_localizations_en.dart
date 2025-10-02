@@ -103,7 +103,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get petNameHint => 'Enter your cat\'s name';
 
   @override
-  String get petDateOfBirthLabel => 'Date of Birth';
+  String get petDateOfBirthLabel => 'Date of Birth *';
 
   @override
   String get selectDateOfBirth => 'Select date of birth';

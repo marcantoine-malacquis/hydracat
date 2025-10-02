@@ -277,7 +277,7 @@ abstract class AppLocalizations {
   /// No description provided for @petDateOfBirthLabel.
   ///
   /// In en, this message translates to:
-  /// **'Date of Birth'**
+  /// **'Date of Birth *'**
   String get petDateOfBirthLabel;
 
   /// No description provided for @selectDateOfBirth.
