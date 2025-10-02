@@ -136,59 +136,62 @@ class _CombinedTreatmentFlow extends ConsumerStatefulWidget {
 
 class _CombinedTreatmentFlowState
     extends ConsumerState<_CombinedTreatmentFlow> {
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Determine initial page based on existing data
+    // If both medications and fluid therapy exist, start on fluid page
+    final data = widget.onboardingData;
+    final hasBothComplete = (data?.medications?.isNotEmpty ?? false) &&
+                           (data?.fluidTherapy != null);
+    final initialPage = hasBothComplete ? 1 : 0;
+
+    _pageController = PageController(initialPage: initialPage);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final onboardingData = ref.watch(onboardingDataProvider);
-    final hasMedications = onboardingData?.medications?.isNotEmpty ?? false;
-    final hasFluidTherapy = onboardingData?.fluidTherapy != null;
-
-    // Determine which screen to show based on current progress
-    if (!hasMedications) {
-      // First: show medication setup
-      return TreatmentMedicationScreen(
-        onBack: widget.onBack,
-      );
-    } else if (!hasFluidTherapy) {
-      // Second: show fluid therapy setup
-      return TreatmentFluidScreen(
-        onBack: _handleFluidTherapyBack,
-      );
-    } else {
-      // Both complete, go to completion
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        final nextRoute = await ref
-            .read(onboardingProvider.notifier)
-            .navigateNext();
-
-        if (nextRoute != null && mounted && context.mounted) {
-          context.go(nextRoute);
-        }
-      });
-      return _buildLoadingScreen();
-    }
+    return PageView(
+      controller: _pageController,
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        // Page 0: Medication setup
+        TreatmentMedicationScreen(
+          onBack: widget.onBack,
+          onNext: _handleMedicationNext,
+        ),
+        // Page 1: Fluid therapy setup
+        TreatmentFluidScreen(
+          onBack: _handleFluidTherapyBack,
+        ),
+      ],
+    );
   }
 
-  /// Handles back navigation from fluid therapy screen in combined flow
+  /// Handles navigation from medication to fluid therapy screen
+  void _handleMedicationNext() {
+    _pageController.animateToPage(
+      1,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  /// Handles back navigation from fluid therapy screen
   void _handleFluidTherapyBack() {
-    // Clear medications to go back to medication setup
-    final currentData = ref.read(onboardingDataProvider);
-    if (currentData != null) {
-      ref
-          .read(onboardingProvider.notifier)
-          .updateData(
-            currentData.copyWith(medications: []),
-          );
-    }
-  }
-
-  Widget _buildLoadingScreen() {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      body: const Center(
-        child: CircularProgressIndicator(),
-      ),
+    _pageController.animateToPage(
+      0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
     );
   }
 }

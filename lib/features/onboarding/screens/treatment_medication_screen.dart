@@ -16,10 +16,14 @@ class TreatmentMedicationScreen extends ConsumerStatefulWidget {
   const TreatmentMedicationScreen({
     super.key,
     this.onBack,
+    this.onNext,
   });
 
   /// Optional callback for back navigation
   final VoidCallback? onBack;
+
+  /// Optional callback for next navigation (used in combined flow)
+  final VoidCallback? onNext;
 
   @override
   ConsumerState<TreatmentMedicationScreen> createState() =>
@@ -275,7 +279,14 @@ class _TreatmentMedicationScreenState
     setState(() => _isLoading = true);
 
     try {
-      // Move to next step
+      // If a custom onNext callback is provided (combined flow),
+      // use it instead of the default navigation
+      if (widget.onNext != null) {
+        widget.onNext!();
+        return;
+      }
+
+      // Default navigation: move to next step in onboarding
       final nextRoute = await ref
           .read(onboardingProvider.notifier)
           .navigateNext();

@@ -26,7 +26,3 @@ Here is a conversation i had about those questions. Please review it and let me 
 Let's fix the issue ... as documented in @onboarding_code_review_report.md. Please have a look at the relevant files and create the best plan to fix the issue. 
 
 
-
-1. let's keep this badge styling but make it fit perfectly in size with the rest
-2. use a single consistent color, use the same as weight
-3. keep this layout for now
