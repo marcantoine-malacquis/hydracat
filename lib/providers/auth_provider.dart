@@ -1,12 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hydracat/features/auth/models/app_user.dart';
 import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/features/auth/services/auth_service.dart';
 import 'package:hydracat/features/onboarding/services/onboarding_service.dart';
 import 'package:hydracat/features/profile/services/pet_service.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Provider for the AuthService instance
 ///
@@ -565,8 +567,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   /// Debug method to reset user state for testing onboarding flows
-  /// Clears onboarding status and primary pet ID while keeping authentication
-  /// Also deletes all pet documents from the user's pets collection
+  /// Completely wipes all user data from Firestore and local storage
+  /// while keeping authentication. This provides a true fresh start.
   /// Only intended for development/testing purposes
   Future<void> debugResetUserState() async {
     final currentUser = _authService.currentUser;
@@ -575,27 +577,28 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
 
     try {
-      // First, delete all pet documents from the user's pets collection
-      await _deleteAllUserPets(currentUser.id);
+      // Step 1: Delete ALL user data from Firestore
+      await _deleteAllUserDataFromFirestore(currentUser.id);
 
-      // Clear all pet service caches (memory and persistent)
-      await _clearPetServiceCaches();
+      // Step 2: Clear all local caches and storage
+      await _clearAllLocalData();
 
-      // Clear any existing onboarding data
+      // Step 3: Clear any existing onboarding data
       await _clearOnboardingData(currentUser.id);
 
-      // Then reset user state to fresh user (no onboarding, no primary pet)
+      // Step 4: Reset user state to fresh user (no onboarding, no primary pet)
       await updateOnboardingStatus(
         hasCompletedOnboarding: false,
         primaryPetId: '', // Clear primary pet ID
       );
 
-      // Clear auth cache to ensure fresh data on next load
+      // Step 5: Clear auth cache to ensure fresh data on next load
       _clearCache();
 
       if (kDebugMode) {
         debugPrint(
-          'Debug: Reset user state to fresh user for ${currentUser.id}',
+          'Debug: Completely reset user data for ${currentUser.id} - '
+          'all Firestore data and local storage cleared',
         );
       }
     } catch (e) {
@@ -603,20 +606,113 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// Helper method to clear all pet service caches (debug only)
-  Future<void> _clearPetServiceCaches() async {
+  /// Helper method to delete ALL user data from Firestore (debug only)
+  Future<void> _deleteAllUserDataFromFirestore(String userId) async {
+    final firestore = FirebaseFirestore.instance;
+    final userDocRef = firestore.collection('users').doc(userId);
+
     try {
-      // Import PetService to clear its caches
-      PetService().clearCache();
+      // Check if user document exists
+      final userDoc = await userDocRef.get();
+      if (!userDoc.exists) {
+        if (kDebugMode) {
+          debugPrint('Debug: User document does not exist, nothing to delete');
+        }
+        return;
+      }
+
+      // Delete known subcollections that might exist
+      final knownSubcollections = [
+        'pets',
+        'schedules',
+        'fluidSessions',
+        'weights',
+        'medications',
+        'onboarding',
+        'checkpoints',
+      ];
 
       if (kDebugMode) {
-        debugPrint('Debug: Cleared PetService caches (memory and persistent)');
+        debugPrint(
+          'Debug: Deleting known subcollections: $knownSubcollections',
+        );
+      }
+
+      // Delete all documents in each known subcollection
+      for (final subcollectionName in knownSubcollections) {
+        await _deleteSubcollection(userDocRef.collection(subcollectionName));
+      }
+
+      // Finally, delete the user document itself
+      await userDocRef.delete();
+
+      if (kDebugMode) {
+        debugPrint('Debug: Successfully deleted all user data from Firestore');
       }
     } on Exception catch (e) {
       if (kDebugMode) {
-        debugPrint('Debug: Error clearing PetService caches: $e');
+        debugPrint('Debug: Error deleting user data from Firestore: $e');
       }
-      // Don't throw here - continue with reset even if cache clearing fails
+      // Don't throw here - continue with reset even if Firestore deletion fails
+    }
+  }
+
+  /// Helper method to delete all documents in a subcollection (debug only)
+  Future<void> _deleteSubcollection(CollectionReference subcollection) async {
+    try {
+      // Get all documents in the subcollection
+      final snapshot = await subcollection.get();
+
+      if (snapshot.docs.isNotEmpty) {
+        if (kDebugMode) {
+          debugPrint(
+            'Debug: Deleting ${snapshot.docs.length} documents '
+            'from ${subcollection.id}',
+          );
+        }
+
+        // Delete all documents in batch
+        final batch = FirebaseFirestore.instance.batch();
+        for (final doc in snapshot.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          'Debug: Error deleting subcollection ${subcollection.id}: $e',
+        );
+      }
+      // Continue with other deletions even if one fails
+    }
+  }
+
+  /// Helper method to clear all local data (debug only)
+  Future<void> _clearAllLocalData() async {
+    try {
+      // Clear PetService caches
+      PetService().clearCache();
+
+      // Clear SharedPreferences data
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      // Clear secure storage
+      const secureStorage = FlutterSecureStorage();
+      await secureStorage.deleteAll();
+
+      if (kDebugMode) {
+        debugPrint(
+          'Debug: Cleared all local data '
+          '(SharedPreferences, SecureStorage, caches)',
+        );
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('Debug: Error clearing local data: $e');
+      }
+      // Don't throw here - continue with reset even if local clearing fails
     }
   }
 
@@ -634,50 +730,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
       // Don't throw here - continue with reset even if onboarding
       //clearing fails
-    }
-  }
-
-  /// Helper method to delete all pet documents for a user (debug only)
-  Future<void> _deleteAllUserPets(String userId) async {
-    final firestore = FirebaseFirestore.instance;
-    final petsCollection = firestore
-        .collection('users')
-        .doc(userId)
-        .collection('pets');
-
-    try {
-      // Get all pet documents
-      final snapshot = await petsCollection.get();
-
-      if (snapshot.docs.isNotEmpty) {
-        if (kDebugMode) {
-          debugPrint(
-            'Debug: Deleting ${snapshot.docs.length} pet document(s) '
-            'for user $userId',
-          );
-        }
-
-        // Delete all pet documents in batch
-        final batch = firestore.batch();
-        for (final doc in snapshot.docs) {
-          batch.delete(doc.reference);
-        }
-        await batch.commit();
-
-        if (kDebugMode) {
-          debugPrint('Debug: Successfully deleted all pet documents');
-        }
-      } else {
-        if (kDebugMode) {
-          debugPrint('Debug: No pet documents found to delete');
-        }
-      }
-    } on Exception catch (e) {
-      if (kDebugMode) {
-        debugPrint('Debug: Error deleting pet documents: $e');
-      }
-      // Don't throw here - continue with user state reset even if pet
-      // deletion fails
     }
   }
 }

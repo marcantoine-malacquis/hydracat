@@ -839,3 +839,329 @@ Create persona-adaptive treatment setup screens with complex medication manageme
 - Impact:
   - Skip now reliably navigates authenticated and verified users to Home.
   - Works both when onboarding is opened via routes and via the development modal.
+
+---
+
+## Router Architecture Refactor (December 2024)
+
+### Overview
+Complete refactor of onboarding routing to use GoRouter best practices, eliminating custom routing solutions and ensuring future-proof navigation.
+
+### Problems Identified
+
+**1. Widget-Based Routing Bypassed GoRouter**
+- `TreatmentSetupScreen` was directly rendering different widgets based on persona
+- This bypassed GoRouter completely, breaking:
+  - Browser back/forward navigation
+  - Deep linking
+  - URL state reflection
+  - Router redirect logic
+
+**2. PageView for Combined Flow**
+- Used `PageController` for medication → fluid navigation
+- Created state management complexity separate from router
+- URL didn't update between steps
+- No browser history for sub-steps
+- Refresh would lose PageView state
+
+**3. Hardcoded Step Numbers**
+- Step indices hardcoded across 6 screens (`currentStep: 0`, `currentStep: 1`, etc.)
+- Brittle - reordering steps required updating multiple files
+
+**4. Inconsistent Session Validation**
+- Only `UserPersonaScreen` validated onboarding session
+- Other screens assumed session existed
+
+### Solutions Implemented
+
+#### 1. GoRouter Sub-Routes for Treatment Flow (`lib/app/router.dart`)
+
+**Replaced widget-based routing with declarative sub-routes:**
+
+```dart
+// Old approach (BAD):
+return switch (persona) {
+  UserPersona.medicationOnly => TreatmentMedicationScreen(...),
+  UserPersona.fluidTherapyOnly => TreatmentFluidScreen(...),
+  // ...
+};
+
+// New approach (GOOD):
+GoRoute(
+  path: 'treatment',
+  redirect: (context, state) {
+    final persona = ref.read(onboardingDataProvider)?.treatmentApproach;
+    return switch (persona) {
+      UserPersona.medicationOnly => '/onboarding/treatment/medication',
+      UserPersona.fluidTherapyOnly => '/onboarding/treatment/fluid',
+      UserPersona.medicationAndFluidTherapy => '/onboarding/treatment/combined/medication',
+      null => '/onboarding/persona',
+    };
+  },
+  routes: [
+    GoRoute(path: 'medication', ...),
+    GoRoute(path: 'fluid', ...),
+    GoRoute(
+      path: 'combined',
+      routes: [
+        GoRoute(path: 'medication', ...),
+        GoRoute(path: 'fluid', ...),
+      ],
+    ),
+  ],
+)
+```
+
+**Route Structure:**
+- `/onboarding/treatment/medication` - Medication only persona
+- `/onboarding/treatment/fluid` - Fluid therapy only persona
+- `/onboarding/treatment/combined/medication` - Combined flow (step 1)
+- `/onboarding/treatment/combined/fluid` - Combined flow (step 2)
+
+#### 2. Treatment Screen Navigation Updates
+
+**Added `isCombinedFlow` parameter to screens:**
+
+```dart
+class TreatmentMedicationScreen extends ConsumerStatefulWidget {
+  const TreatmentMedicationScreen({
+    super.key,
+    this.onBack,
+    this.onNext,
+    this.isCombinedFlow = false,  // NEW
+  });
+
+  final bool isCombinedFlow;
+  // ...
+}
+```
+
+**Navigation logic:**
+
+```dart
+// Medication screen - Next button
+Future<void> _onNext() async {
+  if (widget.isCombinedFlow) {
+    // Combined flow: go to fluid sub-route
+    context.go('/onboarding/treatment/combined/fluid');
+    return;
+  }
+
+  // Single flow: use provider navigation
+  final nextRoute = await ref.read(onboardingProvider.notifier).navigateNext();
+  if (nextRoute != null) {
+    context.go(nextRoute);
+  }
+}
+
+// Fluid screen - Back button
+Future<void> _onBackPressed() async {
+  if (widget.isCombinedFlow) {
+    // Combined flow: go back to medication
+    context.go('/onboarding/treatment/combined/medication');
+    return;
+  }
+
+  // Default: use provider navigation
+  final previousRoute = await ref.read(onboardingProvider.notifier).navigatePrevious();
+  if (previousRoute != null) {
+    context.go(previousRoute);
+  }
+}
+```
+
+#### 3. Standardized Step Indices (`OnboardingStepType.stepIndex`)
+
+**Before (brittle):**
+```dart
+OnboardingScreenWrapper(
+  currentStep: 0,  // Hardcoded
+  totalSteps: OnboardingStepType.totalSteps,
+  // ...
+)
+```
+
+**After (maintainable):**
+```dart
+OnboardingScreenWrapper(
+  currentStep: OnboardingStepType.welcome.stepIndex,  // From enum
+  totalSteps: OnboardingStepType.totalSteps,
+  // ...
+)
+```
+
+**Updated 6 screens:**
+- `welcome_screen.dart` - `OnboardingStepType.welcome.stepIndex`
+- `user_persona_screen.dart` - `OnboardingStepType.userPersona.stepIndex`
+- `pet_basics_screen.dart` - `OnboardingStepType.petBasics.stepIndex`
+- `ckd_medical_info_screen.dart` - `OnboardingStepType.ckdMedicalInfo.stepIndex`
+- `treatment_medication_screen.dart` - `OnboardingStepType.treatmentSetup.stepIndex`
+- `treatment_fluid_screen.dart` - `OnboardingStepType.treatmentSetup.stepIndex`
+
+#### 4. Centralized Session Validation
+
+**Added to `OnboardingScreenWrapper` (`lib/features/onboarding/widgets/onboarding_screen_wrapper.dart`):**
+
+```dart
+void _validateOnboardingSession() {
+  // Skip validation for welcome screen (step 0)
+  if (widget.currentStep == 0) return;
+
+  // Check if onboarding session is active
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final isActive = ref.read(isOnboardingActiveProvider);
+    final currentProgress = ref.read(onboardingProgressProvider);
+
+    if (!isActive || currentProgress == null) {
+      debugPrint('[OnboardingScreenWrapper] No active session, redirecting to welcome');
+      if (mounted && context.mounted) {
+        context.go(OnboardingStepType.welcome.routeName);
+      }
+    }
+  });
+}
+```
+
+**Removed duplicate validation from `UserPersonaScreen`**
+
+#### 5. Deleted Obsolete Files
+
+- ✅ `treatment_setup_screen.dart` - No longer needed with router-based navigation
+
+### Benefits of New Architecture
+
+**Future-Proof:**
+- ✅ Deep linking works (can navigate directly to any treatment sub-route)
+- ✅ Browser back/forward buttons work correctly
+- ✅ URLs reflect actual application state
+- ✅ No PageView state management complexity
+- ✅ Step reordering only requires enum updates
+
+**Developer-Friendly:**
+- ✅ Clear, readable routing structure in one place (`router.dart`)
+- ✅ Step indices automatically managed by enum
+- ✅ Consistent navigation patterns across all screens
+- ✅ Centralized session validation
+- ✅ Easy to understand for new developers
+
+**Industry Standard:**
+- ✅ Uses GoRouter's built-in redirect mechanism
+- ✅ Declarative routing (Flutter/GoRouter best practice)
+- ✅ No custom routing logic scattered across widgets
+- ✅ Clean separation of concerns
+
+### How It Works Now
+
+1. **User selects persona** → Router remembers this in state
+2. **User navigates to `/onboarding/treatment`** → Router redirects based on persona:
+   - Medication Only → `/onboarding/treatment/medication`
+   - Fluid Only → `/onboarding/treatment/fluid`
+   - Both → `/onboarding/treatment/combined/medication`
+3. **Combined flow progression:**
+   - Step 1: Medication setup at `/onboarding/treatment/combined/medication`
+   - Step 2: Fluid setup at `/onboarding/treatment/combined/fluid`
+   - **URL updates with each navigation** (browser back button works!)
+4. **All flows** → Continue to `/onboarding/completion`
+
+### Files Modified
+
+**Router Configuration:**
+- `lib/app/router.dart` - Added persona-specific sub-routes with redirect logic
+
+**Treatment Screens:**
+- `lib/features/onboarding/screens/treatment_medication_screen.dart` - Added `isCombinedFlow` parameter and navigation logic
+- `lib/features/onboarding/screens/treatment_fluid_screen.dart` - Added `isCombinedFlow` parameter and navigation logic
+
+**Step Index Updates:**
+- `lib/features/onboarding/screens/welcome_screen.dart`
+- `lib/features/onboarding/screens/user_persona_screen.dart`
+- `lib/features/onboarding/screens/pet_basics_screen.dart`
+- `lib/features/onboarding/screens/ckd_medical_info_screen.dart`
+
+**Session Validation:**
+- `lib/features/onboarding/widgets/onboarding_screen_wrapper.dart` - Added centralized validation
+- `lib/features/onboarding/screens/user_persona_screen.dart` - Removed duplicate validation
+
+**Models:**
+- `lib/features/onboarding/models/onboarding_step.dart` - Added `getTreatmentRouteForPersona()` helper method
+
+### Testing Verification
+
+```bash
+flutter analyze
+# Output: No issues found! (ran in 5.7s)
+```
+
+All routing issues resolved with zero compilation errors.
+
+---
+
+### Post-Refactor Bug Fix: Combined Flow Redirect Loop
+
+**Issue Discovered:** After the refactor, the combined treatment flow (medication → fluid) had a redirect loop. The Next button on the medication screen wouldn't navigate to the fluid screen.
+
+**Root Cause Discovery (Multiple Attempts):**
+
+**Attempt 1:** Initially thought the `/onboarding/treatment/combined` route's redirect was causing the loop. Removed it, but GoRouter requires parent routes to have `pageBuilder`, `builder`, or `redirect`.
+
+**Attempt 2:** Added `redirect: (context, state) => null` to the `combined` route, but the loop persisted.
+
+**Actual Root Cause:** The `/onboarding/treatment` **parent** redirect was too greedy. It ran for ALL navigations to any treatment route, including child routes. When navigating from medication to fluid:
+1. Code calls: `context.go('/onboarding/treatment/combined/fluid')`
+2. GoRouter evaluates parent `/onboarding/treatment` redirect
+3. Parent checks persona → returns `/onboarding/treatment/combined/medication`
+4. Overrides intended navigation → infinite loop
+
+**Terminal Evidence:**
+```
+flutter: [Router] Treatment redirect - persona: UserPersona.medicationAndFluidTherapy
+flutter: [Router] Evaluating redirect: location=/onboarding/treatment/combined/medication
+flutter: [Router] Treatment redirect - persona: UserPersona.medicationAndFluidTherapy
+flutter: [Router] Evaluating redirect: location=/onboarding/treatment/combined/fluid
+flutter: [Router] Treatment redirect - persona: UserPersona.medicationAndFluidTherapy
+// Loop continues - "Treatment redirect" is from parent route, not combined route
+```
+
+**Final Fix:** Modified `/onboarding/treatment` redirect to only run for the bare `/onboarding/treatment` path, not for child routes. Check `state.matchedLocation`:
+
+```dart
+redirect: (context, state) {
+  // Only redirect if accessing the bare /onboarding/treatment path
+  // Don't interfere with navigation to specific treatment routes
+  if (state.matchedLocation != '/onboarding/treatment') {
+    return null; // Already navigating to specific route
+  }
+
+  // Initial access: redirect based on persona
+  final persona = ref.read(onboardingDataProvider)?.treatmentApproach;
+
+  if (persona == null) {
+    return '/onboarding/persona';
+  }
+
+  return switch (persona) {
+    UserPersona.medicationOnly => '/onboarding/treatment/medication',
+    UserPersona.fluidTherapyOnly => '/onboarding/treatment/fluid',
+    UserPersona.medicationAndFluidTherapy =>
+      '/onboarding/treatment/combined/medication',
+  };
+},
+```
+
+**Why This Works:**
+1. **Initial access:** `matchedLocation == '/onboarding/treatment'` → runs redirect logic
+2. **Child navigation:** `matchedLocation != '/onboarding/treatment'` → returns null (no interference)
+3. Medication screen can navigate to fluid screen without parent redirect overriding it
+4. Fluid screen can navigate back to medication screen without interference
+
+**Code Changes:**
+1. `lib/app/router.dart` lines 352-377 - Added `matchedLocation` check to parent redirect
+2. `lib/app/router.dart` line 397 - Added pass-through redirect to `combined` route
+
+**Result:** Combined treatment flow now works correctly:
+- Initial routing: `/onboarding/treatment` → `/onboarding/treatment/combined/medication` ✅
+- Medication Next: `/onboarding/treatment/combined/medication` → `/onboarding/treatment/combined/fluid` ✅
+- Fluid Back: `/onboarding/treatment/combined/fluid` → `/onboarding/treatment/combined/medication` ✅
+- No redirect loops ✅
+
+**Key Lesson:** Parent route redirects in GoRouter run for ALL child route navigations. Use `state.matchedLocation` to limit redirect scope to specific paths only.

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_progress_indicator.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
+import 'package:hydracat/providers/onboarding_provider.dart';
 import 'package:hydracat/shared/widgets/accessibility/touch_target_icon_button.dart';
 import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
 
@@ -107,6 +109,31 @@ class _OnboardingScreenWrapperState
     _screenStartTime = DateTime.now();
     _analyticsService = ref.read(analyticsServiceDirectProvider);
     _trackScreenView();
+    _validateOnboardingSession();
+  }
+
+  /// Validates that an active onboarding session exists
+  /// Redirects to welcome screen if session is invalid
+  void _validateOnboardingSession() {
+    // Skip validation for welcome screen (step 0)
+    if (widget.currentStep == 0) return;
+
+    // Check if onboarding session is active
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final isActive = ref.read(isOnboardingActiveProvider);
+      final currentProgress = ref.read(onboardingProgressProvider);
+
+      if (!isActive || currentProgress == null) {
+        debugPrint(
+          '[OnboardingScreenWrapper] No active session on step '
+          '${widget.currentStep}, redirecting to welcome',
+        );
+
+        if (mounted && context.mounted) {
+          context.go(OnboardingStepType.welcome.routeName);
+        }
+      }
+    });
   }
 
   @override

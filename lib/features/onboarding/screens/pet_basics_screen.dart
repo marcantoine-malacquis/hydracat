@@ -309,7 +309,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
     final l10n = context.l10n;
 
     return OnboardingScreenWrapper(
-      currentStep: 2,
+      currentStep: OnboardingStepType.petBasics.stepIndex,
       totalSteps: OnboardingStepType.totalSteps,
       title: l10n.petBasicsTitle,
       onBackPressed: _goBack,

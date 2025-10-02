@@ -8,6 +8,7 @@ import 'package:hydracat/features/onboarding/screens/add_medication_screen.dart'
 import 'package:hydracat/features/onboarding/widgets/medication_summary_card.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.dart';
 import 'package:hydracat/features/onboarding/widgets/treatment_popup_wrapper.dart';
+import 'package:hydracat/features/profile/models/user_persona.dart';
 import 'package:hydracat/providers/onboarding_provider.dart';
 
 /// Screen for setting up medication treatments
@@ -17,6 +18,7 @@ class TreatmentMedicationScreen extends ConsumerStatefulWidget {
     super.key,
     this.onBack,
     this.onNext,
+    this.isCombinedFlow = false,
   });
 
   /// Optional callback for back navigation
@@ -24,6 +26,9 @@ class TreatmentMedicationScreen extends ConsumerStatefulWidget {
 
   /// Optional callback for next navigation (used in combined flow)
   final VoidCallback? onNext;
+
+  /// Whether this is part of a combined treatment flow
+  final bool isCombinedFlow;
 
   @override
   ConsumerState<TreatmentMedicationScreen> createState() =>
@@ -42,10 +47,10 @@ class _TreatmentMedicationScreenState
     final medications = onboardingData?.medications ?? [];
 
     return OnboardingScreenWrapper(
-      currentStep: 5,
-      totalSteps: 6,
+      currentStep: OnboardingStepType.treatmentMedication.stepIndex,
+      totalSteps: OnboardingStepType.totalSteps,
       title: l10n.medicationSetupTitle,
-      stepType: OnboardingStepType.treatmentSetup,
+      stepType: OnboardingStepType.treatmentMedication,
       onBackPressed: _onBackPressed,
       showNextButton: false,
       showProgressInAppBar: true,
@@ -200,11 +205,20 @@ class _TreatmentMedicationScreenState
     );
   }
 
-  void _onBackPressed() {
+  Future<void> _onBackPressed() async {
+    // Use custom back callback if provided
     if (widget.onBack != null) {
       widget.onBack!();
-    } else {
-      Navigator.of(context).pop();
+      return;
+    }
+
+    // Default: go back to previous onboarding step
+    final previousRoute = await ref
+        .read(onboardingProvider.notifier)
+        .navigatePrevious();
+
+    if (previousRoute != null && mounted && context.mounted) {
+      context.go(previousRoute);
     }
   }
 
@@ -279,14 +293,42 @@ class _TreatmentMedicationScreenState
     setState(() => _isLoading = true);
 
     try {
-      // If a custom onNext callback is provided (combined flow),
-      // use it instead of the default navigation
-      if (widget.onNext != null) {
-        widget.onNext!();
+      // Get the current persona to determine navigation
+      final onboardingData = ref.read(onboardingDataProvider);
+      final persona = onboardingData?.treatmentApproach;
+      final medications = onboardingData?.medications ?? [];
+
+      // For medicationAndFluidTherapy persona, require at least one medication
+      if (persona == UserPersona.medicationAndFluidTherapy &&
+          medications.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Please add at least one medication before continuing. '
+                'This is required for the Medication & Fluid Therapy approach.',
+              ),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+        setState(() => _isLoading = false);
         return;
       }
 
-      // Default navigation: move to next step in onboarding
+      if (persona == UserPersona.medicationAndFluidTherapy) {
+        // For combined flow, update progress and navigate to fluid therapy step
+        await ref
+            .read(onboardingProvider.notifier)
+            .setCurrentStep(OnboardingStepType.treatmentFluid);
+
+        if (mounted && context.mounted) {
+          context.go('/onboarding/treatment/fluid');
+        }
+        return;
+      }
+
+      // For single medication flow, move to next onboarding step
       final nextRoute = await ref
           .read(onboardingProvider.notifier)
           .navigateNext();
@@ -297,8 +339,9 @@ class _TreatmentMedicationScreenState
       }
     } on Exception catch (e) {
       if (mounted) {
-        final errorMessage =
-            ref.read(onboardingProvider.notifier).getErrorMessage(e);
+        final errorMessage = ref
+            .read(onboardingProvider.notifier)
+            .getErrorMessage(e);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
@@ -306,7 +349,7 @@ class _TreatmentMedicationScreenState
           ),
         );
       }
-    } finally{
+    } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }

@@ -16,10 +16,14 @@ class TreatmentFluidScreen extends ConsumerStatefulWidget {
   const TreatmentFluidScreen({
     super.key,
     this.onBack,
+    this.isCombinedFlow = false,
   });
 
   /// Optional callback for back navigation
   final VoidCallback? onBack;
+
+  /// Whether this is part of a combined treatment flow
+  final bool isCombinedFlow;
 
   @override
   ConsumerState<TreatmentFluidScreen> createState() =>
@@ -77,10 +81,10 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
     final l10n = context.l10n;
 
     return OnboardingScreenWrapper(
-      currentStep: 5,
-      totalSteps: 6,
+      currentStep: OnboardingStepType.treatmentFluid.stepIndex,
+      totalSteps: OnboardingStepType.totalSteps,
       title: l10n.fluidTherapySetupTitle,
-      stepType: OnboardingStepType.treatmentSetup,
+      stepType: OnboardingStepType.treatmentFluid,
       onBackPressed: _onBackPressed,
       showNextButton: false,
       showProgressInAppBar: true,
@@ -487,11 +491,20 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
     );
   }
 
-  void _onBackPressed() {
+  Future<void> _onBackPressed() async {
+    // Use custom back callback if provided
     if (widget.onBack != null) {
       widget.onBack!();
-    } else {
-      Navigator.of(context).pop();
+      return;
+    }
+
+    // Default: go back to previous onboarding step
+    final previousRoute = await ref
+        .read(onboardingProvider.notifier)
+        .navigatePrevious();
+
+    if (previousRoute != null && mounted && context.mounted) {
+      context.go(previousRoute);
     }
   }
 
@@ -518,7 +531,7 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
             );
       }
 
-      // Move to next step
+      // Move to next step in onboarding
       final nextRoute = await ref
           .read(onboardingProvider.notifier)
           .navigateNext();
@@ -530,8 +543,9 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
     } on Exception catch (e) {
       if (mounted) {
         final theme = Theme.of(context);
-        final errorMessage =
-            ref.read(onboardingProvider.notifier).getErrorMessage(e);
+        final errorMessage = ref
+            .read(onboardingProvider.notifier)
+            .getErrorMessage(e);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),

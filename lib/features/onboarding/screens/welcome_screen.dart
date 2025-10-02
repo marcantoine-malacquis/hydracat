@@ -26,7 +26,7 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
     final l10n = context.l10n;
 
     return OnboardingScreenWrapper(
-      currentStep: 0,
+      currentStep: OnboardingStepType.welcome.stepIndex,
       totalSteps: OnboardingStepType.totalSteps,
       title: l10n.welcomeTitle,
       subtitle: l10n.welcomeSubtitle,

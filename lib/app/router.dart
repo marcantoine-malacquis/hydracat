@@ -15,7 +15,8 @@ import 'package:hydracat/features/logging/screens/logging_screen.dart';
 import 'package:hydracat/features/onboarding/screens/ckd_medical_info_screen.dart';
 import 'package:hydracat/features/onboarding/screens/onboarding_completion_screen.dart';
 import 'package:hydracat/features/onboarding/screens/pet_basics_screen.dart';
-import 'package:hydracat/features/onboarding/screens/treatment_setup_screen.dart';
+import 'package:hydracat/features/onboarding/screens/treatment_fluid_screen.dart';
+import 'package:hydracat/features/onboarding/screens/treatment_medication_screen.dart';
 import 'package:hydracat/features/onboarding/screens/user_persona_screen.dart';
 import 'package:hydracat/features/onboarding/screens/welcome_screen.dart';
 import 'package:hydracat/features/profile/screens/ckd_profile_screen.dart';
@@ -342,12 +343,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   key: state.pageKey,
                 ),
           ),
+          // Treatment medication route
           GoRoute(
-            path: 'treatment',
-            name: 'onboarding-treatment',
+            path: 'treatment/medication',
+            name: 'onboarding-treatment-medication',
             pageBuilder: (context, state) =>
                 AppPageTransitions.bidirectionalSlide(
-                  child: const TreatmentSetupScreen(),
+                  child: const TreatmentMedicationScreen(),
+                  key: state.pageKey,
+                ),
+          ),
+          // Treatment fluid route
+          GoRoute(
+            path: 'treatment/fluid',
+            name: 'onboarding-treatment-fluid',
+            pageBuilder: (context, state) =>
+                AppPageTransitions.bidirectionalSlide(
+                  child: const TreatmentFluidScreen(),
                   key: state.pageKey,
                 ),
           ),

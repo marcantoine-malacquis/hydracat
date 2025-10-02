@@ -272,7 +272,7 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
     final l10n = context.l10n;
 
     return OnboardingScreenWrapper(
-      currentStep: 3,
+      currentStep: OnboardingStepType.ckdMedicalInfo.stepIndex,
       totalSteps: OnboardingStepType.totalSteps,
       title: l10n.lastBloodworkResults,
       onBackPressed: _goBack,

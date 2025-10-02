@@ -166,9 +166,12 @@ class DebugPanel extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('✅ Reset to fresh user successfully!'),
+            content: const Text(
+              '✅ Complete user data wipe successful! '
+              'All Firestore and local data cleared.',
+            ),
             backgroundColor: Colors.green.shade600,
-            duration: const Duration(seconds: 2),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -188,29 +191,33 @@ class DebugPanel extends ConsumerWidget {
   /// Shows confirmation dialog before reset
   Future<bool> _showConfirmationDialog(BuildContext context) async {
     return await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Reset to Fresh User'),
-        content: const Text(
-          'This will clear all onboarding progress and pet data, '
-          'but keep your authentication. You can then test the '
-          'onboarding flow again.\n\n'
-          'Continue?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange.shade600,
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Complete User Data Reset'),
+            content: const Text(
+              '⚠️ WARNING: This will COMPLETELY WIPE all user data:\n\n'
+              '• All Firestore data (pets, schedules, medical records, etc.)\n'
+              '• All local storage and cache data\n'
+              '• All onboarding progress\n\n'
+              'This provides a true fresh start for testing. '
+              'Your authentication will remain intact.\n\n'
+              'This action cannot be undone. Continue?',
             ),
-            child: const Text('Reset'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.shade600,
+                ),
+                child: const Text('WIPE ALL DATA'),
+              ),
+            ],
           ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
   }
 }

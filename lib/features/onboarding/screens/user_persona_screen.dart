@@ -34,8 +34,6 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
 
     // Load existing selection if resuming onboarding
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _validateOnboardingSession();
-
       final existingData = ref.read(onboardingDataProvider);
       debugPrint('[UserPersonaScreen] Existing data: $existingData');
 
@@ -49,37 +47,6 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
         });
       }
     });
-  }
-
-  void _validateOnboardingSession() {
-    final isActive = ref.read(isOnboardingActiveProvider);
-    final currentProgress = ref.read(onboardingProgressProvider);
-
-    debugPrint('[UserPersonaScreen] Session validation:');
-    debugPrint('  - Is active: $isActive');
-    debugPrint('  - Current progress: $currentProgress');
-
-    if (!isActive || currentProgress == null) {
-      debugPrint('[UserPersonaScreen] ERROR: No active onboarding session!');
-
-      // Try to recover by going back to welcome screen
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _showErrorSnackBar(
-            'Onboarding session expired. Redirecting to start...',
-          );
-
-          // Delay navigation slightly to show the error message
-          Future.delayed(const Duration(milliseconds: 1500), () {
-            if (mounted && context.mounted) {
-              context.go(OnboardingStepType.welcome.routeName);
-            }
-          });
-        }
-      });
-    } else {
-      debugPrint('[UserPersonaScreen] Session validation successful');
-    }
   }
 
   Future<void> _handlePersonaSelection(UserPersona persona) async {
@@ -223,7 +190,7 @@ class _UserPersonaScreenState extends ConsumerState<UserPersonaScreen> {
     final l10n = context.l10n;
 
     return OnboardingScreenWrapper(
-      currentStep: 1,
+      currentStep: OnboardingStepType.userPersona.stepIndex,
       totalSteps: OnboardingStepType.totalSteps,
       title: l10n.userPersonaTitle,
       subtitle: l10n.userPersonaSubtitle,

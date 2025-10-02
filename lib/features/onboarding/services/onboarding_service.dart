@@ -12,6 +12,7 @@ import 'package:hydracat/features/onboarding/exceptions/onboarding_exceptions.da
 import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_progress.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
+import 'package:hydracat/features/profile/models/user_persona.dart';
 import 'package:hydracat/features/profile/services/pet_service.dart';
 import 'package:hydracat/features/profile/services/schedule_service.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
@@ -558,8 +559,14 @@ class OnboardingService {
       OnboardingStepType.userPersona => data.hasPersonaSelection,
       OnboardingStepType.petBasics => data.hasBasicPetInfo,
       OnboardingStepType.ckdMedicalInfo => true, // Optional step, always valid
-      OnboardingStepType.treatmentSetup =>
-        !data.needsTreatmentSetup || data.isTreatmentSetupComplete,
+      OnboardingStepType.treatmentMedication =>
+        // For medication step, validate based on persona:
+        // 1. For medicationOnly: require at least one medication
+        // 2. For medicationAndFluidTherapy: require at least one medication
+        // 3. For fluidTherapyOnly: allow progression (skip medications)
+        data.treatmentApproach == UserPersona.fluidTherapyOnly ||
+            (data.medications != null && data.medications!.isNotEmpty),
+      OnboardingStepType.treatmentFluid => data.fluidTherapy != null,
       OnboardingStepType.completion => data.isReadyForProfileCreation,
     };
   }

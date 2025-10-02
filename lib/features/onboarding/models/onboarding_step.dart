@@ -14,8 +14,11 @@ enum OnboardingStepType {
   /// CKD medical information - IRIS stage and lab values
   ckdMedicalInfo,
 
-  /// Treatment setup - persona-specific configuration
-  treatmentSetup,
+  /// Treatment medication setup - for medication-based personas
+  treatmentMedication,
+
+  /// Treatment fluid setup - for fluid-based personas
+  treatmentFluid,
 
   /// Completion screen - success and next steps
   completion;
@@ -26,7 +29,8 @@ enum OnboardingStepType {
     OnboardingStepType.userPersona => 'Treatment Approach',
     OnboardingStepType.petBasics => 'Pet Information',
     OnboardingStepType.ckdMedicalInfo => 'Medical Information',
-    OnboardingStepType.treatmentSetup => 'Treatment Setup',
+    OnboardingStepType.treatmentMedication => 'Medication Setup',
+    OnboardingStepType.treatmentFluid => 'Fluid Therapy Setup',
     OnboardingStepType.completion => 'Complete',
   };
 
@@ -36,7 +40,8 @@ enum OnboardingStepType {
     OnboardingStepType.userPersona => 'onboarding_persona_viewed',
     OnboardingStepType.petBasics => 'onboarding_basics_viewed',
     OnboardingStepType.ckdMedicalInfo => 'onboarding_medical_viewed',
-    OnboardingStepType.treatmentSetup => 'onboarding_treatment_viewed',
+    OnboardingStepType.treatmentMedication => 'onboarding_medication_viewed',
+    OnboardingStepType.treatmentFluid => 'onboarding_fluid_viewed',
     OnboardingStepType.completion => 'onboarding_completion_viewed',
   };
 
@@ -46,9 +51,24 @@ enum OnboardingStepType {
     OnboardingStepType.userPersona => '/onboarding/persona',
     OnboardingStepType.petBasics => '/onboarding/basics',
     OnboardingStepType.ckdMedicalInfo => '/onboarding/medical',
-    OnboardingStepType.treatmentSetup => '/onboarding/treatment',
+    OnboardingStepType.treatmentMedication =>
+      '/onboarding/treatment/medication',
+    OnboardingStepType.treatmentFluid => '/onboarding/treatment/fluid',
     OnboardingStepType.completion => '/onboarding/completion',
   };
+
+  /// Gets the route name for a specific persona's treatment setup
+  /// Returns null for non-treatment steps
+  String? getTreatmentRouteForPersona(String? personaName) {
+    if (personaName == null) return null;
+
+    return switch (personaName) {
+      'medicationOnly' => '/onboarding/treatment/medication',
+      'fluidTherapyOnly' => '/onboarding/treatment/fluid',
+      'medicationAndFluidTherapy' => '/onboarding/treatment/medication',
+      _ => null,
+    };
+  }
 
   /// Whether this step can be skipped
   bool get canSkip => switch (this) {
@@ -56,7 +76,8 @@ enum OnboardingStepType {
     OnboardingStepType.userPersona => false,
     OnboardingStepType.petBasics => false,
     OnboardingStepType.ckdMedicalInfo => true,
-    OnboardingStepType.treatmentSetup => true,
+    OnboardingStepType.treatmentMedication => true,
+    OnboardingStepType.treatmentFluid => true,
     OnboardingStepType.completion => false,
   };
 
@@ -66,7 +87,8 @@ enum OnboardingStepType {
     OnboardingStepType.userPersona => true,
     OnboardingStepType.petBasics => true,
     OnboardingStepType.ckdMedicalInfo => true,
-    OnboardingStepType.treatmentSetup => true,
+    OnboardingStepType.treatmentMedication => true,
+    OnboardingStepType.treatmentFluid => true,
     OnboardingStepType.completion =>
       true, // Allow back navigation to review settings
   };
@@ -77,7 +99,8 @@ enum OnboardingStepType {
     OnboardingStepType.userPersona => true, // First checkpoint
     OnboardingStepType.petBasics => true, // Second checkpoint
     OnboardingStepType.ckdMedicalInfo => false,
-    OnboardingStepType.treatmentSetup => true, // Saves medications
+    OnboardingStepType.treatmentMedication => true, // Saves medications
+    OnboardingStepType.treatmentFluid => true, // Saves fluid therapy
     OnboardingStepType.completion => true, // Final save
   };
 
@@ -87,8 +110,9 @@ enum OnboardingStepType {
     OnboardingStepType.userPersona => 1,
     OnboardingStepType.petBasics => 2,
     OnboardingStepType.ckdMedicalInfo => 3,
-    OnboardingStepType.treatmentSetup => 4,
-    OnboardingStepType.completion => 5,
+    OnboardingStepType.treatmentMedication => 4,
+    OnboardingStepType.treatmentFluid => 5,
+    OnboardingStepType.completion => 6,
   };
 
   /// Next step in the flow (null if this is the last step)
@@ -96,8 +120,9 @@ enum OnboardingStepType {
     OnboardingStepType.welcome => OnboardingStepType.userPersona,
     OnboardingStepType.userPersona => OnboardingStepType.petBasics,
     OnboardingStepType.petBasics => OnboardingStepType.ckdMedicalInfo,
-    OnboardingStepType.ckdMedicalInfo => OnboardingStepType.treatmentSetup,
-    OnboardingStepType.treatmentSetup => OnboardingStepType.completion,
+    OnboardingStepType.ckdMedicalInfo => OnboardingStepType.treatmentMedication,
+    OnboardingStepType.treatmentMedication => OnboardingStepType.treatmentFluid,
+    OnboardingStepType.treatmentFluid => OnboardingStepType.completion,
     OnboardingStepType.completion => null,
   };
 
@@ -107,8 +132,9 @@ enum OnboardingStepType {
     OnboardingStepType.userPersona => OnboardingStepType.welcome,
     OnboardingStepType.petBasics => OnboardingStepType.userPersona,
     OnboardingStepType.ckdMedicalInfo => OnboardingStepType.petBasics,
-    OnboardingStepType.treatmentSetup => OnboardingStepType.ckdMedicalInfo,
-    OnboardingStepType.completion => OnboardingStepType.treatmentSetup,
+    OnboardingStepType.treatmentMedication => OnboardingStepType.ckdMedicalInfo,
+    OnboardingStepType.treatmentFluid => OnboardingStepType.treatmentMedication,
+    OnboardingStepType.completion => OnboardingStepType.treatmentFluid,
   };
 
   /// Total number of steps in the onboarding flow

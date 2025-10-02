@@ -25,4 +25,8 @@ Here is a conversation i had about those questions. Please review it and let me 
 
 Let's fix the issue ... as documented in @onboarding_code_review_report.md. Please have a look at the relevant files and create the best plan to fix the issue. 
 
-
+The next feature I am now going to work on for my app is the treatment logging system.
+Please create a very detailed implementation plan in @~PLANNING/logging_plan.md similar to what I did for @~PLANNING/DONE/onboarding_profile_plan.md and
+@~PLANNING/DONE/auth_implementation_plan.md . So the plan is to have at the end of this logging implementation plan: 
+the user can press on the logging FAB button in the navigation bar so the already existing logging screen pop-up with pre-filled data for the session and a large "Log" button at the bottom. If the user has chosen the medication & fluid therapy persona, a very small pop-up appear above the navigation bar first with buttons for "log medication" and "log fluid" so the user is redirected to the relevant pop-up. I want it to be really user friendly so no scrolling should be needed if possible. For those pop-up screens, the background behind the pop-up should be blurred so the user attention is focused on the pop-up. Only the navigation bar stays unblurred.
+For ease of use, the user should also have the option to stay pressed longer on the FAB button when the day session went well and automatically log all data for the day. An elegant pop-up then appear above the navigation bar saying something like "today's session logged".
