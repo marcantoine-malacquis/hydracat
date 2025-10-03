@@ -13,9 +13,9 @@ Implement a comprehensive, persona-aware treatment logging system with offline-f
 - **Multi-Session Support**: Allow multiple partial logs per day (e.g., 80mL + 20mL = 100mL total)
 
 ### User Experience Flow
-- **Single Treatment Logging**: FAB press ’ Persona-specific popup ’ Adjust values ’ Log button
-- **Combined Treatment Choice**: FAB press ’ Small popup with "Log Medication" / "Log Fluid" buttons ’ Specific popup
-- **Long-Press Quick-Log**: FAB long-press ’ Auto-log all scheduled treatments for today ’ Success popup
+- **Single Treatment Logging**: FAB press ï¿½ Persona-specific popup ï¿½ Adjust values ï¿½ Log button
+- **Combined Treatment Choice**: FAB press ï¿½ Small popup with "Log Medication" / "Log Fluid" buttons ï¿½ Specific popup
+- **Long-Press Quick-Log**: FAB long-press ï¿½ Auto-log all scheduled treatments for today ï¿½ Success popup
 - **Background Blur**: Popup overlay with blurred background, unblurred navigation bar
 - **No Scrolling**: All fields visible without scrolling in popup layout
 
@@ -53,7 +53,8 @@ Implement a comprehensive, persona-aware treatment logging system with offline-f
 
 ---
 
-## = Codebase Integration Audit Results
+## =
+ Codebase Integration Audit Results
 
 ** INTEGRATION ASSESSMENT COMPLETE - ALL SYSTEMS READY**
 
@@ -133,6 +134,9 @@ class MedicationSession {
   final double dosageGiven;              // Actual amount administered
   final double dosageScheduled;          // Target from schedule
   final String medicationUnit;           // "pills", "ml", "mg", etc.
+  final String? medicationStrengthAmount;     // e.g., "2.5", "10"
+  final String? medicationStrengthUnit;       // e.g., "mg", "mgPerMl"
+  final String? customMedicationStrengthUnit; // Custom unit when unit is "other"
   final bool completed;                  // For adherence tracking
   final String? administrationMethod;    // "oral", "injection", etc.
   final String? notes;
@@ -192,7 +196,7 @@ class FluidSession {
 
 **Learning Goal:** Pre-aggregated summary architecture for cost optimization
 
-**<¯ MILESTONE:** Data models ready for logging flow implementation!
+**<ï¿½ MILESTONE:** Data models ready for logging flow implementation!
 
 ---
 
@@ -216,7 +220,7 @@ class FluidSession {
 **Implementation Notes:**
 - **Batch Write Pattern**: Use `WriteBatch` for atomic operations (all succeed or all fail)
 - **Delta Calculation**: For updates, subtract old session values before adding new values to summaries
-- **Schedule Matching**: Find reminder time within ±2 hours of actual logging time
+- **Schedule Matching**: Find reminder time within ï¿½2 hours of actual logging time
 - **Offline Storage**: Use `SecurePreferencesService` for queued operations
 - **Conflict Strategy**: `createdAt` timestamp comparison (server-side timestamp from Firestore)
 
@@ -268,7 +272,7 @@ class FluidSession {
 
 **Learning Goal:** State management for complex logging operations
 
-**<¯ MILESTONE:** Services ready, logging logic complete!
+**<ï¿½ MILESTONE:** Services ready, logging logic complete!
 
 ---
 
@@ -310,22 +314,24 @@ class FluidSession {
 
 **Layout** (No scrolling needed):
 ```
-                                     
-  Medication Logging                 
-                                     
-  Select Medications:                
-  [ Amlodipine 2.5mg]              
-  [ ] Benazepril 5mg                
-  [ Calcitriol 0.25mcg]            
-                                     
-  Amlodipine Dosage: [1.0] pills    
-  Calcitriol Dosage: [1.0] pills    
-                                     
-  Notes: [Tap to add notes...]      
-                                     
-  [       Log Medications       ]   
-                                     
+
+  Medication Logging                 
+                                     
+  Select Medications:                
+  [ Amlodipine 2.5mg]              
+  [  Benazepril 5mg ]              
+  [  Calcitriol 0.25mcg]            
+                                     
+  Amlodipine Dosage: [1.0] pills    
+  Calcitriol Dosage: [1.0] pills    
+                                     
+  Notes: [Tap to add notes...]      
+                                     
+  [       Log Medications       ]   
+
 ```
+
+**UI Note:** Medication selection cards should display medication name on the first line and strength (using `formattedStrength` from the schedule) on the second line in a two-line layout, matching the summary card design implemented in the medication setup flow.
 
 **Learning Goal:** Multi-select UI with dynamic input fields
 
@@ -353,7 +359,7 @@ class FluidSession {
   Volume: [100] ml                  
                                      
   Injection Site:                    
-  [Shoulder blade - left ¼]         
+  [Shoulder blade - left ï¿½]         
                                      
   Stress Level (optional):           
   [Low] [Medium] [High]             
@@ -404,7 +410,7 @@ class FluidSession {
 
 **Learning Goal:** User confirmation patterns for data modifications
 
-**<¯ MILESTONE:** Complete logging UI flow implemented!
+**<ï¿½ MILESTONE:** Complete logging UI flow implemented!
 
 ---
 
@@ -418,7 +424,7 @@ class FluidSession {
 - Implement quick-log flow with today's schedule check
 
 **Key Implementation:**
-- **Short Press**: Check persona ’ Route to appropriate logging popup
+- **Short Press**: Check persona ï¿½ Route to appropriate logging popup
   - `medicationOnly`: Direct to medication logging popup
   - `fluidTherapyOnly`: Direct to fluid logging popup
   - `medicationAndFluidTherapy`: Show treatment choice popup first
@@ -497,14 +503,14 @@ GoRoute(
 **Layout**:
 ```
                                      
-  [=Š Log Medication            ]   
-  [=§ Log Fluid Therapy         ]   
+  [=ï¿½ Log Medication            ]   
+  [=ï¿½ Log Fluid Therapy         ]   
                                      
 ```
 
 **Learning Goal:** Positioned popup UI and navigation choices
 
-**<¯ MILESTONE:** FAB fully integrated with persona-aware logging!
+**<ï¿½ MILESTONE:** FAB fully integrated with persona-aware logging!
 
 ---
 
@@ -693,6 +699,10 @@ Future<LoggingResult> quickLogAllTreatments({
     for (final schedule in todaySchedules) {
       if (schedule.treatmentType == TreatmentType.medication) {
         // Create session for each reminder time
+        // Note: MedicationSession.fromSchedule should include strength fields:
+        // - medicationStrengthAmount
+        // - medicationStrengthUnit
+        // - customMedicationStrengthUnit
         for (final reminderTime in schedule.reminderTimes) {
           medicationSessions.add(
             MedicationSession.fromSchedule(
@@ -743,7 +753,7 @@ Future<LoggingResult> quickLogAllTreatments({
 
 **Learning Goal:** Batch operations for multiple related documents
 
-**<¯ MILESTONE:** Firebase cost-optimized batch write system complete!
+**<ï¿½ MILESTONE:** Firebase cost-optimized batch write system complete!
 
 ---
 
@@ -825,7 +835,7 @@ Future<void> resolveConflict({
 
 **Learning Goal:** Reactive sync with connectivity monitoring
 
-**<¯ MILESTONE:** Complete offline support with automatic sync!
+**<ï¿½ MILESTONE:** Complete offline support with automatic sync!
 
 ---
 
@@ -919,7 +929,7 @@ if (medicationCount > 0) {
 
 **Learning Goal:** Cache-first architecture for performance and cost optimization
 
-**<¯ MILESTONE:** Production-ready performance optimization complete!
+**<ï¿½ MILESTONE:** Production-ready performance optimization complete!
 
 ---
 
@@ -1104,7 +1114,7 @@ class LoggingValidationService {
   }) async {
     final todaySummary = await _getCachedTodaySummary(petId, userId);
 
-    // Check if similar session exists within ±1 hour
+    // Check if similar session exists within ï¿½1 hour
     final existingSession = await _findSimilarSession(
       treatmentType: treatmentType,
       dateTime: dateTime,
@@ -1133,7 +1143,7 @@ sealed class ValidationResult {
 
 **Learning Goal:** Centralized validation for consistency and maintainability
 
-**<¯ MILESTONE:** Production-ready analytics and error handling complete!
+**<ï¿½ MILESTONE:** Production-ready analytics and error handling complete!
 
 ---
 
@@ -1304,7 +1314,7 @@ class SlideUpTransition extends StatelessWidget {
 
 **Learning Goal:** Polished UI with smooth transitions
 
-**<¯ MILESTONE:** Production-ready UI polish and accessibility!
+**<ï¿½ MILESTONE:** Production-ready UI polish and accessibility!
 
 ---
 
@@ -1458,7 +1468,7 @@ testWidgets('complete medication logging flow', (tester) async {
 
 **Learning Goal:** End-to-end testing of complete user flows
 
-**<¯ FINAL MILESTONE:** Complete, tested, production-ready logging system!
+**<ï¿½ FINAL MILESTONE:** Complete, tested, production-ready logging system!
 
 ---
 
@@ -1592,7 +1602,7 @@ class AppDateUtils {
     };
   }
 
-  /// Find nearest scheduled time within ±2 hours
+  /// Find nearest scheduled time within ï¿½2 hours
   static DateTime? findNearestScheduledTime(
     DateTime actualTime,
     List<DateTime> scheduledTimes,

@@ -52,6 +52,13 @@ class _MedicationScheduleScreenState
       frequency: schedule.frequency,
       reminderTimes: schedule.reminderTimes,
       dosage: schedule.targetDosage,
+      strengthAmount: schedule.medicationStrengthAmount,
+      strengthUnit: schedule.medicationStrengthUnit != null
+          ? MedicationStrengthUnit.fromString(
+              schedule.medicationStrengthUnit!,
+            )
+          : null,
+      customStrengthUnit: schedule.customMedicationStrengthUnit,
     );
   }
 
@@ -72,6 +79,9 @@ class _MedicationScheduleScreenState
       medicationName: medication.name,
       targetDosage: medication.dosage ?? '1',
       medicationUnit: medication.unit.name,
+      medicationStrengthAmount: medication.strengthAmount,
+      medicationStrengthUnit: medication.strengthUnit?.name,
+      customMedicationStrengthUnit: medication.customStrengthUnit,
     );
   }
 

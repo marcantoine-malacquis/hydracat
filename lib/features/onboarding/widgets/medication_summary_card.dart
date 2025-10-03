@@ -70,14 +70,30 @@ class MedicationSummaryCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
 
-                  // Medication name
+                  // Medication name with strength
                   Expanded(
-                    child: Text(
-                      medication.name,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          medication.name,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                        if (medication.formattedStrength != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            medication.formattedStrength!,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.normal,
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
 

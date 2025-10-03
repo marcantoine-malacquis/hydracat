@@ -25,7 +25,7 @@ class CkdMedicalInfoScreen extends ConsumerStatefulWidget {
 class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
   // Form state
   IrisStage? _selectedIrisStage;
-  bool _hasSelectedIrisStage = false; // Track if user has made any selection
+  bool _hasSelectedIrisStage = true; // Default to Unknown selected
   LabValueData _labValues = const LabValueData();
   DateTime? _lastCheckupDate;
   String _notes = '';
@@ -52,7 +52,10 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
     if (onboardingData != null) {
       setState(() {
         _selectedIrisStage = onboardingData.irisStage;
-        _hasSelectedIrisStage = onboardingData.irisStage != null;
+        // Only override default if a specific stage was saved
+        if (onboardingData.irisStage != null) {
+          _hasSelectedIrisStage = true;
+        }
         _labValues = LabValueData(
           creatinine: onboardingData.creatinineMgDl,
           bun: onboardingData.bunMgDl,

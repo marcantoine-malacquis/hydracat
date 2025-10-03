@@ -34,59 +34,23 @@ Before you create the plan, please ask any and all questions you have in order t
 Ideally, I would like the plan to have an approach that provides immediate visual feedback while building solid foundations to keep me engaged.
 
 
-1. a) yes, exactly
-b) yes, track which scheduled reminder time it relates to
-c) batch-update it
-2. a) yes, log all scheduled treatments for today at their default values (target volume/dosage from schedules). Only work if no sessions have been logged yet today.
-b) use the scheduled reminder times from the user schedules
-c) Log all of them individually, respecting their specific schedules and reminder times.
-3. a) every time the FAB is pressed
-b) yes, perfect order: Volume (required)
-  - Injection site (optional from schedule)
-  - Stress level (optional)
-  - Notes (optional, should be a very small field that can expand only if the user press on it to write something)
-c) strictly log actual administered amounts. so the user can compare and we can analyse versus the schedule plan
-4. a) Warn and allow override (update existing session). The major advantage of the app is to be able to track differences between the plan and the real administered treatment. So for example if the plan is to administer 100mL/day: a user can log 80mL at one point and log 20mL another time. Or if the second fluid session didn't succeed, it can stay at 80mL and we will know that that day we missed 20mL.
-b) just for volume. let's do 1-500mL.
-5. a) write session and all summaries. Always batch session + 3 summary updates together
-b) yes, absolutely cache today's treatment summary locally to avoid reads when checking if
-  treatments are already logged
-c) always single batch write
-6. a) It should work completely offline with local storage and sync later
-b) I think the last session logged chronologically wins but check if this is the industry standard or how it should be done
-7. a) the logging models should mirror the onboarding treatment data structure
-b) yes, for medication: the user should actually see the list of medication summary cards in the pop. when they press on one, there should be a feedback showing it is selected so they can select however many they want. then they can press the Log button in the popup. so they have flexible options, log one or multiple.
-8. a) Yes, have a look around if you see components you can try to reuse for coherence. You can have a look also at the UI guidelines file.
-b) yes, let's first try to match the onboarding UI style and I will see after if this is fine or if it will need to be modified.
-c) I didn't know about backdropfilter but it might be the right solution if you think this could be implemented well and be elegant in my design.
-Please let me know if this makes sense or contradict itself, the prd, the CRUD rules or existing code. Coherence is extremely important. Let's me know if you need any more clarifications to feel confident in proceeding with the implementation.
+1. a) yes, optional in case the user doesn't know it
+b) yes, allow both. must be positive only for validation.
+c) since it's optional, they can just not fill it if it doesn't apply.
+2. a) yes, include all those units
+b) no other units for now
+c) yes, have an "other" option just in case
+3. a) same line as the name (e.g., "Furosemide 2.5 mg")
+b) no specific convention yet, let's not think about the professional vet report yet
+4. a) exactly, no backward compatibility needed
+b) "not specified"
+5. a) above the existing unit selector
+b) standard Flutter dropdown
+c) "e.g., 2.5 mg, 5 mg/mL" is perfect
+6. a) create a new medication entry
+b) no uniqueness validation, the
+  user can have two entries for "Furosemide" with different strengths like "2.5 mg" and "5 mg"?
+Please let me know if this makes sense or contradict itself, the prd, the CRUD rules or existing code. Coherence is extremely important. Let's me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself.
 
-1. a) Linked to the 8:00 AM reminder (closest match)
-b) then we should save the timestamp of that new logging, if this is possible and doesn't break coherence. let me know if you think another solution would be more optimised.
-2. a) yes, as if the medications were done one by one but here that allow us to batch write quite easily
-b) yes also fluid therapy. this is really a way for the user to very easily log the day as if everything went well with no deviation from the schedule. It's a all in one solution for ease of use when the user want extra fast logging.
-3. a) one input for each selected medication
-b) yes, that would be 3 separate session documents
-4. a) what would be the industry-standard way of doing this ?
-b) yes, update summaries
-5. a) yes, based on the session's createdAt timestamp
-b) Keep the session that was created last (based on createdAt)
-6. A single-line text field that expands to multi-line when focused
-7. Yes, perfect ! For medicationSessions:
-  - dateTime, medicationName, dosageGiven, dosageScheduled, completed,
-  administrationMethod, notes, scheduleId (to link to reminder time)?
-  For fluidSessions:
-  - dateTime, volumeGiven, stressLevel, injectionSite, notes, scheduleId (to link to
-  reminder time).
-
-We need to keep in mind that we will want those data to be able to analyse treatment adherence later on. for example, things like:
-Medication Adherence Report (Last 90 days)
-─────────────────────────────────────────
-Amlodipine 2.5mg:     87% adherence (156/180 doses)
-Benazepril 5mg:       92% adherence (83/90 doses)
-Calcitriol 0.25mcg:   78% adherence (70/90 doses)
-⚠️ Note: Calcitriol adherence below target
-
-Please let me know if this makes sense or contradict itself, the prd, the CRUD rules or existing code. Coherence is extremely important. Let's me know if you need any more clarifications to feel confident in proceeding with the implementation.
 
 

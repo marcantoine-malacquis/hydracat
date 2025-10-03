@@ -448,6 +448,54 @@ abstract class AppLocalizations {
   /// **'e.g., Benazepril, Furosemide'**
   String get medicationNameHint;
 
+  /// No description provided for @medicationStrengthLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication Strength (optional)'**
+  String get medicationStrengthLabel;
+
+  /// No description provided for @medicationStrengthDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the concentration or strength of the medication'**
+  String get medicationStrengthDesc;
+
+  /// No description provided for @strengthAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get strengthAmountLabel;
+
+  /// No description provided for @strengthAmountHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., 2.5, 1/2, 10'**
+  String get strengthAmountHint;
+
+  /// No description provided for @strengthUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get strengthUnitLabel;
+
+  /// No description provided for @customStrengthUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Unit'**
+  String get customStrengthUnitLabel;
+
+  /// No description provided for @customStrengthUnitHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., mg/kg'**
+  String get customStrengthUnitHint;
+
+  /// No description provided for @strengthHelperText.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., 2.5 mg, 5 mg/mL'**
+  String get strengthHelperText;
+
   /// No description provided for @dosageLabel.
   ///
   /// In en, this message translates to:

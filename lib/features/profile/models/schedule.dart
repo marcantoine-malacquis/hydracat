@@ -43,6 +43,9 @@ class Schedule {
     this.medicationName,
     this.targetDosage,
     this.medicationUnit,
+    this.medicationStrengthAmount,
+    this.medicationStrengthUnit,
+    this.customMedicationStrengthUnit,
   });
 
   /// Creates a [Schedule] from JSON data
@@ -71,6 +74,11 @@ class Schedule {
       medicationName: json['medicationName'] as String?,
       targetDosage: json['targetDosage'] as String?,
       medicationUnit: json['medicationUnit'] as String?,
+      medicationStrengthAmount:
+          json['medicationStrengthAmount'] as String?,
+      medicationStrengthUnit: json['medicationStrengthUnit'] as String?,
+      customMedicationStrengthUnit:
+          json['customMedicationStrengthUnit'] as String?,
     );
   }
 
@@ -129,6 +137,15 @@ class Schedule {
 
   /// Medication unit for medication schedules
   final String? medicationUnit;
+
+  /// Medication strength amount (e.g., "2.5", "10")
+  final String? medicationStrengthAmount;
+
+  /// Medication strength unit (e.g., "mg", "mgPerMl")
+  final String? medicationStrengthUnit;
+
+  /// Custom medication strength unit when medicationStrengthUnit is 'other'
+  final String? customMedicationStrengthUnit;
 
   /// Whether this is a fluid therapy schedule
   bool get isFluidTherapy => treatmentType == TreatmentType.fluid;
@@ -235,6 +252,9 @@ class Schedule {
         frequency: frequency,
         reminderTimes: reminderTimes,
         isActive: isActive,
+        medicationStrengthAmount: medicationStrengthAmount,
+        medicationStrengthUnit: medicationStrengthUnit,
+        customMedicationStrengthUnit: customMedicationStrengthUnit,
       );
     } else {
       return ScheduleDto.fluid(
@@ -268,6 +288,9 @@ class Schedule {
         'medicationName': medicationName,
         'targetDosage': targetDosage,
         'medicationUnit': medicationUnit,
+        'medicationStrengthAmount': medicationStrengthAmount,
+        'medicationStrengthUnit': medicationStrengthUnit,
+        'customMedicationStrengthUnit': customMedicationStrengthUnit,
       };
     } else if (treatmentType == TreatmentType.fluid) {
       return {
@@ -297,6 +320,9 @@ class Schedule {
     String? medicationName,
     String? targetDosage,
     String? medicationUnit,
+    String? medicationStrengthAmount,
+    String? medicationStrengthUnit,
+    String? customMedicationStrengthUnit,
   }) {
     return Schedule(
       id: id ?? this.id,
@@ -312,6 +338,12 @@ class Schedule {
       medicationName: medicationName ?? this.medicationName,
       targetDosage: targetDosage ?? this.targetDosage,
       medicationUnit: medicationUnit ?? this.medicationUnit,
+      medicationStrengthAmount:
+          medicationStrengthAmount ?? this.medicationStrengthAmount,
+      medicationStrengthUnit:
+          medicationStrengthUnit ?? this.medicationStrengthUnit,
+      customMedicationStrengthUnit:
+          customMedicationStrengthUnit ?? this.customMedicationStrengthUnit,
     );
   }
 
@@ -332,7 +364,10 @@ class Schedule {
         other.needleGauge == needleGauge &&
         other.medicationName == medicationName &&
         other.targetDosage == targetDosage &&
-        other.medicationUnit == medicationUnit;
+        other.medicationUnit == medicationUnit &&
+        other.medicationStrengthAmount == medicationStrengthAmount &&
+        other.medicationStrengthUnit == medicationStrengthUnit &&
+        other.customMedicationStrengthUnit == customMedicationStrengthUnit;
   }
 
   @override
@@ -351,6 +386,9 @@ class Schedule {
       medicationName,
       targetDosage,
       medicationUnit,
+      medicationStrengthAmount,
+      medicationStrengthUnit,
+      customMedicationStrengthUnit,
     );
   }
 
@@ -367,7 +405,10 @@ class Schedule {
         'needleGauge: $needleGauge, '
         'medicationName: $medicationName, '
         'targetDosage: $targetDosage, '
-        'medicationUnit: $medicationUnit'
+        'medicationUnit: $medicationUnit, '
+        'medicationStrengthAmount: $medicationStrengthAmount, '
+        'medicationStrengthUnit: $medicationStrengthUnit, '
+        'customMedicationStrengthUnit: $customMedicationStrengthUnit'
         ')';
   }
 }

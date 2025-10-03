@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
@@ -31,6 +32,10 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
   final PageController _pageController = PageController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _dosageController = TextEditingController();
+  final TextEditingController _strengthAmountController =
+      TextEditingController();
+  final TextEditingController _customStrengthUnitController =
+      TextEditingController();
 
   int _currentStep = 1;
   static const int _totalSteps = 4;
@@ -41,6 +46,9 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
   MedicationUnit _selectedUnit = MedicationUnit.pills;
   TreatmentFrequency _selectedFrequency = TreatmentFrequency.onceDaily;
   List<TimeOfDay> _reminderTimes = [];
+  String _strengthAmount = '';
+  MedicationStrengthUnit? _strengthUnit;
+  String _customStrengthUnit = '';
 
   bool _isLoading = false;
 
@@ -55,6 +63,8 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     _pageController.dispose();
     _nameController.dispose();
     _dosageController.dispose();
+    _strengthAmountController.dispose();
+    _customStrengthUnitController.dispose();
     super.dispose();
   }
 
@@ -70,6 +80,11 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
       _reminderTimes = medication.reminderTimes
           .map(TimeOfDay.fromDateTime)
           .toList();
+      _strengthAmount = medication.strengthAmount ?? '';
+      _strengthAmountController.text = _strengthAmount;
+      _strengthUnit = medication.strengthUnit;
+      _customStrengthUnit = medication.customStrengthUnit ?? '';
+      _customStrengthUnitController.text = _customStrengthUnit;
     } else {
       _reminderTimes = AppDateUtils.generateDefaultReminderTimes(
         _selectedFrequency.administrationsPerDay,
@@ -167,9 +182,9 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
           ),
           const SizedBox(height: 24),
 
-          // Unit selector
+          // Medication strength section
           Text(
-            l10n.unitTypeLabel,
+            'Medication Strength (optional)',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -177,30 +192,102 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
           const SizedBox(height: 8),
 
           Text(
-            'Select the form of the medication',
+            'Enter the concentration or strength of the medication',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 16),
 
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.3),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 3,
+                child: TextFormField(
+                  controller: _strengthAmountController,
+                  onChanged: (value) {
+                    setState(() {
+                      _strengthAmount = value.trim();
+                    });
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Amount',
+                    hintText: 'e.g., 2.5, 1/2, 10',
+                    helperText: 'e.g., 2.5 mg, 5 mg/mL',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    prefixIcon: const Icon(Icons.science_outlined),
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(
+                      RegExp('[0-9./,]'),
+                    ),
+                  ],
+                ),
               ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: RotatingWheelPicker<MedicationUnit>(
-              items: MedicationUnit.values,
-              initialIndex: MedicationUnit.values.indexOf(_selectedUnit),
-              onSelectedItemChanged: (index) {
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: DropdownButtonFormField<MedicationStrengthUnit>(
+                  initialValue: _strengthUnit,
+                  decoration: InputDecoration(
+                    labelText: 'Unit',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 16,
+                    ),
+                  ),
+                  isExpanded: true,
+                  items: MedicationStrengthUnit.values
+                      .map((unit) => DropdownMenuItem(
+                            value: unit,
+                            child: Text(
+                              unit.displayName,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ))
+                      .toList(),
+                  onChanged: _strengthAmount.isNotEmpty
+                      ? (value) {
+                          setState(() {
+                            _strengthUnit = value;
+                          });
+                        }
+                      : null,
+                ),
+              ),
+            ],
+          ),
+
+          // Custom unit field (shown when "Other" is selected)
+          if (_strengthUnit == MedicationStrengthUnit.other) ...[
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _customStrengthUnitController,
+              onChanged: (value) {
                 setState(() {
-                  _selectedUnit = MedicationUnit.values[index];
+                  _customStrengthUnit = value.trim();
                 });
               },
+              decoration: InputDecoration(
+                labelText: 'Custom Unit',
+                hintText: 'e.g., mg/kg',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                prefixIcon: const Icon(Icons.edit),
+              ),
             ),
-          ),
+          ],
+
         ],
       ),
     );
@@ -221,41 +308,88 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
           ),
           const SizedBox(height: 8),
 
-          Text(
-            'Enter the amount per administration. '
-            'The unit you selected is shown to the right.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+          RichText(
+            text: TextSpan(
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+              children: const [
+                TextSpan(text: 'Enter the '),
+                TextSpan(
+                  text: 'amount per administration',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                TextSpan(text: ' and select the medication unit.'),
+              ],
             ),
           ),
           const SizedBox(height: 24),
 
-          TextFormField(
-            controller: _dosageController,
-            onChanged: (value) {
-              setState(() {
-                _dosage = value.trim();
-              });
-            },
-            decoration: InputDecoration(
-              labelText: 'Dosage *',
-              hintText: '1, 1/2, 2.5',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              prefixIcon: const Icon(Icons.straighten),
-              suffix: Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Text(
-                  _selectedUnit.shortForm,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    fontWeight: FontWeight.w600,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 3,
+                child: TextFormField(
+                  controller: _dosageController,
+                  onChanged: (value) {
+                    setState(() {
+                      _dosage = value.trim();
+                    });
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Dosage *',
+                    hintText: 'e.g., 1, 1/2, 2.5',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    prefixIcon: const Icon(Icons.straighten),
                   ),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(
+                      RegExp('[0-9./,]'),
+                    ),
+                  ],
                 ),
               ),
-              helperText: 'Required: amount per administration',
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: DropdownButtonFormField<MedicationUnit>(
+                  initialValue: _selectedUnit,
+                  decoration: InputDecoration(
+                    labelText: 'Unit *',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 16,
+                    ),
+                  ),
+                  isExpanded: true,
+                  items: MedicationUnit.values
+                      .map((unit) => DropdownMenuItem(
+                            value: unit,
+                            child: Text(
+                              unit.displayName,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ))
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _selectedUnit = value;
+                      });
+                    }
+                  },
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -452,6 +586,10 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
         frequency: _selectedFrequency,
         reminderTimes: reminderDateTimes,
         dosage: _dosage.isEmpty ? null : _dosage,
+        strengthAmount: _strengthAmount.isEmpty ? null : _strengthAmount,
+        strengthUnit: _strengthUnit,
+        customStrengthUnit:
+            _customStrengthUnit.isEmpty ? null : _customStrengthUnit,
       );
 
       // Return the medication to the previous screen

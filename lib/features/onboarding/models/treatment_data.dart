@@ -50,6 +50,64 @@ enum TreatmentFrequency {
   }
 }
 
+/// Enumeration of medication strength units
+enum MedicationStrengthUnit {
+  /// Milligrams
+  mg,
+
+  /// Milligrams per milliliter
+  mgPerMl,
+
+  /// Micrograms
+  mcg,
+
+  /// Micrograms per milliliter
+  mcgPerMl,
+
+  /// Grams
+  g,
+
+  /// Percentage
+  percent,
+
+  /// International Units
+  iu,
+
+  /// International Units per milliliter
+  iuPerMl,
+
+  /// Milligrams per gram
+  mgPerG,
+
+  /// Micrograms per gram
+  mcgPerG,
+
+  /// Other (custom unit)
+  other;
+
+  /// User-friendly display name for the strength unit
+  String get displayName => switch (this) {
+    MedicationStrengthUnit.mg => 'mg',
+    MedicationStrengthUnit.mgPerMl => 'mg/mL',
+    MedicationStrengthUnit.mcg => 'mcg',
+    MedicationStrengthUnit.mcgPerMl => 'mcg/mL',
+    MedicationStrengthUnit.g => 'g',
+    MedicationStrengthUnit.percent => '%',
+    MedicationStrengthUnit.iu => 'IU',
+    MedicationStrengthUnit.iuPerMl => 'IU/mL',
+    MedicationStrengthUnit.mgPerG => 'mg/g',
+    MedicationStrengthUnit.mcgPerG => 'mcg/g',
+    MedicationStrengthUnit.other => 'Other',
+  };
+
+  /// Creates a MedicationStrengthUnit from a string value
+  static MedicationStrengthUnit? fromString(String value) {
+    return MedicationStrengthUnit.values
+        .where((unit) => unit.name == value)
+        .firstOrNull;
+  }
+}
+
 /// Enumeration of medication units (alphabetical order)
 enum MedicationUnit {
   /// Ampoules
@@ -168,6 +226,9 @@ class MedicationData {
     required this.frequency,
     required this.reminderTimes,
     this.dosage,
+    this.strengthAmount,
+    this.strengthUnit,
+    this.customStrengthUnit,
   });
 
   /// Creates a [MedicationData] from JSON data
@@ -184,6 +245,11 @@ class MedicationData {
           .map((e) => DateTime.parse(e as String))
           .toList(),
       dosage: json['dosage'] as String?,
+      strengthAmount: json['strengthAmount'] as String?,
+      strengthUnit: json['strengthUnit'] != null
+          ? MedicationStrengthUnit.fromString(json['strengthUnit'] as String)
+          : null,
+      customStrengthUnit: json['customStrengthUnit'] as String?,
     );
   }
 
@@ -202,12 +268,38 @@ class MedicationData {
   /// Optional dosage information (e.g., "1/2", "1", "2")
   final String? dosage;
 
+  /// Optional medication strength amount (e.g., "2.5", "1/2", "10")
+  final String? strengthAmount;
+
+  /// Optional medication strength unit
+  final MedicationStrengthUnit? strengthUnit;
+
+  /// Custom strength unit when strengthUnit is 'other'
+  final String? customStrengthUnit;
+
   /// Generate a human-readable summary of this medication
   String get summary {
     final dosageText = dosage ?? '1';
     final unitText = _getUnitText(dosageText);
 
     return '$dosageText $unitText ${_summaryFrequencyText()}';
+  }
+
+  /// Get formatted strength for display (e.g., "2.5 mg" or null)
+  String? get formattedStrength {
+    if (strengthAmount == null || strengthAmount!.isEmpty) {
+      return null;
+    }
+
+    if (strengthUnit == null) {
+      return strengthAmount;
+    }
+
+    final unitDisplay = strengthUnit == MedicationStrengthUnit.other
+        ? customStrengthUnit ?? 'Other'
+        : strengthUnit!.displayName;
+
+    return '$strengthAmount $unitDisplay';
   }
 
   /// Frequency phrasing tailored for card summaries
@@ -271,6 +363,9 @@ class MedicationData {
       medicationUnit: unit.name,
       frequency: frequency,
       reminderTimes: reminderTimes,
+      medicationStrengthAmount: strengthAmount,
+      medicationStrengthUnit: strengthUnit?.name,
+      customMedicationStrengthUnit: customStrengthUnit,
     );
   }
 
@@ -282,6 +377,9 @@ class MedicationData {
       'frequency': frequency.name,
       'reminderTimes': reminderTimes.map((e) => e.toIso8601String()).toList(),
       'dosage': dosage,
+      'strengthAmount': strengthAmount,
+      'strengthUnit': strengthUnit?.name,
+      'customStrengthUnit': customStrengthUnit,
     };
   }
 
@@ -292,6 +390,9 @@ class MedicationData {
     TreatmentFrequency? frequency,
     List<DateTime>? reminderTimes,
     String? dosage,
+    String? strengthAmount,
+    MedicationStrengthUnit? strengthUnit,
+    String? customStrengthUnit,
   }) {
     return MedicationData(
       name: name ?? this.name,
@@ -299,6 +400,9 @@ class MedicationData {
       frequency: frequency ?? this.frequency,
       reminderTimes: reminderTimes ?? this.reminderTimes,
       dosage: dosage ?? this.dosage,
+      strengthAmount: strengthAmount ?? this.strengthAmount,
+      strengthUnit: strengthUnit ?? this.strengthUnit,
+      customStrengthUnit: customStrengthUnit ?? this.customStrengthUnit,
     );
   }
 
@@ -311,7 +415,10 @@ class MedicationData {
         other.unit == unit &&
         other.frequency == frequency &&
         listEquals(other.reminderTimes, reminderTimes) &&
-        other.dosage == dosage;
+        other.dosage == dosage &&
+        other.strengthAmount == strengthAmount &&
+        other.strengthUnit == strengthUnit &&
+        other.customStrengthUnit == customStrengthUnit;
   }
 
   @override
@@ -322,6 +429,9 @@ class MedicationData {
       frequency,
       Object.hashAll(reminderTimes),
       dosage,
+      strengthAmount,
+      strengthUnit,
+      customStrengthUnit,
     );
   }
 
@@ -332,7 +442,10 @@ class MedicationData {
         'unit: $unit, '
         'frequency: $frequency, '
         'reminderTimes: $reminderTimes, '
-        'dosage: $dosage'
+        'dosage: $dosage, '
+        'strengthAmount: $strengthAmount, '
+        'strengthUnit: $strengthUnit, '
+        'customStrengthUnit: $customStrengthUnit'
         ')';
   }
 }

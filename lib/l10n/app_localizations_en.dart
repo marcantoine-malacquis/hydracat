@@ -196,6 +196,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get medicationNameHint => 'e.g., Benazepril, Furosemide';
 
   @override
+  String get medicationStrengthLabel => 'Medication Strength (optional)';
+
+  @override
+  String get medicationStrengthDesc =>
+      'Enter the concentration or strength of the medication';
+
+  @override
+  String get strengthAmountLabel => 'Amount';
+
+  @override
+  String get strengthAmountHint => 'e.g., 2.5, 1/2, 10';
+
+  @override
+  String get strengthUnitLabel => 'Unit';
+
+  @override
+  String get customStrengthUnitLabel => 'Custom Unit';
+
+  @override
+  String get customStrengthUnitHint => 'e.g., mg/kg';
+
+  @override
+  String get strengthHelperText => 'e.g., 2.5 mg, 5 mg/mL';
+
+  @override
   String get dosageLabel => 'Dosage';
 
   @override

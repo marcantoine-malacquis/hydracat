@@ -21,6 +21,9 @@ class ScheduleDto {
     this.medicationName,
     this.targetDosage,
     this.medicationUnit,
+    this.medicationStrengthAmount,
+    this.medicationStrengthUnit,
+    this.customMedicationStrengthUnit,
     this.targetVolume,
     this.preferredLocation,
     this.needleGauge,
@@ -38,6 +41,9 @@ class ScheduleDto {
     required List<DateTime> reminderTimes,
     String? id,
     bool isActive = true,
+    String? medicationStrengthAmount,
+    String? medicationStrengthUnit,
+    String? customMedicationStrengthUnit,
   }) {
     return ScheduleDto(
       id: id,
@@ -45,6 +51,9 @@ class ScheduleDto {
       medicationName: medicationName,
       targetDosage: targetDosage,
       medicationUnit: medicationUnit,
+      medicationStrengthAmount: medicationStrengthAmount,
+      medicationStrengthUnit: medicationStrengthUnit,
+      customMedicationStrengthUnit: customMedicationStrengthUnit,
       frequency: frequency,
       reminderTimes: reminderTimes,
       isActive: isActive,
@@ -102,6 +111,15 @@ class ScheduleDto {
   /// Medication unit as string (e.g., "pills", "ml", "mg")
   final String? medicationUnit;
 
+  /// Medication strength amount (e.g., "2.5", "10")
+  final String? medicationStrengthAmount;
+
+  /// Medication strength unit (e.g., "mg", "mgPerMl")
+  final String? medicationStrengthUnit;
+
+  /// Custom medication strength unit when medicationStrengthUnit is 'other'
+  final String? customMedicationStrengthUnit;
+
   // Fluid therapy-specific fields (null for medication)
 
   /// Target volume in milliliters (fluid therapy only)
@@ -133,6 +151,9 @@ class ScheduleDto {
       json['medicationName'] = medicationName;
       json['targetDosage'] = targetDosage;
       json['medicationUnit'] = medicationUnit;
+      json['medicationStrengthAmount'] = medicationStrengthAmount;
+      json['medicationStrengthUnit'] = medicationStrengthUnit;
+      json['customMedicationStrengthUnit'] = customMedicationStrengthUnit;
     }
 
     // Add fluid-specific fields
@@ -158,6 +179,9 @@ class ScheduleDto {
         other.medicationName == medicationName &&
         other.targetDosage == targetDosage &&
         other.medicationUnit == medicationUnit &&
+        other.medicationStrengthAmount == medicationStrengthAmount &&
+        other.medicationStrengthUnit == medicationStrengthUnit &&
+        other.customMedicationStrengthUnit == customMedicationStrengthUnit &&
         other.targetVolume == targetVolume &&
         other.preferredLocation == preferredLocation &&
         other.needleGauge == needleGauge;
@@ -174,6 +198,9 @@ class ScheduleDto {
       medicationName,
       targetDosage,
       medicationUnit,
+      medicationStrengthAmount,
+      medicationStrengthUnit,
+      customMedicationStrengthUnit,
       targetVolume,
       preferredLocation,
       needleGauge,
@@ -191,6 +218,9 @@ class ScheduleDto {
         'medicationName: $medicationName, '
         'targetDosage: $targetDosage, '
         'medicationUnit: $medicationUnit, '
+        'medicationStrengthAmount: $medicationStrengthAmount, '
+        'medicationStrengthUnit: $medicationStrengthUnit, '
+        'customMedicationStrengthUnit: $customMedicationStrengthUnit, '
         'targetVolume: $targetVolume, '
         'preferredLocation: $preferredLocation, '
         'needleGauge: $needleGauge'
