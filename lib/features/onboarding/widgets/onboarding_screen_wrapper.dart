@@ -130,7 +130,7 @@ class _OnboardingScreenWrapperState
         );
 
         if (mounted && context.mounted) {
-          context.go(OnboardingStepType.welcome.routeName);
+          context.go(OnboardingStepType.welcome.getRouteName());
         }
       }
     });

@@ -255,6 +255,14 @@ class OnboardingService {
         validationErrors: validationErrors,
       );
 
+      // Update persona in progress if it changed for persona-aware navigation
+      if (newData.treatmentApproach != null &&
+          newData.treatmentApproach != _currentProgress!.persona) {
+        _currentProgress = _currentProgress!.copyWith(
+          persona: newData.treatmentApproach,
+        );
+      }
+
       // Auto-save at checkpoint steps
       if (_currentProgress!.isCurrentStepCheckpoint) {
         await _saveCheckpoint();

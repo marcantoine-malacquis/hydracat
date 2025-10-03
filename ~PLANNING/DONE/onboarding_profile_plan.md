@@ -842,7 +842,7 @@ Create persona-adaptive treatment setup screens with complex medication manageme
 
 ---
 
-## Router Architecture Refactor (December 2024)
+## Router Architecture Refactor (September 2025)
 
 ### Overview
 Complete refactor of onboarding routing to use GoRouter best practices, eliminating custom routing solutions and ensuring future-proof navigation.
@@ -1165,3 +1165,301 @@ redirect: (context, state) {
 - No redirect loops ✅
 
 **Key Lesson:** Parent route redirects in GoRouter run for ALL child route navigations. Use `state.matchedLocation` to limit redirect scope to specific paths only.
+
+---
+
+## Persona-Aware Navigation System (October 2025)
+
+### Overview
+Complete refactor from GoRouter redirect-based routing to a hybrid approach combining **state-driven step logic** with **flat route structure**. This simplifies the router while maintaining full persona-aware navigation through the provider layer.
+
+### Architecture Decision
+
+**Previous Approach (Router-Based):**
+- GoRouter redirects determined treatment routing
+- Complex nested routes with `/onboarding/treatment/combined/*`
+- Redirect logic in router configuration
+- ❌ Problem: Router state management complexity, redirect loops
+
+**Current Approach (State-Driven):**
+- **Flat router structure** with simple treatment routes
+- **Persona-aware logic in step navigation** (models & providers)
+- **Route generation methods** that respect persona
+- ✅ Benefits: Simpler router, testable logic, no redirect loops
+
+### Current Router Structure
+
+**Flat Treatment Routes:**
+```dart
+GoRoute(path: 'treatment/medication', ...)  // Single medication route
+GoRoute(path: 'treatment/fluid', ...)       // Single fluid route
+// No nested /combined routes - eliminated complexity
+```
+
+**No Router Redirects for Persona:**
+- Router simply defines available routes
+- Navigation logic handled by `OnboardingNotifier` and `OnboardingStepType`
+
+### Persona-Aware Navigation Implementation
+
+#### 1. Step Navigation Logic (`OnboardingStepType`)
+
+**Methods:**
+- `getNextStep([UserPersona? persona])` - Returns next step based on persona
+- `getPreviousStep([UserPersona? persona])` - Returns previous step based on persona
+- `getRouteName([UserPersona? persona])` - Converts step to route with persona awareness
+
+**Step Flow Logic:**
+```dart
+// From ckdMedicalInfo step:
+OnboardingStepType.ckdMedicalInfo.getNextStep(persona) {
+  switch (persona) {
+    case medicationOnly: return treatmentMedication
+    case fluidTherapyOnly: return treatmentFluid  // Skip medication
+    case medicationAndFluidTherapy: return treatmentMedication
+  }
+}
+
+// From treatmentMedication step:
+OnboardingStepType.treatmentMedication.getNextStep(persona) {
+  switch (persona) {
+    case medicationOnly: return completion  // Skip fluid
+    case medicationAndFluidTherapy: return treatmentFluid
+  }
+}
+```
+
+#### 2. Route Generation Logic (`OnboardingStepType.getRouteName`)
+
+**Converts steps to routes with persona awareness:**
+```dart
+OnboardingStepType.treatmentMedication.getRouteName(persona) {
+  switch (persona) {
+    case medicationOnly: return '/onboarding/treatment/medication'
+    case fluidTherapyOnly: return '/onboarding/treatment/fluid'  // Skip to fluid
+    case medicationAndFluidTherapy: return '/onboarding/treatment/medication'
+  }
+}
+
+OnboardingStepType.treatmentFluid.getRouteName(persona) {
+  switch (persona) {
+    case medicationOnly: return '/onboarding/completion'  // Skip fluid
+    case fluidTherapyOnly: return '/onboarding/treatment/fluid'
+    case medicationAndFluidTherapy: return '/onboarding/treatment/fluid'
+  }
+}
+```
+
+#### 3. State Management (`OnboardingProgress`)
+
+**Tracks persona in progress state:**
+```dart
+class OnboardingProgress {
+  final UserPersona? persona;  // Synced from OnboardingData
+
+  // Persona-aware getters
+  OnboardingStepType? get nextStep => currentStep.getNextStep(persona);
+  OnboardingStepType? get previousStep => currentStep.getPreviousStep(persona);
+}
+```
+
+**Persona sync in `OnboardingService.updateData()`:**
+```dart
+// When user selects persona, sync to progress for navigation
+if (newData.treatmentApproach != _currentProgress.persona) {
+  _currentProgress = _currentProgress.copyWith(
+    persona: newData.treatmentApproach,
+  );
+}
+```
+
+#### 4. Navigation Provider (`OnboardingNotifier`)
+
+**Route retrieval with persona:**
+```dart
+String? getNextRoute() {
+  final nextStep = state.progress!.nextStep;  // Uses persona
+  final persona = state.progress!.persona;
+  return nextStep.getRouteName(persona);  // Persona-aware route
+}
+
+String? getPreviousRoute() {
+  final previousStep = state.progress!.previousStep;  // Uses persona
+  final persona = state.progress!.persona;
+  return previousStep.getRouteName(persona);  // Persona-aware route
+}
+```
+
+**Used by screens:**
+```dart
+// In user_persona_screen.dart, treatment_medication_screen.dart, etc.
+final nextRoute = await ref.read(onboardingProvider.notifier).navigateNext();
+if (nextRoute != null) {
+  context.go(nextRoute);  // Navigates to persona-aware route
+}
+```
+
+### Complete Navigation Flows
+
+#### Medication Only Persona
+```
+1. User selects medicationOnly on persona screen
+2. OnboardingProgress.persona = medicationOnly
+3. Navigation flow:
+   - ckdMedicalInfo → getNextStep(medicationOnly) = treatmentMedication
+   - treatmentMedication.getRouteName(medicationOnly) = /onboarding/treatment/medication
+   - treatmentMedication → getNextStep(medicationOnly) = completion
+   - completion.getRouteName(medicationOnly) = /onboarding/completion
+4. Result: ckdMedicalInfo → medication → completion ✅ (fluid skipped)
+```
+
+#### Fluid Therapy Only Persona
+```
+1. User selects fluidTherapyOnly on persona screen
+2. OnboardingProgress.persona = fluidTherapyOnly
+3. Navigation flow:
+   - ckdMedicalInfo → getNextStep(fluidTherapyOnly) = treatmentFluid
+   - treatmentFluid.getRouteName(fluidTherapyOnly) = /onboarding/treatment/fluid
+   - treatmentFluid → getNextStep(fluidTherapyOnly) = completion
+   - completion.getRouteName(fluidTherapyOnly) = /onboarding/completion
+4. Result: ckdMedicalInfo → fluid → completion ✅ (medication skipped)
+```
+
+#### Medication & Fluid Therapy Persona
+```
+1. User selects medicationAndFluidTherapy on persona screen
+2. OnboardingProgress.persona = medicationAndFluidTherapy
+3. Navigation flow:
+   - ckdMedicalInfo → getNextStep(medicationAndFluidTherapy) = treatmentMedication
+   - treatmentMedication.getRouteName(medicationAndFluidTherapy) = /onboarding/treatment/medication
+   - treatmentMedication → getNextStep(medicationAndFluidTherapy) = treatmentFluid
+   - treatmentFluid.getRouteName(medicationAndFluidTherapy) = /onboarding/treatment/fluid
+   - treatmentFluid → getNextStep(medicationAndFluidTherapy) = completion
+4. Result: ckdMedicalInfo → medication → fluid → completion ✅ (both screens)
+```
+
+### Back Navigation
+
+**Also persona-aware:**
+```dart
+// From completion screen:
+completion.getPreviousStep(medicationOnly) = treatmentMedication
+completion.getPreviousStep(fluidTherapyOnly) = treatmentFluid
+completion.getPreviousStep(medicationAndFluidTherapy) = treatmentFluid
+
+// Route generation follows the same logic
+```
+
+### Files Implementing Persona-Aware Navigation
+
+**Core Logic:**
+1. `lib/features/onboarding/models/onboarding_step.dart`
+   - `getNextStep([UserPersona?])` - Step calculation
+   - `getPreviousStep([UserPersona?])` - Back navigation
+   - `getRouteName([UserPersona?])` - Route generation
+
+2. `lib/features/onboarding/models/onboarding_progress.dart`
+   - `persona` field - Tracks selected persona
+   - `nextStep` getter - Uses `getNextStep(persona)`
+   - `previousStep` getter - Uses `getPreviousStep(persona)`
+
+3. `lib/features/onboarding/services/onboarding_service.dart`
+   - `updateData()` - Syncs persona to progress state
+
+4. `lib/providers/onboarding_provider.dart`
+   - `getNextRoute()` - Uses `getRouteName(persona)`
+   - `getPreviousRoute()` - Uses `getRouteName(persona)`
+
+**Simple Router:**
+5. `lib/app/router.dart`
+   - Flat route structure with no persona redirects
+   - Routes: `/onboarding/treatment/medication` and `/onboarding/treatment/fluid`
+
+### Benefits of Current Architecture
+
+**1. Simplicity:**
+- ✅ Router is clean and declarative (just route definitions)
+- ✅ No complex redirect logic in router
+- ✅ No nested route hierarchies
+- ✅ Easy to understand for new developers
+
+**2. Testability:**
+- ✅ Step logic is pure functions (testable in isolation)
+- ✅ Route generation is deterministic (easy to unit test)
+- ✅ No router mocking needed for tests
+
+**3. Maintainability:**
+- ✅ All persona logic centralized in `OnboardingStepType`
+- ✅ Adding new personas: update switch expressions
+- ✅ Changing flow: modify step logic methods
+- ✅ Router remains stable
+
+**4. Type Safety:**
+- ✅ Exhaustive switch expressions catch missing persona cases
+- ✅ Compiler enforces complete persona handling
+- ✅ No runtime navigation errors from missing redirects
+
+**5. Performance:**
+- ✅ No redirect evaluation overhead
+- ✅ Direct route navigation
+- ✅ State-driven (O(1) lookup vs redirect chains)
+
+**6. Debugging:**
+- ✅ Clear debug logs showing persona and route decisions
+- ✅ No mysterious redirect loops
+- ✅ Straightforward navigation flow
+
+### Key Architectural Principles
+
+**Separation of Concerns:**
+- Router: Defines available routes and page transitions
+- Models: Calculate next/previous steps based on persona
+- Providers: Convert steps to routes and manage state
+- Screens: Use provider navigation methods
+
+**Single Source of Truth:**
+- Persona stored in `OnboardingProgress`
+- Synced from `OnboardingData` when user selects
+- All navigation decisions reference this single value
+
+**Explicit Over Implicit:**
+- Persona parameter makes dependencies visible
+- No hidden router state or magic redirects
+- Navigation logic is traceable and predictable
+
+### Migration Notes
+
+**Removed:**
+- ❌ `/onboarding/treatment/combined/*` nested routes
+- ❌ Router redirect logic for persona detection
+- ❌ `isCombinedFlow` parameters on treatment screens
+- ❌ `getTreatmentRouteForPersona()` helper (replaced by `getRouteName`)
+
+**Added:**
+- ✅ `getNextStep([persona])` method on `OnboardingStepType`
+- ✅ `getPreviousStep([persona])` method on `OnboardingStepType`
+- ✅ `getRouteName([persona])` method on `OnboardingStepType`
+- ✅ `persona` field on `OnboardingProgress`
+- ✅ Persona sync in `OnboardingService.updateData()`
+
+**Result:**
+- Simpler router configuration
+- More maintainable navigation logic
+- Better separation of concerns
+- Fully persona-aware routing without router complexity
+
+### Testing Verification
+
+```bash
+flutter analyze
+# Output: No issues found! (ran in 5.8s)
+```
+
+**Manual Testing Checklist:**
+- ✅ Medication Only: Skips fluid screen, goes medication → completion
+- ✅ Fluid Only: Skips medication screen, goes fluid → completion
+- ✅ Medication & Fluid: Goes medication → fluid → completion
+- ✅ Back navigation respects persona (doesn't go to skipped screens)
+- ✅ No routing errors or unexpected navigation
+
+---

@@ -434,7 +434,7 @@ class PetService {
   }
 
   /// Clears all caches (useful for testing or manual refresh)
-  void clearCache() {
+  Future<void> clearCache() async {
     _cachedPrimaryPet = null;
     _cachedPrimaryPetUserId = null;
     _cacheTimestamp = null;
@@ -442,8 +442,8 @@ class PetService {
     _multiPetCacheTimestamps.clear();
     _nameConflictCache.clear();
 
-    // Clear persistent cache too
-    _clearPersistentCache();
+    // Clear persistent cache too (await to ensure completion)
+    await _clearPersistentCache();
   }
 
   /// Gets the timestamp when the cached pet data was last updated

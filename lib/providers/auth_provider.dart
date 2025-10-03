@@ -586,11 +586,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // Step 3: Clear any existing onboarding data
       await _clearOnboardingData(currentUser.id);
 
-      // Step 4: Reset user state to fresh user (no onboarding, no primary pet)
-      await updateOnboardingStatus(
-        hasCompletedOnboarding: false,
-        primaryPetId: '', // Clear primary pet ID
+      // Step 4: Reset local state to fresh user (no onboarding, no primary pet)
+      // DO NOT call updateOnboardingStatus() here as it would recreate the
+      // Firestore document we just deleted. Instead, update local state only.
+      // We create a completely fresh user by keeping only auth data and
+      // clearing all onboarding/profile data (defaults to false/null)
+      final freshUser = AppUser(
+        id: currentUser.id,
+        email: currentUser.email,
+        displayName: currentUser.displayName,
+        photoURL: currentUser.photoURL,
+        emailVerified: currentUser.emailVerified,
+        provider: currentUser.provider,
+        createdAt: currentUser.createdAt,
+        lastSignInAt: currentUser.lastSignInAt,
       );
+
+      // Update cache and state with fresh user (local only, no Firestore)
+      _updateCache(freshUser);
+      state = AuthStateAuthenticated(user: freshUser);
 
       // Step 5: Clear auth cache to ensure fresh data on next load
       _clearCache();
@@ -640,14 +654,62 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       // Delete all documents in each known subcollection
       for (final subcollectionName in knownSubcollections) {
+        if (kDebugMode) {
+          debugPrint('Debug: Processing subcollection: $subcollectionName');
+        }
         await _deleteSubcollection(userDocRef.collection(subcollectionName));
       }
 
       // Finally, delete the user document itself
+      if (kDebugMode) {
+        debugPrint('Debug: Deleting user document for $userId');
+      }
       await userDocRef.delete();
 
+      // Verify user document is deleted
+      final verifyDoc = await userDocRef.get();
+      if (verifyDoc.exists) {
+        if (kDebugMode) {
+          debugPrint(
+            'Debug: WARNING - User document still exists after deletion!',
+          );
+        }
+      } else {
+        if (kDebugMode) {
+          debugPrint(
+            'Debug: ✅ Verified - User document successfully deleted',
+          );
+        }
+      }
+
+      // Verify all subcollections are empty
+      var allSubcollectionsEmpty = true;
+      for (final subcollectionName in knownSubcollections) {
+        final remainingDocs =
+            await userDocRef.collection(subcollectionName).limit(1).get();
+        if (remainingDocs.docs.isNotEmpty) {
+          allSubcollectionsEmpty = false;
+          if (kDebugMode) {
+            debugPrint(
+              'Debug: WARNING - Subcollection $subcollectionName still has '
+              'documents after deletion!',
+            );
+          }
+        }
+      }
+
       if (kDebugMode) {
-        debugPrint('Debug: Successfully deleted all user data from Firestore');
+        if (allSubcollectionsEmpty) {
+          debugPrint(
+            'Debug: ✅ Successfully deleted all user data from Firestore - '
+            'verified complete',
+          );
+        } else {
+          debugPrint(
+            'Debug: ⚠️ User data deletion completed with warnings - '
+            'some subcollections may still have documents',
+          );
+        }
       }
     } on Exception catch (e) {
       if (kDebugMode) {
@@ -658,25 +720,59 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   /// Helper method to delete all documents in a subcollection (debug only)
+  /// Uses recursive deletion to handle pagination and ensures complete removal
   Future<void> _deleteSubcollection(CollectionReference subcollection) async {
-    try {
-      // Get all documents in the subcollection
-      final snapshot = await subcollection.get();
+    const batchSize = 500; // Firestore batch limit
+    var totalDeleted = 0;
 
-      if (snapshot.docs.isNotEmpty) {
+    try {
+      while (true) {
+        // Get a batch of documents (Firestore queries may be paginated)
+        final snapshot = await subcollection.limit(batchSize).get();
+
+        if (snapshot.docs.isEmpty) {
+          // No more documents to delete
+          break;
+        }
+
         if (kDebugMode) {
           debugPrint(
-            'Debug: Deleting ${snapshot.docs.length} documents '
-            'from ${subcollection.id}',
+            'Debug: Found ${snapshot.docs.length} documents '
+            'in ${subcollection.id}, deleting...',
           );
         }
 
-        // Delete all documents in batch
+        // Delete all documents in this batch
         final batch = FirebaseFirestore.instance.batch();
         for (final doc in snapshot.docs) {
           batch.delete(doc.reference);
         }
         await batch.commit();
+
+        totalDeleted += snapshot.docs.length;
+
+        // If we got fewer documents than the batch size, we're done
+        if (snapshot.docs.length < batchSize) {
+          break;
+        }
+      }
+
+      if (kDebugMode && totalDeleted > 0) {
+        debugPrint(
+          'Debug: Successfully deleted $totalDeleted total documents '
+          'from ${subcollection.id}',
+        );
+      }
+
+      // Verify deletion completed successfully
+      final verifySnapshot = await subcollection.limit(1).get();
+      if (verifySnapshot.docs.isNotEmpty) {
+        if (kDebugMode) {
+          debugPrint(
+            'Debug: WARNING - Subcollection ${subcollection.id} still has '
+            'documents after deletion attempt!',
+          );
+        }
       }
     } on Exception catch (e) {
       if (kDebugMode) {
@@ -691,8 +787,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Helper method to clear all local data (debug only)
   Future<void> _clearAllLocalData() async {
     try {
-      // Clear PetService caches
-      PetService().clearCache();
+      // Clear PetService caches (now async, must await)
+      await PetService().clearCache();
 
       // Clear SharedPreferences data
       final prefs = await SharedPreferences.getInstance();
