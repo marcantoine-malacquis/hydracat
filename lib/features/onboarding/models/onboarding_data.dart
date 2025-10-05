@@ -229,6 +229,41 @@ class OnboardingData {
         (!needsTreatmentSetup || isTreatmentSetupComplete);
   }
 
+  /// Gets a list of missing required fields based on selected persona
+  ///
+  /// Returns human-readable field names that are required but not provided.
+  /// Used to generate specific error messages for incomplete onboarding.
+  List<String> getMissingRequiredFields() {
+    final missing = <String>[];
+
+    // Basic pet info (always required)
+    if (petName == null || petName!.isEmpty) {
+      missing.add('Pet name');
+    }
+    if (petAge == null || petAge! <= 0) {
+      missing.add('Pet age');
+    }
+
+    // Treatment-specific requirements based on persona
+    if (treatmentApproach != null) {
+      // For medication-based personas
+      if (treatmentApproach!.includesMedication) {
+        if (medications == null || medications!.isEmpty) {
+          missing.add('At least one medication');
+        }
+      }
+
+      // For fluid therapy-based personas
+      if (treatmentApproach!.includesFluidTherapy) {
+        if (fluidTherapy == null) {
+          missing.add('Fluid therapy setup');
+        }
+      }
+    }
+
+    return missing;
+  }
+
   /// Converts [OnboardingData] to JSON data
   Map<String, dynamic> toJson() {
     return {

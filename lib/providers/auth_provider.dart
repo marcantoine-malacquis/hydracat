@@ -721,11 +721,24 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// Helper method to delete all documents in a subcollection (debug only)
   /// Uses recursive deletion to handle pagination and ensures complete removal
+  /// For the 'pets' subcollection, also recursively deletes nested
+  /// subcollections
   Future<void> _deleteSubcollection(CollectionReference subcollection) async {
     const batchSize = 500; // Firestore batch limit
     var totalDeleted = 0;
 
     try {
+      // Special handling for pets subcollection - need to delete nested
+      // subcollections first
+      final isPetsCollection = subcollection.id == 'pets';
+
+      if (isPetsCollection && kDebugMode) {
+        debugPrint(
+          'Debug: Detected pets subcollection - '
+          'will recursively delete nested subcollections',
+        );
+      }
+
       while (true) {
         // Get a batch of documents (Firestore queries may be paginated)
         final snapshot = await subcollection.limit(batchSize).get();
@@ -742,7 +755,41 @@ class AuthNotifier extends StateNotifier<AuthState> {
           );
         }
 
-        // Delete all documents in this batch
+        // For pets collection, delete nested subcollections first
+        if (isPetsCollection) {
+          for (final petDoc in snapshot.docs) {
+            if (kDebugMode) {
+              debugPrint(
+                'Debug: Processing pet ${petDoc.id} - '
+                'deleting nested subcollections',
+              );
+            }
+
+            // Delete known nested subcollections under each pet
+            final petNestedSubcollections = [
+              'schedules',
+              'fluidSessions',
+              'weights',
+              'medications',
+            ];
+
+            for (final nestedSubcollection in petNestedSubcollections) {
+              final nestedCollectionRef =
+                  petDoc.reference.collection(nestedSubcollection);
+
+              if (kDebugMode) {
+                debugPrint(
+                  'Debug: Deleting ${petDoc.id}/$nestedSubcollection',
+                );
+              }
+
+              // Recursively delete this nested subcollection
+              await _deleteNestedSubcollection(nestedCollectionRef);
+            }
+          }
+        }
+
+        // Now delete all documents in this batch
         final batch = FirebaseFirestore.instance.batch();
         for (final doc in snapshot.docs) {
           batch.delete(doc.reference);
@@ -781,6 +828,41 @@ class AuthNotifier extends StateNotifier<AuthState> {
         );
       }
       // Continue with other deletions even if one fails
+    }
+  }
+
+  /// Helper method to delete nested subcollections (e.g., schedules under pets)
+  /// Simpler version without nested subcollection handling since we know
+  /// schedules/weights/etc don't have their own nested collections
+  Future<void> _deleteNestedSubcollection(
+    CollectionReference subcollection,
+  ) async {
+    const batchSize = 500;
+
+    try {
+      while (true) {
+        final snapshot = await subcollection.limit(batchSize).get();
+
+        if (snapshot.docs.isEmpty) {
+          break;
+        }
+
+        final batch = FirebaseFirestore.instance.batch();
+        for (final doc in snapshot.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+
+        if (snapshot.docs.length < batchSize) {
+          break;
+        }
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          'Debug: Error deleting nested subcollection ${subcollection.id}: $e',
+        );
+      }
     }
   }
 

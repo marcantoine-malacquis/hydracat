@@ -1463,3 +1463,269 @@ flutter analyze
 - ✅ No routing errors or unexpected navigation
 
 ---
+
+## Onboarding Validation & Error Handling Enhancement (October 2025)
+
+### Overview
+Complete refactor of onboarding validation system to provide specific, actionable error messages that guide users to exactly what information is missing, replacing generic error handling with persona-aware, step-specific validation.
+
+### Problems Identified
+
+**1. Generic Error Messages**
+- Completion screen showed "An unexpected error occurred" without specifics
+- Users couldn't identify what information was missing
+- No guidance on how to resolve validation failures
+- Generic snackbar messages provided no actionable feedback
+
+**2. Inconsistent Validation Logic**
+- Validation scattered across multiple services and models
+- Different validation rules for different personas
+- No unified validation approach across onboarding steps
+- Validation only occurred at completion, not progressively
+
+**3. Poor User Experience**
+- Users progressed through onboarding only to fail at completion
+- No inline validation feedback during data entry
+- Missing information wasn't highlighted with specific guidance
+- No direct navigation to fix missing data
+
+### Solution Architecture
+
+#### 1. Unified Validation Service (`OnboardingValidationService`)
+
+**Centralized Validation Logic:**
+```dart
+class OnboardingValidationService {
+  static ValidationResult validateCurrentStep(
+    OnboardingData data,
+    OnboardingStepType currentStep,
+    UserPersona? persona,
+  ) {
+    // Persona-aware validation for each step
+    // Returns detailed ValidationResult with specific errors
+  }
+}
+```
+
+**Key Features:**
+- **Step-Specific Validation**: Different rules for each onboarding step
+- **Persona-Aware Logic**: Validation adapts to selected treatment approach
+- **Progressive Validation**: Validates data at each step, not just completion
+- **Comprehensive Coverage**: All data fields with medical accuracy validation
+
+#### 2. Rich Error Models (`ValidationResult` & `ValidationError`)
+
+**Detailed Error Information:**
+```dart
+class ValidationError {
+  final String message;           // User-friendly error message
+  final String? fieldName;        // Specific field with issue
+  final ValidationErrorType type; // Error category (missing, invalid, etc.)
+  final String? suggestedAction;  // Action text for button
+  final String? actionRoute;      // Navigation route to fix issue
+}
+
+class ValidationResult {
+  final bool isValid;
+  final List<ValidationError> errors;
+  final List<String> missingFields; // Human-readable field names
+}
+```
+
+**Error Types:**
+- `missing`: Required field not provided
+- `invalid`: Field has invalid value (e.g., age > 25)
+- `incomplete`: Related fields missing (e.g., no medications for medication persona)
+- `inconsistent`: Data conflicts (e.g., diagnosis date after birth date)
+- `general`: Other validation failures
+
+#### 3. Actionable Error Display (`ValidationErrorDisplay`)
+
+**Consistent UI Component:**
+```dart
+class ValidationErrorDisplay extends StatelessWidget {
+  // Shows validation errors with:
+  // - Clear error messages
+  // - Action buttons to navigate to fix issues
+  // - Consistent styling across all screens
+  // - Compact and full display modes
+}
+```
+
+**Features:**
+- **Action Buttons**: Direct navigation to screens where data can be fixed
+- **Visual Hierarchy**: Clear error presentation with icons and colors
+- **Consistent Styling**: Unified error display across all onboarding screens
+- **Responsive Design**: Compact mode for inline errors, full mode for completion
+
+### Implementation Details
+
+#### 1. Progressive Validation Integration
+
+**Screen-Level Validation:**
+- `PetBasicsScreen`: Validates name, age, gender with inline error display
+- `TreatmentMedicationScreen`: Validates medications for medication-based personas
+- `OnboardingCompletionScreen`: Comprehensive validation before profile creation
+
+**Validation Flow:**
+1. User attempts to proceed to next step
+2. `OnboardingValidationService.validateCurrentStep()` called
+3. If validation fails: Show `ValidationErrorDisplay` with specific errors
+4. If validation passes: Allow navigation to next step
+
+#### 2. Persona-Aware Validation Rules
+
+**Medication Personas:**
+- Requires at least one medication
+- Validates medication data completeness
+- Provides "Add Medication" action button
+
+**Fluid Therapy Personas:**
+- Requires fluid therapy setup
+- Validates frequency, volume, location, needle gauge
+- Provides "Set Up Fluid Therapy" action button
+
+**Combined Personas:**
+- Requires both medication and fluid therapy
+- Validates completeness of both treatment types
+- Provides specific action buttons for each missing component
+
+#### 3. Medical Data Validation
+
+**Pet Information:**
+- Name: Required, max 50 characters
+- Age: Required, 0-25 years (realistic for cats)
+- Weight: Optional, 0-15kg if provided
+- Gender: Required for medical completeness
+
+**Medical Consistency:**
+- Date of birth vs age consistency
+- Bloodwork date cannot be in future
+- Lab values require bloodwork date
+- CKD diagnosis date validation
+
+### Files Created/Modified
+
+#### New Files:
+1. **`lib/core/validation/models/validation_result.dart`**
+   - `ValidationError` class with detailed error information
+   - `ValidationResult` class with validation status and error list
+   - `ValidationErrorType` enum for error categorization
+
+2. **`lib/core/validation/onboarding_validation_service.dart`**
+   - Centralized validation logic for all onboarding steps
+   - Persona-aware validation rules
+   - Progressive validation implementation
+
+3. **`lib/shared/widgets/validation_error_display.dart`**
+   - Reusable error display component
+   - Action button integration
+   - Consistent styling and layout
+
+#### Modified Files:
+1. **`lib/features/onboarding/screens/pet_basics_screen.dart`**
+   - Integrated `OnboardingValidationService` for form validation
+   - Added `ValidationErrorDisplay` for inline error feedback
+   - Removed old `ProfileValidationService` dependency
+
+2. **`lib/features/onboarding/screens/treatment_medication_screen.dart`**
+   - Added validation for medication requirements
+   - Integrated error display with action buttons
+   - Prevented navigation with incomplete medication data
+
+3. **`lib/features/onboarding/screens/onboarding_completion_screen.dart`**
+   - Comprehensive validation before profile creation
+   - Specific error messages instead of generic failures
+   - Action buttons to navigate to missing data screens
+
+### Benefits Achieved
+
+#### 1. User Experience Improvements
+- **Specific Guidance**: Users know exactly what information is missing
+- **Actionable Feedback**: Direct navigation to fix missing data
+- **Progressive Validation**: Errors caught early, not at completion
+- **Consistent Interface**: Same error display across all screens
+
+#### 2. Developer Experience Improvements
+- **Centralized Logic**: All validation rules in one service
+- **Type Safety**: Strong typing for validation results and errors
+- **Maintainable Code**: Easy to add new validation rules
+- **Testable Components**: Validation logic can be unit tested
+
+#### 3. Medical Accuracy
+- **Comprehensive Validation**: All medical data validated for accuracy
+- **Consistency Checks**: Cross-field validation (e.g., age vs birth date)
+- **Realistic Ranges**: Medical-appropriate validation rules
+- **Required Fields**: Ensures essential medical information is collected
+
+#### 4. Persona-Aware Experience
+- **Adaptive Validation**: Rules change based on treatment approach
+- **Relevant Requirements**: Only validates data needed for selected persona
+- **Clear Expectations**: Users understand what's required for their approach
+
+### Code Quality Improvements
+
+#### 1. Error Handling
+- **Graceful Degradation**: Validation failures don't crash the app
+- **User-Friendly Messages**: Technical errors converted to actionable guidance
+- **Recovery Options**: Users can always navigate to fix issues
+- **Progress Preservation**: Validation failures don't lose user progress
+
+#### 2. Architecture Benefits
+- **Separation of Concerns**: Validation logic separate from UI
+- **Reusable Components**: `ValidationErrorDisplay` used across screens
+- **Consistent Patterns**: Same validation approach throughout onboarding
+- **Extensible Design**: Easy to add new validation rules and error types
+
+### Testing & Verification
+
+#### Linting Compliance
+```bash
+flutter analyze
+# Output: No issues found! (ran in 5.7s)
+```
+
+#### Manual Testing Scenarios
+- ✅ **Empty Form Submission**: Shows specific missing field errors
+- ✅ **Invalid Data Entry**: Shows validation errors with correction guidance
+- ✅ **Persona-Specific Validation**: Different rules for different treatment approaches
+- ✅ **Action Button Navigation**: Direct navigation to screens with missing data
+- ✅ **Progressive Validation**: Errors shown at each step, not just completion
+- ✅ **Error Recovery**: Users can fix issues and retry without losing progress
+
+### Success Metrics
+
+#### User Experience
+- **Error Clarity**: Users immediately understand what's missing
+- **Action Guidance**: Clear path to resolve validation failures
+- **Completion Rate**: Reduced abandonment due to unclear error messages
+- **User Satisfaction**: Specific feedback improves overall experience
+
+#### Technical Quality
+- **Code Maintainability**: Centralized validation logic
+- **Type Safety**: Strong typing prevents runtime validation errors
+- **Testability**: Validation logic can be comprehensively tested
+- **Consistency**: Unified error handling across entire onboarding flow
+
+### Future Enhancements
+
+#### Potential Improvements
+1. **Real-time Validation**: Validate fields as user types (with debouncing)
+2. **Field-Level Validation**: Individual field validation with inline feedback
+3. **Smart Suggestions**: Suggest common values for missing fields
+4. **Validation Analytics**: Track validation failure patterns for UX optimization
+5. **Accessibility**: Enhanced screen reader support for error messages
+
+#### Integration Opportunities
+1. **Form Libraries**: Integration with form validation libraries
+2. **Analytics**: Track validation error patterns for business insights
+3. **A/B Testing**: Test different error message formats
+4. **Internationalization**: Error messages in multiple languages
+
+### Conclusion
+
+The onboarding validation enhancement transforms a generic, confusing error experience into a specific, actionable guidance system. Users now receive clear feedback about what information is missing, with direct navigation to fix issues. The centralized validation service ensures consistency across all onboarding screens while maintaining persona-aware logic that adapts to different treatment approaches.
+
+This improvement significantly enhances user experience by eliminating the frustration of generic error messages while providing developers with a maintainable, testable validation architecture that can easily be extended for future onboarding requirements.
+
+---

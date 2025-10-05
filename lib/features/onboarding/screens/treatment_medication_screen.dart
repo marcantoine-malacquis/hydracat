@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/extensions/build_context_extensions.dart';
+import 'package:hydracat/core/validation/models/validation_result.dart';
+import 'package:hydracat/core/validation/onboarding_validation_service.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/onboarding/screens/add_medication_screen.dart';
@@ -10,6 +12,7 @@ import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.d
 import 'package:hydracat/features/onboarding/widgets/treatment_popup_wrapper.dart';
 import 'package:hydracat/features/profile/models/user_persona.dart';
 import 'package:hydracat/providers/onboarding_provider.dart';
+import 'package:hydracat/shared/widgets/validation_error_display.dart';
 
 /// Screen for setting up medication treatments
 class TreatmentMedicationScreen extends ConsumerStatefulWidget {
@@ -38,6 +41,7 @@ class TreatmentMedicationScreen extends ConsumerStatefulWidget {
 class _TreatmentMedicationScreenState
     extends ConsumerState<TreatmentMedicationScreen> {
   bool _isLoading = false;
+  ValidationResult? _validationResult;
 
   @override
   Widget build(BuildContext context) {
@@ -69,6 +73,18 @@ class _TreatmentMedicationScreenState
             _buildMedicationList(medications),
 
           const SizedBox(height: 32),
+
+          // Validation error display
+          if (_validationResult != null && !_validationResult!.isValid) ...[
+            ValidationErrorDisplay(
+              validationResult: _validationResult!,
+              compact: true,
+              onActionPressed: (actionRoute) {
+                context.go(actionRoute);
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
 
           // Footer with add button and navigation
           _buildFooter(context, theme, medications.isNotEmpty),
@@ -238,6 +254,11 @@ class _TreatmentMedicationScreenState
             .updateData(
               currentData.addMedication(result),
             );
+
+        // Clear validation errors since we now have a medication
+        setState(() {
+          _validationResult = null;
+        });
       }
     }
   }
@@ -261,6 +282,11 @@ class _TreatmentMedicationScreenState
             .updateData(
               currentData.updateMedication(index, result),
             );
+
+        // Clear validation errors since medication data has been updated
+        setState(() {
+          _validationResult = null;
+        });
       }
     }
   }
@@ -285,36 +311,57 @@ class _TreatmentMedicationScreenState
             .updateData(
               currentData.removeMedication(index),
             );
+
+        // Check if we need to show validation errors after deletion
+        final updatedData = currentData.removeMedication(index);
+        final validationResult =
+            OnboardingValidationService.validateCurrentStep(
+              updatedData,
+              OnboardingStepType.treatmentMedication,
+              updatedData.treatmentApproach,
+            );
+
+        setState(() {
+          _validationResult = validationResult.isValid
+              ? null
+              : validationResult;
+        });
       }
     }
   }
 
   Future<void> _onNext() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _validationResult = null; // Clear previous validation errors
+    });
 
     try {
-      // Get the current persona to determine navigation
+      // Get the current data for validation
       final onboardingData = ref.read(onboardingDataProvider);
-      final persona = onboardingData?.treatmentApproach;
-      final medications = onboardingData?.medications ?? [];
-
-      // For medicationAndFluidTherapy persona, require at least one medication
-      if (persona == UserPersona.medicationAndFluidTherapy &&
-          medications.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
-                'Please add at least one medication before continuing. '
-                'This is required for the Medication & Fluid Therapy approach.',
-              ),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
-        }
-        setState(() => _isLoading = false);
+      if (onboardingData == null) {
+        _showGenericError('No onboarding data found');
         return;
       }
+
+      // Perform validation using the unified service
+      final validationResult = OnboardingValidationService.validateCurrentStep(
+        onboardingData,
+        OnboardingStepType.treatmentMedication,
+        onboardingData.treatmentApproach,
+      );
+
+      if (!validationResult.isValid) {
+        // Show validation errors and stop progression
+        setState(() {
+          _validationResult = validationResult;
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Validation passed, proceed with navigation
+      final persona = onboardingData.treatmentApproach;
 
       if (persona == UserPersona.medicationAndFluidTherapy) {
         // For combined flow, update progress and navigate to fluid therapy step
@@ -338,21 +385,22 @@ class _TreatmentMedicationScreenState
         context.go(nextRoute);
       }
     } on Exception catch (e) {
-      if (mounted) {
-        final errorMessage = ref
-            .read(onboardingProvider.notifier)
-            .getErrorMessage(e);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
+      _showGenericError(e.toString());
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  void _showGenericError(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ),
+    );
   }
 }

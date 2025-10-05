@@ -5,11 +5,14 @@ import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
+import 'package:hydracat/core/validation/models/validation_result.dart';
+import 'package:hydracat/core/validation/onboarding_validation_service.dart';
 import 'package:hydracat/features/onboarding/exceptions/onboarding_exceptions.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.dart';
 import 'package:hydracat/providers/onboarding_provider.dart';
 import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
+import 'package:hydracat/shared/widgets/validation_error_display.dart';
 
 /// Final screen in the onboarding flow that celebrates completion
 /// and performs the single Firebase write operation
@@ -26,6 +29,7 @@ class _OnboardingCompletionScreenState
     extends ConsumerState<OnboardingCompletionScreen> {
   bool _isCompleting = false;
   OnboardingException? _completionError;
+  ValidationResult? _validationResult;
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +56,7 @@ class _OnboardingCompletionScreenState
           const SizedBox(height: AppSpacing.xxl),
 
           // Error display if completion failed
-          if (_completionError != null) ...[
+          if (_completionError != null || _validationResult != null) ...[
             _buildErrorMessage(),
             const SizedBox(height: AppSpacing.xl),
           ],
@@ -116,6 +120,18 @@ class _OnboardingCompletionScreenState
   }
 
   Widget _buildErrorMessage() {
+    // Use validation result if available, otherwise fall back to completion
+    // error
+    if (_validationResult != null && !_validationResult!.isValid) {
+      return ValidationErrorDisplay(
+        validationResult: _validationResult!,
+        onActionPressed: (actionRoute) {
+          context.go(actionRoute);
+        },
+      );
+    }
+
+    // Fallback for non-validation errors
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -151,8 +167,9 @@ class _OnboardingCompletionScreenState
 
           Text(
             _completionError != null
-                ? ref.read(onboardingProvider.notifier)
-                    .getErrorMessage(_completionError!)
+                ? ref
+                      .read(onboardingProvider.notifier)
+                      .getErrorMessage(_completionError!)
                 : 'An unexpected error occurred',
             style: AppTextStyles.body.copyWith(
               color: AppColors.error,
@@ -198,20 +215,55 @@ class _OnboardingCompletionScreenState
                   Text(l10n.finishingSetup),
                 ],
               )
-            : Text(_completionError != null ? l10n.retry : 'Finish'),
+            : Text(
+                _completionError != null ||
+                        (_validationResult != null &&
+                            !_validationResult!.isValid)
+                    ? l10n.retry
+                    : 'Finish',
+              ),
       ),
     );
   }
 
   Future<void> _handleFinishPressed() async {
-    // Clear any previous error
+    // Clear any previous errors
     setState(() {
       _completionError = null;
+      _validationResult = null;
       _isCompleting = true;
     });
 
     try {
-      // Complete onboarding through the provider
+      // First, validate the current data before attempting completion
+      final onboardingData = ref.read(onboardingDataProvider);
+      if (onboardingData == null) {
+        setState(() {
+          _completionError = const OnboardingServiceException(
+            'No onboarding data found. Please start over.',
+          );
+          _isCompleting = false;
+        });
+        return;
+      }
+
+      // Perform comprehensive validation
+      final validationResult = OnboardingValidationService.validateCurrentStep(
+        onboardingData,
+        OnboardingStepType.completion,
+        onboardingData.treatmentApproach,
+      );
+
+      if (!validationResult.isValid) {
+        // Show validation errors instead of attempting completion
+        setState(() {
+          _validationResult = validationResult;
+          _isCompleting = false;
+        });
+        return;
+      }
+
+      // Validation passed, proceed with completion
       final success = await ref
           .read(onboardingProvider.notifier)
           .completeOnboarding();

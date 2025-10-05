@@ -5,15 +5,17 @@ import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/extensions/string_extensions.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
+import 'package:hydracat/core/validation/models/validation_result.dart';
+import 'package:hydracat/core/validation/onboarding_validation_service.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/widgets/gender_selector.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.dart';
 import 'package:hydracat/features/onboarding/widgets/weight_unit_selector.dart';
-import 'package:hydracat/features/profile/services/profile_validation_service.dart';
 import 'package:hydracat/providers/onboarding_provider.dart';
 import 'package:hydracat/providers/weight_unit_provider.dart';
 import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
+import 'package:hydracat/shared/widgets/validation_error_display.dart';
 
 /// Pet basics collection screen - Step 3 of onboarding flow
 class PetBasicsScreen extends ConsumerStatefulWidget {
@@ -28,7 +30,6 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _breedController = TextEditingController();
-  final _validationService = const ProfileValidationService();
 
   DateTime? _selectedDateOfBirth;
   String? _selectedGender;
@@ -40,6 +41,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
   String? _dateOfBirthError;
   String? _genderError;
   String? _weightError;
+  ValidationResult? _validationResult;
 
   bool _isLoading = false;
 
@@ -146,78 +148,11 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
     }
   }
 
-  /// Validate all form fields
-  bool _validateForm() {
-    setState(() {
-      _nameError = null;
-      _dateOfBirthError = null;
-      _genderError = null;
-      _weightError = null;
-    });
-
-    var isValid = true;
-
-    // Validate name (required)
-    final nameResult = _validationService.validatePetName(_nameController.text);
-    if (!nameResult.isValid) {
-      setState(() {
-        _nameError = nameResult.errorMessage;
-      });
-      isValid = false;
-    }
-
-    // Validate date of birth (required)
-    if (_selectedDateOfBirth == null) {
-      setState(() {
-        _dateOfBirthError = 'Date of birth is required';
-      });
-      isValid = false;
-    } else {
-      // Validate age range
-      final ageYears = AppDateUtils.calculateAge(_selectedDateOfBirth!);
-      final ageResult = _validationService.validateAge(ageYears);
-      if (!ageResult.isValid) {
-        setState(() {
-          _dateOfBirthError = ageResult.errorMessage;
-        });
-        isValid = false;
-      }
-    }
-
-    // Validate gender (required)
-    if (_selectedGender == null || _selectedGender!.isEmpty) {
-      setState(() {
-        _genderError = 'Gender selection is required';
-      });
-      isValid = false;
-    }
-
-    // Validate weight (optional, but validate if provided)
-    if (_weightValue != null) {
-      final weightInKg = _weightUnit == 'lbs'
-          ? _weightValue! / 2.20462
-          : _weightValue!;
-
-      final weightResult = _validationService.validateWeight(weightInKg);
-      if (!weightResult.isValid) {
-        setState(() {
-          _weightError = weightResult.errorMessage;
-        });
-        isValid = false;
-      }
-    }
-
-    return isValid;
-  }
-
   /// Save form data and proceed to next step
   Future<void> _saveAndContinue() async {
-    if (!_validateForm()) {
-      return;
-    }
-
     setState(() {
       _isLoading = true;
+      _validationResult = null; // Clear previous validation errors
     });
 
     try {
@@ -227,16 +162,20 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
           : _weightValue;
 
       // Calculate age from date of birth
-      final ageYears = AppDateUtils.calculateAge(_selectedDateOfBirth!);
+      final ageYears = _selectedDateOfBirth != null
+          ? AppDateUtils.calculateAge(_selectedDateOfBirth!)
+          : null;
 
       // Create updated onboarding data with available fields
       final currentData =
           ref.read(onboardingDataProvider) ?? const OnboardingData.empty();
 
       final updatedData = currentData.copyWith(
-        petName: _nameController.text.capitalize,
-        petAge: ageYears, // Keep for backwards compatibility
-        petDateOfBirth: _selectedDateOfBirth, // Store original date of birth
+        petName: _nameController.text.trim().isEmpty
+            ? null
+            : _nameController.text.capitalize,
+        petAge: ageYears,
+        petDateOfBirth: _selectedDateOfBirth,
         petGender: _selectedGender,
         petBreed: _breedController.text.trim().isEmpty
             ? null
@@ -244,7 +183,23 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
         petWeightKg: weightInKg,
       );
 
-      // Update onboarding data
+      // Perform validation using the unified service
+      final validationResult = OnboardingValidationService.validateCurrentStep(
+        updatedData,
+        OnboardingStepType.petBasics,
+        currentData.treatmentApproach,
+      );
+
+      if (!validationResult.isValid) {
+        // Show validation errors and stop progression
+        setState(() {
+          _validationResult = validationResult;
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Validation passed, update onboarding data
       await ref.read(onboardingProvider.notifier).updateData(updatedData);
 
       // Debug logging to confirm data is stored correctly
@@ -273,16 +228,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
         }
       }
     } on Exception catch (e) {
-      if (mounted) {
-        final errorMessage =
-            ref.read(onboardingProvider.notifier).getErrorMessage(e);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
+      _showGenericError(e.toString());
     } finally {
       if (mounted) {
         setState(() {
@@ -290,6 +236,17 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
         });
       }
     }
+  }
+
+  void _showGenericError(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.error,
+      ),
+    );
   }
 
   /// Navigate back to previous step
@@ -480,6 +437,15 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
             ),
 
             const SizedBox(height: AppSpacing.xl),
+
+            // Validation error display
+            if (_validationResult != null && !_validationResult!.isValid) ...[
+              ValidationErrorDisplay(
+                validationResult: _validationResult!,
+                compact: true,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
 
             // Save & Continue Button
             HydraButton(

@@ -292,6 +292,14 @@ class OnboardingService {
 
       // Check if current step can progress
       if (!_currentProgress!.canProgressFromCurrentStep) {
+        // Get specific missing fields for better error message
+        final missingFields = _getMissingFieldsForCurrentStep(_currentData!);
+        if (missingFields.isNotEmpty) {
+          return OnboardingFailure(
+            OnboardingValidationException(missingFields),
+          );
+        }
+        // Fallback to generic error if no specific fields identified
         return const OnboardingFailure(
           OnboardingIncompleteDataException(),
         );
@@ -402,8 +410,9 @@ class OnboardingService {
 
       // Ensure we have all required data
       if (!_currentData!.isReadyForProfileCreation) {
-        return const OnboardingFailure(
-          OnboardingIncompleteDataException('complete pet information'),
+        final missingFields = _currentData!.getMissingRequiredFields();
+        return OnboardingFailure(
+          OnboardingValidationException(missingFields),
         );
       }
 
@@ -577,6 +586,56 @@ class OnboardingService {
       OnboardingStepType.treatmentFluid => data.fluidTherapy != null,
       OnboardingStepType.completion => data.isReadyForProfileCreation,
     };
+  }
+
+  /// Gets list of missing required fields for the current step
+  ///
+  /// Returns human-readable field names that are required for the current
+  /// step but not provided. Used to generate specific error messages.
+  List<String> _getMissingFieldsForCurrentStep(OnboardingData data) {
+    final missing = <String>[];
+
+    switch (_currentProgress!.currentStep) {
+      case OnboardingStepType.welcome:
+        // No required fields
+        break;
+
+      case OnboardingStepType.userPersona:
+        if (!data.hasPersonaSelection) {
+          missing.add('Treatment approach selection');
+        }
+
+      case OnboardingStepType.petBasics:
+        if (data.petName == null || data.petName!.isEmpty) {
+          missing.add('Pet name');
+        }
+        if (data.petAge == null || data.petAge! <= 0) {
+          missing.add('Pet age');
+        }
+      // Note: Gender is also required but validated at UI level
+
+      case OnboardingStepType.ckdMedicalInfo:
+      // Optional step, no required fields
+
+      case OnboardingStepType.treatmentMedication:
+        // Only require medications for medication-based personas
+        if (data.treatmentApproach?.includesMedication ?? false) {
+          if (data.medications == null || data.medications!.isEmpty) {
+            missing.add('At least one medication');
+          }
+        }
+
+      case OnboardingStepType.treatmentFluid:
+        if (data.fluidTherapy == null) {
+          missing.add('Fluid therapy setup');
+        }
+
+      case OnboardingStepType.completion:
+        // Use the comprehensive validation from OnboardingData
+        missing.addAll(data.getMissingRequiredFields());
+    }
+
+    return missing;
   }
 
   /// Saves current onboarding state to local checkpoint
