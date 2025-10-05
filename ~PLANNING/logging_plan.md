@@ -370,37 +370,57 @@ class LoggingState {
 6. **No Update Mode**: Handled separately in Progress screen (future implementation)
 7. **Ignore Redundant Args**: Explicit `null` values in `withMode()` and `reset()` for clarity
 
-**Linting:**
-- ✅ All files pass `flutter analyze` with zero issues
-- ✅ Follows `very_good_analysis` standards
-- ✅ 80-character line limit compliance
-- ✅ Proper `const` literals and int preference
-- ✅ Documented ignore for intentional redundant arguments
-
-**Testing Checkpoint:**
-- Cache validation: Test `isValidFor()` with different dates
-- Session updates: Test `copyWithSession()` increments correctly
-- Duplicate detection: Test `hasMedicationLogged()` with various inputs
-- JSON serialization: Test round-trip conversion
-- State transitions: Test `LoggingState` mutation methods
-
 **Learning Goal:** Hybrid model architecture with pure validation and service-layer time logic
 
-### Step 1.3: Extend Firestore Schema Models
-**Location:** `lib/shared/models/`
-**Files to create:**
-- `treatment_summary.dart` - Model for daily/weekly/monthly summaries
-- `summary_update_dto.dart` - DTO for batch summary updates
+### Step 1.3: Extend Firestore Schema Models ✅ COMPLETED
+**Location:** `lib/shared/models/` + `lib/core/utils/date_utils.dart`
 
-**Key Requirements:**
-- Map to existing Firestore summary structure
-- Support delta calculations for updates (new - old values)
-- Denormalized data for fast reads (pet name, etc.)
-- Date-based document IDs (YYYY-MM-DD, YYYY-Www, YYYY-MM)
+**Files Created:**
+- ✅ `treatment_summary_base.dart` - Abstract base class with shared fields
+- ✅ `daily_summary.dart` - Daily summary (date + overallStreak)
+- ✅ `weekly_summary.dart` - Weekly summary (treatment/missed days + avg adherence)
+- ✅ `monthly_summary.dart` - Monthly summary (streaks + monthly adherence)
+- ✅ `summary_update_dto.dart` - Delta-based update DTO for batch writes
+- ✅ Updated `date_utils.dart` - Added document ID generation methods
+
+**Key Implementation Details:**
+
+**Architecture: Base Class + 3 Subclasses**
+- Type-safe: `getDailySummary()` returns `DailySummary` (not generic)
+- Period-specific fields: Monthly has streaks, daily doesn't
+- Matches Firestore structure: Different collections per period
+
+**Document IDs (via AppDateUtils):**
+- Daily: `formatDateForSummary()` → "2025-10-05"
+- Weekly: `formatWeekForSummary()` → "2025-W40" (ISO 8601 week number)
+- Monthly: `formatMonthForSummary()` → "2025-10"
+
+**Delta-Based Updates (SummaryUpdateDto):**
+- Factory constructors:
+  - `fromMedicationSession()` / `fromFluidSession()` - New sessions
+  - `forMedicationSessionUpdate()` / `forFluidSessionUpdate()` - Calculate deltas
+- `toFirestoreUpdate()` → Map with `FieldValue.increment(delta)`
+- Only includes non-null fields (minimal payload)
+
+**Important for Phase 2 Services:**
+- Use `SummaryUpdateDto.fromXxxSession()` for new sessions
+- Use `SummaryUpdateDto.forXxxSessionUpdate()` for session modifications
+- Document IDs: Call `AppDateUtils.formatXxxForSummary(session.dateTime)`
+- Week/month boundaries: Use `AppDateUtils.getWeekStartEnd()` / `getMonthStartEnd()`
+- ISO 8601 weeks: Monday = first day, Week 1 = first Thursday of year
+- All summaries track: medication (doses/scheduled/missed), fluid (volume/sessions), overall (treatment done/adherence)
+- No denormalized fields yet (petId, petName) - add in Phase 4+ when analytics needs them
+
+**Validation Rules:**
+- Base: All counts ≥0, adherence 0.0-1.0, no future timestamps
+- Daily: Date not in future, streak=0 if treatment not done
+- Weekly: 7-day span (Mon-Sun), day counts ≤7, endDate > startDate
+- Monthly: Same month for start/end, day counts ≤31, current streak ≤ longest streak
+
 
 **Learning Goal:** Pre-aggregated summary architecture for cost optimization
 
-**<� MILESTONE:** Data models ready for logging flow implementation!
+**< MILESTONE:** Data models ready for logging flow implementation!
 
 ---
 

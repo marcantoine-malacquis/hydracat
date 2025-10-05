@@ -172,4 +172,115 @@ class AppDateUtils {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day, time.hour, time.minute);
   }
+
+  // Treatment Summary Document ID Generation
+
+  /// Format date for daily summary document ID (YYYY-MM-DD)
+  ///
+  /// Example: October 5, 2025 → "2025-10-05"
+  /// Used for Firestore `treatmentSummaryDaily` collection document IDs.
+  static String formatDateForSummary(DateTime date) {
+    final year = date.year.toString();
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
+
+  /// Format date for weekly summary document ID (YYYY-Www)
+  ///
+  /// Example: Week 40 of 2025 → "2025-W40"
+  /// Uses ISO 8601 week numbering (Monday as first day of week).
+  /// Used for Firestore `treatmentSummaryWeekly` collection document IDs.
+  static String formatWeekForSummary(DateTime date) {
+    final weekNumber = getIso8601WeekNumber(date);
+    final year = date.year.toString();
+    final week = weekNumber.toString().padLeft(2, '0');
+    return '$year-W$week';
+  }
+
+  /// Format date for monthly summary document ID (YYYY-MM)
+  ///
+  /// Example: October 2025 → "2025-10"
+  /// Used for Firestore `treatmentSummaryMonthly` collection document IDs.
+  static String formatMonthForSummary(DateTime date) {
+    final year = date.year.toString();
+    final month = date.month.toString().padLeft(2, '0');
+    return '$year-$month';
+  }
+
+  /// Get ISO 8601 week number (Monday as first day of week)
+  ///
+  /// Returns week number (1-53) according to ISO 8601 standard.
+  /// Week 1 is the week containing the first Thursday of the year.
+  ///
+  /// Example:
+  /// ```dart
+  /// final date = DateTime(2025, 10, 5); // Sunday
+  /// final week = getIso8601WeekNumber(date); // 40
+  /// ```
+  static int getIso8601WeekNumber(DateTime date) {
+    // Find Thursday of the week containing this date
+    final thursday = date.add(Duration(days: 3 - (date.weekday)));
+
+    // Find first Thursday of the year
+    final firstThursday = DateTime(thursday.year, 1, 4);
+
+    // Calculate week number
+    final diff = thursday.difference(firstThursday).inDays;
+    return 1 + (diff / 7).floor();
+  }
+
+  /// Get week start and end dates (Monday-Sunday)
+  ///
+  /// Returns a map with 'start' (Monday 00:00:00) and 'end'
+  /// (Sunday 23:59:59) dates for the week containing the given date.
+  ///
+  /// Example:
+  /// ```dart
+  /// final dates = getWeekStartEnd(DateTime(2025, 10, 5));
+  /// // dates['start'] = Monday, September 29, 2025 00:00:00
+  /// // dates['end'] = Sunday, October 5, 2025 23:59:59
+  /// ```
+  static Map<String, DateTime> getWeekStartEnd(DateTime date) {
+    final weekDay = date.weekday;
+    final startOfWeek = date.subtract(Duration(days: weekDay - 1));
+    final endOfWeek = startOfWeek.add(const Duration(days: 6));
+
+    return {
+      'start': DateTime(
+        startOfWeek.year,
+        startOfWeek.month,
+        startOfWeek.day,
+      ),
+      'end': DateTime(
+        endOfWeek.year,
+        endOfWeek.month,
+        endOfWeek.day,
+        23,
+        59,
+        59,
+      ),
+    };
+  }
+
+  /// Get month start and end dates
+  ///
+  /// Returns a map with 'start' (first day 00:00:00) and 'end'
+  /// (last day 23:59:59) dates for the month containing the given date.
+  ///
+  /// Example:
+  /// ```dart
+  /// final dates = getMonthStartEnd(DateTime(2025, 10, 5));
+  /// // dates['start'] = October 1, 2025 00:00:00
+  /// // dates['end'] = October 31, 2025 23:59:59
+  /// ```
+  static Map<String, DateTime> getMonthStartEnd(DateTime date) {
+    final startOfMonth = DateTime(date.year, date.month);
+    final endOfMonth = DateTime(date.year, date.month + 1, 0, 23, 59, 59);
+
+    return {
+      'start': startOfMonth,
+      'end': endOfMonth,
+    };
+  }
 }
