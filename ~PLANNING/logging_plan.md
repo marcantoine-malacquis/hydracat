@@ -56,7 +56,7 @@ Implement a comprehensive, persona-aware treatment logging system with offline-f
 ## =
  Codebase Integration Audit Results
 
-** INTEGRATION ASSESSMENT COMPLETE - ALL SYSTEMS READY**
+** INTEGRATION ASSESSMENT COMPLETE - ALL SYSTEMS READY**
 
 ### Current Data Model Foundation
 - **Status**: Excellent onboarding foundation to build upon
@@ -106,66 +106,125 @@ All six critical integration points are optimally designed for logging implement
 
 ## Phase 1: Foundation Models & Data Structure
 
-### Step 1.1: Create Core Session Models
+### Step 1.1: Create Core Session Models ✅ COMPLETED
 **Location:** `lib/features/logging/models/`
-**Files to create:**
-- `medication_session.dart` - Medication logging session model
-- `fluid_session.dart` - Fluid therapy logging session model
-- `logging_result.dart` - Sealed class for operation results (Success/Failure)
 
-**Key Requirements:**
-- Immutable data classes mirroring onboarding treatment data
-- JSON serialization for Firestore and local storage
-- Link to schedules via `scheduleId` for adherence tracking
-- Support both actual values (given) and target values (scheduled)
-- Timestamp tracking: `dateTime` (treatment time), `scheduledTime` (reminder time), `createdAt` (logging time)
+**Files Created:**
+- ✅ `medication_session.dart` - Medication logging session model
+- ✅ `fluid_session.dart` - Fluid therapy logging session model
+- ✅ `logging_result.dart` - Sealed class for operation results (Success/Failure)
 
-**Learning Goal:** Understand session data structure for adherence analytics
+**Preparatory Updates Completed:**
+- ✅ Added `uuid: ^4.5.1` package to `pubspec.yaml`
+- ✅ Created `DosageUtils` helper class (`lib/core/utils/dosage_utils.dart`)
+  - Parses dosage strings: "1/2" → 0.5, "2.5" → 2.5, "1 1/4" → 1.25
+  - Validates dosage inputs with user-friendly error messages
+  - Formats dosages for display
+- ✅ Updated `Schedule` model to use `double` for `targetDosage` (was `String`)
+- ✅ Updated `ScheduleDto` to use `double` for `targetDosage`
+- ✅ Updated `MedicationData` to use `double` for `dosage`
+- ✅ Updated medication input screens to convert string input → double with validation
+
+**Key Implementation Details:**
+
+**Enhanced Timestamp Schema (4 timestamps):**
+```
+medicationSessions/{sessionId}
+  ├── dateTime: Timestamp       // Medical: when treatment occurred
+  ├── createdAt: Timestamp      // Audit: when user logged it (client-side)
+  ├── syncedAt: Timestamp       // Sync: server confirmation (optional)
+  └── updatedAt: Timestamp      // Modification: last edit time (optional)
+```
+
+**MedicationSession Features:**
+- UUID-based session IDs (client-side generation)
+- Factory constructors: `create()` and `fromSchedule()`
+- Adherence helpers: `adherencePercentage`, `isFullDose`, `isPartialDose`, `isMissed`
+- Sync helpers: `isSynced`, `wasModified`, `isPendingSync`
+- Structural validation following `ProfileValidationService` pattern
+- Conditional JSON serialization (only includes `customMedicationStrengthUnit` if non-null)
+- Firestore Timestamp parsing support
+
+**FluidSession Features:**
+- UUID-based session IDs (client-side generation)
+- Factory constructors: `create()` and `fromSchedule()`
+- Type-safe `FluidLocation` enum for injection sites (not string!)
+- Sync helpers: `isSynced`, `wasModified`, `isPendingSync`
+- Volume validation: 1-500ml range
+- Stress level validation: "low", "medium", "high"
+- Enum ↔ string conversion in JSON serialization
+
+**LoggingResult Pattern:**
+- Sealed class with `LoggingSuccess<T>` and `LoggingFailure<T>` subclasses
+- Pattern matching with `when()` method for clean error handling
+- Type-safe result handling for all logging operations
+- All classes marked `@immutable`
+
+**Data Model Structure:**
 
 ```dart
-// Example structure preview:
 @immutable
 class MedicationSession {
-  final String id;
+  final String id;                    // UUID (client-side)
   final String petId;
   final String userId;
-  final DateTime dateTime;              // When treatment occurred
+  final DateTime dateTime;            // Medical: when treatment occurred
   final String medicationName;
-  final double dosageGiven;              // Actual amount administered
-  final double dosageScheduled;          // Target from schedule
-  final String medicationUnit;           // "pills", "ml", "mg", etc.
+  final double dosageGiven;           // Actual amount administered
+  final double dosageScheduled;       // Target from schedule
+  final String medicationUnit;        // "pills", "ml", "mg", etc.
   final String? medicationStrengthAmount;     // e.g., "2.5", "10"
   final String? medicationStrengthUnit;       // e.g., "mg", "mgPerMl"
-  final String? customMedicationStrengthUnit; // Custom unit when unit is "other"
-  final bool completed;                  // For adherence tracking
-  final String? administrationMethod;    // "oral", "injection", etc.
-  final String? notes;
-  final String? scheduleId;              // Link to reminder time
-  final DateTime? scheduledTime;         // Original scheduled time
-  final DateTime createdAt;              // For sync conflict resolution
-  final DateTime updatedAt;
+  final String? customMedicationStrengthUnit; // Only when strengthUnit is "other"
+  final bool completed;               // For adherence tracking
+  final String? notes;                // User notes
+  final String? scheduleId;           // Link to reminder schedule
+  final DateTime? scheduledTime;      // Original scheduled time
+  final DateTime createdAt;           // Audit: client logging time
+  final DateTime? syncedAt;           // Sync: server confirmation
+  final DateTime? updatedAt;          // Modification: last edit time
 
-  // Validation, copyWith, JSON methods...
+  // Factory constructors, validation, adherence helpers, JSON methods...
 }
 
 @immutable
 class FluidSession {
-  final String id;
+  final String id;                    // UUID (client-side)
   final String petId;
   final String userId;
-  final DateTime dateTime;              // When treatment occurred
-  final double volumeGiven;              // Actual volume administered (ml)
-  final String? stressLevel;             // "low", "medium", "high"
-  final String? injectionSite;           // From FluidLocation enum
-  final String? notes;
-  final String? scheduleId;              // Link to reminder time
-  final DateTime? scheduledTime;         // Original scheduled time
-  final DateTime createdAt;              // For sync conflict resolution
-  final DateTime updatedAt;
+  final DateTime dateTime;            // Medical: when treatment occurred
+  final double volumeGiven;           // Actual volume (ml)
+  final FluidLocation? injectionSite; // Type-safe enum!
+  final String? stressLevel;          // "low", "medium", "high"
+  final String? notes;                // User notes
+  final String? scheduleId;           // Link to reminder schedule
+  final DateTime? scheduledTime;      // Original scheduled time
+  final DateTime createdAt;           // Audit: client logging time
+  final DateTime? syncedAt;           // Sync: server confirmation
+  final DateTime? updatedAt;          // Modification: last edit time
 
-  // Validation, copyWith, JSON methods...
+  // Factory constructors, validation, sync helpers, JSON methods...
 }
 ```
+
+**Design Decisions:**
+1. **Dosage Storage**: Changed from `String` to `double` for easier adherence calculations
+2. **Dosage Input**: String → double conversion at widget level with `DosageUtils`
+3. **Strength Fields**: Stored in sessions for complete historical records
+4. **Custom Strength Unit**: Only serialized to JSON when non-null (optimization)
+5. **Injection Site**: `FluidLocation` enum (type-safe) with string conversion in JSON
+6. **Session IDs**: UUID v4 generated client-side via factory constructors
+7. **Notes Field**: Simply `notes` (not `notesOrComments`) for clarity
+8. **Timestamps**: 4-timestamp system with client-side `createdAt` and optional server timestamps
+9. **Validation**: Hybrid approach - structural validation in models, business logic in services
+
+**Testing Checkpoint:**
+- Dosage conversion: Test "1/2", "2.5", "1 1/4" inputs
+- Session creation: Verify UUID generation and timestamp initialization
+- JSON serialization: Test Firestore Timestamp handling
+- Validation: Test volume ranges, dosage validation, required fields
+
+**Learning Goal:** Understand session data structure for adherence analytics with complete audit trail
 
 ### Step 1.2: Create Logging State Models
 **Location:** `lib/features/logging/models/`
@@ -314,21 +373,24 @@ class FluidSession {
 
 **Layout** (No scrolling needed):
 ```
-
-  Medication Logging                 
-                                     
-  Select Medications:                
-  [ Amlodipine 2.5mg]              
-  [  Benazepril 5mg ]              
-  [  Calcitriol 0.25mcg]            
-                                     
-  Amlodipine Dosage: [1.0] pills    
-  Calcitriol Dosage: [1.0] pills    
-                                     
-  Notes: [Tap to add notes...]      
-                                     
-  [       Log Medications       ]   
-
+┌─────────────────────────────────────┐
+│         Medication Logging          │
+├─────────────────────────────────────┤
+│                                     │
+│  Select Medications:                │
+│  ┌─ Amlodipine 2.5mg ─────────────┐ │
+│  │  Benazepril 5mg                │ │
+│  │  Calcitriol 0.25mcg            │ │
+│  └─────────────────────────────────┘ │
+│                                     │
+│  Amlodipine Dosage: [1.0] pills     │
+│  Calcitriol Dosage: [1.0] pills     │
+│                                     │
+│  Notes: [Tap to add notes...]       │
+│                                     │
+│  ┌─────── Log Medications ────────┐ │
+│  └─────────────────────────────────┘ │
+└─────────────────────────────────────┘
 ```
 
 **UI Note:** Medication selection cards should display medication name on the first line and strength (using `formattedStrength` from the schedule) on the second line in a two-line layout, matching the summary card design implemented in the medication setup flow.
@@ -353,21 +415,21 @@ class FluidSession {
 
 **Layout** (No scrolling needed):
 ```
-                                     
-  Fluid Therapy Logging              
-                                     
-  Volume: [100] ml                  
-                                     
-  Injection Site:                    
-  [Shoulder blade - left �]         
-                                     
-  Stress Level (optional):           
-  [Low] [Medium] [High]             
-                                     
-  Notes: [Tap to add notes...]      
-                                     
-  [       Log Fluid Session     ]   
-                                     
+
+  Fluid Therapy Logging              
+                                     
+  Volume: [100] ml                  
+                                     
+  Injection Site:                    
+  [Shoulder blade - left �]         
+                                     
+  Stress Level (optional):           
+  [Low] [Medium] [High]             
+                                     
+  Notes: [Tap to add notes...]      
+                                     
+  [       Log Fluid Session     ]   
+
 ```
 
 **Learning Goal:** Form validation and optional field handling
@@ -388,10 +450,9 @@ class FluidSession {
 
 **Layout**:
 ```
-                                     
-   Today's treatments logged        
-    for Fluffy                       
-                                     
+   Today's treatments logged        
+    for Fluffy                       
+
 ```
 
 **Learning Goal:** Success feedback and auto-dismissing animations
@@ -502,10 +563,10 @@ GoRoute(
 
 **Layout**:
 ```
-                                     
-  [=� Log Medication            ]   
-  [=� Log Fluid Therapy         ]   
-                                     
+
+  [=� Log Medication            ]   
+  [=� Log Fluid Therapy         ]   
+
 ```
 
 **Learning Goal:** Positioned popup UI and navigation choices
@@ -1314,7 +1375,7 @@ class SlideUpTransition extends StatelessWidget {
 
 **Learning Goal:** Polished UI with smooth transitions
 
-**<� MILESTONE:** Production-ready UI polish and accessibility!
+**< MILESTONE:** Production-ready UI polish and accessibility!
 
 ---
 
@@ -1468,7 +1529,7 @@ testWidgets('complete medication logging flow', (tester) async {
 
 **Learning Goal:** End-to-end testing of complete user flows
 
-**<� FINAL MILESTONE:** Complete, tested, production-ready logging system!
+**< FINAL MILESTONE:** Complete, tested, production-ready logging system!
 
 ---
 
@@ -1487,17 +1548,17 @@ testWidgets('complete medication logging flow', (tester) async {
 - **Phase 10:** Comprehensive testing coverage
 
 ### Overall Success
--  Users can log medications and fluid therapy via persona-aware popups
--  Quick-log feature (FAB long-press) logs all scheduled treatments instantly
--  4-write batch strategy: Session + daily + weekly + monthly summaries
--  87% Firebase cost reduction vs session-only approach
--  Today's summary cached locally for 0-read duplicate detection
--  Complete offline support with automatic sync when reconnected
--  Multi-device conflict resolution by `createdAt` timestamp
--  Session updates use delta calculation for summary accuracy
--  Foundation ready for adherence analytics (dosageGiven vs dosageScheduled)
--  Accessible UI with proper semantic labels and touch targets
--  Comprehensive test coverage (unit, widget, integration)
+-  Users can log medications and fluid therapy via persona-aware popups
+-  Quick-log feature (FAB long-press) logs all scheduled treatments instantly
+-  4-write batch strategy: Session + daily + weekly + monthly summaries
+-  87% Firebase cost reduction vs session-only approach
+-  Today's summary cached locally for 0-read duplicate detection
+-  Complete offline support with automatic sync when reconnected
+-  Multi-device conflict resolution by `createdAt` timestamp
+-  Session updates use delta calculation for summary accuracy
+-  Foundation ready for adherence analytics (dosageGiven vs dosageScheduled)
+-  Accessible UI with proper semantic labels and touch targets
+-  Comprehensive test coverage (unit, widget, integration)
 
 ---
 

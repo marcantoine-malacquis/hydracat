@@ -77,7 +77,7 @@ class _MedicationScheduleScreenState
       createdAt: now,
       updatedAt: now,
       medicationName: medication.name,
-      targetDosage: medication.dosage ?? '1',
+      targetDosage: medication.dosage ?? 1,
       medicationUnit: medication.unit.name,
       medicationStrengthAmount: medication.strengthAmount,
       medicationStrengthUnit: medication.strengthUnit?.name,

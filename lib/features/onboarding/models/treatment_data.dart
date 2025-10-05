@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
+import 'package:hydracat/core/utils/dosage_text_utils.dart';
 import 'package:hydracat/shared/models/schedule_dto.dart';
 
 /// Enumeration of treatment frequencies
@@ -244,7 +245,9 @@ class MedicationData {
       reminderTimes: (json['reminderTimes'] as List<dynamic>)
           .map((e) => DateTime.parse(e as String))
           .toList(),
-      dosage: json['dosage'] as String?,
+      dosage: json['dosage'] != null
+          ? (json['dosage'] as num).toDouble()
+          : null,
       strengthAmount: json['strengthAmount'] as String?,
       strengthUnit: json['strengthUnit'] != null
           ? MedicationStrengthUnit.fromString(json['strengthUnit'] as String)
@@ -265,8 +268,8 @@ class MedicationData {
   /// List of reminder times for administrations
   final List<DateTime> reminderTimes;
 
-  /// Optional dosage information (e.g., "1/2", "1", "2")
-  final String? dosage;
+  /// Optional dosage information
+  final double? dosage;
 
   /// Optional medication strength amount (e.g., "2.5", "1/2", "10")
   final String? strengthAmount;
@@ -279,10 +282,13 @@ class MedicationData {
 
   /// Generate a human-readable summary of this medication
   String get summary {
-    final dosageText = dosage ?? '1';
-    final unitText = _getUnitText(dosageText);
+    final dosageValue = dosage ?? 1;
+    final dosageWithUnit = DosageTextUtils.formatDosageWithUnit(
+      dosageValue,
+      unit.shortForm,
+    );
 
-    return '$dosageText $unitText ${_summaryFrequencyText()}';
+    return '$dosageWithUnit ${_summaryFrequencyText()}';
   }
 
   /// Get formatted strength for display (e.g., "2.5 mg" or null)
@@ -313,37 +319,6 @@ class MedicationData {
     };
   }
 
-  /// Get the appropriate unit text based on dosage
-  String _getUnitText(String dosageText) {
-    // Handle fractional dosages
-    if (dosageText.contains('/')) {
-      return unit.shortForm;
-    }
-
-    // Handle plural/singular forms
-    try {
-      final dosageNum = double.parse(dosageText);
-      if (dosageNum == 1.0) {
-        return unit.shortForm;
-      } else {
-        // For most units, just add 's' for plural
-        return switch (unit) {
-          MedicationUnit.drops => '${unit.shortForm}s',
-          MedicationUnit.pills => '${unit.shortForm}s',
-          MedicationUnit.capsules => '${unit.shortForm}s',
-          MedicationUnit.ampoules => '${unit.shortForm}s',
-          MedicationUnit.injections => '${unit.shortForm}s',
-          MedicationUnit.portions => '${unit.shortForm}s',
-          MedicationUnit.sachets => '${unit.shortForm}s',
-          // Units that don't change in plural
-          _ => unit.shortForm,
-        };
-      }
-    } on FormatException {
-      return unit.shortForm;
-    }
-  }
-
   /// Whether this medication has valid data
   bool get isValid {
     return name.isNotEmpty &&
@@ -359,7 +334,7 @@ class MedicationData {
     return ScheduleDto.medication(
       id: scheduleId,
       medicationName: name,
-      targetDosage: dosage ?? '1',
+      targetDosage: dosage ?? 1.0,
       medicationUnit: unit.name,
       frequency: frequency,
       reminderTimes: reminderTimes,
@@ -389,7 +364,7 @@ class MedicationData {
     MedicationUnit? unit,
     TreatmentFrequency? frequency,
     List<DateTime>? reminderTimes,
-    String? dosage,
+    double? dosage,
     String? strengthAmount,
     MedicationStrengthUnit? strengthUnit,
     String? customStrengthUnit,

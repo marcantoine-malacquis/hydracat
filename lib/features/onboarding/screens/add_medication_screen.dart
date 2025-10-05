@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
+import 'package:hydracat/core/utils/dosage_utils.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/onboarding/widgets/rotating_wheel_picker.dart';
 import 'package:hydracat/features/onboarding/widgets/time_picker_group.dart';
@@ -43,6 +44,8 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
   // Form data
   String _medicationName = '';
   String _dosage = '1';
+  double? _dosageValue = 1;
+  String? _dosageError;
   MedicationUnit _selectedUnit = MedicationUnit.pills;
   TreatmentFrequency _selectedFrequency = TreatmentFrequency.onceDaily;
   List<TimeOfDay> _reminderTimes = [];
@@ -73,7 +76,8 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
       final medication = widget.initialMedication!;
       _nameController.text = medication.name;
       _medicationName = medication.name;
-      _dosage = medication.dosage ?? '1';
+      _dosageValue = medication.dosage ?? 1.0;
+      _dosage = DosageUtils.formatDosageForDisplay(_dosageValue!);
       _dosageController.text = _dosage;
       _selectedUnit = medication.unit;
       _selectedFrequency = medication.frequency;
@@ -335,11 +339,21 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                   onChanged: (value) {
                     setState(() {
                       _dosage = value.trim();
+                      // Validate and convert to double
+                      final error = DosageUtils.validateDosageString(_dosage);
+                      if (error != null) {
+                        _dosageError = error;
+                        _dosageValue = null;
+                      } else {
+                        _dosageError = null;
+                        _dosageValue = DosageUtils.parseDosageString(_dosage);
+                      }
                     });
                   },
                   decoration: InputDecoration(
                     labelText: 'Dosage *',
                     hintText: 'e.g., 1, 1/2, 2.5',
+                    errorText: _dosageError,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -585,7 +599,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
         unit: _selectedUnit,
         frequency: _selectedFrequency,
         reminderTimes: reminderDateTimes,
-        dosage: _dosage.isEmpty ? null : _dosage,
+        dosage: _dosageValue,
         strengthAmount: _strengthAmount.isEmpty ? null : _strengthAmount,
         strengthUnit: _strengthUnit,
         customStrengthUnit:

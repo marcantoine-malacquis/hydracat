@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:hydracat/core/utils/dosage_text_utils.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/shared/models/schedule_dto.dart';
 
@@ -72,7 +73,9 @@ class Schedule {
           : null,
       needleGauge: json['needleGauge'] as String?,
       medicationName: json['medicationName'] as String?,
-      targetDosage: json['targetDosage'] as String?,
+      targetDosage: json['targetDosage'] != null
+          ? (json['targetDosage'] as num).toDouble()
+          : null,
       medicationUnit: json['medicationUnit'] as String?,
       medicationStrengthAmount:
           json['medicationStrengthAmount'] as String?,
@@ -132,8 +135,8 @@ class Schedule {
   /// Medication name for medication schedules
   final String? medicationName;
 
-  /// Target dosage for medication schedules (as string to preserve format like "1/2", "2.5")
-  final String? targetDosage;
+  /// Target dosage for medication schedules
+  final double? targetDosage;
 
   /// Medication unit for medication schedules
   final String? medicationUnit;
@@ -160,43 +163,15 @@ class Schedule {
           '${frequency.displayName.toLowerCase()}';
     } else if (isMedication && medicationName != null) {
       final dosageText = targetDosage != null && medicationUnit != null
-          ? '$targetDosage ${_getUnitText(targetDosage!, medicationUnit!)} '
+          ? DosageTextUtils.formatDosageWithUnit(
+              targetDosage!,
+              _getShortForm(medicationUnit!),
+            )
           : '';
-      return '$dosageText$medicationName '
+      return '$dosageText $medicationName '
           '${frequency.displayName.toLowerCase()}';
     }
     return frequency.displayName;
-  }
-
-  /// Get the appropriate unit text based on dosage and unit
-  String _getUnitText(String dosageText, String unit) {
-    // Handle fractional dosages
-    if (dosageText.contains('/')) {
-      return _getShortForm(unit);
-    }
-
-    // Handle plural/singular forms
-    try {
-      final dosageNum = double.parse(dosageText);
-      if (dosageNum == 1.0) {
-        return _getShortForm(unit);
-      } else {
-        // For most units, just add 's' for plural
-        return switch (unit) {
-          'drops' => 'drops',
-          'pills' => 'pills',
-          'capsules' => 'capsules',
-          'ampoules' => 'ampoules',
-          'injections' => 'injections',
-          'portions' => 'portions',
-          'sachets' => 'sachets',
-          // Units that don't change in plural
-          _ => _getShortForm(unit),
-        };
-      }
-    } on FormatException {
-      return _getShortForm(unit);
-    }
   }
 
   /// Get short form of medication unit
@@ -231,7 +206,7 @@ class Schedule {
       return medicationName != null &&
           medicationName!.isNotEmpty &&
           targetDosage != null &&
-          targetDosage!.isNotEmpty &&
+          targetDosage! > 0 &&
           medicationUnit != null &&
           medicationUnit!.isNotEmpty &&
           reminderTimes.isNotEmpty;
@@ -318,7 +293,7 @@ class Schedule {
     FluidLocation? preferredLocation,
     String? needleGauge,
     String? medicationName,
-    String? targetDosage,
+    double? targetDosage,
     String? medicationUnit,
     String? medicationStrengthAmount,
     String? medicationStrengthUnit,

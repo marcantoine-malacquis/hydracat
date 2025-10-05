@@ -35,7 +35,7 @@ class ScheduleDto {
   /// all required medication-specific fields.
   factory ScheduleDto.medication({
     required String medicationName,
-    required String targetDosage,
+    required double targetDosage,
     required String medicationUnit,
     required TreatmentFrequency frequency,
     required List<DateTime> reminderTimes,
@@ -105,8 +105,8 @@ class ScheduleDto {
   /// Medication name (medication schedules only)
   final String? medicationName;
 
-  /// Target dosage as string (e.g., "1", "1/2", "2.5")
-  final String? targetDosage;
+  /// Target dosage
+  final double? targetDosage;
 
   /// Medication unit as string (e.g., "pills", "ml", "mg")
   final String? medicationUnit;
