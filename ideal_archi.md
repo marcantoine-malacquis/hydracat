@@ -38,6 +38,9 @@ lib/
 │   │   ├── validation_utils.dart    # Input validation
 │   │   ├── streak_calculator.dart   # Streak logic
 │   │   └── pdf_generator.dart       # PDF creation
+│   ├── validation/                  # Validation infrastructure
+│   │   └── models/                  # Validation data models
+│   │       └── validation_result.dart # Validation result & error models
 │   └── exceptions/                  # Error handling
 │       ├── app_exception.dart       # Base exception
 │       ├── sync_exception.dart      # Sync errors
@@ -79,7 +82,11 @@ lib/
 │   │   │   ├── welcome_screen.dart  # Welcome intro
 │   │   │   ├── pet_setup_screen.dart # Pet configuration
 │   │   │   └── schedule_setup_screen.dart # Initial schedule
-│   │   └── widgets/                 # Onboarding components
+│   │   ├── widgets/                 # Onboarding components
+│   │   ├── services/                # Onboarding business logic
+│   │   │   ├── onboarding_service.dart # Onboarding flow service
+│   │   │   └── onboarding_validation_service.dart # Onboarding validation
+│   │   └── exceptions/              # Onboarding-specific exceptions
 │   ├── home/                        # Main dashboard
 │   │   ├── models/                  # Home data models
 │   │   ├── screens/                 # Home UI screens
@@ -115,7 +122,11 @@ lib/
 │   │   │   ├── profile_screen.dart  # Profile overview
 │   │   │   └── medical_details_screen.dart # Medical details
 │   │   ├── widgets/                 # Profile components
-│   │   └── services/                # Profile services
+│   │   ├── services/                # Profile business logic
+│   │   │   ├── pet_service.dart     # Pet profile service
+│   │   │   └── profile_validation_service.dart # Profile validation
+│   │   └── exceptions/              # Profile-specific exceptions
+│   │       └── profile_exceptions.dart # Profile errors
 │   ├── schedule/                    # Treatment scheduling
 │   │   ├── models/                  # Schedule data models
 │   │   │   ├── fluid_schedule.dart  # Treatment schedule
@@ -228,7 +239,8 @@ lib/
 │       ├── feedback/                # Feedback components
 │       │   ├── success_animation.dart # Success animation
 │       │   ├── streak_celebration.dart # Streak milestone
-│       │   └── offline_indicator.dart # Offline status
+│       │   ├── offline_indicator.dart # Offline status
+│       │   └── validation_error_display.dart # Validation error UI
 │       ├── status/                  # Status components
 │       │   └── connection_status_widget.dart # Connection status
 │       ├── verification_gate.dart   # Feature verification gate

@@ -4,53 +4,10 @@
 /// with veterinary-appropriate rules and user-friendly error messages.
 library;
 
+import 'package:hydracat/core/validation/models/validation_result.dart';
 import 'package:hydracat/features/profile/exceptions/profile_exceptions.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/models/medical_info.dart';
-
-/// Result of a validation operation
-class ValidationResult {
-  /// Creates a [ValidationResult]
-  const ValidationResult({
-    required this.isValid,
-    this.errors = const [],
-    this.warnings = const [],
-  });
-
-  /// Creates a successful validation result
-  const ValidationResult.success()
-    : isValid = true,
-      errors = const [],
-      warnings = const [];
-
-  /// Creates a failed validation result with errors
-  const ValidationResult.failure(this.errors)
-    : isValid = false,
-      warnings = const [];
-
-  /// Creates a validation result with warnings but no errors
-  const ValidationResult.withWarnings(this.warnings)
-    : isValid = true,
-      errors = const [];
-
-  /// Whether the validation passed
-  final bool isValid;
-
-  /// List of validation error messages
-  final List<String> errors;
-
-  /// List of validation warning messages (non-blocking)
-  final List<String> warnings;
-
-  /// Whether there are any warnings
-  bool get hasWarnings => warnings.isNotEmpty;
-
-  /// Combined error message for display
-  String get errorMessage => errors.isEmpty ? '' : errors.join('\n');
-
-  /// Combined warning message for display
-  String get warningMessage => warnings.isEmpty ? '' : warnings.join('\n');
-}
 
 /// Service for validating pet profile and medical data
 class ProfileValidationService {
@@ -59,7 +16,7 @@ class ProfileValidationService {
 
   /// Validates a complete pet profile
   ValidationResult validateProfile(CatProfile profile) {
-    final errors = <String>[];
+    final errors = <ValidationError>[];
     final warnings = <String>[];
 
     // Validate basic pet information
@@ -98,12 +55,17 @@ class ProfileValidationService {
 
   /// Validates pet name
   ValidationResult validatePetName(String name) {
-    final errors = <String>[];
+    final errors = <ValidationError>[];
     final warnings = <String>[];
 
     // Required field validation
     if (name.trim().isEmpty) {
-      errors.add('Pet name is required');
+      errors.add(
+        const ValidationError(
+          message: 'Pet name is required',
+          fieldName: 'petName',
+        ),
+      );
       return ValidationResult.failure(errors);
     }
 
@@ -111,18 +73,34 @@ class ProfileValidationService {
 
     // Length validation
     if (trimmedName.length < 2) {
-      errors.add('Pet name must be at least 2 characters long');
+      errors.add(
+        const ValidationError(
+          message: 'Pet name must be at least 2 characters long',
+          fieldName: 'petName',
+          type: ValidationErrorType.invalid,
+        ),
+      );
     } else if (trimmedName.length > 50) {
-      errors.add('Pet name must be 50 characters or less');
+      errors.add(
+        const ValidationError(
+          message: 'Pet name must be 50 characters or less',
+          fieldName: 'petName',
+          type: ValidationErrorType.invalid,
+        ),
+      );
     }
 
     // Character validation
     final nameRegex = RegExp(r"^[a-zA-Z0-9\s\-'.,]+$");
     if (!nameRegex.hasMatch(trimmedName)) {
       errors.add(
-        'Pet name contains invalid characters. '
-        'Only letters, numbers, spaces, hyphens, apostrophes, '
-        'periods, and commas are allowed',
+        const ValidationError(
+          message: 'Pet name contains invalid characters. '
+              'Only letters, numbers, spaces, hyphens, apostrophes, '
+              'periods, and commas are allowed',
+          fieldName: 'petName',
+          type: ValidationErrorType.invalid,
+        ),
       );
     }
 
@@ -147,16 +125,26 @@ class ProfileValidationService {
 
   /// Validates pet age in years
   ValidationResult validateAge(int ageYears) {
-    final errors = <String>[];
+    final errors = <ValidationError>[];
     final warnings = <String>[];
 
     // Basic range validation
     if (ageYears < 0) {
-      errors.add('Age cannot be negative');
+      errors.add(
+        const ValidationError(
+          message: 'Age cannot be negative',
+          fieldName: 'age',
+          type: ValidationErrorType.invalid,
+        ),
+      );
     } else if (ageYears > 30) {
       errors.add(
-        'Age of $ageYears years exceeds typical cat lifespan. '
-        'Please double-check this value',
+        ValidationError(
+          message: 'Age of $ageYears years exceeds typical cat lifespan. '
+              'Please double-check this value',
+          fieldName: 'age',
+          type: ValidationErrorType.invalid,
+        ),
       );
     }
 
@@ -171,16 +159,26 @@ class ProfileValidationService {
 
   /// Validates pet weight in kilograms
   ValidationResult validateWeight(double weightKg) {
-    final errors = <String>[];
+    final errors = <ValidationError>[];
     final warnings = <String>[];
 
     // Basic range validation
     if (weightKg <= 0) {
-      errors.add('Weight must be greater than 0');
+      errors.add(
+        const ValidationError(
+          message: 'Weight must be greater than 0',
+          fieldName: 'weight',
+          type: ValidationErrorType.invalid,
+        ),
+      );
     } else if (weightKg > 15) {
       errors.add(
-        'Weight of ${weightKg.toStringAsFixed(1)}kg is extremely '
-        'high for a cat. Please verify this is correct',
+        ValidationError(
+          message: 'Weight of ${weightKg.toStringAsFixed(1)}kg is extremely '
+              'high for a cat. Please verify this is correct',
+          fieldName: 'weight',
+          type: ValidationErrorType.invalid,
+        ),
       );
     }
 
@@ -214,12 +212,21 @@ class ProfileValidationService {
 
   /// Validates medical information
   ValidationResult validateMedicalInfo(MedicalInfo medicalInfo) {
-    final errors = <String>[];
+    final errors = <ValidationError>[];
     final warnings = <String>[];
 
     // Use the built-in validation from the model
     final modelErrors = medicalInfo.validate();
-    errors.addAll(modelErrors);
+    // Convert string errors to ValidationError objects
+    errors.addAll(
+      modelErrors.map(
+        (error) => ValidationError(
+          message: error,
+          fieldName: 'medicalInfo',
+          type: ValidationErrorType.invalid,
+        ),
+      ),
+    );
 
     // Additional CKD-specific validation
     if (medicalInfo.ckdDiagnosisDate != null) {
@@ -252,14 +259,20 @@ class ProfileValidationService {
 
   /// Validates CKD diagnosis date
   ValidationResult validateDiagnosisDate(DateTime diagnosisDate) {
-    final errors = <String>[];
+    final errors = <ValidationError>[];
     final warnings = <String>[];
 
     final now = DateTime.now();
 
     // Future date validation
     if (diagnosisDate.isAfter(now)) {
-      errors.add('CKD diagnosis date cannot be in the future');
+      errors.add(
+        const ValidationError(
+          message: 'CKD diagnosis date cannot be in the future',
+          fieldName: 'ckdDiagnosisDate',
+          type: ValidationErrorType.invalid,
+        ),
+      );
     }
 
     // Very old diagnosis warning
@@ -291,7 +304,7 @@ class ProfileValidationService {
 
   /// Validates consistency between different profile fields
   ValidationResult validateProfileConsistency(CatProfile profile) {
-    final errors = <String>[];
+    final errors = <ValidationError>[];
     final warnings = <String>[];
 
     // Age vs diagnosis date consistency
@@ -302,8 +315,12 @@ class ProfileValidationService {
 
       if (yearsSinceDiagnosis > profile.ageYears) {
         errors.add(
-          'CKD diagnosis date suggests your pet was diagnosed '
-          'before they were born. Please check the age or diagnosis date',
+          const ValidationError(
+            message: 'CKD diagnosis date suggests your pet was diagnosed '
+                'before they were born. Please check the age or diagnosis date',
+            fieldName: 'ckdDiagnosisDate',
+            type: ValidationErrorType.inconsistent,
+          ),
         );
       }
 
@@ -364,7 +381,11 @@ class ProfileValidationService {
       return validateWeight(weight);
     } else {
       return ValidationResult.failure([
-        'Unsupported weight unit: $unit. Please use kg or lbs',
+        ValidationError(
+          message: 'Unsupported weight unit: $unit. Please use kg or lbs',
+          fieldName: 'weightUnit',
+          type: ValidationErrorType.invalid,
+        ),
       ]);
     }
   }
@@ -376,34 +397,63 @@ class ProfileValidationService {
     double? sdma,
     DateTime? bloodworkDate,
   }) {
-    final errors = <String>[];
+    final errors = <ValidationError>[];
     final warnings = <String>[];
 
     final hasValues = creatinine != null || bun != null || sdma != null;
 
     // If any lab values are provided, bloodwork date should be provided
     if (hasValues && bloodworkDate == null) {
-      errors.add('Bloodwork date is required when lab values are provided');
+      errors.add(
+        const ValidationError(
+          message: 'Bloodwork date is required when lab values are provided',
+          fieldName: 'bloodworkDate',
+        ),
+      );
     }
 
     // Validate bloodwork date
     if (bloodworkDate != null && bloodworkDate.isAfter(DateTime.now())) {
-      errors.add('Bloodwork date cannot be in the future');
+      errors.add(
+        const ValidationError(
+          message: 'Bloodwork date cannot be in the future',
+          fieldName: 'bloodworkDate',
+          type: ValidationErrorType.invalid,
+        ),
+      );
     }
 
     // Validate creatinine (structural only)
     if (creatinine != null && creatinine <= 0) {
-      errors.add('Creatinine must be a positive number');
+      errors.add(
+        const ValidationError(
+          message: 'Creatinine must be a positive number',
+          fieldName: 'creatinine',
+          type: ValidationErrorType.invalid,
+        ),
+      );
     }
 
     // Validate BUN (structural only)
     if (bun != null && bun <= 0) {
-      errors.add('BUN must be a positive number');
+      errors.add(
+        const ValidationError(
+          message: 'BUN must be a positive number',
+          fieldName: 'bun',
+          type: ValidationErrorType.invalid,
+        ),
+      );
     }
 
     // Validate SDMA (structural only)
     if (sdma != null && sdma <= 0) {
-      errors.add('SDMA must be a positive number');
+      errors.add(
+        const ValidationError(
+          message: 'SDMA must be a positive number',
+          fieldName: 'sdma',
+          type: ValidationErrorType.invalid,
+        ),
+      );
     }
 
     if (errors.isNotEmpty) {
@@ -437,7 +487,7 @@ class ProfileValidationService {
 
   /// Validates checkup date
   ValidationResult validateCheckupDate(DateTime? checkupDate) {
-    final errors = <String>[];
+    final errors = <ValidationError>[];
     final warnings = <String>[];
 
     if (checkupDate != null) {
@@ -445,7 +495,13 @@ class ProfileValidationService {
 
       // Date cannot be in the future
       if (checkupDate.isAfter(now)) {
-        errors.add('Checkup date cannot be in the future');
+        errors.add(
+          const ValidationError(
+            message: 'Checkup date cannot be in the future',
+            fieldName: 'checkupDate',
+            type: ValidationErrorType.invalid,
+          ),
+        );
       }
 
       // Warning if checkup was very long ago
@@ -496,6 +552,8 @@ class ProfileValidationService {
     if (result.isValid) {
       throw ArgumentError('Cannot create exception from valid result');
     }
-    return ProfileValidationException(result.errors);
+    // Extract error messages from ValidationError objects
+    final errorMessages = result.errors.map((e) => e.message).toList();
+    return ProfileValidationException(errorMessages);
   }
 }

@@ -108,8 +108,10 @@ class PetService {
       // Validate the profile first (prevents failed writes)
       final validationResult = _validationService.validateProfile(profile);
       if (!validationResult.isValid) {
+        final errorMessages =
+            validationResult.errors.map((e) => e.message).toList();
         return PetFailure(
-          ProfileValidationException(validationResult.errors),
+          ProfileValidationException(errorMessages),
         );
       }
 
@@ -333,8 +335,10 @@ class PetService {
         updatedProfile,
       );
       if (!validationResult.isValid) {
+        final errorMessages =
+            validationResult.errors.map((e) => e.message).toList();
         return PetFailure(
-          ProfileValidationException(validationResult.errors),
+          ProfileValidationException(errorMessages),
         );
       }
 

@@ -417,7 +417,6 @@ class LoggingState {
 - Weekly: 7-day span (Mon-Sun), day counts ≤7, endDate > startDate
 - Monthly: Same month for start/end, day counts ≤31, current streak ≤ longest streak
 
-
 **Learning Goal:** Pre-aggregated summary architecture for cost optimization
 
 **< MILESTONE:** Data models ready for logging flow implementation!
@@ -426,51 +425,73 @@ class LoggingState {
 
 ## Phase 2: Core Services & Business Logic
 
-### Step 2.1: Create Logging Service
+### Step 2.1: Create Logging Service ✅ COMPLETED
+**Location:** `lib/features/logging/services/` + `lib/features/logging/exceptions/`
+
+**Files Created:**
+- ✅ `logging_exceptions.dart` - 5 exception types (base, duplicate, validation, schedule, batch)
+- ✅ `logging_service.dart` - Consolidated service (883 lines, all logic internal)
+
+**Critical Implementation Details:**
+
+**8-Write Batch (NOT 4):** Session + (daily set+update) + (weekly set+update) + (monthly set+update) = 8 writes/log
+- **Why**: `FieldValue.increment()` fails on non-existent fields; must init with concrete 0s first
+- **Cost**: $0.0000144/log (~$0.04/month for 3000 logs) - negligible vs reliability gain
+- **Pattern**: `batch..set({counters: 0}, merge:true)..update({counters: increment(delta)})`
+
+**Schedule Matching:** Meds filter by name → closest time ±2h; Fluids closest time ±2h only
+
+**Duplicate Detection:** Meds only (same name + ±15min) → throws exception; Fluids NONE (partial sessions valid)
+
+**Validation:** Hybrid - model `.validate()` + service business rules → `SessionValidationException`
+
+**Update Pattern:** Service has separate methods - caller decides create vs update (no auto-detection)
+
+**Streak Calculation:** Deferred to Phase 7 (always 0 in summaries) - needs yesterday's data, better as daily job
+
+**Offline Support:** Deferred to Phase 6 - service assumes online, Phase 6 adds queue layer
+
+**For Phase 2.3 Provider:**
+- Provider fetches schedules + caches today's sessions (passes to service for duplicate detection)
+- Provider calls `loggingService.logXxxSession(schedules, recentSessions)` - service matches internally
+- Provider handles exceptions: duplicate dialog, validation snackbar, offline queue (Phase 6)
+
+### Step 2.2: Create Summary Service ✅ COMPLETED
 **Location:** `lib/features/logging/services/`
-**Files to create:**
-- `logging_service.dart` - Core logging business logic with batch writes
-- `summary_calculation_service.dart` - Summary aggregation and delta calculations
-- `schedule_matcher_service.dart` - Match logging time to nearest scheduled reminder
 
-**Key Requirements:**
-- **4-Write Batch Strategy**: Session + daily + weekly + monthly summaries in single batch
-- **Update Logic**: Calculate delta (new - old) when updating existing sessions
-- **Schedule Matching**: Find closest scheduled reminder time for `scheduleId` linking
-- **Offline Queue**: Store operations locally when offline, sync when reconnected
-- **Conflict Resolution**: Compare `createdAt` timestamps, keep most recent
-- **Validation**: Volume range (1-500mL), required fields, duplicate detection
+**Files Created:**
+- ✅ `summary_service.dart` - Firestore summary reads (cache-first strategy)
+- ✅ `summary_cache_service.dart` - SharedPreferences cache management
+- ✅ `test/features/logging/services/summary_cache_service_test.dart` - 10 unit tests
+- ✅ `test/features/logging/services/summary_service_test.dart` - Architecture tests
 
-**Implementation Notes:**
-- **Batch Write Pattern**: Use `WriteBatch` for atomic operations (all succeed or all fail)
-- **Delta Calculation**: For updates, subtract old session values before adding new values to summaries
-- **Schedule Matching**: Find reminder time within �2 hours of actual logging time
-- **Offline Storage**: Use `SecurePreferencesService` for queued operations
-- **Conflict Strategy**: `createdAt` timestamp comparison (server-side timestamp from Firestore)
+**Critical Implementation Details:**
 
-**Learning Goal:** Firebase batch operations and cost-optimized write patterns
+**SummaryCacheService:**
+- Cache key format: `daily_summary_{userId}_{petId}_{YYYY-MM-DD}`
+- Methods: `getTodaySummary()`, `updateCacheWithMedicationSession()`, `updateCacheWithFluidSession()`, `clearExpiredCaches()`, `clearPetCache()`
+- Uses background isolates (`compute`) for JSON parsing/encoding
+- Silent error handling (cache failures don't break functionality)
+- Multi-pet support via cache keys
 
-### Step 2.2: Create Summary Service
-**Location:** `lib/features/logging/services/`
-**Files to create:**
-- `summary_service.dart` - Read/write treatment summaries with caching
-- `summary_cache_service.dart` - Local cache management for today's summary
+**SummaryService:**
+- Methods: `getTodaySummary()` (cache-first), `getDailySummary()`, `getWeeklySummary()`, `getMonthlySummary()`
+- **Important**: `getTodaySummary()` checks cache but still fetches from Firestore (DailySummaryCache has fewer fields than DailySummary)
+- Direct Firestore reads for historical summaries
+- Document path helpers reuse LoggingService pattern
 
-**Key Requirements:**
-- Read today's summary (1 read vs 3-5 session reads)
-- Cache today's summary locally to avoid repeated reads
-- Generate date-based document IDs (YYYY-MM-DD, YYYY-Www, YYYY-MM)
-- Calculate week/month start and end dates
-- Support delta updates when sessions are modified
+**For Phase 2.3 Provider:**
+- Call `cacheService.clearExpiredCaches()` on app startup AND resume from background (`AppLifecycleState.resumed`)
+- After logging, update cache: `await cacheService.updateCacheWithXxxSession(...)`
+- Provider uses cache for quick checks: `cache.hasAnySessions`, `cache.hasMedicationLogged(name)`
+- Full summary data from Firestore: `await summaryService.getTodaySummary(userId, petId)`
 
-**Implementation Notes:**
-- **Cache Strategy**: Load today's summary on app start, update on each log
-- **Date Formatting**: ISO 8601 week numbers for weekly summaries
-- **Field Increments**: Use `FieldValue.increment()` for atomic counter updates
-- **Merge Operations**: Use `SetOptions(merge: true)` for summary updates
-- **Cache Invalidation**: Clear cache at midnight (new day transition)
+**Cost Impact:**
+- Before: 3-5 Firestore reads per duplicate detection
+- After: 0 reads (cache) or 1 read (cold start)
+- Savings: ~90% read reduction
 
-**Learning Goal:** Firestore summary documents for 87% cost reduction
+**Learning Goal:** Cache-first architecture for cost optimization
 
 ### Step 2.3: Create Logging Providers
 **Location:** `lib/providers/`

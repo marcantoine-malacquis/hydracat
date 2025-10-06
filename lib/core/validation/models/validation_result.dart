@@ -86,6 +86,7 @@ class ValidationResult {
   const ValidationResult({
     required this.isValid,
     this.errors = const [],
+    this.warnings = const [],
     this.missingFields = const [],
   });
 
@@ -93,21 +94,32 @@ class ValidationResult {
   const ValidationResult.success()
     : isValid = true,
       errors = const [],
+      warnings = const [],
       missingFields = const [];
 
   /// Creates a failed validation result with errors
   ValidationResult.failure(this.errors)
     : isValid = false,
+      warnings = const [],
       missingFields = errors
           .where((e) => e.fieldName != null)
           .map((e) => e.fieldName!)
           .toList();
+
+  /// Creates a validation result with warnings but no errors
+  const ValidationResult.withWarnings(this.warnings)
+    : isValid = true,
+      errors = const [],
+      missingFields = const [];
 
   /// Whether the validation passed
   final bool isValid;
 
   /// List of detailed validation errors
   final List<ValidationError> errors;
+
+  /// List of validation warning messages (non-blocking)
+  final List<String> warnings;
 
   /// List of field names that are missing (for backward compatibility)
   final List<String> missingFields;
@@ -117,6 +129,16 @@ class ValidationResult {
 
   /// Whether there are any errors
   bool get hasErrors => errors.isNotEmpty;
+
+  /// Whether there are any warnings
+  bool get hasWarnings => warnings.isNotEmpty;
+
+  /// Combined error message for display
+  String get errorMessage =>
+      errors.isEmpty ? '' : errors.map((e) => e.message).join('\n');
+
+  /// Combined warning message for display
+  String get warningMessage => warnings.isEmpty ? '' : warnings.join('\n');
 
   /// Gets errors of a specific type
   List<ValidationError> getErrorsByType(ValidationErrorType type) {
@@ -134,6 +156,7 @@ class ValidationResult {
     return other is ValidationResult &&
         other.isValid == isValid &&
         listEquals(other.errors, errors) &&
+        listEquals(other.warnings, warnings) &&
         listEquals(other.missingFields, missingFields);
   }
 
@@ -142,6 +165,7 @@ class ValidationResult {
     return Object.hash(
       isValid,
       Object.hashAll(errors),
+      Object.hashAll(warnings),
       Object.hashAll(missingFields),
     );
   }
