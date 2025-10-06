@@ -493,31 +493,52 @@ class LoggingState {
 
 **Learning Goal:** Cache-first architecture for cost optimization
 
-### Step 2.3: Create Logging Providers
-**Location:** `lib/providers/`
-**Files to create:**
-- `logging_provider.dart` - Riverpod providers for logging state and operations
-- `schedule_provider.dart` - Providers for today's schedules (pre-fill data)
-- `summary_provider.dart` - Providers for cached summary data
+### Step 2.3: Create Logging Providers ✅ COMPLETED
+**Location:** `lib/providers/logging_provider.dart` (single file, 813 lines)
 
-**Key Requirements:**
-- Connect logging service to UI
-- Manage loading/success/error states
-- Cache today's schedules for pre-filling
-- Track logged sessions for duplicate detection
-- Integrate with existing auth and profile providers
+**Files Created:**
+- ✅ `logging_provider.dart` - All providers in one file (follows AuthProvider pattern)
+- ✅ `main.dart` - Updated to initialize SharedPreferences
+- ✅ `schedule.dart` - Added `hasReminderTimeToday()` extension method
 
-**Implementation Notes:**
-- **LoggingState**: Immutable state class with loading, error, and success states
-- **LoggingNotifier**: State management with service integration
-- **Schedule Caching**: Load today's schedules when logging popup opens
-- **Optimized Selectors**: Fine-grained providers to minimize rebuilds
-- **Analytics Integration**: Track logging events (session_logged, quick_log_used)
-- **Error Handling**: User-friendly error messages for all failure scenarios
+**Architecture:**
+- **Single File Pattern**: All 20+ providers in `logging_provider.dart` (not split into 3 files)
+- **Service Providers**: LoggingService, SummaryService, SummaryCacheService, SharedPreferences
+- **LoggingNotifier**: State management + cache lifecycle + quick-log + manual logging
+- **17 Selector Providers**: Optimized for minimal UI rebuilds
 
-**Learning Goal:** State management for complex logging operations
+**Critical Implementation Details:**
 
-**<� MILESTONE:** Services ready, logging logic complete!
+**Cache Lifecycle:**
+- Initialized on app startup via `_initialize()`
+- Cleared on app resume via `onAppResumed()` (MUST be called from app_shell.dart)
+- Today's cache loaded automatically
+
+**Quick-Log:**
+- Method: `quickLogAllTreatments()` - checks cache, validates, calls service
+- TODO: `LoggingService.quickLogAllTreatments()` not yet implemented (Phase 2.4/5)
+- Uses `canQuickLogProvider` for FAB state
+
+**Manual Logging:**
+- `logMedicationSession()` - updates cache, tracks analytics
+- `logFluidSession()` - updates cache, tracks analytics
+- Both handle DuplicateSessionException separately
+
+**Schedule Filtering:**
+- `todaysMedicationSchedulesProvider` - filters by `hasReminderTimeToday()`
+- `todaysFluidScheduleProvider` - returns schedule only if has today's reminder
+- Extension method added to Schedule model
+
+**For Phase 3 UI Integration:**
+1. Call `ref.read(loggingProvider.notifier).onAppResumed()` in app_shell.dart on AppLifecycleState.resumed
+2. Watch `canQuickLogProvider` for FAB quick-log button state
+3. Watch `isLoggingProvider` for loading indicators
+4. Watch `loggingErrorProvider` for error messages
+5. Use `todaysMedicationSchedulesProvider`/`todaysFluidScheduleProvider` for pre-filling forms
+
+**Learning Goal:** Single-file provider architecture with lifecycle management
+
+**<� MILESTONE:** Providers ready for UI integration!
 
 ---
 

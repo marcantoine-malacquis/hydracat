@@ -387,3 +387,41 @@ class Schedule {
         ')';
   }
 }
+
+/// Extension methods for Schedule date/time helpers
+extension ScheduleDateHelpers on Schedule {
+  /// Check if this schedule has a reminder time for today
+  ///
+  /// Compares the date portion (year, month, day) of each reminder time
+  /// against the provided [now] datetime to determine if any reminder
+  /// falls on today's date.
+  ///
+  /// Used by:
+  /// - LoggingProvider to filter today's schedules
+  /// - Quick-log to determine which treatments to log
+  /// - UI to show today's scheduled treatments
+  ///
+  /// Parameters:
+  /// - now: The current datetime (typically DateTime.now())
+  ///
+  /// Returns:
+  /// - true if at least one reminder time is for today
+  /// - false if no reminder times match today's date
+  bool hasReminderTimeToday(DateTime now) {
+    final today = DateTime(now.year, now.month, now.day);
+
+    for (final reminderTime in reminderTimes) {
+      final reminderDate = DateTime(
+        reminderTime.year,
+        reminderTime.month,
+        reminderTime.day,
+      );
+
+      if (reminderDate.isAtSameMomentAs(today)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+}
