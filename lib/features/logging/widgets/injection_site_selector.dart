@@ -94,6 +94,7 @@ class _InjectionSiteSelectorState extends State<InjectionSiteSelector> {
                       shrinkWrap: true,
                       children: FluidLocation.values.map((location) {
                         final isSelected = widget.value == location;
+                        final theme = Theme.of(context);
                         return InkWell(
                           onTap: () {
                             widget.onChanged(location);
@@ -106,10 +107,9 @@ class _InjectionSiteSelectorState extends State<InjectionSiteSelector> {
                             ),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? Theme.of(context)
-                                      .colorScheme
-                                      .primary
-                                      .withValues(alpha: 0.1)
+                                  ? theme.colorScheme.primary.withValues(
+                                      alpha: 0.1,
+                                    )
                                   : null,
                             ),
                             child: Row(
@@ -118,15 +118,16 @@ class _InjectionSiteSelectorState extends State<InjectionSiteSelector> {
                                   Icon(
                                     Icons.check,
                                     size: 20,
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color: theme.colorScheme.primary,
                                   ),
                                 if (isSelected)
                                   const SizedBox(width: AppSpacing.sm),
                                 Expanded(
                                   child: Text(
                                     location.displayName,
-                                    style:
-                                        Theme.of(context).textTheme.bodyLarge,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyLarge,
                                   ),
                                 ),
                               ],

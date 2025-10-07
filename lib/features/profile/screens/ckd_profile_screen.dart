@@ -131,7 +131,7 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('CKD profile updated successfully'),
-            backgroundColor: AppColors.success,
+            backgroundColor: AppColors.primary,
           ),
         );
       }
@@ -148,6 +148,25 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
     }
   }
 
+  /// Show unsaved changes dialog when user tries to navigate back
+  void _showUnsavedChangesDialog() {
+    UnsavedChangesDialog.show(
+      context: context,
+      onSave: () async {
+        await _saveChanges();
+        // Only navigate back if save was successful (no error)
+        if (mounted && _saveError == null) {
+          context.pop();
+        }
+      },
+      onDiscard: () {
+        if (mounted) {
+          context.pop();
+        }
+      },
+    );
+  }
+
   /// Format date for display
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
@@ -158,105 +177,121 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
     final primaryPet = ref.watch(primaryPetProvider);
     final petName = primaryPet?.name ?? 'Your Cat';
 
-    return DevBanner(
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: Text("$petName's CKD Profile"),
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          leading: IconButton(
-            onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_back_ios),
-            iconSize: 20,
-            color: AppColors.textSecondary,
-            tooltip: 'Back',
+    return PopScope(
+      canPop: !_hasChanges,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return; // Already popped, do nothing
+
+        if (_hasChanges) {
+          _showUnsavedChangesDialog();
+        }
+      },
+      child: DevBanner(
+        child: Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            title: Text("$petName's CKD Profile"),
+            backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+            leading: IconButton(
+              onPressed: () {
+                if (_hasChanges) {
+                  _showUnsavedChangesDialog();
+                } else {
+                  context.pop();
+                }
+              },
+              icon: const Icon(Icons.arrow_back_ios),
+              iconSize: 20,
+              color: AppColors.textSecondary,
+              tooltip: 'Back',
+            ),
           ),
-        ),
-        body: RefreshIndicator(
-          onRefresh: () async {
-            await ref.read(profileProvider.notifier).refreshPrimaryPet();
-            _initializeFromProfile();
-          },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // IRIS Stage Section
-                  _buildIrisStageSection(),
+          body: RefreshIndicator(
+            onRefresh: () async {
+              await ref.read(profileProvider.notifier).refreshPrimaryPet();
+              _initializeFromProfile();
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // IRIS Stage Section
+                    _buildIrisStageSection(),
 
-                  const SizedBox(height: AppSpacing.xl),
+                    const SizedBox(height: AppSpacing.xl),
 
-                  // Lab Values Section
-                  _buildLabValuesSection(),
+                    // Lab Values Section
+                    _buildLabValuesSection(),
 
-                  const SizedBox(height: AppSpacing.xl),
+                    const SizedBox(height: AppSpacing.xl),
 
-                  // Last Checkup Section
-                  _buildLastCheckupSection(),
+                    // Last Checkup Section
+                    _buildLastCheckupSection(),
 
-                  const SizedBox(height: AppSpacing.xl),
+                    const SizedBox(height: AppSpacing.xl),
 
-                  // Notes Section
-                  _buildNotesSection(),
+                    // Notes Section
+                    _buildNotesSection(),
 
-                  const SizedBox(height: AppSpacing.xl),
+                    const SizedBox(height: AppSpacing.xl),
 
-                  // Error message
-                  if (_saveError != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: AppColors.errorLight.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.errorLight),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            color: AppColors.error,
-                            size: 20,
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: Text(
-                              _saveError!,
-                              style: AppTextStyles.body.copyWith(
-                                color: AppColors.error,
-                              ),
+                    // Error message
+                    if (_saveError != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: AppColors.errorLight.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.errorLight),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              color: AppColors.error,
+                              size: 20,
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
-
-                  // Save button (only show if changes made)
-                  if (_hasChanges) ...[
-                    HydraButton(
-                      onPressed: _isSaving ? null : _saveChanges,
-                      isFullWidth: true,
-                      size: HydraButtonSize.large,
-                      child: _isSaving
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  AppColors.surface,
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Text(
+                                _saveError!,
+                                style: AppTextStyles.body.copyWith(
+                                  color: AppColors.error,
                                 ),
                               ),
-                            )
-                          : const Text('Save Changes'),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
+
+                    // Save button (only show if changes made)
+                    if (_hasChanges) ...[
+                      HydraButton(
+                        onPressed: _isSaving ? null : _saveChanges,
+                        isFullWidth: true,
+                        size: HydraButtonSize.large,
+                        child: _isSaving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.surface,
+                                  ),
+                                ),
+                              )
+                            : const Text('Save Changes'),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),

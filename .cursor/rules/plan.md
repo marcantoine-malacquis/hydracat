@@ -24,20 +24,7 @@ Don't try to run the app yourself to test. Just tell me when it's needed and I w
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Keep it as short as possible.
 
 
-1. yes, Allow editing. Fluid therapy volumes can vary based on the cat's tolerance during the session (e.g., cat got stressed, only managed 80ml of 100ml scheduled).
-2. Dropdown selector but no icon needed
-3. yes, Segmented control pattern using SegmentedButton (Material 3).
-4. yes, never show duplicate warnings (users can log multiple partial sessions). But it would actually be helpful for the user to also have displayed somewhere on the pop-up elegantly when another session was logged that same day. For example: "40mL already administered today".
-5. Disabled until volume is valid (1-500ml range)
-6. Standard TextField with TextInputType.number (like current implementation)
-7. Use the same SuccessIndicator widget as medication logging
-8. Use todaysFluidScheduleProvider for pre-filling when available
-If null, show empty form with volume input starting at "100" (common default)
-Injection site dropdown defaults to first option
-Schedule linking will be null (manual log)
-9. Separate widget files for reusability.
-10. Match medication screen exactly
-Please let me know if this makes sense or contradict itself, the prd (prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues and, if you found any, fix them.
-
-Yes, let's go with option C Separate info card with subtle styling. 
-yes, default to First enum value (FluidLocation.shoulderBladeLeft)
+1. you are right, please skip the medication screen
+2. let's say "Save changes" and "Discard" for clarity
+3. Take them back to the main profile screen without saving (discarding changes)
+4. yes, exactly the popup appears only if there are changes otherwise the back button works normally.

@@ -56,7 +56,6 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
     }
   }
 
-
   /// Initialize editing state from current schedule data
   void _initializeFromSchedule(Schedule? schedule) {
     if (schedule == null) return;
@@ -133,7 +132,7 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Fluid schedule updated successfully'),
-              backgroundColor: AppColors.success,
+              backgroundColor: AppColors.primary,
             ),
           );
         }
@@ -160,6 +159,25 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
     return '$hour:$minute';
   }
 
+  /// Show unsaved changes dialog when user tries to navigate back
+  void _showUnsavedChangesDialog() {
+    UnsavedChangesDialog.show(
+      context: context,
+      onSave: () async {
+        await _saveChanges();
+        // Only navigate back if save was successful (no error)
+        if (mounted && _saveError == null) {
+          context.pop();
+        }
+      },
+      onDiscard: () {
+        if (mounted) {
+          context.pop();
+        }
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final primaryPet = ref.watch(primaryPetProvider);
@@ -168,131 +186,145 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
     final isScheduleLoading = ref.watch(scheduleIsLoadingProvider);
 
     // Auto-load schedule if conditions are met (similar to ProfileScreen)
-    if (primaryPet != null &&
-        currentSchedule == null &&
-        !isScheduleLoading) {
+    if (primaryPet != null && currentSchedule == null && !isScheduleLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(profileProvider.notifier).loadFluidSchedule();
       });
     }
 
-    return DevBanner(
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: Text("$petName's Fluid Schedule"),
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          leading: IconButton(
-            onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_back_ios),
-            iconSize: 20,
-            color: AppColors.textSecondary,
-            tooltip: 'Back',
+    return PopScope(
+      canPop: !_hasChanges,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return; // Already popped, do nothing
+
+        if (_hasChanges) {
+          _showUnsavedChangesDialog();
+        }
+      },
+      child: DevBanner(
+        child: Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            title: Text("$petName's Fluid Schedule"),
+            backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+            leading: IconButton(
+              onPressed: () {
+                if (_hasChanges) {
+                  _showUnsavedChangesDialog();
+                } else {
+                  context.pop();
+                }
+              },
+              icon: const Icon(Icons.arrow_back_ios),
+              iconSize: 20,
+              color: AppColors.textSecondary,
+              tooltip: 'Back',
+            ),
           ),
-        ),
-        body: RefreshIndicator(
-          onRefresh: () async {
-            await ref.read(profileProvider.notifier).refreshFluidSchedule();
-          },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Show loading state
-                  if (isScheduleLoading && currentSchedule == null) ...[
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(AppSpacing.xl),
-                        child: CircularProgressIndicator(),
-                      ),
-                    ),
-                  ]
-                  // Check if we have schedule data
-                  else if (currentSchedule == null) ...[
-                    _buildNoScheduleState(),
-                  ] else ...[
-                    // Frequency Section
-                    _buildFrequencySection(),
-
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // Volume Section
-                    _buildVolumeSection(),
-
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // Location Section
-                    _buildLocationSection(),
-
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // Needle Gauge Section
-                    _buildNeedleGaugeSection(),
-
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // Reminder Time Section
-                    _buildReminderTimeSection(),
-
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // Error message
-                    if (_saveError != null) ...[
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        decoration: BoxDecoration(
-                          color: AppColors.errorLight.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.errorLight),
+          body: RefreshIndicator(
+            onRefresh: () async {
+              await ref.read(profileProvider.notifier).refreshFluidSchedule();
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Show loading state
+                    if (isScheduleLoading && currentSchedule == null) ...[
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(AppSpacing.xl),
+                          child: CircularProgressIndicator(),
                         ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.error_outline,
-                              color: AppColors.error,
-                              size: 20,
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: Text(
-                                _saveError!,
-                                style: AppTextStyles.body.copyWith(
-                                  color: AppColors.error,
-                                ),
+                      ),
+                    ]
+                    // Check if we have schedule data
+                    else if (currentSchedule == null) ...[
+                      _buildNoScheduleState(),
+                    ] else ...[
+                      // Frequency Section
+                      _buildFrequencySection(),
+
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // Volume Section
+                      _buildVolumeSection(),
+
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // Location Section
+                      _buildLocationSection(),
+
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // Needle Gauge Section
+                      _buildNeedleGaugeSection(),
+
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // Reminder Time Section
+                      _buildReminderTimeSection(),
+
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // Error message
+                      if (_saveError != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: AppColors.errorLight.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.errorLight),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: AppColors.error,
+                                size: 20,
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                    ],
-
-                    // Save button (only show if changes made)
-                    if (_hasChanges) ...[
-                      HydraButton(
-                        onPressed: _isSaving ? null : _saveChanges,
-                        isFullWidth: true,
-                        size: HydraButtonSize.large,
-                        child: _isSaving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    AppColors.surface,
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: Text(
+                                  _saveError!,
+                                  style: AppTextStyles.body.copyWith(
+                                    color: AppColors.error,
                                   ),
                                 ),
-                              )
-                            : const Text('Save Changes'),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                      ],
+
+                      // Save button (only show if changes made)
+                      if (_hasChanges) ...[
+                        HydraButton(
+                          onPressed: _isSaving ? null : _saveChanges,
+                          isFullWidth: true,
+                          size: HydraButtonSize.large,
+                          child: _isSaving
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      AppColors.surface,
+                                    ),
+                                  ),
+                                )
+                              : const Text('Save Changes'),
+                        ),
+                        const SizedBox(height: AppSpacing.xl),
+                      ],
                     ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
@@ -355,10 +387,9 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
           Container(
             decoration: BoxDecoration(
               border: Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .outline
-                    .withValues(alpha: 0.3),
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.3),
               ),
               borderRadius: BorderRadius.circular(12),
             ),
@@ -529,10 +560,9 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
           Container(
             decoration: BoxDecoration(
               border: Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .outline
-                    .withValues(alpha: 0.3),
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.3),
               ),
               borderRadius: BorderRadius.circular(12),
             ),
@@ -842,11 +872,11 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
         child: Text(
           gauge,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: isSelected
-                    ? Theme.of(context).colorScheme.onPrimary
-                    : Theme.of(context).colorScheme.onSurface,
-                fontWeight: FontWeight.w500,
-              ),
+            color: isSelected
+                ? Theme.of(context).colorScheme.onPrimary
+                : Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );

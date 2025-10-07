@@ -173,6 +173,12 @@ class _AppShellState extends ConsumerState<AppShell> {
     final isVerified = currentUser?.emailVerified ?? false;
     final currentLocation = GoRouterState.of(context).uri.path;
     final isInOnboardingFlow = currentLocation.startsWith('/onboarding');
+    final isInProfileEditScreens = [
+      '/profile/settings',
+      '/profile/ckd',
+      '/profile/fluid',
+      '/profile/medication',
+    ].contains(currentLocation);
 
     // Load pet profile if authenticated and onboarding completed
     final hasCompletedOnboarding = ref.watch(hasCompletedOnboardingProvider);
@@ -234,8 +240,9 @@ class _AppShellState extends ConsumerState<AppShell> {
           ),
         ],
       ),
-      // Hide bottom navigation during onboarding flow
-      bottomNavigationBar: isInOnboardingFlow
+      // Hide bottom navigation during onboarding flow and on profile
+      // edit screens
+      bottomNavigationBar: (isInOnboardingFlow || isInProfileEditScreens)
           ? null
           : HydraNavigationBar(
               items: _navigationItems,
