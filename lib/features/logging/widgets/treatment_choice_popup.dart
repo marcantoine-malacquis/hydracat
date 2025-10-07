@@ -245,7 +245,6 @@ class _CancelButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
-            width: 1,
           ),
         ),
         child: Center(

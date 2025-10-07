@@ -128,12 +128,20 @@ class _AppShellState extends ConsumerState<AppShell> {
             onMedicationSelected: () {
               debugPrint('[FAB] Medication selected from popup');
               OverlayService.hide();
-              _showLoggingDialog(context, const MedicationLoggingScreen());
+              _showLoggingDialog(
+                context,
+                const MedicationLoggingScreen(),
+                animationType: OverlayAnimationType.slideFromRight,
+              );
             },
             onFluidSelected: () {
               debugPrint('[FAB] Fluid selected from popup');
               OverlayService.hide();
-              _showLoggingDialog(context, const FluidLoggingScreen());
+              _showLoggingDialog(
+                context,
+                const FluidLoggingScreen(),
+                animationType: OverlayAnimationType.slideFromRight,
+              );
             },
           ),
         );
@@ -142,10 +150,15 @@ class _AppShellState extends ConsumerState<AppShell> {
     debugPrint('[FAB] Function completed');
   }
 
-  void _showLoggingDialog(BuildContext context, Widget child) {
+  void _showLoggingDialog(
+    BuildContext context,
+    Widget child, {
+    OverlayAnimationType animationType = OverlayAnimationType.slideUp,
+  }) {
     OverlayService.showFullScreenPopup(
       context: context,
       child: child,
+      animationType: animationType,
       onDismiss: () {
         // Handle any cleanup if needed
         debugPrint('[Overlay] Logging popup dismissed');

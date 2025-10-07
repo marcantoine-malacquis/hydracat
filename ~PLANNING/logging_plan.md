@@ -545,35 +545,42 @@ class LoggingState {
 ## Phase 3: Logging UI Screens & Popups
 
 ### Step 3.1: Create Popup Infrastructure ✅ COMPLETED
-**Location:** `lib/features/logging/widgets/`, `lib/features/logging/screens/`, `lib/app/`
+**Location:** `lib/features/logging/widgets/`, `lib/features/logging/screens/`, `lib/features/logging/services/`, `lib/app/`
 
 **Files Created:**
-- ✅ `blurred_background.dart` - BackdropFilter blur with tap-to-dismiss
-- ✅ `logging_popup_wrapper.dart` - Reusable bottom-sheet popup (80% max height, slide-up animation)
-- ✅ `treatment_choice_popup.dart` - Action-sheet for combined persona (medication/fluid choice)
+- ✅ `overlay_service.dart` - **NEW**: Full-screen overlay service with configurable animations
+- ✅ `logging_popup_wrapper.dart` - **UPDATED**: Removed BlurredBackground, uses overlay service
+- ✅ `treatment_choice_popup.dart` - **UPDATED**: Added cancel button, removed BlurredBackground
 - ✅ `medication_logging_screen.dart` - Placeholder for Phase 3.2
 - ✅ `fluid_logging_screen.dart` - Placeholder for Phase 3.3
 
 **Files Modified:**
-- ✅ `app_shell.dart` - FAB routing based on `pet.treatmentApproach` (NOT `persona`)
-- ✅ `router.dart` - Added `/logging/medication` and `/logging/fluid` routes with slide-up transitions
+- ✅ `app_shell.dart` - **UPDATED**: Uses OverlayService instead of showGeneralDialog
+- ✅ `router.dart` - **NO LONGER NEEDED**: Routes removed (using overlay system)
 - ✅ `app_icons.dart` - Added `medication` and `fluidTherapy` icons
 
-**Key Implementation Notes:**
+**Key Implementation Notes - UPDATED:**
+- **Overlay System**: Uses Flutter's built-in `Overlay` widget for true full-screen coverage
+- **Animation Types**: `OverlayAnimationType.slideUp`, `slideFromRight`, `slideFromLeft`
+- **Animation Durations**: 200ms for slide-up, 250ms for side slides
+- **Full-Screen Blur**: Covers entire screen including system UI (status bar, navigation bar)
+- **Dismissal**: `OverlayService.hide()` with proper animation cleanup
+- **Cancel Button**: Added elegant cancel button with subtle background styling
+- **Optimized Padding**: Asymmetric padding to reduce unused space
 - **CatProfile Field**: Use `pet.treatmentApproach`, NOT `pet.persona`
-- **Router Transitions**: Routes outside ShellRoute with `CustomTransitionPage` + `SlideTransition`
-- **Animation**: 300ms slide-up with `Curves.easeOutCubic`
-- **Dismissal**: `PopScope.onPopInvokedWithResult` calls `ref.read(loggingProvider.notifier).reset()`
-- **Blur**: `ImageFilter.blur(sigmaX: 10, sigmaY: 10)` with 0.3 opacity scrim
 - **Sizing**: `maxHeight: mediaQuery.size.height * 0.8`, baseline 640px (iPhone SE)
-- **Navigation**: Use `context.push()` (not `context.go()`) to maintain stack for back button
-- **Semantics**: Removed `modal: true` parameter (not valid in Flutter)
+
+**Animation Flow:**
+1. **FAB Press** → `slideUp` (200ms) → Treatment Choice Popup
+2. **Medication Selected** → `slideFromRight` (250ms) → Medication Logging Screen  
+3. **Fluid Selected** → `slideFromRight` (250ms) → Fluid Logging Screen
 
 **For Phase 3.2/3.3:**
 - Replace placeholder screens with actual forms
-- Use `LoggingPopupWrapper` as container
+- Use `LoggingPopupWrapper` as container (no BlurredBackground needed)
 - Call `onDismiss: () => ref.read(loggingProvider.notifier).reset()`
 - Pre-fill values from `todaysMedicationSchedulesProvider` / `todaysFluidScheduleProvider`
+- **NEW**: All popups use `OverlayService.showFullScreenPopup()` with appropriate animation types
 
 ### Step 3.2: Create Medication Logging Popup
 **Location:** `lib/features/logging/screens/`
@@ -720,53 +727,28 @@ class LoggingState {
 
 **Learning Goal:** Complex gesture detection and conditional navigation
 
-### Step 4.2: Update Router for Logging Routes
+### Step 4.2: Update Router for Logging Routes ✅ NO LONGER NEEDED
 **Location:** `lib/app/router.dart`
-**Files to modify:**
-- Add logging routes with bottom sheet style transitions
-- Implement popup-style route with transparent barrier
 
-**Key Routes:**
-```dart
-GoRoute(
-  path: '/logging/medication',
-  pageBuilder: (context, state) => CustomTransitionPage(
-    child: MedicationLoggingScreen(),
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      return SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, 1),
-          end: Offset.zero,
-        ).animate(animation),
-        child: child,
-      );
-    },
-  ),
-),
-GoRoute(
-  path: '/logging/fluid',
-  pageBuilder: (context, state) => CustomTransitionPage(
-    child: FluidLoggingScreen(),
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      return SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, 1),
-          end: Offset.zero,
-        ).animate(animation),
-        child: child,
-      );
-    },
-  ),
-),
-```
+**Status:** **REMOVED** - No longer using router for popup navigation
 
-**Implementation Notes:**
-- **Bottom Sheet Style**: Slide up from bottom animation
-- **Barrier Color**: Semi-transparent black for blur effect
-- **Dismiss**: Back button or barrier tap closes popup
-- **State Preservation**: Maintain form state during navigation
+**Reason for Removal:**
+- **Overlay System**: Now using `OverlayService` instead of routes
+- **Better Performance**: Direct overlay insertion without route management
+- **Full-Screen Coverage**: Overlay system provides true full-screen blur
+- **Simpler Architecture**: No need for custom route transitions
 
-**Learning Goal:** Custom route transitions and modal navigation patterns
+**Previous Implementation (Deprecated):**
+- Custom routes with `CustomTransitionPage` and `SlideTransition`
+- Bottom sheet style transitions
+- Route-based navigation with state preservation
+
+**Current Implementation:**
+- All popup navigation handled through `OverlayService`
+- Configurable animation types per popup
+- Direct overlay insertion with proper lifecycle management
+
+**Learning Goal:** Overlay-based navigation is more efficient than route-based popups
 
 ### Step 4.3: Implement Treatment Choice Popup
 **Location:** `lib/features/logging/widgets/treatment_choice_popup.dart`
@@ -1936,3 +1918,66 @@ class AppDateUtils {
 - **Data Integrity**: Batch writes ensure atomic operations (all or nothing)
 - **Offline Storage**: Encrypted local storage for queued operations
 - **Conflict Resolution**: Server timestamps (`createdAt`) prevent client-side manipulation
+
+---
+
+## 🎯 **RECENT UPDATES - Overlay System Implementation**
+
+### ✅ **Completed Changes (Current Session)**
+
+**1. Full-Screen Blur System**
+- **Problem**: Blurred background didn't cover entire screen (status bar, navigation bar)
+- **Solution**: Replaced `showGeneralDialog` with custom `OverlayService` using Flutter's `Overlay` widget
+- **Result**: True full-screen blur coverage including system UI areas
+
+**2. OverlayService Implementation**
+- **File**: `lib/features/logging/services/overlay_service.dart`
+- **Features**:
+  - `OverlayAnimationType` enum: `slideUp`, `slideFromRight`, `slideFromLeft`
+  - Configurable animation durations: 200ms (slide-up), 250ms (side slides)
+  - Full-screen `BackdropFilter` with customizable blur and background
+  - Proper animation cleanup and lifecycle management
+
+**3. Treatment Choice Popup Enhancements**
+- **File**: `lib/features/logging/widgets/treatment_choice_popup.dart`
+- **Added**: Elegant cancel button with subtle background styling
+- **Optimized**: Asymmetric padding to reduce unused space at bottom
+- **Fixed**: Linter warning (removed redundant `width: 1` from `Border.all()`)
+
+**4. Animation Flow Implementation**
+- **FAB Press**: `slideUp` (200ms) → Treatment Choice Popup
+- **Medication Selection**: `slideFromRight` (250ms) → Medication Logging Screen
+- **Fluid Selection**: `slideFromRight` (250ms) → Fluid Logging Screen
+- **Consistency**: Both medication and fluid slide from same direction for coherence
+
+**5. Architecture Changes**
+- **Removed**: Router-based popup navigation (Step 4.2 no longer needed)
+- **Updated**: `app_shell.dart` to use `OverlayService` instead of `showGeneralDialog`
+- **Simplified**: Direct overlay insertion without route management overhead
+
+### 🔧 **Technical Implementation Details**
+
+**OverlayService API:**
+```dart
+OverlayService.showFullScreenPopup({
+  required BuildContext context,
+  required Widget child,
+  VoidCallback? onDismiss,
+  OverlayAnimationType animationType = OverlayAnimationType.slideUp,
+  double blurSigma = 10.0,
+  Color backgroundColor = const Color(0x4D000000),
+  bool dismissible = true,
+});
+```
+
+**Animation Types:**
+- `slideUp`: `Offset(0, 1)` → `Offset.zero` (200ms)
+- `slideFromRight`: `Offset(1, 0)` → `Offset.zero` (250ms)  
+- `slideFromLeft`: `Offset(-1, 0)` → `Offset.zero` (250ms)
+
+**Benefits:**
+- ✅ True full-screen blur coverage
+- ✅ Configurable animations per popup
+- ✅ Better performance (no route management)
+- ✅ Cleaner architecture
+- ✅ Consistent animation directions

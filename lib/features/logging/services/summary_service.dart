@@ -94,7 +94,6 @@ class SummaryService {
         //
         // For now, return null to force Firestore read
         // Provider can use cache for quick checks (hasAnySessions, etc.)
-        // TODO(phase-3): Optimize by building partial DailySummary from cache
       }
 
       // STEP 2: Cache miss or need full data - fetch from Firestore (1 read)
