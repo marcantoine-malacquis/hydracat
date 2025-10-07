@@ -21,6 +21,12 @@ class AppIcons {
   static const String profile = 'profile';
 
   // Session Logging Icons (from PRD)
+  /// Medication icon
+  static const String medication = 'medication';
+
+  /// Fluid therapy icon (droplet)
+  static const String fluidTherapy = 'water_drop';
+
   /// Session completion status
   static const String completed = 'check_circle';
 

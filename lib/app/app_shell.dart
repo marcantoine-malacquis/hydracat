@@ -2,7 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/constants/app_icons.dart';
+import 'package:hydracat/features/logging/screens/fluid_logging_screen.dart';
+import 'package:hydracat/features/logging/screens/medication_logging_screen.dart';
+import 'package:hydracat/features/logging/services/overlay_service.dart';
+import 'package:hydracat/features/logging/widgets/treatment_choice_popup.dart';
+import 'package:hydracat/features/profile/models/user_persona.dart';
 import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/widgets/navigation/hydra_navigation_bar.dart';
 
 /// Main app shell that provides consistent navigation and layout.
@@ -50,21 +56,21 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   int get _currentIndex {
     final currentLocation = GoRouterState.of(context).uri.path;
-    
+
     // Use O(1) map lookup instead of O(n) linear search
     final index = _routeToIndexMap[currentLocation];
     if (index != null) return index;
-    
+
     // If on logging screen, don't highlight any nav item
     if (currentLocation == '/logging') {
       return -1;
     }
-    
+
     // If in onboarding flow, don't highlight any nav item
     if (currentLocation.startsWith('/onboarding')) {
       return -1;
     }
-    
+
     return 0; // Default to home
   }
 
@@ -76,16 +82,75 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 
   void _onFabPressed() {
+    debugPrint('[FAB] Button pressed');
+
     // Check if user has completed onboarding
     final hasCompletedOnboarding = ref.read(hasCompletedOnboardingProvider);
-    
-    if (hasCompletedOnboarding) {
-      // User can access logging normally
-      context.go('/logging');
-    } else {
-      // Redirect to onboarding for users who haven't completed setup
+    debugPrint('[FAB] hasCompletedOnboarding: $hasCompletedOnboarding');
+
+    if (!hasCompletedOnboarding) {
+      debugPrint('[FAB] Redirecting to onboarding');
       context.go('/onboarding/welcome');
+      return;
     }
+
+    // Get user's treatment approach to determine logging flow
+    final pet = ref.read(primaryPetProvider);
+    debugPrint('[FAB] Pet loaded: ${pet?.name}, ID: ${pet?.id}');
+
+    final treatmentApproach = pet?.treatmentApproach;
+    debugPrint('[FAB] Treatment approach: $treatmentApproach');
+
+    // Route based on treatment approach
+    switch (treatmentApproach) {
+      case null:
+        // No pet or treatment approach - shouldn't happen after onboarding
+        // Fallback to onboarding
+        debugPrint('[FAB] No treatment approach, redirecting to onboarding');
+        context.go('/onboarding/welcome');
+
+      case UserPersona.medicationOnly:
+        // Direct to medication logging
+        debugPrint('[FAB] Showing medication logging dialog');
+        _showLoggingDialog(context, const MedicationLoggingScreen());
+
+      case UserPersona.fluidTherapyOnly:
+        // Direct to fluid logging
+        debugPrint('[FAB] Showing fluid logging dialog');
+        _showLoggingDialog(context, const FluidLoggingScreen());
+
+      case UserPersona.medicationAndFluidTherapy:
+        // Show treatment choice popup
+        debugPrint('[FAB] Showing treatment choice popup');
+        _showLoggingDialog(
+          context,
+          TreatmentChoicePopup(
+            onMedicationSelected: () {
+              debugPrint('[FAB] Medication selected from popup');
+              OverlayService.hide();
+              _showLoggingDialog(context, const MedicationLoggingScreen());
+            },
+            onFluidSelected: () {
+              debugPrint('[FAB] Fluid selected from popup');
+              OverlayService.hide();
+              _showLoggingDialog(context, const FluidLoggingScreen());
+            },
+          ),
+        );
+    }
+
+    debugPrint('[FAB] Function completed');
+  }
+
+  void _showLoggingDialog(BuildContext context, Widget child) {
+    OverlayService.showFullScreenPopup(
+      context: context,
+      child: child,
+      onDismiss: () {
+        // Handle any cleanup if needed
+        debugPrint('[Overlay] Logging popup dismissed');
+      },
+    );
   }
 
   @override
@@ -96,25 +161,41 @@ class _AppShellState extends ConsumerState<AppShell> {
     final currentLocation = GoRouterState.of(context).uri.path;
     final isInOnboardingFlow = currentLocation.startsWith('/onboarding');
 
+    // Load pet profile if authenticated and onboarding completed
+    final hasCompletedOnboarding = ref.watch(hasCompletedOnboardingProvider);
+    final isAuthenticated = ref.watch(isAuthenticatedProvider);
+    final primaryPet = ref.watch(primaryPetProvider);
+    final profileIsLoading = ref.watch(profileIsLoadingProvider);
+
+    // Trigger profile loading when conditions are met
+    if (hasCompletedOnboarding &&
+        isAuthenticated &&
+        primaryPet == null &&
+        !profileIsLoading &&
+        !isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        debugPrint('[AppShell] Auto-loading pet profile');
+        ref.read(profileProvider.notifier).loadPrimaryPet();
+      });
+    }
+
     return Scaffold(
       body: Column(
         children: [
-          // Show verification banner for verified users only 
+          // Show verification banner for verified users only
           // (not during loading or onboarding)
-          if (currentUser != null && 
-              !currentUser.emailVerified && 
+          if (currentUser != null &&
+              !currentUser.emailVerified &&
               !isInOnboardingFlow)
             _buildVerificationBanner(context, currentUser.email),
           Expanded(
-            child: isLoading
-                ? _buildLoadingContent(context)
-                : widget.child,
+            child: isLoading ? _buildLoadingContent(context) : widget.child,
           ),
         ],
       ),
       // Hide bottom navigation during onboarding flow
-      bottomNavigationBar: isInOnboardingFlow 
-          ? null 
+      bottomNavigationBar: isInOnboardingFlow
+          ? null
           : HydraNavigationBar(
               items: _navigationItems,
               // No selection during loading

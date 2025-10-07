@@ -11,7 +11,6 @@ import 'package:hydracat/features/auth/screens/register_screen.dart';
 import 'package:hydracat/features/home/screens/component_demo_screen.dart';
 import 'package:hydracat/features/home/screens/home_screen.dart';
 import 'package:hydracat/features/learn/screens/learn_screen.dart';
-import 'package:hydracat/features/logging/screens/logging_screen.dart';
 import 'package:hydracat/features/onboarding/screens/ckd_medical_info_screen.dart';
 import 'package:hydracat/features/onboarding/screens/onboarding_completion_screen.dart';
 import 'package:hydracat/features/onboarding/screens/pet_basics_screen.dart';
@@ -240,13 +239,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             name: 'learn',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: ResourcesScreen(),
-            ),
-          ),
-          GoRoute(
-            path: '/logging',
-            name: 'logging',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: LoggingScreen(),
             ),
           ),
           GoRoute(

@@ -544,22 +544,36 @@ class LoggingState {
 
 ## Phase 3: Logging UI Screens & Popups
 
-### Step 3.1: Create Popup Infrastructure
-**Location:** `lib/features/logging/widgets/`
-**Files to create:**
-- `logging_popup_wrapper.dart` - Reusable popup container with blur effect
-- `blurred_background.dart` - BackdropFilter blur implementation
-- `treatment_choice_popup.dart` - Small popup for medication/fluid choice (combined persona)
+### Step 3.1: Create Popup Infrastructure ✅ COMPLETED
+**Location:** `lib/features/logging/widgets/`, `lib/features/logging/screens/`, `lib/app/`
 
-**Key Implementation:**
-- **Blur Effect**: `BackdropFilter` with `ImageFilter.blur(sigmaX: 10, sigmaY: 10)`
-- **Popup Positioning**: Positioned above navigation bar using `Positioned` widget
-- **Navigation Bar**: Keep unblurred using `Stack` with separate layers
-- **Treatment Choice**: Two buttons (medication/fluid) for combined persona users
-- **Dismiss**: Tap outside popup or back button to close
-- **Accessibility**: Proper semantic labels and touch targets
+**Files Created:**
+- ✅ `blurred_background.dart` - BackdropFilter blur with tap-to-dismiss
+- ✅ `logging_popup_wrapper.dart` - Reusable bottom-sheet popup (80% max height, slide-up animation)
+- ✅ `treatment_choice_popup.dart` - Action-sheet for combined persona (medication/fluid choice)
+- ✅ `medication_logging_screen.dart` - Placeholder for Phase 3.2
+- ✅ `fluid_logging_screen.dart` - Placeholder for Phase 3.3
 
-**Learning Goal:** Modal popup UI patterns with background blur effects
+**Files Modified:**
+- ✅ `app_shell.dart` - FAB routing based on `pet.treatmentApproach` (NOT `persona`)
+- ✅ `router.dart` - Added `/logging/medication` and `/logging/fluid` routes with slide-up transitions
+- ✅ `app_icons.dart` - Added `medication` and `fluidTherapy` icons
+
+**Key Implementation Notes:**
+- **CatProfile Field**: Use `pet.treatmentApproach`, NOT `pet.persona`
+- **Router Transitions**: Routes outside ShellRoute with `CustomTransitionPage` + `SlideTransition`
+- **Animation**: 300ms slide-up with `Curves.easeOutCubic`
+- **Dismissal**: `PopScope.onPopInvokedWithResult` calls `ref.read(loggingProvider.notifier).reset()`
+- **Blur**: `ImageFilter.blur(sigmaX: 10, sigmaY: 10)` with 0.3 opacity scrim
+- **Sizing**: `maxHeight: mediaQuery.size.height * 0.8`, baseline 640px (iPhone SE)
+- **Navigation**: Use `context.push()` (not `context.go()`) to maintain stack for back button
+- **Semantics**: Removed `modal: true` parameter (not valid in Flutter)
+
+**For Phase 3.2/3.3:**
+- Replace placeholder screens with actual forms
+- Use `LoggingPopupWrapper` as container
+- Call `onDismiss: () => ref.read(loggingProvider.notifier).reset()`
+- Pre-fill values from `todaysMedicationSchedulesProvider` / `todaysFluidScheduleProvider`
 
 ### Step 3.2: Create Medication Logging Popup
 **Location:** `lib/features/logging/screens/`
