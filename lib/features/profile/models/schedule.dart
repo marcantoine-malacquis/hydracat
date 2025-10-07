@@ -14,15 +14,13 @@ enum TreatmentType {
 
   /// User-friendly display name for the treatment type
   String get displayName => switch (this) {
-        TreatmentType.fluid => 'Fluid Therapy',
-        TreatmentType.medication => 'Medication',
-      };
+    TreatmentType.fluid => 'Fluid Therapy',
+    TreatmentType.medication => 'Medication',
+  };
 
   /// Creates a TreatmentType from a string value
   static TreatmentType? fromString(String value) {
-    return TreatmentType.values
-        .where((type) => type.name == value)
-        .firstOrNull;
+    return TreatmentType.values.where((type) => type.name == value).firstOrNull;
   }
 }
 
@@ -77,8 +75,7 @@ class Schedule {
           ? (json['targetDosage'] as num).toDouble()
           : null,
       medicationUnit: json['medicationUnit'] as String?,
-      medicationStrengthAmount:
-          json['medicationStrengthAmount'] as String?,
+      medicationStrengthAmount: json['medicationStrengthAmount'] as String?,
       medicationStrengthUnit: json['medicationStrengthUnit'] as String?,
       customMedicationStrengthUnit:
           json['customMedicationStrengthUnit'] as String?,
@@ -423,5 +420,42 @@ extension ScheduleDateHelpers on Schedule {
     }
 
     return false;
+  }
+}
+
+/// Extension for medication display helpers
+extension ScheduleMedicationHelpers on Schedule {
+  /// Get formatted strength for display (e.g., "2.5 mg", "10 mg/ml")
+  ///
+  /// Returns null if no strength data is available.
+  /// Matches the format used in MedicationData.formattedStrength for
+  /// consistency across the app.
+  ///
+  /// Examples:
+  /// - medicationStrengthAmount: "2.5", medicationStrengthUnit: "mg" → "2.5 mg"
+  /// - medicationStrengthAmount: "10", medicationStrengthUnit: "mgPerMl" → "10 mg/ml"
+  /// - medicationStrengthAmount: null → null
+  String? get formattedStrength {
+    if (medicationStrengthAmount == null || medicationStrengthAmount!.isEmpty) {
+      return null;
+    }
+
+    if (medicationStrengthUnit == null) {
+      return medicationStrengthAmount;
+    }
+
+    // Map strength unit codes to display names
+    final unitDisplay = switch (medicationStrengthUnit) {
+      'mg' => 'mg',
+      'mcg' => 'mcg',
+      'mgPerMl' => 'mg/ml',
+      'mcgPerMl' => 'mcg/ml',
+      'percent' => '%',
+      'iu' => 'IU',
+      'other' => customMedicationStrengthUnit ?? 'Other',
+      _ => medicationStrengthUnit,
+    };
+
+    return '$medicationStrengthAmount $unitDisplay';
   }
 }

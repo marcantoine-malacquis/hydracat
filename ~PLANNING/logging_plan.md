@@ -582,85 +582,222 @@ class LoggingState {
 - Pre-fill values from `todaysMedicationSchedulesProvider` / `todaysFluidScheduleProvider`
 - **NEW**: All popups use `OverlayService.showFullScreenPopup()` with appropriate animation types
 
-### Step 3.2: Create Medication Logging Popup
-**Location:** `lib/features/logging/screens/`
-**Files to create:**
-- `medication_logging_screen.dart` - Medication logging popup with multi-select
-- `medication_selection_card.dart` - Selectable medication card with visual feedback
-- `medication_input_section.dart` - Dosage input for each selected medication
+### Step 3.2: Create Medication Logging Popup ✅ COMPLETED
+**Location:** `lib/features/logging/screens/`, `lib/features/logging/widgets/`
 
-**Key Implementation:**
-- **Medication List**: Display all medications from schedules as selectable cards
-- **Multi-Select**: Tap to select/deselect with visual feedback (border + background color)
-- **Pre-fill Values**: Load `targetDosage` and `medicationUnit` from schedules
-- **Individual Inputs**: One dosage input per selected medication
-- **Validation**: Required fields (medication name, dosage), realistic ranges
-- **Notes Field**: Single-line text field that expands to multi-line when focused
-- **Log Button**: Bottom button, disabled until at least one medication selected with valid dosage
-- **Loading State**: Show spinner during batch write operation
+**Files Created:**
+- ✅ `medication_logging_screen.dart` - Multi-select confirmation popup with fixed dosages (420 lines)
+- ✅ `medication_selection_card.dart` - Single-line horizontal card layout (197 lines)
+- ✅ `success_indicator.dart` - Success animation widget (new, not in original plan)
+- ⚠️ `medication_dosage_input.dart` - Created but **NOT USED** (reserved for future edit/update flow)
 
-**Layout** (No scrolling needed):
+**Key Implementation Differences from Original Plan:**
+
+**1. Fixed Dosage Confirmation Flow (NOT Adjustable)**
+- **Current**: Users select medications → Add notes → Log all at once with **fixed schedule dosages**
+- **Original Plan**: Users select medications → Adjust individual dosages → Log
+- **Reality**: More streamlined - dosage locked to `schedule.targetDosage` (lines 124-125 in medication_logging_screen.dart:124-125)
+- **Benefit**: Faster logging flow, prioritizes speed over granular control
+
+**2. "Select All" Button (Enhancement)**
+- **Current**: ✅ Implemented (lines 67-83, 278-309)
+- **Original Plan**: Not mentioned
+- **Feature**: Convenient batch selection for users with multiple medications
+- **Behavior**: Toggles between "Select All" and "Deselect All" based on current state
+
+**3. Single-Line Horizontal Card Layout (NOT Two-Line)**
+- **Current**: `[Icon] Name, Strength | Dosage [Checkmark]` - all on one line
+- **Original Plan**: Two-line vertical layout (name on line 1, strength on line 2)
+- **Reality**: More compact, fits better in popup without scrolling
+- **Design**: Left side shows icon + name + strength, right side shows dosage + selection indicator
+
+**4. Success Animation with Haptic Feedback (Enhancement)**
+- **Current**: ✅ Full success indicator with overlay + haptic feedback (lines 162-176)
+- **Original Plan**: Loading state only
+- **Addition**: `SuccessIndicator` widget with 500ms display + auto-dismiss
+- **UX**: `HapticFeedback.lightImpact()` + visual checkmark animation
+
+**5. Notes Field Enhancement**
+- **Current**: Expands from 1 to 5 lines dynamically based on content
+- **Behavior**: `minLines: _notesController.text.isNotEmpty ? 3 : 1`
+- **Max Length**: 500 characters with counter
+
+**6. Dynamic Button Text**
+- **Current**: Shows "Log Medication" or "Log N Medications" based on selection count
+- **UX**: Clear feedback on how many items will be logged
+
+**7. Duplicate Detection Dialog**
+- **Current**: Shows dialog when medication already logged today (±15min window)
+- **Actions**: "Update" (coming soon), "Create New" (coming soon), "Cancel"
+- **Reality**: Both actions show "Coming Soon" snackbar (lines 206-228)
+
+**Layout (Current Implementation)**:
 ```
 ┌─────────────────────────────────────┐
-│         Medication Logging          │
+│         Log Medication              │
 ├─────────────────────────────────────┤
 │                                     │
+│  [Select All / Deselect All]        │  ← NEW: Convenience button
+│                                     │
 │  Select Medications:                │
-│  ┌─ Amlodipine 2.5mg ─────────────┐ │
-│  │  Benazepril 5mg                │ │
-│  │  Calcitriol 0.25mcg            │ │
-│  └─────────────────────────────────┘ │
+│  [✓] ⚕️ Amlodipine, 2.5mg    1 pill │  ← Single-line horizontal
+│  [ ] ⚕️ Benazepril, 5mg      1 pill │
+│  [ ] ⚕️ Calcitriol, 0.25mcg  1 pill │
 │                                     │
-│  Amlodipine Dosage: [1.0] pills     │
-│  Calcitriol Dosage: [1.0] pills     │
+│  Notes (optional): [         ]      │  ← Expands to 5 lines when focused
 │                                     │
-│  Notes: [Tap to add notes...]       │
-│                                     │
-│  ┌─────── Log Medications ────────┐ │
-│  └─────────────────────────────────┘ │
+│  [     Log 1 Medication      ]      │  ← Dynamic text
 └─────────────────────────────────────┘
 ```
 
-**UI Note:** Medication selection cards should display medication name on the first line and strength (using `formattedStrength` from the schedule) on the second line in a two-line layout, matching the summary card design implemented in the medication setup flow.
-
-**Learning Goal:** Multi-select UI with dynamic input fields
-
-### Step 3.3: Create Fluid Logging Popup
-**Location:** `lib/features/logging/screens/`
-**Files to create:**
-- `fluid_logging_screen.dart` - Fluid therapy logging popup
-- `stress_level_selector.dart` - Optional stress level selector (low/medium/high)
-- `injection_site_selector.dart` - Optional injection site selector from schedule
-
-**Key Implementation:**
-- **Volume Input**: Pre-filled with `targetVolume` from schedule, editable numeric field
-- **Validation**: Range 1-500mL with error message
-- **Injection Site**: Pre-filled from schedule's `preferredLocation`, optional dropdown
-- **Stress Level**: Optional 3-button selector (low/medium/high) with icon indicators
-- **Notes Field**: Single-line expandable text field
-- **Log Button**: Bottom button, disabled until valid volume entered
-- **Schedule Link**: Auto-match to nearest scheduled reminder time
-
-**Layout** (No scrolling needed):
+**Card Layout Details (medication_selection_card.dart:69-141)**:
+```
+┌──────────────────────────────────────────────────┐
+│ [Icon] Name, Strength          Dosage  [Check]  │
+│ [⚕️  ] Amlodipine, 2.5mg      1 pill   [ ✓ ]   │
+└──────────────────────────────────────────────────┘
 ```
 
-  Fluid Therapy Logging              
-                                     
-  Volume: [100] ml                  
-                                     
-  Injection Site:                    
-  [Shoulder blade - left �]         
-                                     
-  Stress Level (optional):           
-  [Low] [Medium] [High]             
-                                     
-  Notes: [Tap to add notes...]      
-                                     
-  [       Log Fluid Session     ]   
+**Visual Feedback:**
+- **Unselected**: Gray border (1px), white background, unchecked circle icon
+- **Selected**: Primary border (2px), primary tint background (10% opacity), checkmark icon
+- **Animation**: 200ms easeInOut transition on selection change
+- **Icon**: Medication-unit-aware (pills → medication, drops → water_drop, etc.)
 
+**Validation:**
+- **Required**: At least one medication selected
+- **Dosage**: Always uses `schedule.targetDosage` (no user input validation needed)
+- **Button State**: Disabled until `_isFormValid` returns true
+
+**Loading States:**
+- **During Batch Write**: Full-screen overlay with spinner, content at 30% opacity (lines 252-261)
+- **Success State**: Overlay with `SuccessIndicator` + 500ms delay + auto-dismiss
+
+**File Status:**
+- `medication_dosage_input.dart`: Created with full validation logic but NOT integrated into current flow
+- **Future Use**: Reserved for update/edit flow where users need to adjust dosages after initial logging
+- **Validation**: Supports decimal input, realistic range checking (0-100), inline error display
+
+**Learning Goal:** Multi-select confirmation UI with fixed values (not dynamic input fields)
+
+### Step 3.3: Create Fluid Logging Popup ✅ COMPLETED
+**Location:** `lib/features/logging/screens/`, `lib/features/logging/widgets/`
+
+**Files Created:**
+- ✅ `fluid_logging_screen.dart` - Fluid therapy logging screen (415 lines)
+- ✅ `stress_level_selector.dart` - Material 3 SegmentedButton stress selector (130 lines)
+- ✅ `injection_site_selector.dart` - Dropdown injection site selector (90 lines)
+
+**Key Implementation Details:**
+
+**Fluid Logging Screen Features:**
+- **Volume Input**: Pre-filled from schedule's `targetVolume` or defaults to 100ml
+- **Validation**: 1-500ml range with inline error messages
+- **Daily Summary Display**: Info card shows "XmL already logged today" (Option C implementation)
+- **Injection Site**: Custom dropdown with LayerLink overlay, pre-filled from `preferredLocation` or defaults to `shoulderBladeLeft`
+- **Stress Level**: Material 3 SegmentedButton with icons (low/medium/high), optional, full-width
+- **Notes Field**: Shows character counter (0/500) only when focused, expandable 1→3 lines
+- **Loading States**: Full-screen overlay with CircularProgressIndicator
+- **Success Animation**: SuccessIndicator widget + haptic feedback + 500ms auto-dismiss
+- **Error Handling**: ScaffoldMessenger for errors, no duplicate detection for fluids
+- **Rounded Corners**: All four corners rounded (16px) for polished appearance
+
+**Stress Level Selector:**
+- Material 3 `SegmentedButton<String>` with single selection
+- Icons: HydraIcon with AppIcons (stressLow, stressMedium, stressHigh)
+- Haptic feedback on selection
+- Empty selection allowed (optional field)
+- Full accessibility support with semantic labels
+- **Full-width**: Wrapped in `SizedBox(width: double.infinity)` for better layout
+
+**Injection Site Selector:**
+- **Custom Dropdown Implementation**: Uses `LayerLink` + `CompositedTransformFollower` pattern
+- **Why Custom**: Standard `DropdownButton` had z-index conflicts with overlay popups
+- **Features**:
+  - Floating label ("Injection Site") in border via `InputDecorator`
+  - Dropdown menu appears below field with proper positioning
+  - All FluidLocation enum values with display names
+  - Selected item shows checkmark (✓) indicator
+  - Tap outside to dismiss
+  - Arrow icon rotates: ▼ (closed) ↔ ▲ (open)
+- **Overlay Management**: Custom `OverlayEntry` in same context as popup (correct z-index)
+- **StatefulWidget**: Manages dropdown state without `setState()` in dispose (prevents lifecycle errors)
+
+**Layout Implementation**:
+```
+┌─────────────────────────────────────┐
+│         Log Fluid Session           │
+├─────────────────────────────────────┤
+│                                     │
+│  ┌────────────────────────────────┐ │  ← Info card (conditional)
+│  │ ℹ️  40mL already logged today  │ │
+│  └────────────────────────────────┘ │
+│                                     │
+│  Volume (ml): [100]                 │  ← TextField (numeric)
+│  ✗ Must be between 1-500ml         │  ← Error (if invalid)
+│                                     │
+│  Injection Site:                    │
+│  [Shoulder blade - left     ▼]     │  ← Dropdown
+│                                     │
+│  Stress Level (optional):           │
+│  [😊 Low] [😐 Medium] [😟 High]    │  ← SegmentedButton
+│                                     │
+│  Notes (optional): [         ]      │  ← TextField (expandable)
+│                                     │
+│  [     Log Fluid Session     ]      │  ← FilledButton (disabled if invalid)
+└─────────────────────────────────────┘
 ```
 
-**Learning Goal:** Form validation and optional field handling
+**Pattern Consistency:**
+- ✅ Matches medication screen architecture (ConsumerStatefulWidget)
+- ✅ Same LoggingPopupWrapper usage
+- ✅ Same Stack + Opacity pattern for loading states
+- ✅ Same SuccessIndicator + haptic feedback
+- ✅ Same error handling via ScaffoldMessenger
+- ✅ Same notes field expansion behavior
+- ✅ Same provider integration patterns
+
+**Firebase CRUD Compliance:**
+- ✅ Uses cached data (`dailyCacheProvider`) - 0 extra reads
+- ✅ Single batch write operation (8 writes via LoggingService)
+- ✅ No duplicate detection queries (fluids allow multiple sessions)
+- ✅ Schedule matching done in LoggingService (no extra reads)
+
+**Pre-fill Logic:**
+- **With Schedule**: Volume from `targetVolume`, injection site from `preferredLocation`
+- **Without Schedule**: Volume defaults to 100ml, injection site to `shoulderBladeLeft`
+- **Schedule Linking**: `scheduleId` populated if schedule exists, null for manual logs
+
+**Validation:**
+- Volume: Required, 1-500ml range, numeric only
+- Injection site: Always has value (pre-filled or default)
+- Stress level: Optional (can be null)
+- Notes: Optional, 500 char max
+- Button: Disabled until volume is valid
+
+**UI Polish & Bug Fixes:**
+- ✅ Character counter shows only when notes field is focused (cleaner UI)
+- ✅ Stress level selector fills full width (no unused space)
+- ✅ All popup corners rounded (top + bottom for modern look)
+- ✅ Fixed injection site dropdown z-index issue with custom overlay implementation
+- ✅ Fixed setState() in dispose() lifecycle error
+- ✅ Fixed "Medium" text wrapping in stress selector (font size + padding adjustments)
+
+**Linting:**
+- ✅ All linting issues resolved
+- ✅ No warnings or errors
+- ✅ Custom dropdown implementation avoids DropdownButton assertion errors
+- ✅ Proper overlay cleanup in StatefulWidget lifecycle
+
+**Technical Challenges Solved:**
+1. **Z-Index Problem**: `showMenu()` and `showModalBottomSheet()` rendered behind `OverlayEntry`
+   - **Solution**: Custom dropdown using `LayerLink` in same overlay context
+2. **DropdownButton Assertion**: `_dropdownRoute == null` error on widget rebuilds
+   - **Solution**: Avoided DropdownButton entirely, built custom solution
+3. **Lifecycle Management**: setState() called during dispose
+   - **Solution**: Removed setState from `_removeOverlay()`, direct state assignment
+
+**Learning Goal:** Form validation, optional field handling, Material 3 widgets, state management patterns, custom overlay widgets, z-index debugging
 
 ### Step 3.4: Create Quick-Log Success Popup
 **Location:** `lib/features/logging/widgets/`

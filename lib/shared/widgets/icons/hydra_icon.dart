@@ -88,7 +88,8 @@ class HydraIcon extends StatelessWidget {
         return Icons.arrow_back;
       case AppIcons.forward:
         return Icons.arrow_forward;
-
+      case AppIcons.medication:
+        return Icons.medication;
       default:
         return Icons.help_outline;
     }
