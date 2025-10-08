@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:hydracat/features/logging/exceptions/logging_exceptions.dart';
 import 'package:hydracat/features/logging/models/logging_operation.dart';
 import 'package:hydracat/features/logging/services/logging_service.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
@@ -42,8 +43,9 @@ class OfflineLoggingService {
 
   /// Add operation to queue
   ///
-  /// Returns true if added, false if queue full
-  Future<bool> enqueueOperation(LoggingOperation operation) async {
+  /// Throws [QueueFullException] if queue is at max capacity.
+  /// Throws [QueueWarningException] if queue exceeds soft warning threshold.
+  Future<void> enqueueOperation(LoggingOperation operation) async {
     final queue = await _loadQueue();
 
     // Check hard limit
@@ -60,7 +62,7 @@ class OfflineLoggingService {
         errorContext: 'Queue size: ${queue.length}',
       );
 
-      return false;
+      throw QueueFullException(queue.length);
     }
 
     // Remove expired operations (30 days TTL)
@@ -89,7 +91,16 @@ class OfflineLoggingService {
       },
     );
 
-    return true;
+    // Check soft warning threshold AFTER queuing
+    // (operation succeeded but warn user)
+    if (queue.length >= _softWarningThreshold) {
+      if (kDebugMode) {
+        debugPrint(
+          '[OfflineLogging] Queue approaching limit: ${queue.length}/$_maxQueueSize',
+        );
+      }
+      throw QueueWarningException(queue.length);
+    }
   }
 
   /// Get all pending operations
@@ -183,6 +194,13 @@ class OfflineLoggingService {
       failureCount: failureCount,
       syncDurationMs: durationMs,
     );
+
+    // Throw exception if any operations failed
+    // This signals to the UI that sync partially failed and
+    // user should see retry option
+    if (failureCount > 0) {
+      throw SyncFailedException(failureCount, 'Max retries exceeded');
+    }
 
     return (successCount, failureCount);
   }

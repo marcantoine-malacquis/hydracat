@@ -10,6 +10,7 @@ import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/summary_cache_service.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
+import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/shared/models/summary_update_dto.dart';
 
 /// Service for logging treatment sessions with atomic batch writes
@@ -34,10 +35,13 @@ import 'package:hydracat/shared/models/summary_update_dto.dart';
 /// ```
 class LoggingService {
   /// Creates a [LoggingService] instance
-  const LoggingService(this._cacheService);
+  const LoggingService(this._cacheService, [this._analyticsService]);
 
   /// Cache service for 0-read duplicate detection
   final SummaryCacheService _cacheService;
+
+  /// Optional analytics service for error tracking
+  final AnalyticsService? _analyticsService;
 
   /// Firestore instance
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
@@ -153,6 +157,13 @@ class LoggingService {
       if (kDebugMode) {
         debugPrint('[LoggingService] Firebase error: ${e.message}');
       }
+
+      // Track analytics
+      await _analyticsService?.trackError(
+        errorType: 'batch_write_failure',
+        errorContext: 'logMedicationSession: ${e.code}: ${e.message}',
+      );
+
       throw BatchWriteException(
         'logMedicationSession',
         e.message ?? 'Unknown Firebase error',
@@ -161,6 +172,13 @@ class LoggingService {
       if (kDebugMode) {
         debugPrint('[LoggingService] Unexpected error: $e');
       }
+
+      // Track analytics
+      await _analyticsService?.trackError(
+        errorType: 'unexpected_logging_error',
+        errorContext: 'logMedicationSession: $e',
+      );
+
       throw LoggingException('Unexpected error logging medication: $e');
     }
   }
@@ -279,6 +297,13 @@ class LoggingService {
       if (kDebugMode) {
         debugPrint('[LoggingService] Firebase error: ${e.message}');
       }
+
+      // Track analytics
+      await _analyticsService?.trackError(
+        errorType: 'batch_write_failure',
+        errorContext: 'updateMedicationSession: ${e.code}: ${e.message}',
+      );
+
       throw BatchWriteException(
         'updateMedicationSession',
         e.message ?? 'Unknown Firebase error',
@@ -287,6 +312,13 @@ class LoggingService {
       if (kDebugMode) {
         debugPrint('[LoggingService] Unexpected error: $e');
       }
+
+      // Track analytics
+      await _analyticsService?.trackError(
+        errorType: 'unexpected_logging_error',
+        errorContext: 'updateMedicationSession: $e',
+      );
+
       throw LoggingException('Unexpected error updating medication: $e');
     }
   }
@@ -380,6 +412,13 @@ class LoggingService {
       if (kDebugMode) {
         debugPrint('[LoggingService] Firebase error: ${e.message}');
       }
+
+      // Track analytics
+      await _analyticsService?.trackError(
+        errorType: 'batch_write_failure',
+        errorContext: 'logFluidSession: ${e.code}: ${e.message}',
+      );
+
       throw BatchWriteException(
         'logFluidSession',
         e.message ?? 'Unknown Firebase error',
@@ -388,6 +427,13 @@ class LoggingService {
       if (kDebugMode) {
         debugPrint('[LoggingService] Unexpected error: $e');
       }
+
+      // Track analytics
+      await _analyticsService?.trackError(
+        errorType: 'unexpected_logging_error',
+        errorContext: 'logFluidSession: $e',
+      );
+
       throw LoggingException('Unexpected error logging fluid: $e');
     }
   }
@@ -495,6 +541,13 @@ class LoggingService {
       if (kDebugMode) {
         debugPrint('[LoggingService] Firebase error: ${e.message}');
       }
+
+      // Track analytics
+      await _analyticsService?.trackError(
+        errorType: 'batch_write_failure',
+        errorContext: 'updateFluidSession: ${e.code}: ${e.message}',
+      );
+
       throw BatchWriteException(
         'updateFluidSession',
         e.message ?? 'Unknown Firebase error',
@@ -503,6 +556,13 @@ class LoggingService {
       if (kDebugMode) {
         debugPrint('[LoggingService] Unexpected error: $e');
       }
+
+      // Track analytics
+      await _analyticsService?.trackError(
+        errorType: 'unexpected_logging_error',
+        errorContext: 'updateFluidSession: $e',
+      );
+
       throw LoggingException('Unexpected error updating fluid: $e');
     }
   }
@@ -696,6 +756,13 @@ class LoggingService {
       if (kDebugMode) {
         debugPrint('[LoggingService] Firebase error: ${e.message}');
       }
+
+      // Track analytics
+      await _analyticsService?.trackError(
+        errorType: 'batch_write_failure',
+        errorContext: 'quickLogAllTreatments: ${e.code}: ${e.message}',
+      );
+
       throw BatchWriteException(
         'quickLogAllTreatments',
         e.message ?? 'Failed to log all treatments',
@@ -704,6 +771,13 @@ class LoggingService {
       if (kDebugMode) {
         debugPrint('[LoggingService] Unexpected error: $e');
       }
+
+      // Track analytics
+      await _analyticsService?.trackError(
+        errorType: 'unexpected_logging_error',
+        errorContext: 'quickLogAllTreatments: $e',
+      );
+
       throw LoggingException('Unexpected error in quick-log: $e');
     }
   }

@@ -23,11 +23,3 @@ Don't try to run the app yourself to test. Just tell me when it's needed and I w
 
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
-1. Create dedicated tracking methods in AnalyticsService like trackSessionLogged(), trackQuickLogUsed(), etc. This follows the pattern used for auth/onboarding and provides better type safety and autocomplete.
-2. Add all new logging events to the existing AnalyticsEvents class in one organized section, keeping the single-file structure. But we will need to refactor this later if this doesn't follow industry-standards or best practices.
-3. Add analytics tracking directly in these services (inject AnalyticsService as dependency).
-4. Include implementation of these events in Step 8.1 as part of the logging analytics consolidation (since they're related to logging prep).
-5. Add this tracking in Step 8.1 as part of the comprehensive analytics implementation.
-6. Add the event constant and tracking method now for consistency, even though it won't be called until updates are implemented.
-7. Create an AnalyticsErrorTypes class with constants for consistency and typo prevention.
-Please let me know if this makes sense or contradict itself, the prd (prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them. I will test only once we fixed the linting issues.

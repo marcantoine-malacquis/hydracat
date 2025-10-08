@@ -50,7 +50,8 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
 /// Provider for LoggingService instance
 final loggingServiceProvider = Provider<LoggingService>((ref) {
   final cacheService = ref.watch(summaryCacheServiceProvider);
-  return LoggingService(cacheService);
+  final analytics = ref.read(analyticsServiceDirectProvider);
+  return LoggingService(cacheService, analytics);
 });
 
 /// Provider for SummaryCacheService instance
@@ -506,9 +507,11 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         );
 
         final offlineService = _ref.read(offlineLoggingServiceProvider);
-        final queued = await offlineService.enqueueOperation(operation);
 
-        if (queued) {
+        try {
+          await offlineService.enqueueOperation(operation);
+
+          // Successfully queued
           // Note: Can't update cache optimistically for quick-log
           // since we don't know exact session count until sync
           state = state.copyWith(isLoading: false);
@@ -518,11 +521,26 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
           }
 
           return true;
-        } else {
-          state = state.copyWith(
-            isLoading: false,
-            error: 'Queue full. Please connect to internet.',
-          );
+        } on QueueWarningException catch (e) {
+          // Operation succeeded but queue is getting full - show warning
+          state = state.copyWith(isLoading: false, error: e.userMessage);
+
+          if (kDebugMode) {
+            debugPrint(
+              '[LoggingNotifier] Quick-log queued with warning: '
+              '${e.userMessage}',
+            );
+          }
+
+          return true; // Operation succeeded, just warn user
+        } on QueueFullException catch (e) {
+          // Queue is full - cannot queue
+          state = state.copyWith(isLoading: false, error: e.userMessage);
+
+          if (kDebugMode) {
+            debugPrint('[LoggingNotifier] Quick-log failed: ${e.userMessage}');
+          }
+
           return false;
         }
       }
@@ -641,10 +659,12 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         );
 
         final offlineService = _ref.read(offlineLoggingServiceProvider);
-        final queued = await offlineService.enqueueOperation(operation);
 
-        if (queued) {
-          // Update local cache immediately (optimistic UI)
+        try {
+          await offlineService.enqueueOperation(operation);
+
+          // Successfully queued - update local cache immediately
+          // (optimistic UI)
           await _cacheService.updateCacheWithMedicationSession(
             userId: user.id,
             petId: pet.id,
@@ -661,11 +681,38 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
           }
 
           return true;
-        } else {
-          state = state.copyWith(
-            isLoading: false,
-            error: 'Queue full. Please connect to internet.',
+        } on QueueWarningException catch (e) {
+          // Operation succeeded but queue is getting full - show warning
+          await _cacheService.updateCacheWithMedicationSession(
+            userId: user.id,
+            petId: pet.id,
+            medicationName: session.medicationName,
+            dosageGiven: session.dosageGiven,
           );
+
+          await loadTodaysCache();
+
+          state = state.copyWith(isLoading: false, error: e.userMessage);
+
+          if (kDebugMode) {
+            debugPrint(
+              '[LoggingNotifier] Medication queued with warning: '
+              '${e.userMessage}',
+            );
+          }
+
+          return true; // Operation succeeded, just warn user
+        } on QueueFullException catch (e) {
+          // Queue is full - cannot queue
+          state = state.copyWith(isLoading: false, error: e.userMessage);
+
+          if (kDebugMode) {
+            debugPrint(
+              '[LoggingNotifier] Medication queueing failed: '
+              '${e.userMessage}',
+            );
+          }
+
           return false;
         }
       }
@@ -831,10 +878,11 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         );
 
         final offlineService = _ref.read(offlineLoggingServiceProvider);
-        final queued = await offlineService.enqueueOperation(operation);
 
-        if (queued) {
-          // Update local cache immediately (optimistic UI)
+        try {
+          await offlineService.enqueueOperation(operation);
+
+          // Successfully queued - update local cache immediately (optimistic)
           await _cacheService.updateCacheWithFluidSession(
             userId: user.id,
             petId: pet.id,
@@ -850,11 +898,37 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
           }
 
           return true;
-        } else {
-          state = state.copyWith(
-            isLoading: false,
-            error: 'Queue full. Please connect to internet.',
+        } on QueueWarningException catch (e) {
+          // Operation succeeded but queue is getting full - show warning
+          await _cacheService.updateCacheWithFluidSession(
+            userId: user.id,
+            petId: pet.id,
+            volumeGiven: session.volumeGiven,
           );
+
+          await loadTodaysCache();
+
+          state = state.copyWith(isLoading: false, error: e.userMessage);
+
+          if (kDebugMode) {
+            debugPrint(
+              '[LoggingNotifier] Fluid queued with warning: '
+              '${e.userMessage}',
+            );
+          }
+
+          return true; // Operation succeeded, just warn user
+        } on QueueFullException catch (e) {
+          // Queue is full - cannot queue
+          state = state.copyWith(isLoading: false, error: e.userMessage);
+
+          if (kDebugMode) {
+            debugPrint(
+              '[LoggingNotifier] Fluid queueing failed: '
+              '${e.userMessage}',
+            );
+          }
+
           return false;
         }
       }
@@ -979,17 +1053,9 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
   /// - Don't expose technical details
   /// - Suggest next actions when appropriate
   String _handleError(Object error) {
-    if (error is SessionValidationException) {
-      return 'Invalid session data: ${error.message}. '
-          'Please check your input and try again.';
-    } else if (error is DuplicateSessionException) {
-      return 'You already logged ${error.medicationName ?? "this treatment"} '
-          'today. Would you like to update it instead?';
-    } else if (error is BatchWriteException) {
-      return 'Failed to save session. Please check your connection '
-          'and try again.';
-    } else if (error is LoggingException) {
-      return error.message;
+    // Use userMessage getter from LoggingException subclasses
+    if (error is LoggingException) {
+      return error.userMessage;
     } else if (error is UnimplementedError) {
       // During development - expose implementation status
       return kDebugMode

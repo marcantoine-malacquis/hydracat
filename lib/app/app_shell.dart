@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/constants/app_icons.dart';
+import 'package:hydracat/features/logging/exceptions/logging_error_handler.dart';
 import 'package:hydracat/features/logging/screens/fluid_logging_screen.dart';
 import 'package:hydracat/features/logging/screens/medication_logging_screen.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
@@ -241,11 +242,9 @@ class _AppShellState extends ConsumerState<AppShell>
       debugPrint(
         '[FAB] Quick-log not available (already logged or no schedules)',
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Already logged today or no schedules set'),
-          duration: Duration(seconds: 2),
-        ),
+      LoggingErrorHandler.showLoggingError(
+        context,
+        'Already logged today or no schedules set',
       );
       return;
     }
@@ -274,12 +273,7 @@ class _AppShellState extends ConsumerState<AppShell>
       // Show error from state
       final error = ref.read(loggingErrorProvider);
       if (error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error),
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        LoggingErrorHandler.showLoggingError(context, error);
       }
     }
 
@@ -355,13 +349,33 @@ class _AppShellState extends ConsumerState<AppShell>
       // Listen for sync toast notifications
       ..listen<String?>(syncToastMessageProvider, (previous, next) {
         if (next != null && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(next),
-              duration: const Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          // Check if this is a sync failure (has retry state)
+          final syncFailure = ref.read(syncFailureStateProvider);
+
+          if (syncFailure != null) {
+            // Show error with retry button
+            LoggingErrorHandler.showSyncRetry(
+              context,
+              next,
+              () async {
+                // Retry sync
+                try {
+                  await ref
+                      .read(offlineLoggingServiceProvider)
+                      .syncPendingOperations();
+
+                  // Success - clear failure state
+                  ref.read(syncFailureStateProvider.notifier).state = null;
+                } on Exception catch (e) {
+                  // Failed again - state will be updated by provider
+                  debugPrint('[AppShell] Retry sync failed: $e');
+                }
+              },
+            );
+          } else {
+            // Success message
+            LoggingErrorHandler.showLoggingSuccess(context, next);
+          }
 
           // Clear message after showing
           ref.read(syncToastMessageProvider.notifier).state = null;

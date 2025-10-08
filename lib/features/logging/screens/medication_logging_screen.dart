@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/features/auth/models/app_user.dart';
+import 'package:hydracat/features/logging/exceptions/logging_error_handler.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/logging/widgets/logging_popup_wrapper.dart';
@@ -272,16 +273,10 @@ class _MedicationLoggingScreenState
     );
   }
 
-  /// Show error message
+  /// Show error message using centralized error handler
   void _showError(String message) {
     if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Theme.of(context).colorScheme.error,
-      ),
-    );
+    LoggingErrorHandler.showLoggingError(context, message);
   }
 
   @override

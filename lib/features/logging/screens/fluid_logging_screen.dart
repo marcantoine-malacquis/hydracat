@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
+import 'package:hydracat/features/logging/exceptions/logging_error_handler.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/logging/widgets/injection_site_selector.dart';
@@ -31,8 +32,7 @@ class FluidLoggingScreen extends ConsumerStatefulWidget {
   const FluidLoggingScreen({super.key});
 
   @override
-  ConsumerState<FluidLoggingScreen> createState() =>
-      _FluidLoggingScreenState();
+  ConsumerState<FluidLoggingScreen> createState() => _FluidLoggingScreenState();
 }
 
 class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
@@ -158,8 +158,9 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
       }
 
       final volume = double.parse(_volumeController.text.trim());
-      final notes =
-          _notesController.text.trim().isEmpty ? null : _notesController.text;
+      final notes = _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text;
 
       // Create fluid session
       final session = FluidSession.create(
@@ -175,10 +176,11 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
       );
 
       // Log the session
-      final success =
-          await ref.read(loggingProvider.notifier).logFluidSession(
-                session: session,
-              );
+      final success = await ref
+          .read(loggingProvider.notifier)
+          .logFluidSession(
+            session: session,
+          );
 
       if (success) {
         // Success! Show indicator and close
@@ -214,16 +216,10 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
     }
   }
 
-  /// Show error message
+  /// Show error message using centralized error handler
   void _showError(String message) {
     if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Theme.of(context).colorScheme.error,
-      ),
-    );
+    LoggingErrorHandler.showLoggingError(context, message);
   }
 
   @override
@@ -262,12 +258,12 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer
-                          .withValues(alpha: 0.3),
+                      color: theme.colorScheme.primaryContainer.withValues(
+                        alpha: 0.3,
+                      ),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color:
-                            theme.colorScheme.primary.withValues(alpha: 0.3),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Row(
@@ -295,8 +291,9 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
                 // Volume input
                 TextField(
                   controller: _volumeController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
                     labelText: 'Volume (ml)',
@@ -396,8 +393,9 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
                 // Log button
                 const SizedBox(height: AppSpacing.lg),
                 FilledButton(
-                  onPressed:
-                      _isFormValid && !_isLoading ? _logFluidSession : null,
+                  onPressed: _isFormValid && !_isLoading
+                      ? _logFluidSession
+                      : null,
                   style: FilledButton.styleFrom(
                     backgroundColor: theme.colorScheme.primary,
                     padding: const EdgeInsets.symmetric(

@@ -1415,11 +1415,20 @@ analyticsService.trackOfflineSync(
 - Track at service level (with optional `AnalyticsService?` param) for better metrics
 - Include context params (medication name, volume, etc.) for detailed analysis
 
-### Step 8.2: Implement Comprehensive Error Handling
+### Step 8.2: Implement Comprehensive Error Handling ✅ COMPLETED
 **Location:** `lib/features/logging/exceptions/`
-**Files to create:**
-- `logging_exceptions.dart` - Logging-specific exception classes
-- `logging_error_handler.dart` - Centralized error handling with user-friendly messages
+
+**Files Created:**
+- ✅ `logging_error_handler.dart` - Centralized error handler with static methods
+
+**Files Modified:**
+- ✅ `logging_exceptions.dart` - Added `userMessage` getters + 4 new exception types
+- ✅ `logging_service.dart` - Analytics tracking in 5 method catch blocks
+- ✅ `offline_logging_service.dart` - Throws new queue exceptions
+- ✅ `logging_provider.dart` - Enhanced error handling, passes AnalyticsService to LoggingService
+- ✅ `medication_logging_screen.dart` + `fluid_logging_screen.dart` - Use LoggingErrorHandler
+- ✅ `logging_queue_provider.dart` - Sync failure retry state
+- ✅ `app_shell.dart` - Centralized error display with retry UI
 
 **Exception Types:**
 ```dart
@@ -1499,7 +1508,69 @@ try {
 }
 ```
 
-**Learning Goal:** Production-quality error handling with empathetic messaging
+**Critical Implementation Details:**
+
+**LoggingErrorHandler Usage:**
+```dart
+// Error display
+LoggingErrorHandler.showLoggingError(context, message);
+
+// Success with offline indicator
+LoggingErrorHandler.showLoggingSuccess(context, message, isOffline: isOffline);
+
+// Sync failure with retry button
+LoggingErrorHandler.showSyncRetry(context, message, onRetry);
+```
+
+**Exception Pattern - All Have userMessage Getter:**
+- `DuplicateSessionException`: "You've already logged this treatment today..."
+- `SessionValidationException`: Returns first validation error (empathetic tone)
+- `BatchWriteException`: "Unable to save right now. Your data is saved offline..."
+- `OfflineLoggingException`: "Logged successfully! Will sync when you're back online."
+- `SyncFailedException(count, lastError)`: Shows count with retry prompt
+- `QueueWarningException(size)`: Warning at 50 items (operation succeeds)
+- `QueueFullException(size)`: Hard limit at 200 items (operation fails)
+
+**Service Setup:**
+```dart
+// LoggingService now requires AnalyticsService (optional)
+final loggingServiceProvider = Provider<LoggingService>((ref) {
+  final cacheService = ref.watch(summaryCacheServiceProvider);
+  final analytics = ref.read(analyticsServiceDirectProvider);
+  return LoggingService(cacheService, analytics); // Pass analytics
+});
+```
+
+**Firebase Error Mapping (4 Common Codes):**
+- `permission-denied` → Account permissions message
+- `unavailable` / `deadline-exceeded` → Timeout with offline assurance
+- `resource-exhausted` → Service unavailable, try again
+- Default → Generic offline fallback
+
+**Offline Queue Exceptions:**
+- `enqueueOperation()` now throws exceptions instead of returning bool
+- Catch `QueueWarningException` - operation succeeded, show warning, return true
+- Catch `QueueFullException` - operation failed, show error, return false
+- `syncPendingOperations()` throws `SyncFailedException` if any operations fail
+
+**Sync Retry UI Pattern (app_shell.dart):**
+```dart
+ref.listen<String?>(syncToastMessageProvider, (previous, next) {
+  if (next != null && mounted) {
+    final syncFailure = ref.read(syncFailureStateProvider);
+    if (syncFailure != null) {
+      LoggingErrorHandler.showSyncRetry(context, next, () async {
+        await ref.read(offlineLoggingServiceProvider).syncPendingOperations();
+        ref.read(syncFailureStateProvider.notifier).state = null;
+      });
+    } else {
+      LoggingErrorHandler.showLoggingSuccess(context, next);
+    }
+  }
+});
+```
+
+**Learning Goal:** Centralized error handling with empathetic messaging and offline support
 
 ### Step 8.3: Implement Validation Service
 **Location:** `lib/features/logging/services/validation_service.dart`

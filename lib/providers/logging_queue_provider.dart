@@ -4,6 +4,7 @@ library;
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hydracat/features/logging/exceptions/logging_exceptions.dart';
 import 'package:hydracat/features/logging/services/offline_logging_service.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/connectivity_provider.dart';
@@ -54,6 +55,10 @@ final shouldShowQueueWarningProvider = Provider<bool>((ref) {
 /// Toast message provider for sync notifications
 final syncToastMessageProvider = StateProvider<String?>((ref) => null);
 
+/// Sync failure state for retry UI
+/// Contains (failureCount, errorMessage) when sync fails
+final syncFailureStateProvider = StateProvider<(int, String)?>((ref) => null);
+
 // ============================================
 // Auto-Sync Listener
 // ============================================
@@ -75,22 +80,34 @@ final autoSyncListenerProvider = Provider<void>((ref) {
 
         if (wasOffline && isNowOnline) {
           final offlineService = ref.read(offlineLoggingServiceProvider);
-          final (success, failures) = await offlineService
-              .syncPendingOperations();
 
-          // Show toast notifications
-          if (success > 0) {
-            ref.read(syncToastMessageProvider.notifier).state =
-                'Synced $success treatment${success == 1 ? '' : 's'}';
+          try {
+            final (success, _) = await offlineService.syncPendingOperations();
+
+            // Success! Clear any failure state and show success message
+            ref.read(syncFailureStateProvider.notifier).state = null;
+
+            if (success > 0) {
+              ref.read(syncToastMessageProvider.notifier).state =
+                  'Synced $success treatment${success == 1 ? '' : 's'}';
+            }
+
+            // Invalidate queue size to refresh UI
+            ref.invalidate(queueSizeProvider);
+          } on SyncFailedException catch (e) {
+            // Some operations failed - store failure state for retry UI
+            ref.read(syncFailureStateProvider.notifier).state = (
+              e.operationCount,
+              e.userMessage,
+            );
+
+            // Set error toast message
+            // (will be shown with retry button in app_shell)
+            ref.read(syncToastMessageProvider.notifier).state = e.userMessage;
+
+            // Still invalidate queue size to refresh UI
+            ref.invalidate(queueSizeProvider);
           }
-
-          if (failures > 0) {
-            ref.read(syncToastMessageProvider.notifier).state =
-                '$failures operation${failures == 1 ? '' : 's'} failed to sync';
-          }
-
-          // Invalidate queue size to refresh UI
-          ref.invalidate(queueSizeProvider);
         }
       });
     },
