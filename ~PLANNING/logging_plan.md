@@ -873,27 +873,44 @@ await showDialog<void>(
 
 ## Phase 4: FAB Integration & Navigation
 
-### Step 4.1: Implement FAB Logic
+### Step 4.1: Implement FAB Logic ✅ COMPLETED
 **Location:** `lib/app/app_shell.dart`, `lib/shared/widgets/navigation/hydra_navigation_bar.dart`
-**Files to modify:**
-- Update `_onFabPressed()` method for persona-aware routing
-- Add long-press detection with `GestureDetector.onLongPress`
-- Implement quick-log flow with today's schedule check
 
-**Key Implementation:**
-- **Short Press**: Check persona � Route to appropriate logging popup
-  - `medicationOnly`: Direct to medication logging popup
-  - `fluidTherapyOnly`: Direct to fluid logging popup
-  - `medicationAndFluidTherapy`: Show treatment choice popup first
-- **Long Press**:
-  1. Check if any sessions logged today (read cached summary)
-  2. If none logged: Execute quick-log (all schedules at scheduled times)
-  3. If already logged: Show "Already logged today" snackbar
-  4. Show success popup on completion
-- **Loading State**: Disable FAB during batch write operation
-- **Haptic Feedback**: Vibrate on long-press detection
+**Implementation Complete:**
 
-**Learning Goal:** Complex gesture detection and conditional navigation
+**Short Press (lines 111-177 in app_shell.dart):**
+- ✅ Persona-aware routing based on `pet.treatmentApproach`
+- ✅ `medicationOnly`: Direct to medication logging popup
+- ✅ `fluidTherapyOnly`: Direct to fluid logging popup
+- ✅ `medicationAndFluidTherapy`: Show treatment choice popup first
+- ✅ Onboarding completion check with fallback
+
+**Long Press (lines 196-261 in app_shell.dart):**
+- ✅ Haptic feedback (`HapticFeedback.mediumImpact()`) on press detection
+- ✅ Check `canQuickLogProvider` (uses cached summary - 0 Firebase reads)
+- ✅ Execute `quickLogAllTreatments()` via provider
+- ✅ Show success popup with session count
+- ✅ Show error snackbar if already logged or no schedules
+
+**Loading State:**
+- ✅ FAB disabled during auth loading
+- ✅ FAB disabled during logging operations (`isLoggingProvider`)
+- ✅ FAB shows spinner during batch writes
+- ✅ Prevents overlapping operations
+
+**App Lifecycle Management (lines 81-102 in app_shell.dart):**
+- ✅ Implements `WidgetsBindingObserver` for lifecycle monitoring
+- ✅ Calls `loggingProvider.notifier.onAppResumed()` on app resume
+- ✅ Refreshes cache when day changes while app in background
+- ✅ Proper cleanup in dispose
+
+**Files Modified:**
+1. `lib/app/app_shell.dart` - Added haptic feedback, lifecycle management, loading state
+2. `lib/shared/widgets/navigation/hydra_navigation_bar.dart` - Added `isFabLoading` parameter
+
+**Note:** Quick-log service method (`LoggingService.quickLogAllTreatments()`) deferred to Step 5.3 (Phase 5). Currently throws `UnimplementedError` as documented in `logging_provider.dart:272-279`.
+
+**Learning Goal:** Complex gesture detection, conditional navigation, app lifecycle management
 
 ### Step 4.2: Update Router for Logging Routes ✅ NO LONGER NEEDED
 **Location:** `lib/app/router.dart`
@@ -918,29 +935,88 @@ await showDialog<void>(
 
 **Learning Goal:** Overlay-based navigation is more efficient than route-based popups
 
-### Step 4.3: Implement Treatment Choice Popup
-**Location:** `lib/features/logging/widgets/treatment_choice_popup.dart`
-**Files to implement:**
-- Small popup positioned above navigation bar
-- Two large buttons: "Log Medication" and "Log Fluid"
-- Dismiss on selection or outside tap
+### Step 4.3: Implement Treatment Choice Popup ✅ COMPLETED
+**Location:** `lib/features/logging/widgets/treatment_choice_popup.dart`, `lib/app/app_shell.dart`
 
-**Key Implementation:**
-- **Positioning**: `Align` with `Alignment.bottomCenter`, offset above nav bar
-- **Buttons**: Full-width buttons with medication/fluid icons
-- **Navigation**: Route to appropriate logging screen on selection
-- **Animation**: Fade-in entrance, instant dismiss on selection
-- **Accessibility**: Clear semantic labels, adequate touch targets
+**Files Implemented:**
+- ✅ `treatment_choice_popup.dart` - Action-sheet-style popup with two treatment choices
+- ✅ `app_shell.dart` - Integration with FAB for combined persona routing (lines 152-177)
+- ✅ `treatment_choice.dart` - Enum with display names and icons
+- ✅ `app_icons.dart` - Added `medication` and `fluidTherapy` icons
 
-**Layout**:
+**Key Implementation Details:**
+
+**Positioning & Layout:**
+- Uses `Align(alignment: Alignment.bottomCenter)` with proper bottom margin
+- Optimized asymmetric padding (reduced bottom padding from lg to sm)
+- Container with rounded corners (16px) and shadow effect
+- Full-width treatment buttons with `minTouchTarget` constraints (48x48)
+
+**Treatment Buttons:**
+- Two `_TreatmentChoiceButton` widgets with icons and labels
+- Left: Icon + Label, Right: Chevron indicator
+- `InkWell` for touch feedback with proper touch targets
+- Divider between buttons for visual separation
+
+**Navigation Flow:**
+- Medication button → Sets `TreatmentChoice.medication` → Calls `onMedicationSelected` callback
+- Fluid button → Sets `TreatmentChoice.fluid` → Calls `onFluidSelected` callback
+- Both callbacks hide popup and show appropriate logging screen with `slideFromRight` animation
+
+**Additional Features (Beyond Requirements):**
+- ✅ Cancel button with subtle background styling
+- ✅ `PopScope` integration to reset logging state on dismissal
+- ✅ Title: "Add one-time entry"
+- ✅ Full accessibility support with semantic labels
+
+**Animation:**
+- **Initial appearance**: `slideUp` (200ms) when FAB pressed
+- **Transition to forms**: `slideFromRight` (250ms) when treatment selected
+- **Dismissal**: Immediate via `OverlayService.hide()`
+
+**Layout (Implemented)**:
+```
+┌─────────────────────────────────────┐
+│      Add one-time entry             │
+├─────────────────────────────────────┤
+│ [💊] Medication              [>]    │
+│ ───────────────────────────────────  │
+│ [💧] Fluid Therapy           [>]    │
+│                                     │
+│ [          Cancel          ]        │
+└─────────────────────────────────────┘
 ```
 
-  [=� Log Medication            ]   
-  [=� Log Fluid Therapy         ]   
-
+**Integration with FAB (app_shell.dart:152-177):**
+```dart
+case UserPersona.medicationAndFluidTherapy:
+  _showLoggingDialog(
+    context,
+    TreatmentChoicePopup(
+      onMedicationSelected: () {
+        OverlayService.hide();
+        _showLoggingDialog(context, MedicationLoggingScreen(),
+          animationType: OverlayAnimationType.slideFromRight);
+      },
+      onFluidSelected: () {
+        OverlayService.hide();
+        _showLoggingDialog(context, FluidLoggingScreen(),
+          animationType: OverlayAnimationType.slideFromRight);
+      },
+    ),
+  );
 ```
 
-**Learning Goal:** Positioned popup UI and navigation choices
+**State Management:**
+- Sets treatment choice in provider: `ref.read(loggingProvider.notifier).setTreatmentChoice()`
+- Resets state on dismissal or cancel: `ref.read(loggingProvider.notifier).reset()`
+
+**Accessibility:**
+- Semantic label: "Choose treatment type to log"
+- Minimum touch targets: 48x48 (Material Design guidelines)
+- Clear visual hierarchy with icons, labels, and chevrons
+
+**Learning Goal:** Action-sheet-style popup UI, persona-aware navigation, state management integration
 
 **<� MILESTONE:** FAB fully integrated with persona-aware logging!
 

@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/constants/app_icons.dart';
@@ -28,7 +31,8 @@ class AppShell extends ConsumerStatefulWidget {
   ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends ConsumerState<AppShell> {
+class _AppShellState extends ConsumerState<AppShell>
+    with WidgetsBindingObserver {
   final List<HydraNavigationItem> _navigationItems = const [
     HydraNavigationItem(icon: AppIcons.home, label: 'Home', route: '/'),
     HydraNavigationItem(
@@ -74,6 +78,30 @@ class _AppShellState extends ConsumerState<AppShell> {
     }
 
     return 0; // Default to home
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.resumed) {
+      debugPrint('[AppShell] App resumed - refreshing logging cache');
+      // Refresh cache when app resumes (handles day changes while app
+      // in background)
+      ref.read(loggingProvider.notifier).onAppResumed();
+    }
   }
 
   void _onNavigationTap(int index) {
@@ -171,6 +199,9 @@ class _AppShellState extends ConsumerState<AppShell> {
   Future<void> _onFabLongPress() async {
     debugPrint('[FAB] Long press detected - attempting quick-log');
 
+    // Haptic feedback for immediate tactile confirmation
+    unawaited(HapticFeedback.mediumImpact());
+
     final hasCompletedOnboarding = ref.read(hasCompletedOnboardingProvider);
     if (!hasCompletedOnboarding) {
       debugPrint('[FAB] Onboarding not complete, redirecting');
@@ -201,8 +232,9 @@ class _AppShellState extends ConsumerState<AppShell> {
     }
 
     // Execute quick-log
-    final success =
-        await ref.read(loggingProvider.notifier).quickLogAllTreatments();
+    final success = await ref
+        .read(loggingProvider.notifier)
+        .quickLogAllTreatments();
 
     if (!mounted) return;
 
@@ -295,6 +327,9 @@ class _AppShellState extends ConsumerState<AppShell> {
       }
     }
 
+    // Watch logging state to disable FAB during operations
+    final isLoggingInProgress = ref.watch(isLoggingProvider);
+
     return Scaffold(
       body: Column(
         children: [
@@ -319,10 +354,16 @@ class _AppShellState extends ConsumerState<AppShell> {
               currentIndex: isLoading ? -1 : _currentIndex,
               // Disable navigation during loading
               onTap: isLoading ? (_) {} : _onNavigationTap,
-              // Disable FAB during loading
-              onFabPressed: isLoading ? null : _onFabPressed,
-              onFabLongPress: isLoading ? null : _onFabLongPress,
+              // Disable FAB during auth loading OR logging operations
+              onFabPressed: (isLoading || isLoggingInProgress)
+                  ? null
+                  : _onFabPressed,
+              onFabLongPress: (isLoading || isLoggingInProgress)
+                  ? null
+                  : _onFabLongPress,
               showVerificationBadge: !isLoading && !isVerified,
+              // Pass loading state to FAB
+              isFabLoading: isLoggingInProgress,
             ),
     );
   }

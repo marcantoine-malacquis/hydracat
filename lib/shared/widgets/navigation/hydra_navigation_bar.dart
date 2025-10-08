@@ -21,6 +21,7 @@ class HydraNavigationBar extends StatefulWidget {
     this.onFabPressed,
     this.onFabLongPress,
     this.showVerificationBadge = false,
+    this.isFabLoading = false,
   });
 
   /// The navigation items to display.
@@ -43,6 +44,9 @@ class HydraNavigationBar extends StatefulWidget {
 
   /// Whether to show verification badge on profile tab.
   final bool showVerificationBadge;
+
+  /// Whether the FAB should show loading state.
+  final bool isFabLoading;
 
   @override
   State<HydraNavigationBar> createState() => _HydraNavigationBarState();
@@ -101,6 +105,7 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
                 onPressed: widget.onFabPressed,
                 onLongPress: widget.onFabLongPress,
                 icon: _getIconData(AppIcons.logSession),
+                isLoading: widget.isFabLoading,
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -147,9 +152,7 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
           decoration: BoxDecoration(
-            boxShadow: isPressed 
-                ? [AppShadows.navigationIconPressed]
-                : null,
+            boxShadow: isPressed ? [AppShadows.navigationIconPressed] : null,
             borderRadius: BorderRadius.circular(12),
           ),
           child: AnimatedScale(
@@ -175,8 +178,8 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
                         item.label,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: color,
-                          fontWeight: isSelected 
-                              ? FontWeight.w600 
+                          fontWeight: isSelected
+                              ? FontWeight.w600
                               : FontWeight.w400,
                           fontSize: 10, // Smaller text to prevent truncation
                           height: 1, // Tighter line height

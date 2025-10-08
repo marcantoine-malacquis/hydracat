@@ -23,14 +23,9 @@ Don't try to run the app yourself to test. Just tell me when it's needed and I w
 
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
-1. a) Replace the existing implementation by creating a reusable SessionUpdateDialog widget that _showDuplicateDialog() can call with the appropriate session data.
-b) Yes - make "Update Existing" the FilledButton (primary action) and "Create New" the TextButton (secondary), since updates are more cost-efficient and likely the intended action.
-2. a)Show only the fields that differ: dosageGiven, completed status, and notes (if changed).
-b) Use a simple card-based comparison with "Current" and "New" sections stacked vertically (better for mobile screens) rather than side-by-side columns which can feel cramped.
-3. a) Show the warning conditionally - only display it if the update would actually change summary values (dosageGiven or completed status differ).
-b) user-friendly ("Your daily treatment totals will be updated")
-4. a) Modify the exception to include existingSession (as MedicationSession?).
-b) Keep "Coming Soon" for now
-5. a) Design it as medication-only for now (session_update_dialog.dart with MedicationSession type)
-b) Show error via ScaffoldMessenger snackbar
-Please let me know if this makes sense or contradict itself, the prd (/reference/prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues and, if you found any, fix them. I will test only once we fixed the linting issues.
+1. yes, it's just the UI for now
+2. Use HapticFeedback.mediumImpact() at the moment of long-press detection before validation checks
+3. Watch isLoggingProvider globally
+4. defer to phase 8
+5. Let it attempt and rely on Firestore's built-in offline persistence (already enabled per the plan). Adding connectivity checks here would be premature since Phase 6 will handle offline queue properly. Keep the simple cache-based check.
+6. Yes, add this to app_shell.dart. It's necessary for cache coherence and is simple to implement. 
