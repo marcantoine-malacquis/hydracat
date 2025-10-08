@@ -369,10 +369,25 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       }
 
       // STEP 2: Get recent sessions for duplicate detection
-      // For now, pass empty list (LoggingService will handle this in Phase 2.4)
-      // TODO(logging): Optionally fetch recent sessions from Firestore if cache
-      // indicates existing sessions (optimization for Phase 3+)
-      final recentSessions = <MedicationSession>[];
+      // Always fetch to ensure we catch duplicates, even on first log of day
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingNotifier] Fetching recent sessions for duplicate detection',
+        );
+      }
+
+      final recentSessions = await _loggingService.getTodaysMedicationSessions(
+        userId: user.id,
+        petId: pet.id,
+        medicationName: session.medicationName,
+      );
+
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingNotifier] Found ${recentSessions.length} recent sessions '
+          'for ${session.medicationName}',
+        );
+      }
 
       if (kDebugMode) {
         debugPrint(

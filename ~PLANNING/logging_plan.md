@@ -783,11 +783,6 @@ class LoggingState {
 - ✅ Fixed setState() in dispose() lifecycle error
 - ✅ Fixed "Medium" text wrapping in stress selector (font size + padding adjustments)
 
-**Linting:**
-- ✅ All linting issues resolved
-- ✅ No warnings or errors
-- ✅ Custom dropdown implementation avoids DropdownButton assertion errors
-- ✅ Proper overlay cleanup in StatefulWidget lifecycle
 
 **Technical Challenges Solved:**
 1. **Z-Index Problem**: `showMenu()` and `showModalBottomSheet()` rendered behind `OverlayEntry`
@@ -799,42 +794,78 @@ class LoggingState {
 
 **Learning Goal:** Form validation, optional field handling, Material 3 widgets, state management patterns, custom overlay widgets, z-index debugging
 
-### Step 3.4: Create Quick-Log Success Popup
+### Step 3.4: Create Quick-Log Success Popup ✅ COMPLETED
+**Location:** `lib/features/logging/widgets/`, `lib/features/logging/services/`, `lib/app/`, `lib/shared/widgets/`
+
+**Files Created:**
+- ✅ `quick_log_success_popup.dart` - Success popup: "{count} treatments logged for {petName} ✓"
+
+**Files Modified:**
+- ✅ `overlay_service.dart` - Added `OverlayAnimationType.scaleIn` (300ms, `Curves.easeOutBack`)
+- ✅ `hydra_fab.dart` - Added `onLongPress` parameter with `GestureDetector`
+- ✅ `hydra_navigation_bar.dart` - Added `onFabLongPress` callback
+- ✅ `app_shell.dart` - Added `_onFabLongPress()` handler + popup display
+
+**Key Details:**
+- Positioning: Bottom-center, 80px above nav bar
+- Data: `todaysSessionCountProvider` + `primaryPetProvider` (zero Firebase reads)
+- Haptic: `HapticFeedback.lightImpact()` on show
+- Accessibility: `Semantics(liveRegion: true)` + "Tap to dismiss" hint
+- Timing: 2.5s auto-dismiss OR tap to dismiss immediately
+- Shows ONLY when `quickLogAllTreatments()` returns `true`
+
+**Reusable for Future:**
+- `OverlayAnimationType.scaleIn` available for other success animations
+- FAB long-press pattern established for quick actions
+- Success popup pattern: scaleIn + timer + haptic + accessibility
+
+**Learning Goal:** Scale animations, auto-dismiss timers, FAB gesture detection, live region accessibility
+
+### Step 3.5: Create Update Warning Dialog ✅ COMPLETED
 **Location:** `lib/features/logging/widgets/`
-**Files to create:**
-- `quick_log_success_popup.dart` - Small success popup above navigation bar
-- `animated_checkmark.dart` - Animated checkmark icon for success feedback
 
-**Key Implementation:**
-- **Small Popup**: Compact size, appears above navigation bar
-- **Success Message**: "Today's treatments logged " with pet name
-- **Auto-Dismiss**: 2.5 seconds auto-dismiss with fade-out animation
-- **Tap to Dismiss**: Optional immediate dismiss on tap
-- **Animation**: Scale-in entrance, fade-out exit
-- **Visual Feedback**: Green checkmark icon with subtle pulse animation
+**Files Created:**
+- ✅ `session_update_dialog.dart` - Duplicate session comparison dialog (302 lines)
 
-**Layout**:
+**Key Implementation Details:**
+
+**Smart Comparison Display:**
+- Shows **only changed fields** when values differ (dosage, status, notes)
+- Shows **all fields** if no changes detected
+- Uses side-by-side card layout: "Current Session" vs "Your New Entry"
+- Changed values highlighted with primary color + edit icon
+- Timestamp shown for existing session: "Logged at 8:30 AM"
+
+**Conditional Summary Warning:**
+- Warning box appears **only if** dosage or completion status changed
+- Hidden for notes-only changes (doesn't affect summaries)
+- Uses info icon + primary container background
+- Message: "Your treatment records will be updated to reflect the new values."
+
+**Actions (Currently Stubbed):**
+- **Cancel**: Closes dialog, no action
+- **Create New**: Shows "Coming soon" snackbar (future: allow intentional duplicates)
+- **Update**: Shows "Coming soon" snackbar (future: calls LoggingService.updateXxxSession)
+
+**Dialog Invocation Pattern:**
+```dart
+await showDialog<void>(
+  context: navigatorContext, // Uses saved navigator context (overlay-safe)
+  builder: (context) => SessionUpdateDialog(
+    existingSession: existingSession, // From DuplicateSessionException
+    newSession: newSession,            // Constructed from current form
+  ),
+);
 ```
-   Today's treatments logged        
-    for Fluffy                       
 
-```
+**Important for Future:**
+- Dialog called **after** popup dismissal (uses saved `navigatorContext`, not widget context)
+- Currently uses **mock existing session** (Phase 5: get real session from exception)
+- Update/Create actions **not wired** yet (Phase 5: integrate with LoggingService methods)
+- Comparison logic: `_dosageChanged`, `_completedChanged`, `_notesChanged` properties
+- Summary affected check: `_summaryAffected = _dosageChanged || _completedChanged`
 
-**Learning Goal:** Success feedback and auto-dismissing animations
-
-### Step 3.5: Create Update Warning Dialog
-**Location:** `lib/features/logging/widgets/`
-**Files to create:**
-- `session_update_dialog.dart` - Warning dialog for duplicate session updates
-
-**Key Implementation:**
-- **Trigger**: Show when logging same treatment at similar time
-- **Message**: "You already logged [treatment] at [time]. Update or create new?"
-- **Actions**: "Update Existing" (UPDATE document), "Create New" (new document), "Cancel"
-- **Comparison**: Show old vs new values side-by-side
-- **Warning**: Explain summary adjustments will be made
-
-**Learning Goal:** User confirmation patterns for data modifications
+**Learning Goal:** Conditional UI rendering, session comparison, overlay-safe dialog context
 
 **<� MILESTONE:** Complete logging UI flow implemented!
 

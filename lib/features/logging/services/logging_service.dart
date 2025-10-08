@@ -94,6 +94,7 @@ class LoggingService {
           sessionType: 'medication',
           conflictingTime: duplicate.dateTime,
           medicationName: duplicate.medicationName,
+          existingSession: duplicate,
         );
       }
 
@@ -577,6 +578,96 @@ class LoggingService {
         debugPrint('[LoggingService] Unexpected error: $e');
       }
       throw LoggingException('Unexpected error updating fluid: $e');
+    }
+  }
+
+  // ============================================
+  // PUBLIC API - Session Queries
+  // ============================================
+
+  /// Fetches today's medication sessions for a specific medication
+  ///
+  /// Used for duplicate detection. Only fetches sessions matching the
+  /// medication name to minimize read costs (per Firebase CRUD rules).
+  ///
+  /// Process:
+  /// 1. Calculate start of today (00:00:00)
+  /// 2. Query medicationSessions where:
+  ///    - petId == petId
+  ///    - medicationName == medicationName
+  ///    - dateTime >= startOfDay
+  /// 3. Limit to 10 sessions (reasonable for ±15min duplicate window)
+  ///
+  /// Parameters:
+  /// - `userId`: Current authenticated user ID
+  /// - `petId`: Target pet ID
+  /// - `medicationName`: Medication name to filter by
+  ///
+  /// Returns: List of medication sessions (empty if none found)
+  ///
+  /// Cost: 0-10 Firestore reads (only reads matching documents)
+  ///
+  /// Note: Requires composite index on (petId, medicationName, dateTime)
+  Future<List<MedicationSession>> getTodaysMedicationSessions({
+    required String userId,
+    required String petId,
+    required String medicationName,
+  }) async {
+    try {
+      if (kDebugMode) {
+        debugPrint(
+          "[LoggingService] Fetching today's sessions for $medicationName",
+        );
+      }
+
+      // Calculate start of today (00:00:00 local time)
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+
+      // Query medication sessions
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('pets')
+          .doc(petId)
+          .collection('medicationSessions')
+          .where('medicationName', isEqualTo: medicationName)
+          .where(
+            'dateTime',
+            isGreaterThanOrEqualTo: startOfDay.toIso8601String(),
+          )
+          .orderBy('dateTime', descending: true)
+          .limit(10)
+          .get();
+
+      final sessions = snapshot.docs
+          .map((doc) => MedicationSession.fromJson(doc.data()))
+          .toList();
+
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingService] Found ${sessions.length} sessions for '
+          '$medicationName today',
+        );
+      }
+
+      return sessions;
+    } on FirebaseException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingService] Firebase error fetching sessions: ${e.message}',
+        );
+      }
+      // Return empty list on error (don't block logging)
+      return [];
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingService] Unexpected error fetching sessions: $e',
+        );
+      }
+      // Return empty list on error (don't block logging)
+      return [];
     }
   }
 

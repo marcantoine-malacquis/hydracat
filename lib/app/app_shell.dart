@@ -5,9 +5,11 @@ import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/features/logging/screens/fluid_logging_screen.dart';
 import 'package:hydracat/features/logging/screens/medication_logging_screen.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
+import 'package:hydracat/features/logging/widgets/quick_log_success_popup.dart';
 import 'package:hydracat/features/logging/widgets/treatment_choice_popup.dart';
 import 'package:hydracat/features/profile/models/user_persona.dart';
 import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/widgets/navigation/hydra_navigation_bar.dart';
 
@@ -166,6 +168,73 @@ class _AppShellState extends ConsumerState<AppShell> {
     );
   }
 
+  Future<void> _onFabLongPress() async {
+    debugPrint('[FAB] Long press detected - attempting quick-log');
+
+    final hasCompletedOnboarding = ref.read(hasCompletedOnboardingProvider);
+    if (!hasCompletedOnboarding) {
+      debugPrint('[FAB] Onboarding not complete, redirecting');
+      context.go('/onboarding/welcome');
+      return;
+    }
+
+    final pet = ref.read(primaryPetProvider);
+    if (pet == null) {
+      debugPrint('[FAB] No pet found, redirecting to onboarding');
+      context.go('/onboarding/welcome');
+      return;
+    }
+
+    // Check if can quick-log (uses cache, no Firestore reads)
+    final canQuickLog = ref.read(canQuickLogProvider);
+    if (!canQuickLog) {
+      debugPrint(
+        '[FAB] Quick-log not available (already logged or no schedules)',
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Already logged today or no schedules set'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    // Execute quick-log
+    final success =
+        await ref.read(loggingProvider.notifier).quickLogAllTreatments();
+
+    if (!mounted) return;
+
+    if (success) {
+      // Get session count from cache
+      final sessionCount = ref.read(todaysSessionCountProvider);
+
+      // Show success popup
+      OverlayService.showFullScreenPopup(
+        context: context,
+        child: QuickLogSuccessPopup(
+          sessionCount: sessionCount,
+          petName: pet.name,
+        ),
+        animationType: OverlayAnimationType.scaleIn,
+      );
+    } else {
+      // Show error from state
+      final error = ref.read(loggingErrorProvider);
+      if (error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+
+    debugPrint('[FAB] Quick-log completed: success=$success');
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLoading = ref.watch(authIsLoadingProvider);
@@ -252,6 +321,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               onTap: isLoading ? (_) {} : _onNavigationTap,
               // Disable FAB during loading
               onFabPressed: isLoading ? null : _onFabPressed,
+              onFabLongPress: isLoading ? null : _onFabLongPress,
               showVerificationBadge: !isLoading && !isVerified,
             ),
     );

@@ -21,10 +21,16 @@ Please follow Firebase and Flutter best practices and use built-in solutions whe
 
 Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself.
 
-Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Keep it as short as possible.
+Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
-
-1. you are right, please skip the medication screen
-2. let's say "Save changes" and "Discard" for clarity
-3. Take them back to the main profile screen without saving (discarding changes)
-4. yes, exactly the popup appears only if there are changes otherwise the back button works normally.
+1. a) Replace the existing implementation by creating a reusable SessionUpdateDialog widget that _showDuplicateDialog() can call with the appropriate session data.
+b) Yes - make "Update Existing" the FilledButton (primary action) and "Create New" the TextButton (secondary), since updates are more cost-efficient and likely the intended action.
+2. a)Show only the fields that differ: dosageGiven, completed status, and notes (if changed).
+b) Use a simple card-based comparison with "Current" and "New" sections stacked vertically (better for mobile screens) rather than side-by-side columns which can feel cramped.
+3. a) Show the warning conditionally - only display it if the update would actually change summary values (dosageGiven or completed status differ).
+b) user-friendly ("Your daily treatment totals will be updated")
+4. a) Modify the exception to include existingSession (as MedicationSession?).
+b) Keep "Coming Soon" for now
+5. a) Design it as medication-only for now (session_update_dialog.dart with MedicationSession type)
+b) Show error via ScaffoldMessenger snackbar
+Please let me know if this makes sense or contradict itself, the prd (/reference/prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues and, if you found any, fix them. I will test only once we fixed the linting issues.

@@ -19,6 +19,7 @@ class HydraNavigationBar extends StatefulWidget {
     super.key,
     this.backgroundColor,
     this.onFabPressed,
+    this.onFabLongPress,
     this.showVerificationBadge = false,
   });
 
@@ -36,6 +37,9 @@ class HydraNavigationBar extends StatefulWidget {
 
   /// Callback when the FAB is pressed.
   final VoidCallback? onFabPressed;
+
+  /// Callback when the FAB is long-pressed (for quick-log).
+  final VoidCallback? onFabLongPress;
 
   /// Whether to show verification badge on profile tab.
   final bool showVerificationBadge;
@@ -95,6 +99,7 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
               minSize: AppAccessibility.fabTouchTarget,
               child: HydraFab(
                 onPressed: widget.onFabPressed,
+                onLongPress: widget.onFabLongPress,
                 icon: _getIconData(AppIcons.logSession),
               ),
             ),

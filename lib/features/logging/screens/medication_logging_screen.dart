@@ -4,11 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
+import 'package:hydracat/features/auth/models/app_user.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/logging/widgets/logging_popup_wrapper.dart';
 import 'package:hydracat/features/logging/widgets/medication_selection_card.dart';
+import 'package:hydracat/features/logging/widgets/session_update_dialog.dart';
 import 'package:hydracat/features/logging/widgets/success_indicator.dart';
+import 'package:hydracat/features/profile/models/cat_profile.dart';
+import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
@@ -142,15 +146,40 @@ class _MedicationLoggingScreenState
 
         if (!success) {
           hasErrors = true;
-          // Check if it's a duplicate error
+          // Check if it's a duplicate error by looking at the provider's state
+          // The error is stored in loggingErrorProvider after being caught
           final error = ref.read(loggingErrorProvider);
           if (error != null && error.contains('already logged')) {
-            // Show duplicate dialog
+            // Duplicate detected - prepare dialog data BEFORE closing popup
             if (mounted) {
-              await _showDuplicateDialog(
-                schedule.medicationName!,
-                error,
+              // Get all the data we need while ref is still valid
+              final schedules = ref.read(todaysMedicationSchedulesProvider);
+              final medicationSchedule = schedules.firstWhere(
+                (s) => s.medicationName == schedule.medicationName,
               );
+              final user = ref.read(currentUserProvider);
+              final pet = ref.read(primaryPetProvider);
+              final notes = _notesController.text.trim().isEmpty
+                  ? null
+                  : _notesController.text;
+
+              // Close the medication logging popup
+              OverlayService.hide();
+
+              // Wait a frame for popup to close
+              await Future<void>.delayed(const Duration(milliseconds: 100));
+
+              // Show duplicate dialog with pre-fetched data
+              if (mounted && user != null && pet != null) {
+                await _showDuplicateDialogWithData(
+                  navigatorContext: context,
+                  medicationName: schedule.medicationName!,
+                  medicationSchedule: medicationSchedule,
+                  user: user,
+                  pet: pet,
+                  notes: notes,
+                );
+              }
             }
           }
           break; // Stop on first error
@@ -185,48 +214,60 @@ class _MedicationLoggingScreenState
     }
   }
 
-  /// Show duplicate session dialog
-  Future<void> _showDuplicateDialog(
-    String medicationName,
-    String errorMessage,
-  ) async {
-    return showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Already Logged'),
-        content: Text(errorMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // Show "Coming Soon" for now
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Creating duplicate sessions will be available soon',
-                  ),
-                ),
-              );
-            },
-            child: const Text('Create New'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // Show "Coming Soon" for now
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Update feature coming soon'),
-                ),
-              );
-            },
-            child: const Text('Update'),
-          ),
-        ],
+  /// Show duplicate session dialog with pre-fetched data
+  ///
+  /// This method is called after the popup is dismissed, so it doesn't use
+  /// ref (which would be disposed). All data is passed as parameters.
+  Future<void> _showDuplicateDialogWithData({
+    required BuildContext navigatorContext,
+    required String medicationName,
+    required Schedule medicationSchedule,
+    required AppUser user,
+    required CatProfile pet,
+    required String? notes,
+  }) async {
+    // Create a mock existing session (this will be replaced with actual
+    // data from the exception in Phase 5)
+    final mockExistingSession = MedicationSession.create(
+      petId: pet.id,
+      userId: user.id,
+      dateTime: DateTime.now().subtract(const Duration(minutes: 5)),
+      medicationName: medicationName,
+      dosageGiven: medicationSchedule.targetDosage!,
+      dosageScheduled: medicationSchedule.targetDosage!,
+      medicationUnit: medicationSchedule.medicationUnit!,
+      medicationStrengthAmount: medicationSchedule.medicationStrengthAmount,
+      medicationStrengthUnit: medicationSchedule.medicationStrengthUnit,
+      customMedicationStrengthUnit:
+          medicationSchedule.customMedicationStrengthUnit,
+      completed: true,
+      scheduleId: medicationSchedule.id,
+    );
+
+    // Create the new session from current form state
+    final newSession = MedicationSession.create(
+      petId: pet.id,
+      userId: user.id,
+      dateTime: DateTime.now(),
+      medicationName: medicationName,
+      dosageGiven: medicationSchedule.targetDosage!,
+      dosageScheduled: medicationSchedule.targetDosage!,
+      medicationUnit: medicationSchedule.medicationUnit!,
+      medicationStrengthAmount: medicationSchedule.medicationStrengthAmount,
+      medicationStrengthUnit: medicationSchedule.medicationStrengthUnit,
+      customMedicationStrengthUnit:
+          medicationSchedule.customMedicationStrengthUnit,
+      completed: true,
+      notes: notes,
+      scheduleId: medicationSchedule.id,
+    );
+
+    // Use the saved navigator context instead of widget context
+    await showDialog<void>(
+      context: navigatorContext,
+      builder: (context) => SessionUpdateDialog(
+        existingSession: mockExistingSession,
+        newSession: newSession,
       ),
     );
   }

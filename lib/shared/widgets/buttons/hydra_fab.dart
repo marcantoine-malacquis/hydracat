@@ -8,6 +8,7 @@ class HydraFab extends StatelessWidget {
   const HydraFab({
     required this.onPressed,
     super.key,
+    this.onLongPress,
     this.icon = Icons.water_drop,
     this.isLoading = false,
     this.tooltip = 'Log Session',
@@ -15,6 +16,9 @@ class HydraFab extends StatelessWidget {
 
   /// Callback function when FAB is pressed
   final VoidCallback? onPressed;
+
+  /// Callback function when FAB is long-pressed (for quick-log)
+  final VoidCallback? onLongPress;
 
   /// Icon to display in the FAB
   final IconData icon;
@@ -27,7 +31,7 @@ class HydraFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FloatingActionButton(
+    final fab = FloatingActionButton(
       onPressed: isLoading ? null : onPressed,
       tooltip: tooltip,
       backgroundColor: AppColors.surface, // White background
@@ -40,6 +44,16 @@ class HydraFab extends StatelessWidget {
       ),
       child: _buildFabContent(),
     );
+
+    // Wrap with GestureDetector if long press is provided
+    if (onLongPress != null) {
+      return GestureDetector(
+        onLongPress: isLoading ? null : onLongPress,
+        child: fab,
+      );
+    }
+
+    return fab;
   }
 
   Widget _buildFabContent() {

@@ -32,6 +32,7 @@ class LoggingException implements Exception {
 ///   sessionType: 'medication',
 ///   conflictingTime: existingSession.dateTime,
 ///   medicationName: 'Amlodipine',
+///   existingSession: existingSession,
 /// );
 /// ```
 class DuplicateSessionException extends LoggingException {
@@ -40,6 +41,7 @@ class DuplicateSessionException extends LoggingException {
     required this.sessionType,
     required this.conflictingTime,
     this.medicationName,
+    this.existingSession,
   }) : super('Duplicate session detected');
 
   /// Type of session that was duplicated ('medication' or 'fluid')
@@ -50,6 +52,13 @@ class DuplicateSessionException extends LoggingException {
 
   /// Medication name for medication duplicates (null for fluid sessions)
   final String? medicationName;
+
+  /// The existing session that conflicts with the new one
+  ///
+  /// Contains full session data for comparison in UI dialogs.
+  /// Type is dynamic to support both MedicationSession and future
+  /// session types.
+  final dynamic existingSession;
 
   @override
   String toString() {

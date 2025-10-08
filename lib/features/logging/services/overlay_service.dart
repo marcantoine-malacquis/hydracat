@@ -12,6 +12,9 @@ enum OverlayAnimationType {
 
   /// Slide in from left (for fluid selection)
   slideFromLeft,
+
+  /// Scale in from center (for success feedback)
+  scaleIn,
 }
 
 /// A simple service for showing full-screen popups with blur background.
@@ -104,6 +107,7 @@ class _FullScreenBlurOverlayState extends State<_FullScreenBlurOverlay>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
@@ -118,6 +122,7 @@ class _FullScreenBlurOverlayState extends State<_FullScreenBlurOverlay>
       vsync: this,
     );
 
+    // Setup slide animation for slide-based transitions
     _slideAnimation =
         Tween<Offset>(
           begin: _getAnimationBegin(),
@@ -128,6 +133,17 @@ class _FullScreenBlurOverlayState extends State<_FullScreenBlurOverlay>
             curve: Curves.easeOutCubic,
           ),
         );
+
+    // Setup scale animation for scale-based transitions
+    _scaleAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeOutBack,
+      ),
+    );
   }
 
   /// Get animation duration based on animation type.
@@ -138,6 +154,8 @@ class _FullScreenBlurOverlayState extends State<_FullScreenBlurOverlay>
       case OverlayAnimationType.slideFromRight:
       case OverlayAnimationType.slideFromLeft:
         return const Duration(milliseconds: 250);
+      case OverlayAnimationType.scaleIn:
+        return const Duration(milliseconds: 300);
     }
   }
 
@@ -150,6 +168,8 @@ class _FullScreenBlurOverlayState extends State<_FullScreenBlurOverlay>
         return const Offset(1, 0); // Start from right
       case OverlayAnimationType.slideFromLeft:
         return const Offset(-1, 0); // Start from left
+      case OverlayAnimationType.scaleIn:
+        return Offset.zero; // Not used for scale animation
     }
   }
 
@@ -186,14 +206,26 @@ class _FullScreenBlurOverlayState extends State<_FullScreenBlurOverlay>
             ),
           ),
 
-          // Animated popup content (slides up from bottom)
-          SlideTransition(
-            position: _slideAnimation,
-            child: widget.child,
-          ),
+          // Animated popup content
+          _buildAnimatedContent(),
         ],
       ),
     );
+  }
+
+  /// Build animated content based on animation type
+  Widget _buildAnimatedContent() {
+    if (widget.animationType == OverlayAnimationType.scaleIn) {
+      return ScaleTransition(
+        scale: _scaleAnimation,
+        child: widget.child,
+      );
+    } else {
+      return SlideTransition(
+        position: _slideAnimation,
+        child: widget.child,
+      );
+    }
   }
 
   Future<void> _handleDismiss() async {
