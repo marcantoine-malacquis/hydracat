@@ -140,9 +140,14 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
   /// Log fluid session
   Future<void> _logFluidSession() async {
     if (!_isFormValid) return;
-
-    setState(() {
-      _loadingState = LoadingOverlayState.loading;
+    // Avoid flicker: only show loading UI if operation takes longer than
+    // a short threshold. This prevents a brief grey flash when writes are fast.
+    final showLoadingTimer = Timer(const Duration(milliseconds: 120), () {
+      if (mounted && _loadingState == LoadingOverlayState.none) {
+        setState(() {
+          _loadingState = LoadingOverlayState.loading;
+        });
+      }
     });
 
     var success = false;
@@ -182,6 +187,10 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
           );
 
       if (success) {
+        // Ensure the delayed loading timer cannot flip state back to loading
+        if (showLoadingTimer.isActive) {
+          showLoadingTimer.cancel();
+        }
         // Success! Show indicator and close
         setState(() {
           _loadingState = LoadingOverlayState.success;
@@ -206,6 +215,8 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
         }
       }
     } finally {
+      // Ensure we don't leak the timer
+      showLoadingTimer.cancel();
       if (mounted && !success) {
         // Only reset state if there was an error
         // (success state is handled above)

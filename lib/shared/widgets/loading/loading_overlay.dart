@@ -56,61 +56,51 @@ class LoadingOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Main content - no opacity changes for success state
-        Opacity(
-          opacity: state == LoadingOverlayState.loading ? contentOpacity : 1.0,
-          child: child,
-        ),
+        // Main content
+        child,
 
-        // Loading overlay (only show background for loading state)
-        if (state == LoadingOverlayState.loading)
+        // Unified overlay for loading and success
+        if (state != LoadingOverlayState.none)
           Positioned.fill(
             child: Semantics(
               liveRegion: true,
-              label: loadingMessage ?? 'Loading',
-              child: ColoredBox(
-                color:
-                    overlayColor ??
-                    Colors.black.withValues(
-                      alpha: AppAnimations.overlayBackgroundOpacity,
-                    ),
-                child: Center(
-                  child: _buildOverlayContent(),
-                ),
-              ),
-            ),
-          ),
-
-        // Success overlay (no background, just the indicator)
-        if (state == LoadingOverlayState.success)
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Semantics(
-              liveRegion: true,
-              label: 'Success',
+              label: state == LoadingOverlayState.loading
+                  ? (loadingMessage ?? 'Loading')
+                  : 'Success',
               child: IgnorePointer(
-                // Prevent any touch events from reaching the background
-                child: Center(
-                  child: _buildOverlayContent(),
+                child: AnimatedContainer(
+                  duration: AppAnimations.loadingFadeInDuration,
+                  curve: Curves.easeOut,
+                  // Transparent background to avoid any gray flash
+                  color: Colors.transparent,
+                  child: Center(
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        AnimatedOpacity(
+                          duration: AppAnimations.loadingFadeInDuration,
+                          curve: Curves.easeOut,
+                          opacity: state == LoadingOverlayState.loading
+                              ? 1.0
+                              : 0.0,
+                          child: const CircularProgressIndicator(),
+                        ),
+                        AnimatedOpacity(
+                          duration: AppAnimations.loadingFadeInDuration,
+                          curve: Curves.easeOut,
+                          opacity: state == LoadingOverlayState.success
+                              ? 1.0
+                              : 0.0,
+                          child: const SuccessIndicator(),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
       ],
     );
-  }
-
-  Widget _buildOverlayContent() {
-    switch (state) {
-      case LoadingOverlayState.loading:
-        return const CircularProgressIndicator();
-      case LoadingOverlayState.success:
-        return const SuccessIndicator();
-      case LoadingOverlayState.none:
-        return const SizedBox.shrink();
-    }
   }
 }

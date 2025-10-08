@@ -112,9 +112,13 @@ class _MedicationLoggingScreenState
   /// Log all selected medications
   Future<void> _logMedications() async {
     if (!_isFormValid) return;
-
-    setState(() {
-      _loadingState = LoadingOverlayState.loading;
+    // Avoid flicker for very fast operations
+    final showLoadingTimer = Timer(const Duration(milliseconds: 120), () {
+      if (mounted && _loadingState == LoadingOverlayState.none) {
+        setState(() {
+          _loadingState = LoadingOverlayState.loading;
+        });
+      }
     });
 
     var hasErrors = false;
@@ -203,6 +207,9 @@ class _MedicationLoggingScreenState
       }
 
       if (!hasErrors) {
+        if (showLoadingTimer.isActive) {
+          showLoadingTimer.cancel();
+        }
         // Success! Show indicator and close
         setState(() {
           _loadingState = LoadingOverlayState.success;
@@ -221,6 +228,7 @@ class _MedicationLoggingScreenState
         }
       }
     } finally {
+      showLoadingTimer.cancel();
       if (mounted && hasErrors) {
         // Only reset state if there were errors
         // (success state is handled above)
