@@ -13,6 +13,9 @@ enum ValidationErrorType {
 
   /// Field values are inconsistent (e.g., diagnosis date after birth date)
   inconsistent,
+
+  /// Duplicate entry detected (e.g., session already logged)
+  duplicate,
 }
 
 /// Represents a single validation error with actionable information

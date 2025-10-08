@@ -8,6 +8,7 @@ import 'package:hydracat/features/logging/exceptions/logging_exceptions.dart';
 import 'package:hydracat/features/logging/models/daily_summary_cache.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
+import 'package:hydracat/features/logging/services/logging_validation_service.dart';
 import 'package:hydracat/features/logging/services/summary_cache_service.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
@@ -35,13 +36,20 @@ import 'package:hydracat/shared/models/summary_update_dto.dart';
 /// ```
 class LoggingService {
   /// Creates a [LoggingService] instance
-  const LoggingService(this._cacheService, [this._analyticsService]);
+  const LoggingService(
+    this._cacheService, [
+    this._analyticsService,
+    this._validationService,
+  ]);
 
   /// Cache service for 0-read duplicate detection
   final SummaryCacheService _cacheService;
 
   /// Optional analytics service for error tracking
   final AnalyticsService? _analyticsService;
+
+  /// Optional validation service for business logic validation
+  final LoggingValidationService? _validationService;
 
   /// Firestore instance
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
@@ -89,23 +97,62 @@ class LoggingService {
       }
 
       // STEP 1: Model validation
-      _validateMedicationSession(session);
+      if (_validationService != null) {
+        final validationResult = _validationService.validateMedicationSession(
+          session,
+        );
+        if (!validationResult.isValid) {
+          final errorMessages = validationResult.errors
+              .map((e) => e.message)
+              .toList();
+          throw SessionValidationException(errorMessages);
+        }
+      } else {
+        // Fallback to existing method for backward compatibility
+        _validateMedicationSession(session);
+      }
 
       // STEP 2: Duplicate detection (throws if found)
-      final duplicate = _detectDuplicateMedication(session, recentSessions);
-      if (duplicate != null) {
-        if (kDebugMode) {
-          debugPrint(
-            '[LoggingService] Duplicate medication detected: '
-            '${duplicate.medicationName} at ${duplicate.dateTime}',
+      if (_validationService != null) {
+        final duplicateResult = _validationService.validateForDuplicates(
+          newSession: session,
+          recentSessions: recentSessions,
+        );
+        if (!duplicateResult.isValid) {
+          // Find the actual duplicate session
+          final duplicate = _detectDuplicateMedication(session, recentSessions);
+          if (kDebugMode) {
+            debugPrint(
+              '[LoggingService] Duplicate medication detected: '
+              '${duplicate?.medicationName} at ${duplicate?.dateTime}',
+            );
+          }
+
+          throw DuplicateSessionException(
+            sessionType: 'medication',
+            conflictingTime: duplicate?.dateTime ?? session.dateTime,
+            medicationName: duplicate?.medicationName,
+            existingSession: duplicate,
           );
         }
-        throw DuplicateSessionException(
-          sessionType: 'medication',
-          conflictingTime: duplicate.dateTime,
-          medicationName: duplicate.medicationName,
-          existingSession: duplicate,
-        );
+      } else {
+        // Fallback to existing method for backward compatibility
+        final duplicate = _detectDuplicateMedication(session, recentSessions);
+        if (duplicate != null) {
+          if (kDebugMode) {
+            debugPrint(
+              '[LoggingService] Duplicate medication detected: '
+              '${duplicate.medicationName} at ${duplicate.dateTime}',
+            );
+          }
+
+          throw DuplicateSessionException(
+            sessionType: 'medication',
+            conflictingTime: duplicate.dateTime,
+            medicationName: duplicate.medicationName,
+            existingSession: duplicate,
+          );
+        }
       }
 
       // STEP 3: Schedule matching
@@ -212,7 +259,20 @@ class LoggingService {
       }
 
       // STEP 1: Validate new session
-      _validateMedicationSession(newSession);
+      if (_validationService != null) {
+        final validationResult = _validationService.validateMedicationSession(
+          newSession,
+        );
+        if (!validationResult.isValid) {
+          final errorMessages = validationResult.errors
+              .map((e) => e.message)
+              .toList();
+          throw SessionValidationException(errorMessages);
+        }
+      } else {
+        // Fallback to existing method for backward compatibility
+        _validateMedicationSession(newSession);
+      }
 
       // STEP 2: Calculate delta DTO
       final dto = SummaryUpdateDto.forMedicationSessionUpdate(
@@ -363,7 +423,20 @@ class LoggingService {
       }
 
       // STEP 1: Model validation (no duplicate detection for fluids)
-      _validateFluidSession(session);
+      if (_validationService != null) {
+        final validationResult = _validationService.validateFluidSession(
+          session,
+        );
+        if (!validationResult.isValid) {
+          final errorMessages = validationResult.errors
+              .map((e) => e.message)
+              .toList();
+          throw SessionValidationException(errorMessages);
+        }
+      } else {
+        // Fallback to existing method for backward compatibility
+        _validateFluidSession(session);
+      }
 
       // STEP 2: Schedule matching (time only)
       final match = _matchFluidSchedule(session, todaysSchedules);
@@ -464,7 +537,20 @@ class LoggingService {
       }
 
       // STEP 1: Validate new session
-      _validateFluidSession(newSession);
+      if (_validationService != null) {
+        final validationResult = _validationService.validateFluidSession(
+          newSession,
+        );
+        if (!validationResult.isValid) {
+          final errorMessages = validationResult.errors
+              .map((e) => e.message)
+              .toList();
+          throw SessionValidationException(errorMessages);
+        }
+      } else {
+        // Fallback to existing method for backward compatibility
+        _validateFluidSession(newSession);
+      }
 
       // STEP 2: Calculate delta DTO
       final dto = SummaryUpdateDto.forFluidSessionUpdate(

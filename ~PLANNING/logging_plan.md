@@ -1572,10 +1572,20 @@ ref.listen<String?>(syncToastMessageProvider, (previous, next) {
 
 **Learning Goal:** Centralized error handling with empathetic messaging and offline support
 
-### Step 8.3: Implement Validation Service
-**Location:** `lib/features/logging/services/validation_service.dart`
-**Files to create:**
-- `logging_validation_service.dart` - Centralized validation logic
+### Step 8.3: Implement Validation Service ✅ COMPLETED
+**Location:** `lib/features/logging/services/logging_validation_service.dart`
+**Files created:**
+- `logging_validation_service.dart` - Centralized validation logic (hybrid approach)
+- `logging_validation_service_test.dart` - Comprehensive unit tests (32 tests, all passing)
+- `README.md` - Architecture documentation
+
+**Implementation Summary:**
+- **Hybrid Approach**: Model-level validation remains in session models, service handles complex business logic
+- **6 Core Methods**: validateForDuplicates, validateMedicationSession, validateFluidSession, validateFluidVolume, validateMedicationDosage, validateScheduleConsistency
+- **Exception Conversion**: toLoggingException helper for converting ValidationResult to specific LoggingException types
+- **Integration**: Optional parameter in LoggingService (backward compatible), wired through providers
+- **Test Coverage**: 32 unit tests covering all validation scenarios including edge cases
+- **Documentation**: Comprehensive README explaining hybrid approach, when to use each validation tier, and integration patterns
 
 **Validation Rules:**
 ```dart

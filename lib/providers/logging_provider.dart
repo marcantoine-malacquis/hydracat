@@ -22,6 +22,7 @@ import 'package:hydracat/features/logging/models/logging_state.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/models/treatment_choice.dart';
 import 'package:hydracat/features/logging/services/logging_service.dart';
+import 'package:hydracat/features/logging/services/logging_validation_service.dart';
 import 'package:hydracat/features/logging/services/summary_cache_service.dart';
 import 'package:hydracat/features/logging/services/summary_service.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
@@ -47,11 +48,17 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   );
 });
 
+/// Provider for LoggingValidationService instance
+final loggingValidationServiceProvider = Provider<LoggingValidationService>(
+  (ref) => const LoggingValidationService(),
+);
+
 /// Provider for LoggingService instance
 final loggingServiceProvider = Provider<LoggingService>((ref) {
   final cacheService = ref.watch(summaryCacheServiceProvider);
   final analytics = ref.read(analyticsServiceDirectProvider);
-  return LoggingService(cacheService, analytics);
+  final validationService = ref.watch(loggingValidationServiceProvider);
+  return LoggingService(cacheService, analytics, validationService);
 });
 
 /// Provider for SummaryCacheService instance
