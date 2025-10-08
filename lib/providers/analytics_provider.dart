@@ -54,6 +54,20 @@ class AnalyticsEvents {
 
   /// Schedules cache hit event name
   static const String schedulesCacheHit = 'schedules_cache_hit';
+
+  // Duplicate detection optimization (Step 7.3)
+  /// Duplicate check cache hit event name
+  static const String duplicateCheckCacheHit = 'duplicate_check_cache_hit';
+
+  /// Duplicate check cache miss event name
+  static const String duplicateCheckCacheMiss = 'duplicate_check_cache_miss';
+
+  /// Duplicate detected event name
+  static const String duplicateDetected = 'duplicate_detected';
+
+  /// Duplicate check query failed event name
+  static const String duplicateCheckQueryFailed =
+      'duplicate_check_query_failed';
 }
 
 /// Analytics parameters

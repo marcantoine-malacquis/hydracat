@@ -23,12 +23,10 @@ Don't try to run the app yourself to test. Just tell me when it's needed and I w
 
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
-1. Cache schedules for current day only, clear at midnight or when date changes (similar to DailySummaryCache pattern with date-specific validation)
-2. Query ALL active schedules once (both medication and fluid) and filter by hasReminderTimeToday() in memory (1 read for medications + 1 read for fluids = 2 reads total per day)
-3. Add proactive loading in ProfileNotifier initialization (call both methods automatically when user logs in or has completed onboarding)
-4. Keep in ProfileState (already has fluidSchedule and medicationSchedules fields), add date tracking field for validation
-5. On app startup (cold start), on app resume from background (like DailySummaryCache), and when date changes
-6. schedules_preloaded event with count (medication/fluid), cache hit/miss metrics, and preload failures
-7. Silent background loading (no UI feedback), use cached data immediately if available. Or is the cloud icon supposed to be used for that ?
-8. Log error to analytics, fall back to on-demand loading when user opens logging popup (current behavior)
+1. Yes, implement this two-tier approach.
+2. Accept this edge case risk and rely on cache warming on app startup to mitigate multi-device issues
+3. So I already have this index in Firestore. Is this correct and what you are looking for ?
+4. All of the above
+5. Options (a) and (c). Create a helper method _getRecentSessionsForDuplicateCheck() that encapsulates the cache-first logic, use it in manual medication logging, and document that offline queue intentionally skips duplicate detection (acceptable since operations are queued with user intent). This keeps the code DRY and maintainable.
+6. All of the above
 Please let me know if this makes sense or contradict itself, the prd (prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them. I will test only once we fixed the linting issues.

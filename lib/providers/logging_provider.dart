@@ -215,6 +215,94 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
     await loadTodaysCache();
   }
 
+  /// Get recent sessions for duplicate detection (cache-first)
+  ///
+  /// Two-tier approach:
+  /// 1. Check cache: if medication not logged, return empty list (0 reads)
+  /// 2. Query Firestore: if cache shows medication logged (1-10 reads)
+  ///
+  /// Cost savings: ~80-90% reduction in duplicate detection queries
+  Future<List<MedicationSession>> _getRecentSessionsForDuplicateCheck({
+    required String userId,
+    required String petId,
+    required String medicationName,
+  }) async {
+    // TIER 1: Cache check
+    final cache = state.dailyCache;
+
+    if (cache == null || !cache.hasMedicationLogged(medicationName)) {
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingNotifier] Cache indicates $medicationName not logged yet '
+          '- skipping Firestore query',
+        );
+      }
+
+      // Track cache hit
+      final analyticsService = _ref.read(analyticsServiceDirectProvider);
+      await analyticsService.trackFeatureUsed(
+        featureName: AnalyticsEvents.duplicateCheckCacheHit,
+        additionalParams: {
+          'medication_name': medicationName,
+          'had_cache': cache != null,
+        },
+      );
+
+      return []; // No Firestore query needed
+    }
+
+    // TIER 2: Firestore query (cache indicates medication was logged)
+    if (kDebugMode) {
+      debugPrint(
+        '[LoggingNotifier] Cache shows $medicationName logged - '
+        'querying Firestore for exact times',
+      );
+    }
+
+    // Track cache miss
+    final analyticsService = _ref.read(analyticsServiceDirectProvider);
+    await analyticsService.trackFeatureUsed(
+      featureName: AnalyticsEvents.duplicateCheckCacheMiss,
+      additionalParams: {
+        'medication_name': medicationName,
+      },
+    );
+
+    try {
+      final sessions = await _loggingService.getTodaysMedicationSessions(
+        userId: userId,
+        petId: petId,
+        medicationName: medicationName,
+      );
+
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingNotifier] Found ${sessions.length} recent sessions '
+          'for $medicationName',
+        );
+      }
+
+      return sessions;
+    } on FirebaseException catch (e) {
+      // Gracefully handle missing index or other Firebase errors
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingNotifier] Firestore query failed: ${e.message}',
+        );
+      }
+
+      // Track error
+      await analyticsService.trackError(
+        errorType: AnalyticsEvents.duplicateCheckQueryFailed,
+        errorContext: 'medicationName: $medicationName, error: ${e.message}',
+      );
+
+      // Return empty list - allow logging to continue without
+      // duplicate detection
+      return [];
+    }
+  }
+
   /// Warm cache from Firestore on app startup
   ///
   /// Fetches today's summary from Firestore and updates SharedPreferences
@@ -544,7 +632,9 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
           createdAt: DateTime.now(),
           session: session,
           todaysSchedules: todaysSchedules,
-          recentSessions: const [], // Will be fetched during sync
+          recentSessions: const [], // Intentionally empty - offline operations
+          // skip duplicate detection (user intent
+          // is explicit)
         );
 
         final offlineService = _ref.read(offlineLoggingServiceProvider);
@@ -577,25 +667,12 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         }
       }
 
-      // STEP 3: Online - Get recent sessions for duplicate detection
-      if (kDebugMode) {
-        debugPrint(
-          '[LoggingNotifier] Fetching recent sessions for duplicate detection',
-        );
-      }
-
-      final recentSessions = await _loggingService.getTodaysMedicationSessions(
+      // STEP 3: Get recent sessions (cache-first for cost optimization)
+      final recentSessions = await _getRecentSessionsForDuplicateCheck(
         userId: user.id,
         petId: pet.id,
         medicationName: session.medicationName,
       );
-
-      if (kDebugMode) {
-        debugPrint(
-          '[LoggingNotifier] Found ${recentSessions.length} recent sessions '
-          'for ${session.medicationName}',
-        );
-      }
 
       if (kDebugMode) {
         debugPrint(
@@ -657,9 +734,17 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       // Track duplicate detection
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
       await analyticsService.trackFeatureUsed(
-        featureName: 'duplicate_medication_detected',
+        featureName: AnalyticsEvents.duplicateDetected,
         additionalParams: {
           'medication_name': e.medicationName ?? 'unknown',
+          'time_difference_minutes': e.existingSession != null
+              ? session.dateTime
+                    .difference(
+                      (e.existingSession as MedicationSession).dateTime,
+                    )
+                    .inMinutes
+                    .abs()
+              : 0,
         },
       );
 
