@@ -859,7 +859,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       // Track cache hit
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
       await analyticsService.trackFeatureUsed(
-        featureName: 'schedules_cache_hit',
+        featureName: AnalyticsEvents.schedulesCacheHit,
       );
       return;
     }
@@ -901,11 +901,11 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       // Track successful pre-load
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
       await analyticsService.trackFeatureUsed(
-        featureName: 'schedules_preloaded',
+        featureName: AnalyticsEvents.schedulesPreloaded,
         additionalParams: {
-          'medication_count': medicationSchedules.length,
-          'has_fluid_schedule': fluidSchedule != null,
-          'cache_miss': true,
+          AnalyticsParams.medicationCount: medicationSchedules.length,
+          AnalyticsParams.hasFluidSchedule: fluidSchedule != null,
+          AnalyticsParams.cacheMiss: true,
         },
       );
 

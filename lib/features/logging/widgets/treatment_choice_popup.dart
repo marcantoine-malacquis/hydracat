@@ -4,6 +4,7 @@ import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/features/logging/models/treatment_choice.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
+import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
 
@@ -113,6 +114,14 @@ class TreatmentChoicePopup extends ConsumerWidget {
                       ref
                           .read(loggingProvider.notifier)
                           .setTreatmentChoice(TreatmentChoice.medication);
+
+                      // Track choice selection
+                      ref
+                          .read(analyticsServiceDirectProvider)
+                          .trackTreatmentChoiceSelected(
+                            choice: 'medication',
+                          );
+
                       onMedicationSelected();
                     },
                   ),
@@ -132,6 +141,14 @@ class TreatmentChoicePopup extends ConsumerWidget {
                       ref
                           .read(loggingProvider.notifier)
                           .setTreatmentChoice(TreatmentChoice.fluid);
+
+                      // Track choice selection
+                      ref
+                          .read(analyticsServiceDirectProvider)
+                          .trackTreatmentChoiceSelected(
+                            choice: 'fluid',
+                          );
+
                       onFluidSelected();
                     },
                   ),

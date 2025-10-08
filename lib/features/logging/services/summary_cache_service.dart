@@ -115,7 +115,7 @@ class SummaryCacheService {
       // Track analytics
       unawaited(
         _analyticsService?.trackError(
-          errorType: 'cache_read_failure',
+          errorType: AnalyticsErrorTypes.cacheReadFailure,
           errorContext: 'getTodaySummary: $e',
         ),
       );
@@ -171,7 +171,7 @@ class SummaryCacheService {
       // Track analytics
       unawaited(
         _analyticsService?.trackError(
-          errorType: 'cache_update_failure',
+          errorType: AnalyticsErrorTypes.cacheUpdateFailure,
           errorContext: 'updateMedicationSession: $e',
         ),
       );
@@ -222,7 +222,7 @@ class SummaryCacheService {
       // Track analytics
       unawaited(
         _analyticsService?.trackError(
-          errorType: 'cache_update_failure',
+          errorType: AnalyticsErrorTypes.cacheUpdateFailure,
           errorContext: 'updateFluidSession: $e',
         ),
       );
@@ -281,7 +281,7 @@ class SummaryCacheService {
       // Track analytics
       unawaited(
         _analyticsService?.trackError(
-          errorType: 'cache_cleanup_failure',
+          errorType: AnalyticsErrorTypes.cacheCleanupFailure,
           errorContext: '$e',
         ),
       );

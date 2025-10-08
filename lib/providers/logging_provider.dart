@@ -293,7 +293,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
 
       // Track error
       await analyticsService.trackError(
-        errorType: AnalyticsEvents.duplicateCheckQueryFailed,
+        errorType: AnalyticsErrorTypes.duplicateCheckQueryFailed,
         errorContext: 'medicationName: $medicationName, error: ${e.message}',
       );
 
@@ -373,11 +373,11 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         // Track analytics
         final analyticsService = _ref.read(analyticsServiceDirectProvider);
         await analyticsService.trackFeatureUsed(
-          featureName: 'cache_warmed_on_startup',
+          featureName: AnalyticsEvents.cacheWarmedOnStartup,
           additionalParams: {
-            'had_existing_cache': state.dailyCache != null,
-            'session_count':
-                summary.medicationScheduledDoses + summary.fluidSessionCount,
+            AnalyticsParams.medicationSessionCount:
+                summary.medicationScheduledDoses,
+            AnalyticsParams.fluidSessionCount: summary.fluidSessionCount,
           },
         );
       } else {
@@ -396,7 +396,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       try {
         final analyticsService = _ref.read(analyticsServiceDirectProvider);
         await analyticsService.trackError(
-          errorType: 'cache_warming_failure',
+          errorType: AnalyticsErrorTypes.cacheWarmingFailure,
           errorContext: e.toString(),
         );
       } on Exception {
@@ -540,12 +540,15 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
 
       // STEP 7: Track analytics
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
-      await analyticsService.trackFeatureUsed(
-        featureName: 'quick_log_all_treatments',
-        additionalParams: {
-          'session_count': sessionCount,
-          'success': true,
-        },
+
+      // Count medication vs fluid sessions
+      final medicationCount = allSchedules.where((s) => s.isMedication).length;
+      final fluidCount = allSchedules.where((s) => !s.isMedication).length;
+
+      await analyticsService.trackQuickLogUsed(
+        sessionCount: sessionCount,
+        medicationCount: medicationCount,
+        fluidCount: fluidCount,
       );
 
       if (kDebugMode) {
@@ -566,7 +569,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       // Track analytics failure
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
       await analyticsService.trackError(
-        errorType: 'quick_log_failure',
+        errorType: AnalyticsErrorTypes.quickLogFailure,
         errorContext: e.toString(),
       );
 
@@ -703,13 +706,12 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
 
       // STEP 6: Track analytics
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
-      await analyticsService.trackFeatureUsed(
-        featureName: 'log_medication_session',
-        additionalParams: {
-          'medication_name': session.medicationName,
-          'completed': session.completed,
-          'success': true,
-        },
+      await analyticsService.trackSessionLogged(
+        treatmentType: 'medication',
+        sessionCount: 1,
+        isQuickLog: false,
+        adherenceStatus: session.completed ? 'complete' : 'partial',
+        medicationName: session.medicationName,
       );
 
       if (kDebugMode) {
@@ -762,7 +764,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       // Track analytics failure
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
       await analyticsService.trackError(
-        errorType: 'log_medication_failure',
+        errorType: AnalyticsErrorTypes.logMedicationFailure,
         errorContext: e.toString(),
       );
 
@@ -885,13 +887,12 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
 
       // STEP 5: Track analytics
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
-      await analyticsService.trackFeatureUsed(
-        featureName: 'log_fluid_session',
-        additionalParams: {
-          'volume_given': session.volumeGiven,
-          'has_schedule': fluidSchedule != null,
-          'success': true,
-        },
+      await analyticsService.trackSessionLogged(
+        treatmentType: 'fluid',
+        sessionCount: 1,
+        isQuickLog: false,
+        adherenceStatus: 'complete',
+        volumeGiven: session.volumeGiven,
       );
 
       if (kDebugMode) {
@@ -909,7 +910,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       // Track analytics failure
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
       await analyticsService.trackError(
-        errorType: 'log_fluid_failure',
+        errorType: AnalyticsErrorTypes.logFluidFailure,
         errorContext: e.toString(),
       );
 

@@ -11,6 +11,7 @@ import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/logging/widgets/quick_log_success_popup.dart';
 import 'package:hydracat/features/logging/widgets/treatment_choice_popup.dart';
 import 'package:hydracat/features/profile/models/user_persona.dart';
+import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/logging_queue_provider.dart';
@@ -134,6 +135,20 @@ class _AppShellState extends ConsumerState<AppShell>
 
     final treatmentApproach = pet?.treatmentApproach;
     debugPrint('[FAB] Treatment approach: $treatmentApproach');
+
+    // Track popup opened
+    if (treatmentApproach != null) {
+      final analyticsService = ref.read(analyticsServiceDirectProvider);
+      final popupType = switch (treatmentApproach) {
+        UserPersona.medicationOnly => 'medication',
+        UserPersona.fluidTherapyOnly => 'fluid',
+        UserPersona.medicationAndFluidTherapy => 'choice',
+      };
+      analyticsService.trackLoggingPopupOpened(
+        popupType: popupType,
+        persona: treatmentApproach.name,
+      );
+    }
 
     // Route based on treatment approach
     switch (treatmentApproach) {

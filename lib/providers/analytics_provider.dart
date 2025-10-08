@@ -68,6 +68,31 @@ class AnalyticsEvents {
   /// Duplicate check query failed event name
   static const String duplicateCheckQueryFailed =
       'duplicate_check_query_failed';
+
+  // Logging events
+  /// Session logged event name
+  static const String sessionLogged = 'session_logged';
+
+  /// Quick log used event name
+  static const String quickLogUsed = 'quick_log_used';
+
+  /// Session updated event name
+  static const String sessionUpdated = 'session_updated';
+
+  /// Logging popup opened event name
+  static const String loggingPopupOpened = 'logging_popup_opened';
+
+  /// Treatment choice selected event name
+  static const String treatmentChoiceSelected = 'treatment_choice_selected';
+
+  /// Offline logging queued event name
+  static const String offlineLoggingQueued = 'offline_logging_queued';
+
+  /// Sync completed event name
+  static const String syncCompleted = 'sync_completed';
+
+  /// Cache warmed on startup event name
+  static const String cacheWarmedOnStartup = 'cache_warmed_on_startup';
 }
 
 /// Analytics parameters
@@ -125,6 +150,94 @@ class AnalyticsParams {
 
   /// Cache miss parameter name
   static const String cacheMiss = 'cache_miss';
+
+  // Logging params
+  /// Treatment type parameter name
+  static const String treatmentType = 'treatment_type';
+
+  /// Session count parameter name
+  static const String sessionCount = 'session_count';
+
+  /// Is quick log parameter name
+  static const String isQuickLog = 'is_quick_log';
+
+  /// Logging mode parameter name
+  static const String loggingMode = 'logging_mode';
+
+  /// Volume given parameter name
+  static const String volumeGiven = 'volume_given';
+
+  /// Adherence status parameter name
+  static const String adherenceStatus = 'adherence_status';
+
+  /// Popup type parameter name
+  static const String popupType = 'popup_type';
+
+  /// Choice parameter name
+  static const String choice = 'choice';
+
+  /// Queue size parameter name
+  static const String queueSize = 'queue_size';
+
+  /// Sync duration parameter name
+  static const String syncDuration = 'sync_duration_ms';
+
+  /// Failure count parameter name
+  static const String failureCount = 'failure_count';
+
+  /// Medication session count parameter name
+  static const String medicationSessionCount = 'medication_session_count';
+
+  /// Fluid session count parameter name
+  static const String fluidSessionCount = 'fluid_session_count';
+}
+
+/// Standardized error type constants for analytics tracking
+class AnalyticsErrorTypes {
+  // Cache errors
+  /// Cache read failure error type
+  static const String cacheReadFailure = 'cache_read_failure';
+
+  /// Cache update failure error type
+  static const String cacheUpdateFailure = 'cache_update_failure';
+
+  /// Cache cleanup failure error type
+  static const String cacheCleanupFailure = 'cache_cleanup_failure';
+
+  /// Cache initialization failure error type
+  static const String cacheInitializationFailure =
+      'cache_initialization_failure';
+
+  /// Cache warming failure error type
+  static const String cacheWarmingFailure = 'cache_warming_failure';
+
+  // Logging errors
+  /// Log medication failure error type
+  static const String logMedicationFailure = 'log_medication_failure';
+
+  /// Log fluid failure error type
+  static const String logFluidFailure = 'log_fluid_failure';
+
+  /// Quick log failure error type
+  static const String quickLogFailure = 'quick_log_failure';
+
+  /// Session update failure error type
+  static const String sessionUpdateFailure = 'session_update_failure';
+
+  // Offline/sync errors
+  /// Offline queue full error type
+  static const String offlineQueueFull = 'offline_queue_full';
+
+  /// Sync operation failure error type
+  static const String syncOperationFailure = 'sync_operation_failure';
+
+  // Validation errors
+  /// Validation failure error type
+  static const String validationFailure = 'validation_failure';
+
+  /// Duplicate check query failed error type
+  static const String duplicateCheckQueryFailed =
+      'duplicate_check_query_failed';
 }
 
 /// User types for analytics
@@ -401,6 +514,114 @@ class AnalyticsService {
         AnalyticsParams.step: lastStep,
         AnalyticsParams.progressPercentage: progressPercentage,
         if (timeSpentSeconds != null) 'time_spent_seconds': timeSpentSeconds,
+      },
+    );
+  }
+
+  /// Track session logging events
+  Future<void> trackSessionLogged({
+    required String treatmentType,
+    required int sessionCount,
+    required bool isQuickLog,
+    required String adherenceStatus,
+    String? medicationName,
+    double? volumeGiven,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.sessionLogged,
+      parameters: {
+        AnalyticsParams.treatmentType: treatmentType,
+        AnalyticsParams.sessionCount: sessionCount,
+        AnalyticsParams.isQuickLog: isQuickLog,
+        AnalyticsParams.adherenceStatus: adherenceStatus,
+        if (medicationName != null) 'medication_name': medicationName,
+        if (volumeGiven != null) AnalyticsParams.volumeGiven: volumeGiven,
+      },
+    );
+  }
+
+  /// Track quick-log feature usage
+  Future<void> trackQuickLogUsed({
+    required int sessionCount,
+    required int medicationCount,
+    required int fluidCount,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.quickLogUsed,
+      parameters: {
+        AnalyticsParams.sessionCount: sessionCount,
+        AnalyticsParams.medicationCount: medicationCount,
+        'fluid_count': fluidCount,
+      },
+    );
+  }
+
+  /// Track session update events (future-ready)
+  Future<void> trackSessionUpdated({
+    required String treatmentType,
+    required String updateReason,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.sessionUpdated,
+      parameters: {
+        AnalyticsParams.treatmentType: treatmentType,
+        'update_reason': updateReason,
+      },
+    );
+  }
+
+  /// Track logging popup opened
+  Future<void> trackLoggingPopupOpened({
+    required String popupType,
+    required String persona,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.loggingPopupOpened,
+      parameters: {
+        AnalyticsParams.popupType: popupType,
+        AnalyticsParams.userPersona: persona,
+      },
+    );
+  }
+
+  /// Track treatment choice selection (from popup)
+  Future<void> trackTreatmentChoiceSelected({
+    required String choice,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.treatmentChoiceSelected,
+      parameters: {
+        AnalyticsParams.choice: choice,
+      },
+    );
+  }
+
+  /// Track offline queue and sync events
+  Future<void> trackOfflineSync({
+    required int queueSize,
+    required int successCount,
+    required int failureCount,
+    required int syncDurationMs,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.syncCompleted,
+      parameters: {
+        AnalyticsParams.queueSize: queueSize,
+        'success_count': successCount,
+        AnalyticsParams.failureCount: failureCount,
+        AnalyticsParams.syncDuration: syncDurationMs,
       },
     );
   }

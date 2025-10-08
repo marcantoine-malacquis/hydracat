@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/features/logging/services/offline_logging_service.dart';
+import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/connectivity_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/shared/services/connectivity_service.dart'
@@ -18,7 +19,8 @@ import 'package:hydracat/shared/services/connectivity_service.dart'
 final offlineLoggingServiceProvider = Provider<OfflineLoggingService>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   final loggingService = ref.watch(loggingServiceProvider);
-  return OfflineLoggingService(prefs, loggingService);
+  final analytics = ref.read(analyticsServiceDirectProvider);
+  return OfflineLoggingService(prefs, loggingService, analytics);
 });
 
 // ============================================

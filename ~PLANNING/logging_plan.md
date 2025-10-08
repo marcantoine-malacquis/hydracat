@@ -1361,55 +1361,59 @@ final sessions = await _loggingService.getTodaysMedicationSessions(...);
 
 ## Phase 8: Analytics & Error Handling
 
-### Step 8.1: Implement Logging Analytics
-**Location:** `lib/providers/analytics_provider.dart`
-**Files to modify:**
-- Add logging-specific events to `AnalyticsEvents` class
-- Add logging parameters to `AnalyticsParams` class
+### Step 8.1: Implement Logging Analytics ✅ COMPLETED
+**Location:** `lib/providers/analytics_provider.dart` + 9 integration files
 
-**Events to Track:**
+**Implementation Summary:**
+- Added 8 events: `sessionLogged`, `quickLogUsed`, `sessionUpdated`, `loggingPopupOpened`, `treatmentChoiceSelected`, `offlineLoggingQueued`, `syncCompleted`, `cacheWarmedOnStartup`
+- Added 13 parameters: `treatmentType`, `sessionCount`, `isQuickLog`, `volumeGiven`, `adherenceStatus`, `popupType`, `choice`, `queueSize`, `syncDuration`, `failureCount`, `medicationSessionCount`, `fluidSessionCount`
+- Created `AnalyticsErrorTypes` class with 15 standardized error constants
+- Added 6 dedicated tracking methods to `AnalyticsService`
+- Refactored all existing analytics calls to use constants
+
+**Key Tracking Methods (for future use):**
 ```dart
-class AnalyticsEvents {
-  // ... existing events ...
+analyticsService.trackSessionLogged(
+  treatmentType: 'medication|fluid',
+  sessionCount: 1,
+  isQuickLog: false,
+  adherenceStatus: 'complete|partial',
+  medicationName: 'optional',
+  volumeGiven: optional,
+);
 
-  // Logging events
-  static const sessionLogged = 'session_logged';
-  static const quickLogUsed = 'quick_log_used';
-  static const sessionUpdated = 'session_updated';
-  static const loggingError = 'logging_error';
-  static const duplicateWarningShown = 'duplicate_warning_shown';
-  static const offlineLoggingQueued = 'offline_logging_queued';
-  static const syncCompleted = 'sync_completed';
-}
+analyticsService.trackQuickLogUsed(
+  sessionCount: total,
+  medicationCount: count,
+  fluidCount: count,
+);
 
-class AnalyticsParams {
-  // ... existing params ...
+analyticsService.trackLoggingPopupOpened(
+  popupType: 'medication|fluid|choice',
+  persona: persona.name,
+);
 
-  // Logging params
-  static const treatmentType = 'treatment_type';        // 'medication' or 'fluid'
-  static const sessionCount = 'session_count';          // Number of sessions logged
-  static const isQuickLog = 'is_quick_log';            // Boolean
-  static const loggingMode = 'logging_mode';            // 'manual' or 'quick'
-  static const volumeGiven = 'volume_given';            // Fluid volume
-  static const adherenceStatus = 'adherence_status';    // 'complete' or 'partial'
-  static const errorType = 'error_type';                // Error category
-}
-```
+analyticsService.trackTreatmentChoiceSelected(choice: 'medication|fluid');
 
-**Usage Example:**
-```dart
-await _analyticsService.logEvent(
-  AnalyticsEvents.sessionLogged,
-  parameters: {
-    AnalyticsParams.treatmentType: 'medication',
-    AnalyticsParams.sessionCount: 1,
-    AnalyticsParams.isQuickLog: false,
-    AnalyticsParams.adherenceStatus: 'complete',
-  },
+analyticsService.trackOfflineSync(
+  queueSize: size,
+  successCount: count,
+  failureCount: count,
+  syncDurationMs: duration,
 );
 ```
 
-**Learning Goal:** Business metrics for logging feature optimization
+**Integration Points:**
+- `OfflineLoggingService`: Injects `AnalyticsService` via provider
+- All error tracking: Uses `AnalyticsErrorTypes` constants
+- Popup tracking: In `app_shell.dart` FAB press handler
+- Choice tracking: In `treatment_choice_popup.dart` callbacks
+
+**For Future Analytics:**
+- Always use constants from `AnalyticsEvents`, `AnalyticsParams`, `AnalyticsErrorTypes`
+- Use dedicated tracking methods (not `trackFeatureUsed`) for type safety
+- Track at service level (with optional `AnalyticsService?` param) for better metrics
+- Include context params (medication name, volume, etc.) for detailed analysis
 
 ### Step 8.2: Implement Comprehensive Error Handling
 **Location:** `lib/features/logging/exceptions/`

@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/features/logging/models/logging_operation.dart';
 import 'package:hydracat/features/logging/services/logging_service.dart';
+import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Service for managing offline logging operations queue
@@ -15,10 +16,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// when the device is offline or when operations fail.
 class OfflineLoggingService {
   /// Creates an [OfflineLoggingService]
-  OfflineLoggingService(this._prefs, this._loggingService);
+  OfflineLoggingService(
+    this._prefs,
+    this._loggingService, [
+    this._analyticsService,
+  ]);
 
   final SharedPreferences _prefs;
   final LoggingService _loggingService;
+  final AnalyticsService? _analyticsService;
 
   static const String _queueKey = 'logging_operation_queue';
   static const int _maxQueueSize = 200;
@@ -47,6 +53,13 @@ class OfflineLoggingService {
           '[OfflineLogging] Queue full (${queue.length}/$_maxQueueSize)',
         );
       }
+
+      // Track queue full error
+      await _analyticsService?.trackError(
+        errorType: AnalyticsErrorTypes.offlineQueueFull,
+        errorContext: 'Queue size: ${queue.length}',
+      );
+
       return false;
     }
 
@@ -62,6 +75,19 @@ class OfflineLoggingService {
         '(${queue.length} total)',
       );
     }
+
+    // Track offline queuing
+    await _analyticsService?.trackFeatureUsed(
+      featureName: AnalyticsEvents.offlineLoggingQueued,
+      additionalParams: {
+        AnalyticsParams.queueSize: queue.length,
+        AnalyticsParams.treatmentType:
+            operation is CreateMedicationOperation ||
+                operation is UpdateMedicationOperation
+            ? 'medication'
+            : 'fluid',
+      },
+    );
 
     return true;
   }
@@ -94,6 +120,7 @@ class OfflineLoggingService {
   ///
   /// Returns (successCount, failureCount)
   Future<(int, int)> syncPendingOperations() async {
+    final startTime = DateTime.now();
     final queue = await _loadQueue();
     final pending = queue
         .where((op) => op.status == OperationStatus.pending)
@@ -112,6 +139,7 @@ class OfflineLoggingService {
       );
     }
 
+    final initialQueueSize = pending.length;
     var successCount = 0;
     var failureCount = 0;
 
@@ -146,6 +174,15 @@ class OfflineLoggingService {
         '$failureCount failed',
       );
     }
+
+    // Track sync completion
+    final durationMs = DateTime.now().difference(startTime).inMilliseconds;
+    await _analyticsService?.trackOfflineSync(
+      queueSize: initialQueueSize,
+      successCount: successCount,
+      failureCount: failureCount,
+      syncDurationMs: durationMs,
+    );
 
     return (successCount, failureCount);
   }
