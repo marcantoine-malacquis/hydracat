@@ -107,23 +107,28 @@ class TreatmentChoicePopup extends ConsumerWidget {
                   ),
 
                   // Medication button
-                  _TreatmentChoiceButton(
-                    icon: AppIcons.medication,
-                    label: TreatmentChoice.medication.displayName,
-                    onTap: () {
-                      ref
-                          .read(loggingProvider.notifier)
-                          .setTreatmentChoice(TreatmentChoice.medication);
+                  Semantics(
+                    label: 'Log medication',
+                    hint: 'Opens medication logging form to record treatment',
+                    button: true,
+                    child: _TreatmentChoiceButton(
+                      icon: AppIcons.medication,
+                      label: TreatmentChoice.medication.displayName,
+                      onTap: () {
+                        ref
+                            .read(loggingProvider.notifier)
+                            .setTreatmentChoice(TreatmentChoice.medication);
 
-                      // Track choice selection
-                      ref
-                          .read(analyticsServiceDirectProvider)
-                          .trackTreatmentChoiceSelected(
-                            choice: 'medication',
-                          );
+                        // Track choice selection
+                        ref
+                            .read(analyticsServiceDirectProvider)
+                            .trackTreatmentChoiceSelected(
+                              choice: 'medication',
+                            );
 
-                      onMedicationSelected();
-                    },
+                        onMedicationSelected();
+                      },
+                    ),
                   ),
                   Divider(
                     height: 1,
@@ -134,34 +139,46 @@ class TreatmentChoicePopup extends ConsumerWidget {
                   ),
 
                   // Fluid therapy button
-                  _TreatmentChoiceButton(
-                    icon: AppIcons.fluidTherapy,
-                    label: TreatmentChoice.fluid.displayName,
-                    onTap: () {
-                      ref
-                          .read(loggingProvider.notifier)
-                          .setTreatmentChoice(TreatmentChoice.fluid);
+                  Semantics(
+                    label: 'Log fluid therapy',
+                    hint:
+                        'Opens fluid therapy logging form to record '
+                        'subcutaneous fluids',
+                    button: true,
+                    child: _TreatmentChoiceButton(
+                      icon: AppIcons.fluidTherapy,
+                      label: TreatmentChoice.fluid.displayName,
+                      onTap: () {
+                        ref
+                            .read(loggingProvider.notifier)
+                            .setTreatmentChoice(TreatmentChoice.fluid);
 
-                      // Track choice selection
-                      ref
-                          .read(analyticsServiceDirectProvider)
-                          .trackTreatmentChoiceSelected(
-                            choice: 'fluid',
-                          );
+                        // Track choice selection
+                        ref
+                            .read(analyticsServiceDirectProvider)
+                            .trackTreatmentChoiceSelected(
+                              choice: 'fluid',
+                            );
 
-                      onFluidSelected();
-                    },
+                        onFluidSelected();
+                      },
+                    ),
                   ),
 
                   // Visual separation
                   const SizedBox(height: AppSpacing.md),
 
                   // Cancel button
-                  _CancelButton(
-                    onTap: () {
-                      ref.read(loggingProvider.notifier).reset();
-                      OverlayService.hide();
-                    },
+                  Semantics(
+                    label: 'Cancel',
+                    hint: 'Closes treatment selection without logging',
+                    button: true,
+                    child: _CancelButton(
+                      onTap: () {
+                        ref.read(loggingProvider.notifier).reset();
+                        OverlayService.hide();
+                      },
+                    ),
                   ),
                 ],
               ),

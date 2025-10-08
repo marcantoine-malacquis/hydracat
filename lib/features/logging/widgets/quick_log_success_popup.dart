@@ -78,9 +78,10 @@ class _QuickLogSuccessPopupState extends State<QuickLogSuccessPopup> {
 
     return Semantics(
       liveRegion: true,
-      label: '${widget.sessionCount} $_treatmentLabel logged '
+      label:
+          '${widget.sessionCount} $_treatmentLabel logged '
           'for ${widget.petName}',
-      hint: 'Tap to dismiss',
+      hint: 'Success. Tap anywhere to dismiss.',
       child: GestureDetector(
         onTap: () {
           _dismissTimer?.cancel();

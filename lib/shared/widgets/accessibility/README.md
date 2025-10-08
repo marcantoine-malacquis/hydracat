@@ -298,6 +298,111 @@ HydraTouchTarget(
 
 ---
 
+## 🔊 Haptic Feedback Guidelines
+
+### When to Use Haptic Feedback
+
+#### Selection Haptic (`HapticFeedback.selectionClick()`)
+**Use for:**
+- Toggle switches
+- Radio buttons
+- Checkbox selections
+- Multi-select list items
+- Segmented button selections
+
+**Example:**
+```dart
+void _toggleSelection(String id) {
+  setState(() {
+    if (_selected.contains(id)) {
+      _selected.remove(id);
+    } else {
+      _selected.add(id);
+      HapticFeedback.selectionClick(); // Only on selection
+    }
+  });
+}
+```
+
+#### Success Haptic (`HapticFeedback.lightImpact()`)
+**Use for:**
+- Successful form submission
+- Completed actions
+- Success state transitions
+- Positive confirmations
+
+**Example:**
+```dart
+Future<void> _saveForm() async {
+  await save();
+  HapticFeedback.lightImpact();
+  showSuccessMessage();
+}
+```
+
+#### Primary Action Haptic (`HapticFeedback.mediumImpact()`)
+**Use for:**
+- FAB button press
+- Critical action buttons
+- Long-press triggers
+- Important state changes
+
+**Example:**
+```dart
+void _onFabLongPress() {
+  HapticFeedback.mediumImpact();
+  quickLogAllTreatments();
+}
+```
+
+### Best Practices
+1. **Trigger once per action**: Avoid multiple haptics for single interaction
+2. **Match user intent**: Selection feels different from success
+3. **Don't overuse**: Too much haptic feedback causes fatigue
+4. **Test on device**: Emulators don't simulate haptics accurately
+5. **Respect system settings**: Haptics honor user's device settings
+
+---
+
+## 📢 Screen Reader Announcements
+
+### When to Use `SemanticsService.announce()`
+
+**Use for transient messages that aren't visible long enough:**
+- Snackbar notifications
+- Toast messages
+- Dynamic error messages
+- Success confirmations
+- Loading state changes
+
+**Don't use for:**
+- Static UI elements (use `Semantics` widget instead)
+- Long-form content
+- Interactive elements (use semantic labels)
+
+### Implementation Pattern
+
+```dart
+import 'package:flutter/semantics.dart';
+
+void _showError(String message) {
+  // Announce to screen readers
+  SemanticsService.announce(message, TextDirection.ltr);
+  
+  // Show visual feedback
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(message)),
+  );
+}
+```
+
+### Announcement Timing
+- **Before visual display**: Ensures screen reader users hear message
+- **One announcement per action**: Avoid duplicate announcements
+- **Clear, concise messages**: Short messages work best
+
+---
+
 ## 📚 Resources
 
 ### Standards & Guidelines

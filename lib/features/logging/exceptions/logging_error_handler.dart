@@ -3,6 +3,7 @@ library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/logging/exceptions/logging_exceptions.dart';
 
@@ -73,7 +74,11 @@ class LoggingErrorHandler {
   ///
   /// Uses snackbar with error background color and floating behavior.
   /// Clears any existing snackbars before showing the new one.
+  /// Announces message to screen readers via SemanticsService.
   static void showLoggingError(BuildContext context, String message) {
+    // Announce to screen readers
+    SemanticsService.announce(message, TextDirection.ltr);
+
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
       ..showSnackBar(
@@ -94,6 +99,7 @@ class LoggingErrorHandler {
   /// to inform users that their data will sync when reconnected.
   ///
   /// Uses success background color and floating behavior.
+  /// Announces message to screen readers via SemanticsService.
   static void showLoggingSuccess(
     BuildContext context,
     String message, {
@@ -102,6 +108,12 @@ class LoggingErrorHandler {
     final messenger = ScaffoldMessenger.of(context)..clearSnackBars();
 
     final displayMessage = isOffline ? '$message (will sync later)' : message;
+
+    // Announce to screen readers with offline context if applicable
+    final announcement = isOffline
+        ? '$message. Will sync when online.'
+        : message;
+    SemanticsService.announce(announcement, TextDirection.ltr);
 
     messenger.showSnackBar(
       SnackBar(
@@ -119,11 +131,18 @@ class LoggingErrorHandler {
   ///
   /// Used specifically for sync failures that can be retried.
   /// The [onRetry] callback is invoked when user taps Retry button.
+  /// Announces message to screen readers via SemanticsService.
   static void showSyncRetry(
     BuildContext context,
     String message,
     VoidCallback onRetry,
   ) {
+    // Announce to screen readers with retry context
+    SemanticsService.announce(
+      '$message. Retry button available.',
+      TextDirection.ltr,
+    );
+
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
       ..showSnackBar(

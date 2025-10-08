@@ -40,7 +40,9 @@ class MedicationSelectionCard extends StatelessWidget {
 
     return Semantics(
       label: '${medication.medicationName}$strengthSuffix$dosageSuffix',
-      hint: isSelected ? 'Selected' : 'Not selected',
+      hint: isSelected
+          ? 'Selected for logging. Double tap to deselect.'
+          : 'Not selected. Double tap to select for logging.',
       selected: isSelected,
       button: true,
       child: AnimatedContainer(

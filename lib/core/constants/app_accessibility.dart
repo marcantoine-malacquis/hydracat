@@ -44,4 +44,25 @@ class AppAccessibility {
 
   /// Default semantic label for navigation items
   static const String defaultNavigationLabel = 'Navigation item';
+
+  // Haptic feedback patterns
+  // Note: Use Flutter's HapticFeedback class directly
+  // These guidelines document when to use each type
+
+  /// Selection haptic: Use HapticFeedback.selectionClick()
+  /// For toggles, radio buttons, checkbox selections, multi-select items
+  static const String selectionFeedbackGuideline =
+      'HapticFeedback.selectionClick()';
+
+  /// Success haptic: Use HapticFeedback.lightImpact()
+  /// For successful form submission, completed actions, success transitions
+  static const String successFeedbackGuideline = 'HapticFeedback.lightImpact()';
+
+  /// Primary action haptic: Use HapticFeedback.mediumImpact()
+  /// For FAB press, critical actions, long-press triggers
+  static const String primaryActionFeedbackGuideline =
+      'HapticFeedback.mediumImpact()';
+
+  // Screen reader announcements
+  // Note: Use TextDirection.ltr for SemanticsService.announce() calls
 }

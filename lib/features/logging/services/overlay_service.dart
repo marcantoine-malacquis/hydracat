@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:hydracat/core/constants/app_animations.dart';
 
 /// Animation types for overlay popups.
 enum OverlayAnimationType {
@@ -135,27 +136,28 @@ class _FullScreenBlurOverlayState extends State<_FullScreenBlurOverlay>
         );
 
     // Setup scale animation for scale-based transitions
-    _scaleAnimation = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutBack,
-      ),
-    );
+    _scaleAnimation =
+        Tween<double>(
+          begin: 0,
+          end: 1,
+        ).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: AppAnimations.scaleInCurve,
+          ),
+        );
   }
 
   /// Get animation duration based on animation type.
   Duration _getAnimationDuration() {
     switch (widget.animationType) {
       case OverlayAnimationType.slideUp:
-        return const Duration(milliseconds: 200);
+        return AppAnimations.slideUpDuration;
       case OverlayAnimationType.slideFromRight:
       case OverlayAnimationType.slideFromLeft:
-        return const Duration(milliseconds: 250);
+        return AppAnimations.slideFromRightDuration;
       case OverlayAnimationType.scaleIn:
-        return const Duration(milliseconds: 300);
+        return AppAnimations.scaleInDuration;
     }
   }
 
