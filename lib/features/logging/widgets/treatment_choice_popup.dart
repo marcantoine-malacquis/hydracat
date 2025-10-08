@@ -208,6 +208,10 @@ class _TreatmentChoiceButton extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
+      splashColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+      highlightColor: theme.colorScheme.primary.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(12),
+      splashFactory: InkRipple.splashFactory,
       child: Container(
         width: double.infinity,
         constraints: const BoxConstraints(
@@ -264,7 +268,12 @@ class _CancelButton extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
+      splashColor: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.12),
+      highlightColor: theme.colorScheme.onSurfaceVariant.withValues(
+        alpha: 0.08,
+      ),
       borderRadius: BorderRadius.circular(12),
+      splashFactory: InkRipple.splashFactory,
       child: Container(
         width: double.infinity,
         constraints: const BoxConstraints(

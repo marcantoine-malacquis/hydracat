@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hydracat/core/constants/app_animations.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/features/auth/models/app_user.dart';
 import 'package:hydracat/features/logging/exceptions/logging_error_handler.dart';
@@ -43,14 +44,25 @@ class _MedicationLoggingScreenState
   // Selection state
   final Set<String> _selectedMedicationIds = {};
 
-  // Notes controller
+  // Notes controller and focus
   final TextEditingController _notesController = TextEditingController();
+  final FocusNode _notesFocusNode = FocusNode();
 
   // UI state
   LoadingOverlayState _loadingState = LoadingOverlayState.none;
+  bool _selectAllPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _notesFocusNode.addListener(() {
+      setState(() {}); // Rebuild to update counter visibility
+    });
+  }
 
   @override
   void dispose() {
+    _notesFocusNode.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -69,8 +81,11 @@ class _MedicationLoggingScreenState
   }
 
   /// Toggle all medications
-  void _toggleSelectAll(int totalCount) {
+  Future<void> _toggleSelectAll(int totalCount) async {
     final schedules = ref.read(todaysMedicationSchedulesProvider);
+
+    setState(() => _selectAllPressed = true);
+    await Future<void>.delayed(const Duration(milliseconds: 100));
 
     setState(() {
       if (_selectedMedicationIds.length == totalCount) {
@@ -84,6 +99,7 @@ class _MedicationLoggingScreenState
         }
         HapticFeedback.selectionClick();
       }
+      _selectAllPressed = false;
     });
   }
 
@@ -101,6 +117,7 @@ class _MedicationLoggingScreenState
       _loadingState = LoadingOverlayState.loading;
     });
 
+    var hasErrors = false;
     try {
       final schedules = ref.read(todaysMedicationSchedulesProvider);
       final user = ref.read(currentUserProvider);
@@ -110,8 +127,6 @@ class _MedicationLoggingScreenState
         _showError('User or pet not found. Please try again.');
         return;
       }
-
-      var hasErrors = false;
       final notes = _notesController.text.trim().isEmpty
           ? null
           : _notesController.text;
@@ -206,7 +221,9 @@ class _MedicationLoggingScreenState
         }
       }
     } finally {
-      if (mounted) {
+      if (mounted && hasErrors) {
+        // Only reset state if there were errors
+        // (success state is handled above)
         setState(() {
           _loadingState = LoadingOverlayState.none;
         });
@@ -299,32 +316,40 @@ class _MedicationLoggingScreenState
           children: [
             // Select All button (if multiple medications)
             if (schedules.length > 1) ...[
-              OutlinedButton(
-                onPressed: _loadingState != LoadingOverlayState.none
-                    ? null
-                    : () => _toggleSelectAll(
-                        schedules.length,
-                      ),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(
-                    color: theme.colorScheme.primary,
-                    width: 1.5,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                    vertical: AppSpacing.md,
-                  ),
+              AnimatedScale(
+                scale: _selectAllPressed ? 0.95 : 1.0,
+                duration: AppAnimations.getDuration(
+                  context,
+                  const Duration(milliseconds: 100),
                 ),
-                child: Text(
-                  _selectedMedicationIds.length == schedules.length
-                      ? 'Deselect All'
-                      : 'Select All',
-                  style: TextStyle(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.w500,
+                curve: Curves.easeInOut,
+                child: OutlinedButton(
+                  onPressed: _loadingState != LoadingOverlayState.none
+                      ? null
+                      : () => _toggleSelectAll(
+                          schedules.length,
+                        ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: theme.colorScheme.primary,
+                      width: 1.5,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
+                    ),
+                  ),
+                  child: Text(
+                    _selectedMedicationIds.length == schedules.length
+                        ? 'Deselect All'
+                        : 'Select All',
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ),
@@ -373,6 +398,7 @@ class _MedicationLoggingScreenState
             const SizedBox(height: AppSpacing.lg),
             TextField(
               controller: _notesController,
+              focusNode: _notesFocusNode,
               maxLength: 500,
               keyboardType: TextInputType.text,
               textInputAction: TextInputAction.done,
@@ -386,6 +412,14 @@ class _MedicationLoggingScreenState
                   horizontal: AppSpacing.md,
                   vertical: AppSpacing.md,
                 ),
+                counter: AnimatedOpacity(
+                  opacity: _notesFocusNode.hasFocus ? 1.0 : 0.0,
+                  duration: AppAnimations.getDuration(
+                    context,
+                    const Duration(milliseconds: 200),
+                  ),
+                  child: Text('${_notesController.text.length}/500'),
+                ),
               ),
               // Expand to 5 lines when focused
               onTap: () {
@@ -394,9 +428,11 @@ class _MedicationLoggingScreenState
                 });
               },
               onChanged: (value) {
-                // Rebuild to show expanded field
+                // Rebuild to show expanded field and update counter
                 if (value.isNotEmpty && _notesController.text.length == 1) {
                   setState(() {});
+                } else {
+                  setState(() {}); // Update counter
                 }
               },
               // Show as multiline when has content

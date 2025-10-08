@@ -40,12 +40,12 @@ class _SuccessIndicatorState extends State<SuccessIndicator>
 
     _scaleAnimation =
         Tween<double>(
-          begin: 0,
+          begin: 0.8, // Start from 0.8 instead of 0 to reduce visual artifacts
           end: 1,
         ).animate(
           CurvedAnimation(
             parent: _controller,
-            curve: Curves.elasticOut,
+            curve: Curves.easeOut, // Use simpler curve to reduce artifacts
           ),
         );
 

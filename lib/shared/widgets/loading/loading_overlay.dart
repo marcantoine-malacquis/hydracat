@@ -52,34 +52,47 @@ class LoadingOverlay extends StatelessWidget {
   /// Background color of overlay (default black with 30% opacity)
   final Color? overlayColor;
 
-  bool get _isOverlayVisible =>
-      state == LoadingOverlayState.loading ||
-      state == LoadingOverlayState.success;
-
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Main content with dynamic opacity
+        // Main content - no opacity changes for success state
         Opacity(
-          opacity: _isOverlayVisible ? contentOpacity : 1.0,
+          opacity: state == LoadingOverlayState.loading ? contentOpacity : 1.0,
           child: child,
         ),
 
-        // Loading/Success overlay
-        if (_isOverlayVisible)
+        // Loading overlay (only show background for loading state)
+        if (state == LoadingOverlayState.loading)
           Positioned.fill(
             child: Semantics(
               liveRegion: true,
-              label: state == LoadingOverlayState.loading
-                  ? (loadingMessage ?? 'Loading')
-                  : 'Success',
+              label: loadingMessage ?? 'Loading',
               child: ColoredBox(
                 color:
                     overlayColor ??
                     Colors.black.withValues(
                       alpha: AppAnimations.overlayBackgroundOpacity,
                     ),
+                child: Center(
+                  child: _buildOverlayContent(),
+                ),
+              ),
+            ),
+          ),
+
+        // Success overlay (no background, just the indicator)
+        if (state == LoadingOverlayState.success)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Semantics(
+              liveRegion: true,
+              label: 'Success',
+              child: IgnorePointer(
+                // Prevent any touch events from reaching the background
                 child: Center(
                   child: _buildOverlayContent(),
                 ),

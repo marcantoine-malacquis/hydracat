@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hydracat/core/constants/app_animations.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/features/logging/exceptions/logging_error_handler.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
@@ -48,7 +49,6 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
   // UI state
   LoadingOverlayState _loadingState = LoadingOverlayState.none;
   String? _volumeError;
-  bool _isNotesFocused = false;
 
   // Focus nodes
   final FocusNode _notesFocusNode = FocusNode();
@@ -57,11 +57,9 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
   void initState() {
     super.initState();
 
-    // Listen to focus changes
+    // Listen to focus changes for counter visibility
     _notesFocusNode.addListener(() {
-      setState(() {
-        _isNotesFocused = _notesFocusNode.hasFocus;
-      });
+      setState(() {}); // Rebuild to update counter visibility
     });
 
     // Pre-fill from schedule after first frame
@@ -147,6 +145,7 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
       _loadingState = LoadingOverlayState.loading;
     });
 
+    var success = false;
     try {
       final user = ref.read(currentUserProvider);
       final pet = ref.read(primaryPetProvider);
@@ -176,7 +175,7 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
       );
 
       // Log the session
-      final success = await ref
+      success = await ref
           .read(loggingProvider.notifier)
           .logFluidSession(
             session: session,
@@ -207,7 +206,9 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
         }
       }
     } finally {
-      if (mounted) {
+      if (mounted && !success) {
+        // Only reset state if there was an error
+        // (success state is handled above)
         setState(() {
           _loadingState = LoadingOverlayState.none;
         });
@@ -347,7 +348,7 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
             TextField(
               controller: _notesController,
               focusNode: _notesFocusNode,
-              maxLength: _isNotesFocused ? 500 : null,
+              maxLength: 500,
               keyboardType: TextInputType.text,
               textInputAction: TextInputAction.done,
               decoration: InputDecoration(
@@ -360,7 +361,14 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
                   horizontal: AppSpacing.md,
                   vertical: AppSpacing.md,
                 ),
-                counterText: _isNotesFocused ? null : '',
+                counter: AnimatedOpacity(
+                  opacity: _notesFocusNode.hasFocus ? 1.0 : 0.0,
+                  duration: AppAnimations.getDuration(
+                    context,
+                    const Duration(milliseconds: 200),
+                  ),
+                  child: Text('${_notesController.text.length}/500'),
+                ),
               ),
               // Expand to 3 lines when has content
               onTap: () {
@@ -369,9 +377,11 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
                 });
               },
               onChanged: (value) {
-                // Rebuild to show expanded field
+                // Rebuild to show expanded field and update counter
                 if (value.isNotEmpty && _notesController.text.length == 1) {
                   setState(() {});
+                } else {
+                  setState(() {}); // Update counter
                 }
               },
               // Show as multiline when has content

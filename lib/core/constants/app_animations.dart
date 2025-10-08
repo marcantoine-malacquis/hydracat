@@ -43,4 +43,17 @@ class AppAnimations {
 
   /// Opacity of overlay background.
   static const double overlayBackgroundOpacity = 0.3;
+
+  // Accessibility support
+  /// Check if animations should be disabled for accessibility.
+  /// Returns true if user has enabled "Reduce Motion" in system settings.
+  static bool shouldReduceMotion(BuildContext context) {
+    return MediaQuery.disableAnimationsOf(context);
+  }
+
+  /// Get animation duration with reduced motion support.
+  /// Returns Duration.zero if reduce motion is enabled.
+  static Duration getDuration(BuildContext context, Duration duration) {
+    return shouldReduceMotion(context) ? Duration.zero : duration;
+  }
 }
