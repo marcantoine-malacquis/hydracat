@@ -14,6 +14,7 @@ import 'package:hydracat/features/logging/exceptions/logging_exceptions.dart';
 import 'package:hydracat/features/logging/models/daily_summary_cache.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/logging_mode.dart';
+import 'package:hydracat/features/logging/models/logging_operation.dart';
 import 'package:hydracat/features/logging/models/logging_state.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/models/treatment_choice.dart';
@@ -23,8 +24,11 @@ import 'package:hydracat/features/logging/services/summary_service.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/providers/connectivity_provider.dart';
+import 'package:hydracat/providers/logging_queue_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
 // ============================================
 // Service Providers (Foundation Layer)
@@ -42,7 +46,8 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
 
 /// Provider for LoggingService instance
 final loggingServiceProvider = Provider<LoggingService>((ref) {
-  return const LoggingService();
+  final cacheService = ref.watch(summaryCacheServiceProvider);
+  return LoggingService(cacheService);
 });
 
 /// Provider for SummaryCacheService instance
@@ -268,18 +273,59 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         );
       }
 
-      // STEP 4: Call LoggingService.quickLogAllTreatments()
+      // STEP 4: Check connectivity
+      final isOnline = _ref.read(isConnectedProvider);
+
+      if (!isOnline) {
+        // Offline: Queue operation for later sync
+        if (kDebugMode) {
+          debugPrint(
+            '[LoggingNotifier] Offline - queueing quick-log operation',
+          );
+        }
+
+        final operation = QuickLogAllOperation(
+          id: const Uuid().v4(),
+          userId: user.id,
+          petId: pet.id,
+          createdAt: DateTime.now(),
+          todaysSchedules: allSchedules,
+        );
+
+        final offlineService = _ref.read(offlineLoggingServiceProvider);
+        final queued = await offlineService.enqueueOperation(operation);
+
+        if (queued) {
+          // Note: Can't update cache optimistically for quick-log
+          // since we don't know exact session count until sync
+          state = state.copyWith(isLoading: false);
+
+          if (kDebugMode) {
+            debugPrint('[LoggingNotifier] Quick-log queued for sync');
+          }
+
+          return true;
+        } else {
+          state = state.copyWith(
+            isLoading: false,
+            error: 'Queue full. Please connect to internet.',
+          );
+          return false;
+        }
+      }
+
+      // STEP 5: Online - Call LoggingService.quickLogAllTreatments()
       final sessionCount = await _loggingService.quickLogAllTreatments(
         userId: user.id,
         petId: pet.id,
         todaysSchedules: allSchedules,
       );
 
-      // STEP 5: Reload cache from Firestore after success
+      // STEP 6: Reload cache from Firestore after success
       // The batch write updated Firestore summaries, so reload cache
       await loadTodaysCache();
 
-      // STEP 6: Track analytics
+      // STEP 7: Track analytics
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
       await analyticsService.trackFeatureUsed(
         featureName: 'quick_log_all_treatments',
@@ -357,8 +403,56 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         return false;
       }
 
-      // STEP 2: Get recent sessions for duplicate detection
-      // Always fetch to ensure we catch duplicates, even on first log of day
+      // STEP 2: Check connectivity
+      final isOnline = _ref.read(isConnectedProvider);
+
+      if (!isOnline) {
+        // Offline: Queue operation for later sync
+        if (kDebugMode) {
+          debugPrint('[LoggingNotifier] Offline - queueing medication session');
+        }
+
+        final operation = CreateMedicationOperation(
+          id: const Uuid().v4(),
+          userId: user.id,
+          petId: pet.id,
+          createdAt: DateTime.now(),
+          session: session,
+          todaysSchedules: todaysSchedules,
+          recentSessions: const [], // Will be fetched during sync
+        );
+
+        final offlineService = _ref.read(offlineLoggingServiceProvider);
+        final queued = await offlineService.enqueueOperation(operation);
+
+        if (queued) {
+          // Update local cache immediately (optimistic UI)
+          await _cacheService.updateCacheWithMedicationSession(
+            userId: user.id,
+            petId: pet.id,
+            medicationName: session.medicationName,
+            dosageGiven: session.dosageGiven,
+          );
+
+          await loadTodaysCache();
+
+          state = state.copyWith(isLoading: false);
+
+          if (kDebugMode) {
+            debugPrint('[LoggingNotifier] Medication queued for sync');
+          }
+
+          return true;
+        } else {
+          state = state.copyWith(
+            isLoading: false,
+            error: 'Queue full. Please connect to internet.',
+          );
+          return false;
+        }
+      }
+
+      // STEP 3: Online - Get recent sessions for duplicate detection
       if (kDebugMode) {
         debugPrint(
           '[LoggingNotifier] Fetching recent sessions for duplicate detection',
@@ -385,7 +479,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         );
       }
 
-      // STEP 3: Call LoggingService
+      // STEP 4: Call LoggingService
       final sessionId = await _loggingService.logMedicationSession(
         userId: user.id,
         petId: pet.id,
@@ -394,7 +488,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         recentSessions: recentSessions,
       );
 
-      // STEP 4: Update cache
+      // STEP 5: Update cache
       await _cacheService.updateCacheWithMedicationSession(
         userId: user.id,
         petId: pet.id,
@@ -405,7 +499,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       // Reload cache to get fresh data
       await loadTodaysCache();
 
-      // STEP 5: Track analytics
+      // STEP 6: Track analytics
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
       await analyticsService.trackFeatureUsed(
         featureName: 'log_medication_session',
@@ -506,6 +600,54 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         return false;
       }
 
+      // STEP 2: Check connectivity
+      final isOnline = _ref.read(isConnectedProvider);
+
+      if (!isOnline) {
+        // Offline: Queue operation for later sync
+        if (kDebugMode) {
+          debugPrint('[LoggingNotifier] Offline - queueing fluid session');
+        }
+
+        final operation = CreateFluidOperation(
+          id: const Uuid().v4(),
+          userId: user.id,
+          petId: pet.id,
+          createdAt: DateTime.now(),
+          session: session,
+          todaysSchedule: fluidSchedule,
+        );
+
+        final offlineService = _ref.read(offlineLoggingServiceProvider);
+        final queued = await offlineService.enqueueOperation(operation);
+
+        if (queued) {
+          // Update local cache immediately (optimistic UI)
+          await _cacheService.updateCacheWithFluidSession(
+            userId: user.id,
+            petId: pet.id,
+            volumeGiven: session.volumeGiven,
+          );
+
+          await loadTodaysCache();
+
+          state = state.copyWith(isLoading: false);
+
+          if (kDebugMode) {
+            debugPrint('[LoggingNotifier] Fluid session queued for sync');
+          }
+
+          return true;
+        } else {
+          state = state.copyWith(
+            isLoading: false,
+            error: 'Queue full. Please connect to internet.',
+          );
+          return false;
+        }
+      }
+
+      // STEP 3: Online - Log directly
       if (kDebugMode) {
         debugPrint(
           '[LoggingNotifier] Logging fluid: '
@@ -513,7 +655,6 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         );
       }
 
-      // STEP 2: Call LoggingService
       final sessionId = await _loggingService.logFluidSession(
         userId: user.id,
         petId: pet.id,
@@ -522,7 +663,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         recentSessions: [], // Fluids don't need duplicate detection
       );
 
-      // STEP 3: Update cache
+      // STEP 4: Update cache
       await _cacheService.updateCacheWithFluidSession(
         userId: user.id,
         petId: pet.id,
@@ -532,7 +673,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       // Reload cache to get fresh data
       await loadTodaysCache();
 
-      // STEP 4: Track analytics
+      // STEP 5: Track analytics
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
       await analyticsService.trackFeatureUsed(
         featureName: 'log_fluid_session',

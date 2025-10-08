@@ -13,6 +13,7 @@ import 'package:hydracat/features/logging/widgets/treatment_choice_popup.dart';
 import 'package:hydracat/features/profile/models/user_persona.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
+import 'package:hydracat/providers/logging_queue_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/widgets/navigation/hydra_navigation_bar.dart';
 
@@ -329,6 +330,25 @@ class _AppShellState extends ConsumerState<AppShell>
 
     // Watch logging state to disable FAB during operations
     final isLoggingInProgress = ref.watch(isLoggingProvider);
+
+    // Initialize auto-sync listener (watches for connectivity changes)
+    ref
+      ..watch(autoSyncListenerProvider)
+      // Listen for sync toast notifications
+      ..listen<String?>(syncToastMessageProvider, (previous, next) {
+        if (next != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(next),
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+
+          // Clear message after showing
+          ref.read(syncToastMessageProvider.notifier).state = null;
+        }
+      });
 
     return Scaffold(
       body: Column(

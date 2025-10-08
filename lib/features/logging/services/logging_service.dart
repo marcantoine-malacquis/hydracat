@@ -8,6 +8,7 @@ import 'package:hydracat/features/logging/exceptions/logging_exceptions.dart';
 import 'package:hydracat/features/logging/models/daily_summary_cache.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
+import 'package:hydracat/features/logging/services/summary_cache_service.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/shared/models/summary_update_dto.dart';
 
@@ -21,7 +22,8 @@ import 'package:hydracat/shared/models/summary_update_dto.dart';
 ///
 /// Usage:
 /// ```dart
-/// final service = LoggingService();
+/// final cacheService = SummaryCacheService(prefs);
+/// final service = LoggingService(cacheService);
 /// final sessionId = await service.logMedicationSession(
 ///   userId: currentUser.id,
 ///   petId: currentPet.id,
@@ -32,7 +34,10 @@ import 'package:hydracat/shared/models/summary_update_dto.dart';
 /// ```
 class LoggingService {
   /// Creates a [LoggingService] instance
-  const LoggingService();
+  const LoggingService(this._cacheService);
+
+  /// Cache service for 0-read duplicate detection
+  final SummaryCacheService _cacheService;
 
   /// Firestore instance
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
@@ -703,20 +708,21 @@ class LoggingService {
     }
   }
 
-  /// Gets cached daily summary (stub for now)
+  /// Gets cached daily summary for quick duplicate detection
   ///
-  /// This method will be integrated with SummaryCacheService in Phase 6.
-  /// For now, returns null to allow quick-log to proceed.
+  /// Uses [SummaryCacheService] to check SharedPreferences cache,
+  /// avoiding Firestore reads for duplicate detection.
   ///
-  /// Future implementation will check SharedPreferences cache to avoid
-  /// Firestore reads for duplicate detection.
+  /// Returns:
+  /// - [DailySummaryCache] if valid cache exists for today
+  /// - null if no cache or cache expired
+  ///
+  /// Cost: 0 Firestore reads when cache is valid
   Future<DailySummaryCache?> _getDailySummaryCache(
     String userId,
     String petId,
   ) async {
-    //TODO(Phase 6): Inject SummaryCacheService via constructor
-    // and return actual cached data
-    return null;
+    return _cacheService.getTodaySummary(userId, petId);
   }
 
   // ============================================

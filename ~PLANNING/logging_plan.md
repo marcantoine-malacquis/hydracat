@@ -1129,11 +1129,15 @@ if (!dto.hasUpdates) {
 - **Multiple reminders**: Creates separate session for each reminder time per schedule
 - **Rejection**: Throws error if cache shows any sessions already logged today (strict all-or-nothing)
 
-**Cache Stub for Phase 6:**
+**Cache Integration ✅ COMPLETED:**
 ```dart
-Future<DailySummaryCache?> _getDailySummaryCache(String userId, String petId) async {
-  // TODO(Phase 6): Inject SummaryCacheService via constructor
-  return null;  // Currently allows all quick-logs through
+class LoggingService {
+  const LoggingService(this._cacheService);
+  final SummaryCacheService _cacheService;
+  
+  Future<DailySummaryCache?> _getDailySummaryCache(String userId, String petId) async {
+    return _cacheService.getTodaySummary(userId, petId);  // ✅ Now uses actual cache!
+  }
 }
 ```
 
@@ -1142,6 +1146,7 @@ Future<DailySummaryCache?> _getDailySummaryCache(String userId, String petId) as
 - Reloads cache after success: `await loadTodaysCache()`
 - Tracks analytics: `session_count` parameter
 - Handles errors with user-friendly messages
+- ✅ Injects `SummaryCacheService` via provider: `LoggingService(cacheService)`
 
 **Typical Usage:**
 ```dart
@@ -1159,11 +1164,12 @@ final count = await loggingService.quickLogAllTreatments(
 - 5 sessions: 20 writes = $0.000036
 - 10 sessions: 40 writes = $0.000072
 - Monthly (30 days, 5 sessions avg): $0.11
+- ✅ **0 Firestore reads** for duplicate detection (uses cache!)
 
-**Important for Future:**
-- Phase 6: Replace `_getDailySummaryCache()` stub with actual `SummaryCacheService` injection
-- Phase 6: This enables 0-read duplicate detection
-- Firestore limit: 500 operations per batch (supports ~125 sessions - well above typical use)
+**Cache-Enabled Features:**
+- ✅ Quick-log validation: Detects existing sessions without Firestore reads
+- ✅ 0-read duplicate detection for all logging operations
+- ✅ Firestore limit: 500 operations per batch (supports ~125 sessions - well above typical use)
 
 **<� MILESTONE:** Phase 5 complete - all 6 logging methods optimized to 4-write pattern!
 
@@ -1171,81 +1177,71 @@ final count = await loggingService.quickLogAllTreatments(
 
 ## Phase 6: Offline Support & Sync
 
-### Step 6.1: Implement Offline Logging Queue
-**Location:** `lib/features/logging/services/offline_logging_service.dart`
-**Files to create:**
-- `offline_logging_service.dart` - Queue management for offline operations
-- `logging_operation.dart` - Sealed class for queued operations (Create/Update/Delete)
+### Step 6.1: Implement Offline Logging Queue ✅ COMPLETED
+**Location:** `lib/features/logging/services/`, `lib/features/logging/models/`, `lib/providers/`
 
-**Key Implementation:**
-- **Local Storage**: Use `SecurePreferencesService` for encrypted operation queue
-- **Queue Structure**: JSON array of operations with metadata
-- **Operation Types**: Create session, Update session, Quick-log
-- **Timestamp Tracking**: `createdAt` for conflict resolution
-- **Auto-Sync**: Listen to connectivity changes, sync when online
+**Files Created:**
+- ✅ `logging_operation.dart` - Sealed class with 5 operation types (CreateMedication, CreateFluid, UpdateMedication, UpdateFluid, QuickLogAll)
+- ✅ `offline_logging_service.dart` - Queue management with exponential backoff retry
+- ✅ `logging_queue_provider.dart` - Auto-sync listener and toast notifications
 
-**Queue Entry Structure:**
-```dart
-{
-  'id': 'operation-uuid',
-  'type': 'create_medication_session',
-  'createdAt': '2025-10-15T08:30:00Z',
-  'data': {
-    'session': {...},
-    'petId': 'pet-123',
-    'userId': 'user-456',
-  },
-}
-```
+**Files Modified:**
+- ✅ `logging_provider.dart` - Routes operations through offline queue when offline
+- ✅ `app_shell.dart` - Toast notification listener for sync feedback
 
-**Learning Goal:** Offline-first data persistence patterns
+**Critical Implementation Details:**
 
-### Step 6.2: Implement Sync Service
-**Location:** `lib/features/logging/services/logging_sync_service.dart`
-**Files to create:**
-- `logging_sync_service.dart` - Sync queued operations to Firestore
-- `conflict_resolver.dart` - Resolve multi-device conflicts by `createdAt`
+**Storage & Queue:**
+- Queue stored in **SharedPreferences** as JSON (not SecurePreferences - not sensitive data)
+- Hard limit: 200 operations, soft warning: 50 operations
+- 30-day TTL: expired operations auto-removed on enqueue
+- Queue survives app kill/restart
 
-**Key Implementation:**
-- **Sync Trigger**: Automatic on connectivity restored
-- **Conflict Resolution**: Compare `createdAt` timestamps, keep most recent
-- **Batch Sync**: Execute queued operations in chronological order
-- **Error Handling**: Retry failed operations, log persistent failures
-- **Queue Cleanup**: Remove successful operations from local storage
+**Retry Strategy:**
+- Exponential backoff: 1s, 2s, 4s, 8s, 30s (max 5 retries)
+- Failed operations remain in queue with `OperationStatus.failed` for manual retry
+- Continue syncing remaining operations if one fails (no rollback)
 
-**Conflict Resolution Logic:**
-```dart
-Future<void> resolveConflict({
-  required MedicationSession localSession,
-  required MedicationSession remoteSession,
-}) async {
-  // Compare createdAt timestamps
-  if (localSession.createdAt.isAfter(remoteSession.createdAt)) {
-    // Local session is newer, update remote
-    await updateRemoteSession(localSession);
-  } else {
-    // Remote session is newer, update local cache
-    await updateLocalCache(remoteSession);
-  }
-}
-```
+**Auto-Sync:**
+- `autoSyncListenerProvider` watches `connectionStateProvider` for offline→online transitions
+- Automatically calls `syncPendingOperations()` when connectivity restores
+- Shows toast: "Synced X treatment(s)" on success, "X operation(s) failed to sync" on failure
 
-**Learning Goal:** Multi-device sync and conflict resolution strategies
+**Offline Flow:**
+1. User logs treatment while offline
+2. `LoggingNotifier` checks `isConnectedProvider`
+3. If offline: creates operation, enqueues via `OfflineLoggingService`
+4. Updates local cache immediately (optimistic UI)
+5. When online: `autoSyncListenerProvider` triggers sync
+6. Operations execute via `LoggingService` (same 4-write batch pattern)
 
-### Step 6.3: Integrate with Connectivity Provider
-**Location:** `lib/providers/logging_provider.dart`
-**Files to modify:**
-- Update `LoggingNotifier` to listen to connectivity changes
-- Auto-trigger sync when connection restored
-- Update UI state during sync operations
+**Important for Future:**
+- Operations store full context (schedules, recent sessions) to avoid Firestore reads during sync
+- All 5 operation types handled in `_executeOperation()` switch statement
+- Zero additional Firebase costs - queued operations execute identical writes when online
+- Integration with existing `ConnectionStatusWidget` shows sync status in app bar
 
-**Key Implementation:**
-- **Connectivity Listener**: Watch `connectivityProvider` for online/offline transitions
-- **Sync State**: Add `isSyncing` to `LoggingState`
-- **UI Feedback**: Show "Syncing..." indicator during background sync
-- **Error Display**: Toast notification for sync failures
+**Learning Goal:** Offline-first architecture with automatic sync and retry logic
 
-**Learning Goal:** Reactive sync with connectivity monitoring
+### Step 6.2: Implement Sync Service ✅ MERGED INTO STEP 6.1
+**Note:** Sync logic was integrated into `OfflineLoggingService` in Step 6.1. No separate sync service needed.
+
+**Implemented Features:**
+- Sync trigger via `autoSyncListenerProvider` (watches connectivity)
+- Batch sync with exponential backoff retry in `syncPendingOperations()`
+- Error handling: failed operations marked with `OperationStatus.failed`
+- Queue cleanup: successful operations removed automatically
+
+**Multi-Device Conflict Resolution:** Deferred to future implementation. Current approach: sessions have `createdAt` timestamp for conflict resolution if needed.
+
+### Step 6.3: Integrate with Connectivity Provider ✅ MERGED INTO STEP 6.1
+**Note:** Connectivity integration completed in Step 6.1 via `autoSyncListenerProvider`.
+
+**Implemented Features:**
+- `LoggingNotifier` checks `isConnectedProvider` before each logging operation
+- `autoSyncListenerProvider` listens for offline→online transitions
+- Toast notifications show sync results to user
+- Existing `ConnectionStatusWidget` displays sync status in app bar
 
 **<� MILESTONE:** Complete offline support with automatic sync!
 

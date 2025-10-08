@@ -4,22 +4,31 @@ description: Ask clarifying questions
 
 alwaysApply: false
 ---
-After analysing the situation and looking at the relevant code, please come up with the most appropriate plan, following app development best practices, to fix this issue. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself.
 
-After analysing the situation and looking at the relevant code, please ultrathink to come up with the most appropriate plan to fix this issue. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself.
+## 📋 Implementation Guidelines
 
-Please ultrathink to come up with the most appropriate plan to achieve this. After analysing the situation and looking at the relevant code, please ask me any question you would need to feel confident about solving the issues. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself.
+### Analysis & Planning
+- After analysing the situation and looking at the relevant code, ultrathink to come up with the most appropriate plan
+- Ask clarifying questions with lettered sub-points (not bullet points) for numbered questions
+- Review existing files, previous implementations, PRD, CRUD rules, and relevant code before asking questions
+- Suggest recommended solutions for each question
+- Follow Firebase and Flutter best practices, use built-in solutions over custom ones
+- Minimize Firebase costs per CRUD rules (.cursor/rules/firebase_CRUDrules.md)
+- Note: Database backward compatibility not required (regularly deleted for testing)
 
-Please create a detailed plan of how you will achieve and implement this step.
-Before you create the plan, please ask any and all questions you have in order to provide the most robust solution to handle edge cases and/or additional context that you might need to feel confident in proceeding with the implementation. When you do use clarifying questions, please do not use bullet points but rather letters within each numbered question if number requires bullet points. Before you ask me questions, please already have a look at all the existing files you would need, as well as previously implemented steps, to already have the context, use existing systems, ensure coherence and in case you already find the answer to your questions. Suggest for each question your recommended solution. Keep in mind that I want to have the best suited solution for my project while being in line with industry standards and app development best practices as much as possible. Please follow Firebase and Flutter best practices and use built-in solutions whenever possible instead of more complex custom solutions. Also, keep in mind the CRUD rules file (.cursor/rules/firebase_CRUDrules.md) to make sure to keep firebase costs to a minimum. Regarding database, I don't need to worry about backward compatibility since I will regularily delete the database anyway for testing.
+### Quality Checks
+- Verify coherence with PRD (prd.md), CRUD rules, and existing code
+- Follow app development best practices and industry standards
+- After implementation, check and fix linting issues
+- Update logging_plan.md with important information for future reference (keep concise, step format)
 
-Please let me know if this makes sense or contradict itself, the prd (prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues and, if you found any, fix them. I will test only once we fixed the linting issues.
+### Testing Protocol
+- **Do NOT** run the app yourself to test
+- Tell me when testing is needed - I will run it manually
+- I will test only after linting issues are fixed
 
-Please update and add only the important informations to remember about what we implemented in this step for future reference in 
-
-Please follow Firebase and Flutter best practices and use built-in solutions whenever possible instead of more complex custom solutions.
-
-Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself.
-
-Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily reference things we will need to remember long-term to understand how the app works or for future implementation. Don't include information related to linting. Keep it as short as possible.
-
+### Recent Implementation Notes
+**Phase 6 - Cache Integration (Completed):**
+- ✅ `LoggingService` now injects `SummaryCacheService` for 0-read duplicate detection
+- ✅ Quick-log validation uses cached summary (no Firestore reads)
+- ✅ Pattern: `LoggingService(cacheService)` via provider dependency injection
