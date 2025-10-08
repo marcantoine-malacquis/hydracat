@@ -7,9 +7,12 @@
 /// - Integration with auth, profile, and analytics providers
 library;
 
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/logging/exceptions/logging_exceptions.dart';
 import 'package:hydracat/features/logging/models/daily_summary_cache.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
@@ -53,7 +56,8 @@ final loggingServiceProvider = Provider<LoggingService>((ref) {
 /// Provider for SummaryCacheService instance
 final summaryCacheServiceProvider = Provider<SummaryCacheService>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return SummaryCacheService(prefs);
+  final analytics = ref.read(analyticsServiceDirectProvider);
+  return SummaryCacheService(prefs, analytics);
 });
 
 /// Provider for SummaryService instance
@@ -97,13 +101,17 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
   ///
   /// - Clears expired caches from previous days
   /// - Loads today's cache if it exists
+  /// - Warms cache from Firestore for accuracy
   Future<void> _initialize() async {
     try {
-      // Clear any expired caches from previous days
+      // STEP 1: Clear any expired caches from previous days
       await clearExpiredCaches();
 
-      // Load today's cache if it exists
+      // STEP 2: Load today's cache from SharedPreferences
       await loadTodaysCache();
+
+      // STEP 3: Warm cache from Firestore on cold start
+      await _warmCacheFromFirestore();
 
       if (kDebugMode) {
         debugPrint('[LoggingNotifier] Initialization complete');
@@ -112,6 +120,18 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       if (kDebugMode) {
         debugPrint('[LoggingNotifier] Initialization error: $e');
       }
+
+      // Track analytics for initialization failures
+      try {
+        final analyticsService = _ref.read(analyticsServiceDirectProvider);
+        await analyticsService.trackError(
+          errorType: 'cache_initialization_failure',
+          errorContext: e.toString(),
+        );
+      } on Exception {
+        // Silent failure on analytics tracking - don't compound errors
+      }
+
       // Don't block app startup on cache errors
     }
   }
@@ -193,6 +213,111 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
 
     // Reload today's cache
     await loadTodaysCache();
+  }
+
+  /// Warm cache from Firestore on app startup
+  ///
+  /// Fetches today's summary from Firestore and updates SharedPreferences
+  /// cache to ensure accuracy. This prevents stale cache issues and ensures
+  /// the cache reflects sessions logged on other devices.
+  ///
+  /// Field mapping from DailySummary to DailySummaryCache:
+  /// - medicationSessionCount: Uses medicationScheduledDoses (proxy)
+  /// - medicationNames: Empty list (not tracked in DailySummary)
+  /// - totalMedicationDosesGiven: Uses medicationTotalDoses (completed doses)
+  /// - totalFluidVolumeGiven: Maps to fluidTotalVolume
+  ///
+  /// Note: medicationNames will be populated incrementally as sessions are
+  /// logged. This is acceptable since duplicate detection also queries
+  /// Firestore for exact session matches.
+  ///
+  /// Cost: 1 Firestore read per cold start (acceptable for cache accuracy)
+  Future<void> _warmCacheFromFirestore() async {
+    try {
+      final user = _ref.read(currentUserProvider);
+      final pet = _ref.read(primaryPetProvider);
+
+      if (user == null || pet == null) {
+        if (kDebugMode) {
+          debugPrint(
+            '[LoggingNotifier] Cannot warm cache: user or pet is null',
+          );
+        }
+        return;
+      }
+
+      // Fetch today's summary from Firestore
+      final summaryService = _ref.read(summaryServiceProvider);
+      final summary = await summaryService.getTodaySummary(
+        userId: user.id,
+        petId: pet.id,
+      );
+
+      if (summary != null) {
+        // Convert DailySummary to DailySummaryCache
+        // Note: DailySummary doesn't track medicationNames, so we use
+        // empty list. This is acceptable since duplicate detection queries
+        // Firestore directly
+        final dateStr = AppDateUtils.formatDateForSummary(summary.date);
+        final cache = DailySummaryCache(
+          date: dateStr,
+          medicationSessionCount: summary.medicationScheduledDoses,
+          fluidSessionCount: summary.fluidSessionCount,
+          medicationNames: const [], // Not tracked in DailySummary
+          totalMedicationDosesGiven: summary.medicationTotalDoses.toDouble(),
+          totalFluidVolumeGiven: summary.fluidTotalVolume,
+        );
+
+        // Write to SharedPreferences
+        final cacheKey = 'daily_summary_${user.id}_${pet.id}_$dateStr';
+        final prefs = _ref.read(sharedPreferencesProvider);
+        await prefs.setString(cacheKey, jsonEncode(cache.toJson()));
+
+        // Update state
+        state = state.withCache(cache);
+
+        if (kDebugMode) {
+          debugPrint(
+            '[LoggingNotifier] Cache warmed from Firestore: $dateStr',
+          );
+        }
+
+        // Track analytics
+        final analyticsService = _ref.read(analyticsServiceDirectProvider);
+        await analyticsService.trackFeatureUsed(
+          featureName: 'cache_warmed_on_startup',
+          additionalParams: {
+            'had_existing_cache': state.dailyCache != null,
+            'session_count':
+                summary.medicationScheduledDoses + summary.fluidSessionCount,
+          },
+        );
+      } else {
+        if (kDebugMode) {
+          debugPrint('[LoggingNotifier] No Firestore summary exists for today');
+        }
+        // This is normal for first log of the day - cache will be created on
+        // first log
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('[LoggingNotifier] Error warming cache from Firestore: $e');
+      }
+
+      // Track analytics for warming failures
+      try {
+        final analyticsService = _ref.read(analyticsServiceDirectProvider);
+        await analyticsService.trackError(
+          errorType: 'cache_warming_failure',
+          errorContext: e.toString(),
+        );
+      } on Exception {
+        // Silent failure on analytics tracking - don't compound errors
+      }
+
+      // Don't fail initialization on warming errors - cache will be updated
+      // on next log
+    }
   }
 
   // ============================================

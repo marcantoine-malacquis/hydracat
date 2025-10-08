@@ -1249,53 +1249,80 @@ final count = await loggingService.quickLogAllTreatments(
 
 ## Phase 7: Local Cache & Performance Optimization
 
-### Step 7.1: Implement Today's Summary Cache
+### Step 7.1: Implement Today's Summary Cache ✅ COMPLETED
 **Location:** `lib/features/logging/services/summary_cache_service.dart`
-**Files to create:**
-- `summary_cache_service.dart` - Local cache for today's summary
-- `cache_invalidation_service.dart` - Midnight cache refresh logic
+**Status:** Implemented in Phase 2 (Step 2.2) and enhanced in Phase 7
 
-**Key Implementation:**
-- **Cache Storage**: Store today's summary in `SharedPreferences`
-- **Cache Key**: `treatment_summary_${userId}_${petId}_${dateStr}`
-- **Auto-Refresh**: Clear cache at midnight (new day transition)
-- **Update Strategy**: Update cache on every successful log
-- **Read Strategy**: Check cache first, fallback to Firestore if missing
+**Implemented Features:**
+- ✅ SharedPreferences-based cache for today's summary
+- ✅ Midnight cache invalidation via lifecycle observers
+- ✅ Cache warming on app startup (fetches from Firestore)
+- ✅ Analytics tracking for cache health monitoring
+- ✅ Auto-refresh on app resume from background
+- ✅ Update strategy: Incremental updates on every successful log
+- ✅ Read strategy: Check cache first, fallback to Firestore if missing
 
 **Cache Benefits:**
 - **Cost Savings**: 0 reads for duplicate detection and status checks
 - **Performance**: Instant UI updates without Firestore round-trip
 - **Offline**: Works completely offline with cached data
+- **Accuracy**: Warmed from Firestore on cold start (1 read per session)
 
-**Learning Goal:** Client-side caching for Firebase cost reduction
+**Cache Warming Strategy:**
+- On app cold start: Fetch today's summary from Firestore (1 read)
+- Updates SharedPreferences with fresh data
+- Ensures cache reflects sessions from other devices
+- Prevents stale cache issues in multi-device scenarios
 
-### Step 7.2: Implement Schedule Pre-loading
-**Location:** `lib/providers/schedule_provider.dart`
-**Files to create:**
-- `today_schedules_provider.dart` - Provider for today's active schedules
+**Field Mapping (DailySummary → DailySummaryCache):**
+- `medicationSessionCount`: Uses `medicationScheduledDoses` as proxy
+- `medicationNames`: Empty list on warming (populated incrementally via logging)
+- `totalMedicationDosesGiven`: Maps from `medicationTotalDoses` (int → double)
+- `totalFluidVolumeGiven`: Maps from `fluidTotalVolume`
+- `fluidSessionCount`: Direct mapping
 
-**Key Implementation:**
-- **Load Strategy**: Fetch today's schedules when app starts or when day changes
-- **Cache Duration**: Cache schedules for current day only
-- **Query Optimization**: Single query with `where('isActive', isEqualTo: true)`
-- **Pre-fill Support**: Use cached schedules to pre-fill logging forms
+**Analytics Tracking:**
+- `cache_warmed_on_startup` - successful cache warming with session counts
+- `cache_read_failure` - SharedPreferences read errors
+- `cache_update_failure` - cache write errors (medication/fluid)
+- `cache_cleanup_failure` - expired cache cleanup errors
+- `cache_initialization_failure` - app startup cache errors
+- `cache_warming_failure` - Firestore fetch errors during warming
 
-**Query Pattern:**
-```dart
-final todaySchedules = await _firestore
-    .collection('users').doc(userId)
-    .collection('pets').doc(petId)
-    .collection('schedules')
-    .where('isActive', isEqualTo: true)
-    .get();
+**Learning Goal:** Production-ready cache system with startup warming and health monitoring
 
-// Cache result for day
-await _cacheSchedules(todaySchedules.docs, DateTime.now());
-```
+### Step 7.2: Implement Schedule Pre-loading ✅ COMPLETED
+**Location:** `lib/providers/profile_provider.dart`, `lib/app/app_shell.dart`, `lib/providers/analytics_provider.dart`
 
-**Cost**: 1 read per day (vs 1 read per logging popup open)
+**Implementation Summary:**
+- Added `schedulesLoadedAt` and `schedulesLoadedDate` fields to `ProfileState` for date-based cache validation
+- Created `loadAllSchedules()` method that loads medication and fluid schedules concurrently with `Future.wait`
+- Added `hasValidSchedulesForToday` computed property for cache validation (checks date string match)
+- Integrated `onAppResumed()` lifecycle hook in `ProfileNotifier` and `AppShell`
+- Proactive loading triggers: app startup (after pet loaded), manual refresh, app resume with date change
 
-**Learning Goal:** Proactive data loading for better UX
+**Key Methods:**
+- `ProfileNotifier.loadAllSchedules()` - Loads both schedules, tracks cache hits/misses via analytics
+- `ProfileNotifier.onAppResumed()` - Refreshes cache if date changed
+- `AppShell.didChangeAppLifecycleState()` - Calls profile and logging resume hooks
+
+**Analytics Events:**
+- `schedules_preloaded` (params: medication_count, has_fluid_schedule, cache_miss)
+- `schedules_cache_hit`
+
+**Cache Behavior:**
+- Date-specific validation (YYYY-MM-DD format)
+- Invalidates at midnight automatically
+- Silent background loading with fallback to on-demand if pre-loading fails
+- Force reload on manual refresh by clearing schedulesLoadedDate
+
+**Cost**: 2 Firestore reads per day (1 medications + 1 fluid) vs ~10-20 reads before (80-90% savings)
+
+**Important for Future:**
+- Cache stored in existing `ProfileState` (no separate cache service)
+- Date string format: `'${year}-${month.padLeft(2, '0')}-${day.padLeft(2, '0')}'`
+- `todaysMedicationSchedulesProvider` and `todaysFluidScheduleProvider` now use pre-loaded cache
+- Silent failures logged to analytics only - no user-facing errors
 
 ### Step 7.3: Optimize Duplicate Detection
 **Location:** `lib/features/logging/services/logging_service.dart`

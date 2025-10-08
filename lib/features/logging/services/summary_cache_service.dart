@@ -1,11 +1,13 @@
 /// Service for managing local SharedPreferences cache of daily summaries
 library;
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/logging/models/daily_summary_cache.dart';
+import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Service for local cache management of today's treatment summary
@@ -39,10 +41,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// ```
 class SummaryCacheService {
   /// Creates a [SummaryCacheService] instance
-  const SummaryCacheService(this._prefs);
+  ///
+  /// [_analyticsService] is optional for testing purposes. In production,
+  /// it should be provided for cache health monitoring.
+  const SummaryCacheService(this._prefs, [this._analyticsService]);
 
   /// SharedPreferences instance for cache storage
   final SharedPreferences _prefs;
+
+  /// Analytics service for tracking cache health (optional for testing)
+  final AnalyticsService? _analyticsService;
 
   /// Cache key prefix for all daily summary caches
   static const String _cacheKeyPrefix = 'daily_summary';
@@ -103,6 +111,15 @@ class SummaryCacheService {
       if (kDebugMode) {
         debugPrint('[SummaryCacheService] Error reading cache: $e');
       }
+
+      // Track analytics
+      unawaited(
+        _analyticsService?.trackError(
+          errorType: 'cache_read_failure',
+          errorContext: 'getTodaySummary: $e',
+        ),
+      );
+
       return null;
     }
   }
@@ -150,6 +167,14 @@ class SummaryCacheService {
       if (kDebugMode) {
         debugPrint('[SummaryCacheService] Error updating cache: $e');
       }
+
+      // Track analytics
+      unawaited(
+        _analyticsService?.trackError(
+          errorType: 'cache_update_failure',
+          errorContext: 'updateMedicationSession: $e',
+        ),
+      );
     }
   }
 
@@ -193,6 +218,14 @@ class SummaryCacheService {
       if (kDebugMode) {
         debugPrint('[SummaryCacheService] Error updating cache: $e');
       }
+
+      // Track analytics
+      unawaited(
+        _analyticsService?.trackError(
+          errorType: 'cache_update_failure',
+          errorContext: 'updateFluidSession: $e',
+        ),
+      );
     }
   }
 
@@ -244,6 +277,14 @@ class SummaryCacheService {
       if (kDebugMode) {
         debugPrint('[SummaryCacheService] Error clearing expired caches: $e');
       }
+
+      // Track analytics
+      unawaited(
+        _analyticsService?.trackError(
+          errorType: 'cache_cleanup_failure',
+          errorContext: '$e',
+        ),
+      );
     }
   }
 

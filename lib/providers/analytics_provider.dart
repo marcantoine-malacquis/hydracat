@@ -48,6 +48,12 @@ class AnalyticsEvents {
 
   /// Onboarding abandoned event name
   static const String onboardingAbandoned = 'onboarding_abandoned';
+
+  /// Schedules preloaded event name
+  static const String schedulesPreloaded = 'schedules_preloaded';
+
+  /// Schedules cache hit event name
+  static const String schedulesCacheHit = 'schedules_cache_hit';
 }
 
 /// Analytics parameters
@@ -96,6 +102,15 @@ class AnalyticsParams {
 
   /// Completion rate parameter name
   static const String completionRate = 'completion_rate';
+
+  /// Medication count parameter name
+  static const String medicationCount = 'medication_count';
+
+  /// Has fluid schedule parameter name
+  static const String hasFluidSchedule = 'has_fluid_schedule';
+
+  /// Cache miss parameter name
+  static const String cacheMiss = 'cache_miss';
 }
 
 /// User types for analytics

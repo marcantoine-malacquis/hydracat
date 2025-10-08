@@ -5,6 +5,7 @@ import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/features/profile/services/pet_service.dart';
 import 'package:hydracat/features/profile/services/schedule_service.dart';
+import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 
 /// Cache status enum to track data freshness
@@ -36,6 +37,8 @@ class ProfileState {
     this.error,
     this.lastUpdated,
     this.cacheStatus = CacheStatus.fresh,
+    this.schedulesLoadedAt,
+    this.schedulesLoadedDate,
   });
 
   /// Creates initial empty state
@@ -48,7 +51,9 @@ class ProfileState {
       scheduleIsLoading = false,
       error = null,
       lastUpdated = null,
-      cacheStatus = CacheStatus.empty;
+      cacheStatus = CacheStatus.empty,
+      schedulesLoadedAt = null,
+      schedulesLoadedDate = null;
 
   /// Creates loading state
   const ProfileState.loading()
@@ -60,7 +65,9 @@ class ProfileState {
       scheduleIsLoading = false,
       error = null,
       lastUpdated = null,
-      cacheStatus = CacheStatus.empty;
+      cacheStatus = CacheStatus.empty,
+      schedulesLoadedAt = null,
+      schedulesLoadedDate = null;
 
   /// Current primary pet profile
   final CatProfile? primaryPet;
@@ -88,6 +95,12 @@ class ProfileState {
 
   /// Status of the cached data
   final CacheStatus cacheStatus;
+
+  /// When schedules were last loaded (for cache validation)
+  final DateTime? schedulesLoadedAt;
+
+  /// Date for which schedules are cached (YYYY-MM-DD format)
+  final String? schedulesLoadedDate;
 
   /// Whether user has a pet profile
   bool get hasPetProfile => primaryPet != null;
@@ -120,6 +133,19 @@ class ProfileState {
   /// Number of medication schedules
   int get medicationScheduleCount => medicationSchedules?.length ?? 0;
 
+  /// Whether cached schedules are valid for today
+  bool get hasValidSchedulesForToday {
+    if (schedulesLoadedDate == null) return false;
+
+    final today = DateTime.now();
+    final todayStr =
+        '${today.year}-'
+        '${today.month.toString().padLeft(2, '0')}-'
+        '${today.day.toString().padLeft(2, '0')}';
+
+    return schedulesLoadedDate == todayStr;
+  }
+
   /// Creates a copy of this [ProfileState] with the given fields replaced
   ProfileState copyWith({
     CatProfile? primaryPet,
@@ -131,6 +157,8 @@ class ProfileState {
     ProfileException? error,
     DateTime? lastUpdated,
     CacheStatus? cacheStatus,
+    DateTime? schedulesLoadedAt,
+    String? schedulesLoadedDate,
   }) {
     return ProfileState(
       primaryPet: primaryPet ?? this.primaryPet,
@@ -142,6 +170,8 @@ class ProfileState {
       error: error ?? this.error,
       lastUpdated: lastUpdated ?? this.lastUpdated,
       cacheStatus: cacheStatus ?? this.cacheStatus,
+      schedulesLoadedAt: schedulesLoadedAt ?? this.schedulesLoadedAt,
+      schedulesLoadedDate: schedulesLoadedDate ?? this.schedulesLoadedDate,
     );
   }
 
@@ -168,7 +198,9 @@ class ProfileState {
         other.scheduleIsLoading == scheduleIsLoading &&
         other.error == error &&
         other.lastUpdated == lastUpdated &&
-        other.cacheStatus == cacheStatus;
+        other.cacheStatus == cacheStatus &&
+        other.schedulesLoadedAt == schedulesLoadedAt &&
+        other.schedulesLoadedDate == schedulesLoadedDate;
   }
 
   @override
@@ -183,6 +215,8 @@ class ProfileState {
       error,
       lastUpdated,
       cacheStatus,
+      schedulesLoadedAt,
+      schedulesLoadedDate,
     );
   }
 
@@ -197,7 +231,9 @@ class ProfileState {
         'scheduleIsLoading: $scheduleIsLoading, '
         'error: $error, '
         'lastUpdated: $lastUpdated, '
-        'cacheStatus: $cacheStatus'
+        'cacheStatus: $cacheStatus, '
+        'schedulesLoadedAt: $schedulesLoadedAt, '
+        'schedulesLoadedDate: $schedulesLoadedDate'
         ')';
   }
 }
@@ -227,6 +263,11 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         cacheStatus: pet != null ? CacheStatus.cached : CacheStatus.empty,
       );
 
+      // Proactively load schedules after pet is loaded
+      if (pet != null) {
+        await loadAllSchedules();
+      }
+
       return pet != null;
     } on Exception catch (e) {
       state = state.copyWith(
@@ -251,6 +292,13 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         lastUpdated: DateTime.now(),
         cacheStatus: pet != null ? CacheStatus.fresh : CacheStatus.empty,
       );
+
+      // Reload schedules on manual refresh
+      if (pet != null) {
+        // Force reload by clearing date cache first
+        state = state.copyWith(schedulesLoadedDate: '');
+        await loadAllSchedules();
+      }
 
       return pet != null;
     } on Exception catch (e) {
@@ -396,10 +444,19 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         petId: primaryPet.id,
       );
 
+      // Update state with date tracking
+      final now = DateTime.now();
+      final todayStr =
+          '${now.year}-'
+          '${now.month.toString().padLeft(2, '0')}-'
+          '${now.day.toString().padLeft(2, '0')}';
+
       state = state.copyWith(
         fluidSchedule: schedule,
         scheduleIsLoading: false,
-        lastUpdated: DateTime.now(),
+        lastUpdated: now,
+        schedulesLoadedAt: now,
+        schedulesLoadedDate: todayStr,
       );
 
       return schedule != null;
@@ -546,10 +603,19 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         petId: primaryPet.id,
       );
 
+      // Update state with date tracking
+      final now = DateTime.now();
+      final todayStr =
+          '${now.year}-'
+          '${now.month.toString().padLeft(2, '0')}-'
+          '${now.day.toString().padLeft(2, '0')}';
+
       state = state.copyWith(
         medicationSchedules: schedules,
         scheduleIsLoading: false,
-        lastUpdated: DateTime.now(),
+        lastUpdated: now,
+        schedulesLoadedAt: now,
+        schedulesLoadedDate: todayStr,
       );
 
       return schedules.isNotEmpty;
@@ -766,6 +832,121 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         debugPrint('[ProfileNotifier] Error deleting medication schedule: $e');
       }
       return false;
+    }
+  }
+
+  /// Proactively load all schedules for today
+  ///
+  /// Called automatically on:
+  /// - App startup (after authentication)
+  /// - App resume from background
+  /// - Onboarding completion
+  ///
+  /// Silently fails and logs to analytics if unsuccessful
+  Future<void> loadAllSchedules() async {
+    final primaryPet = state.primaryPet;
+    if (primaryPet == null) return;
+
+    final currentUser = _ref.read(currentUserProvider);
+    if (currentUser == null) return;
+
+    // Check if cache is still valid for today
+    if (state.hasValidSchedulesForToday) {
+      if (kDebugMode) {
+        debugPrint('[ProfileNotifier] Schedules cache valid, skipping reload');
+      }
+
+      // Track cache hit
+      final analyticsService = _ref.read(analyticsServiceDirectProvider);
+      await analyticsService.trackFeatureUsed(
+        featureName: 'schedules_cache_hit',
+      );
+      return;
+    }
+
+    if (kDebugMode) {
+      debugPrint('[ProfileNotifier] Pre-loading schedules for today');
+    }
+
+    try {
+      // Load both schedules concurrently
+      final results = await Future.wait([
+        _scheduleService.getFluidSchedule(
+          userId: currentUser.id,
+          petId: primaryPet.id,
+        ),
+        _scheduleService.getMedicationSchedules(
+          userId: currentUser.id,
+          petId: primaryPet.id,
+        ),
+      ]);
+
+      final fluidSchedule = results[0] as Schedule?;
+      final medicationSchedules = results[1] as List<Schedule>? ?? [];
+
+      // Update state with new schedules and date tracking
+      final now = DateTime.now();
+      final todayStr =
+          '${now.year}-'
+          '${now.month.toString().padLeft(2, '0')}-'
+          '${now.day.toString().padLeft(2, '0')}';
+
+      state = state.copyWith(
+        fluidSchedule: fluidSchedule,
+        medicationSchedules: medicationSchedules,
+        schedulesLoadedAt: now,
+        schedulesLoadedDate: todayStr,
+      );
+
+      // Track successful pre-load
+      final analyticsService = _ref.read(analyticsServiceDirectProvider);
+      await analyticsService.trackFeatureUsed(
+        featureName: 'schedules_preloaded',
+        additionalParams: {
+          'medication_count': medicationSchedules.length,
+          'has_fluid_schedule': fluidSchedule != null,
+          'cache_miss': true,
+        },
+      );
+
+      if (kDebugMode) {
+        debugPrint(
+          '[ProfileNotifier] Schedules preloaded: '
+          '${medicationSchedules.length} medications, '
+          'fluid: ${fluidSchedule != null}',
+        );
+      }
+    } on Exception catch (e) {
+      // Silent failure - log to analytics but don't show error to user
+      // Logging popups will fall back to on-demand loading
+
+      final analyticsService = _ref.read(analyticsServiceDirectProvider);
+      await analyticsService.trackError(
+        errorType: 'schedules_preload_failed',
+        errorContext: e.toString(),
+      );
+
+      if (kDebugMode) {
+        debugPrint('[ProfileNotifier] Failed to preload schedules: $e');
+      }
+    }
+  }
+
+  /// Handle app resume from background
+  ///
+  /// Called by AppShell when app lifecycle changes to resumed.
+  /// Refreshes schedule cache if date has changed.
+  Future<void> onAppResumed() async {
+    if (kDebugMode) {
+      debugPrint('[ProfileNotifier] App resumed - checking schedule cache');
+    }
+
+    // Check if date has changed since last load
+    if (!state.hasValidSchedulesForToday) {
+      if (kDebugMode) {
+        debugPrint('[ProfileNotifier] Date changed - reloading schedules');
+      }
+      await loadAllSchedules();
     }
   }
 }

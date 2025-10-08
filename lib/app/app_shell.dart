@@ -98,10 +98,13 @@ class _AppShellState extends ConsumerState<AppShell>
     super.didChangeAppLifecycleState(state);
 
     if (state == AppLifecycleState.resumed) {
-      debugPrint('[AppShell] App resumed - refreshing logging cache');
-      // Refresh cache when app resumes (handles day changes while app
-      // in background)
+      debugPrint('[AppShell] App resumed - refreshing caches');
+
+      // Refresh logging cache (existing)
       ref.read(loggingProvider.notifier).onAppResumed();
+
+      // Refresh schedule cache (NEW)
+      ref.read(profileProvider.notifier).onAppResumed();
     }
   }
 
