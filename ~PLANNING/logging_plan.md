@@ -434,10 +434,11 @@ class LoggingState {
 
 **Critical Implementation Details:**
 
-**8-Write Batch (NOT 4):** Session + (daily set+update) + (weekly set+update) + (monthly set+update) = 8 writes/log
-- **Why**: `FieldValue.increment()` fails on non-existent fields; must init with concrete 0s first
-- **Cost**: $0.0000144/log (~$0.04/month for 3000 logs) - negligible vs reliability gain
-- **Pattern**: `batch..set({counters: 0}, merge:true)..update({counters: increment(delta)})`
+**4-Write Batch (OPTIMIZED FROM 7):** Session + daily + weekly + monthly = 4 writes/log
+- **Why**: `FieldValue.increment()` DOES work on non-existent fields (treats as 0)!
+- **Cost**: $0.0000072/log (~$0.022/month for 3000 logs) - 43% savings!
+- **Pattern**: `batch.set({date: timestamp, counter: FieldValue.increment(delta)}, merge:true)`
+- **Key**: Single `set()` with `merge:true` combines initialization AND increments
 
 **Schedule Matching:** Meds filter by name → closest time ±2h; Fluids closest time ±2h only
 
@@ -1022,246 +1023,149 @@ case UserPersona.medicationAndFluidTherapy:
 
 ---
 
-## Phase 5: Batch Write Operations & Summary Updates
+## Phase 5: Batch Write Operations & Summary Updates ✅ COMPLETED
 
-### Step 5.1: Implement 4-Write Batch Strategy
+### Step 5.1: Implement Optimized Batch Strategy ✅ COMPLETED
 **Location:** `lib/features/logging/services/logging_service.dart`
-**Implementation:**
 
-**Single Session Log (4 writes):**
+**Critical Optimization Discovery:**
+- Original plan: 7 writes per session (set + update for each summary)
+- **Actual implementation: 4 writes per session** (single set with merge + increments)
+- **Key insight:** `FieldValue.increment()` works on non-existent fields (treats as 0)
+- **Result:** 43% cost reduction + zero Firestore reads needed
+
+**Implementation Pattern:**
 ```dart
-Future<LoggingResult> logMedicationSession({
-  required MedicationSession session,
-  required String petId,
-  required String userId,
-}) async {
-  final batch = FirebaseFirestore.instance.batch();
+// Single operation creates OR updates - no reads required!
+batch.set(
+  dailyRef,
+  {
+    'date': Timestamp.fromDate(date),
+    'medicationTotalDoses': FieldValue.increment(1),  // Works on new fields!
+    'fluidTotalVolume': FieldValue.increment(0),
+    'overallStreak': 0,
+    'createdAt': FieldValue.serverTimestamp(),
+    'updatedAt': FieldValue.serverTimestamp(),
+  },
+  SetOptions(merge: true),  // Crucial: preserves existing fields
+);
+```
 
-  try {
-    // Generate date strings for summaries
-    final dateStr = _formatDate(session.dateTime);        // "2025-10-15"
-    final weekStr = _formatWeek(session.dateTime);        // "2025-W42"
-    final monthStr = _formatMonth(session.dateTime);      // "2025-10"
+**Methods Implemented:**
+1. `logMedicationSession()` - 4 writes (1 session + 3 summaries)
+2. `logFluidSession()` - 4 writes (1 session + 3 summaries)
 
-    // 1. Write session document
-    final sessionRef = _firestore
-        .collection('users').doc(userId)
-        .collection('pets').doc(petId)
-        .collection('medicationSessions').doc(session.id);
+**Helper Methods Created:**
+- `_addMedicationSessionToBatch()` - adds 4 operations to batch
+- `_addFluidSessionToBatch()` - adds 4 operations to batch
+- `_buildDailySummaryWithIncrements()` - combines init + increments
+- `_buildWeeklySummaryWithIncrements()` - combines init + increments
+- `_buildMonthlySummaryWithIncrements()` - combines init + increments
 
-    batch.set(sessionRef, session.toJson());
+**Key Details to Remember:**
+- Schedule matching: medications by name + time (±2h), fluids by time only (±2h)
+- Duplicate detection: medications only (±15min window), fluids none
+- All operations atomic: success or complete rollback
+- Summary paths: `treatmentSummaries/daily|weekly|monthly/summaries/{id}`
 
-    // 2. Update daily summary
-    final dailyRef = _firestore
-        .collection('users').doc(userId)
-        .collection('pets').doc(petId)
-        .collection('treatmentSummaryDaily').doc(dateStr);
+**Cost:** $0.0000072 per session (vs $0.0000126 with 7-write pattern)
 
-    batch.set(dailyRef, {
-      'date': Timestamp.fromDate(session.dateTime),
-      'medicationTotalDoses': session.completed ? FieldValue.increment(1) : 0,
-      'medicationScheduledDoses': FieldValue.increment(1),
-      'medicationMissedCount': session.completed ? 0 : FieldValue.increment(1),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+### Step 5.2: Implement Session Updates with Delta Calculation ✅ COMPLETED
+**Location:** `lib/features/logging/services/logging_service.dart`
 
-    // 3. Update weekly summary
-    final weeklyRef = _firestore
-        .collection('users').doc(userId)
-        .collection('pets').doc(petId)
-        .collection('treatmentSummaryWeekly').doc(weekStr);
+**Methods Implemented:**
+1. `updateMedicationSession()` - updates session + summaries with deltas
+2. `updateFluidSession()` - updates session + summaries with deltas
 
-    final weekDates = _getWeekStartEnd(session.dateTime);
-    batch.set(weeklyRef, {
-      'startDate': Timestamp.fromDate(weekDates['start']!),
-      'endDate': Timestamp.fromDate(weekDates['end']!),
-      'medicationTotalDoses': session.completed ? FieldValue.increment(1) : 0,
-      'medicationScheduledDoses': FieldValue.increment(1),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+**Delta Calculation Pattern:**
+- Uses `SummaryUpdateDto.forMedicationSessionUpdate()` / `forFluidSessionUpdate()`
+- Compares old vs new session values
+- Only includes changed fields in batch (minimizes payload)
+- Returns deltas for: dosage completion status, volume changes
 
-    // 4. Update monthly summary
-    final monthlyRef = _firestore
-        .collection('users').doc(userId)
-        .collection('pets').doc(petId)
-        .collection('treatmentSummaryMonthly').doc(monthStr);
-
-    final monthDates = _getMonthStartEnd(session.dateTime);
-    batch.set(monthlyRef, {
-      'startDate': Timestamp.fromDate(monthDates['start']!),
-      'endDate': Timestamp.fromDate(monthDates['end']!),
-      'medicationTotalDoses': session.completed ? FieldValue.increment(1) : 0,
-      'medicationScheduledDoses': FieldValue.increment(1),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-
-    // Atomic commit: All 4 writes or none
-    await batch.commit();
-
-    // Update local cache
-    await _updateLocalCache(dateStr, petId, userId);
-
-    return LoggingResult.success(session);
-  } catch (e) {
-    return LoggingResult.failure(e.toString());
-  }
+**Smart Optimization:**
+```dart
+// If no summary changes needed (notes-only edit), skip summary updates
+if (!dto.hasUpdates) {
+  await sessionRef.update(newSession.toJson());
+  return;  // Single write instead of 4!
 }
 ```
 
-**Learning Goal:** Firebase batch operations for atomic multi-document writes
+**Update Pattern (4 writes when summaries affected):**
+1. Session document: `batch.update()` with new values
+2-4. Summaries: Same optimized `set()` with `merge: true` pattern from Step 5.1
 
-### Step 5.2: Implement Update with Delta Calculation
-**Location:** `lib/features/logging/services/logging_service.dart`
-**Implementation:**
+**Key Details to Remember:**
+- Session updates use `batch.update()` (requires existing document)
+- Summary updates use `batch.set()` with merge (creates if needed)
+- Delta increments can be negative (e.g., marking completed → missed = -1 dose, +1 missed)
+- `updatedAt` timestamp tracks last modification
+- Only updates summaries if dosage/volume/completion status changed
 
+**Example Delta:**
+- Old: `completed: false` (missed dose)
+- New: `completed: true` (completed dose)
+- Delta: `medicationTotalDoses: +1`, `medicationMissedCount: -1`
+
+### Step 5.3: Implement Quick-Log Batch Write ✅ COMPLETED
+**Location:** `lib/features/logging/services/logging_service.dart` + `lib/providers/logging_provider.dart`
+
+**Method Implemented:**
+`quickLogAllTreatments()` - logs all active schedules with today's reminders in single atomic batch
+
+**Quick-Log Process:**
+1. Validate input (schedules not empty)
+2. Check cache for existing sessions via `_getDailySummaryCache()`
+3. Filter to active schedules: `schedule.isActive && schedule.hasReminderTimeToday(now)`
+4. Generate sessions from filtered schedules (one per reminder time)
+5. Add all sessions to batch using helper methods
+6. Atomic commit (all or none)
+7. Return total session count
+
+**Key Behaviors:**
+- **Scheduled times**: Uses `reminderTime` as `dateTime` (NOT current time) for accurate adherence
+- **Medication completion**: All marked as `completed: true` (quick-log assumes given as scheduled)
+- **Multiple reminders**: Creates separate session for each reminder time per schedule
+- **Rejection**: Throws error if cache shows any sessions already logged today (strict all-or-nothing)
+
+**Cache Stub for Phase 6:**
 ```dart
-Future<LoggingResult> updateMedicationSession({
-  required MedicationSession oldSession,
-  required MedicationSession newSession,
-  required String petId,
-  required String userId,
-}) async {
-  final batch = FirebaseFirestore.instance.batch();
-
-  try {
-    // Calculate deltas
-    final dosageDelta = newSession.completed && !oldSession.completed
-        ? 1
-        : !newSession.completed && oldSession.completed
-            ? -1
-            : 0;
-
-    final missedDelta = !newSession.completed && oldSession.completed
-        ? 1
-        : newSession.completed && !oldSession.completed
-            ? -1
-            : 0;
-
-    // 1. Update session document
-    final sessionRef = _firestore
-        .collection('users').doc(userId)
-        .collection('pets').doc(petId)
-        .collection('medicationSessions').doc(newSession.id);
-
-    batch.update(sessionRef, {
-      ...newSession.toJson(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-
-    // 2-4. Update summaries with deltas
-    final dateStr = _formatDate(newSession.dateTime);
-    final weekStr = _formatWeek(newSession.dateTime);
-    final monthStr = _formatMonth(newSession.dateTime);
-
-    // Daily summary delta update
-    final dailyRef = _firestore
-        .collection('users').doc(userId)
-        .collection('pets').doc(petId)
-        .collection('treatmentSummaryDaily').doc(dateStr);
-
-    batch.update(dailyRef, {
-      if (dosageDelta != 0)
-        'medicationTotalDoses': FieldValue.increment(dosageDelta),
-      if (missedDelta != 0)
-        'medicationMissedCount': FieldValue.increment(missedDelta),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-
-    // Weekly and monthly delta updates (similar pattern)...
-
-    await batch.commit();
-    await _updateLocalCache(dateStr, petId, userId);
-
-    return LoggingResult.success(newSession);
-  } catch (e) {
-    return LoggingResult.failure(e.toString());
-  }
+Future<DailySummaryCache?> _getDailySummaryCache(String userId, String petId) async {
+  // TODO(Phase 6): Inject SummaryCacheService via constructor
+  return null;  // Currently allows all quick-logs through
 }
 ```
 
-**Learning Goal:** Delta-based summary updates for data consistency
+**Provider Integration:**
+- `logging_provider.dart` calls service method
+- Reloads cache after success: `await loadTodaysCache()`
+- Tracks analytics: `session_count` parameter
+- Handles errors with user-friendly messages
 
-### Step 5.3: Implement Quick-Log Batch Write
-**Location:** `lib/features/logging/services/logging_service.dart`
-**Implementation:**
-
+**Typical Usage:**
 ```dart
-Future<LoggingResult> quickLogAllTreatments({
-  required String petId,
-  required String userId,
-  required List<Schedule> todaySchedules,
-}) async {
-  final batch = FirebaseFirestore.instance.batch();
-
-  try {
-    // Check if any sessions already logged today
-    final todaySummary = await _getCachedTodaySummary(petId, userId);
-    if (todaySummary != null && todaySummary.hasAnySessions) {
-      return LoggingResult.failure('Sessions already logged today');
-    }
-
-    // Generate all sessions from schedules
-    final medicationSessions = <MedicationSession>[];
-    final fluidSessions = <FluidSession>[];
-
-    for (final schedule in todaySchedules) {
-      if (schedule.treatmentType == TreatmentType.medication) {
-        // Create session for each reminder time
-        // Note: MedicationSession.fromSchedule should include strength fields:
-        // - medicationStrengthAmount
-        // - medicationStrengthUnit
-        // - customMedicationStrengthUnit
-        for (final reminderTime in schedule.reminderTimes) {
-          medicationSessions.add(
-            MedicationSession.fromSchedule(
-              schedule: schedule,
-              scheduledTime: reminderTime,
-              petId: petId,
-              userId: userId,
-            ),
-          );
-        }
-      } else if (schedule.treatmentType == TreatmentType.fluid) {
-        for (final reminderTime in schedule.reminderTimes) {
-          fluidSessions.add(
-            FluidSession.fromSchedule(
-              schedule: schedule,
-              scheduledTime: reminderTime,
-              petId: petId,
-              userId: userId,
-            ),
-          );
-        }
-      }
-    }
-
-    // Batch write all sessions + summaries
-    for (final session in medicationSessions) {
-      await _addMedicationSessionToBatch(batch, session, petId, userId);
-    }
-
-    for (final session in fluidSessions) {
-      await _addFluidSessionToBatch(batch, session, petId, userId);
-    }
-
-    // Single atomic commit for all sessions
-    await batch.commit();
-
-    // Update local cache
-    await _updateLocalCache(_formatDate(DateTime.now()), petId, userId);
-
-    return LoggingResult.success(null);
-  } catch (e) {
-    return LoggingResult.failure(e.toString());
-  }
-}
+// 3 medications (2x/day) + 1 fluid (2x/day) = 8 reminder times
+// Each becomes separate session = 8 sessions × 4 writes = 32 writes
+final count = await loggingService.quickLogAllTreatments(
+  userId: user.id,
+  petId: pet.id,
+  todaysSchedules: schedules,
+);
+// Returns: 8
 ```
 
-**Cost**: ~10-20 writes for full day (rare operation, acceptable cost)
+**Cost Analysis:**
+- 5 sessions: 20 writes = $0.000036
+- 10 sessions: 40 writes = $0.000072
+- Monthly (30 days, 5 sessions avg): $0.11
 
-**Learning Goal:** Batch operations for multiple related documents
+**Important for Future:**
+- Phase 6: Replace `_getDailySummaryCache()` stub with actual `SummaryCacheService` injection
+- Phase 6: This enables 0-read duplicate detection
+- Firestore limit: 500 operations per batch (supports ~125 sessions - well above typical use)
 
-**<� MILESTONE:** Firebase cost-optimized batch write system complete!
+**<� MILESTONE:** Phase 5 complete - all 6 logging methods optimized to 4-write pattern!
 
 ---
 

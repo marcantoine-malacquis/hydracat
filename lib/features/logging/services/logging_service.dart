@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/logging/exceptions/logging_exceptions.dart';
+import 'package:hydracat/features/logging/models/daily_summary_cache.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
@@ -16,7 +17,7 @@ import 'package:hydracat/shared/models/summary_update_dto.dart';
 /// - Schedule matching (name + time for medications, time only for fluids)
 /// - Duplicate detection (medications only, ±15 minute window)
 /// - Summary aggregation (daily, weekly, monthly)
-/// - 8-write batch pattern (session + 3×(set+update) for summaries)
+/// - 4-write batch pattern (1 session + 3 summaries with merge + increments)
 ///
 /// Usage:
 /// ```dart
@@ -116,50 +117,16 @@ class LoggingService {
         }
       }
 
-      // STEP 4: Create summary update DTO
-      final dto = SummaryUpdateDto.fromMedicationSession(
-        sessionWithSchedule,
+      // STEP 4: Build 7-write batch
+      final batch = _firestore.batch();
+      _addMedicationSessionToBatch(
+        batch: batch,
+        session: sessionWithSchedule,
+        userId: userId,
+        petId: petId,
       );
 
-      // STEP 5: Build 8-write batch
-      final batch = _firestore.batch();
-      final sessionRef = _getMedicationSessionRef(userId, petId, session.id);
-      final date = AppDateUtils.startOfDay(session.dateTime);
-
-      // Operation 1: Write session
-      batch.set(sessionRef, sessionWithSchedule.toJson());
-
-      // Operations 2-3: Daily summary (set + update)
-      final dailyRef = _getDailySummaryRef(userId, petId, date);
-      batch
-        ..set(
-          dailyRef,
-          _buildDailySummaryInit(date),
-          SetOptions(merge: true),
-        )
-        ..update(dailyRef, dto.toFirestoreUpdate());
-
-      // Operations 4-5: Weekly summary (set + update)
-      final weeklyRef = _getWeeklySummaryRef(userId, petId, date);
-      batch
-        ..set(
-          weeklyRef,
-          _buildWeeklySummaryInit(date),
-          SetOptions(merge: true),
-        )
-        ..update(weeklyRef, dto.toFirestoreUpdate());
-
-      // Operations 6-7: Monthly summary (set + update)
-      final monthlyRef = _getMonthlySummaryRef(userId, petId, date);
-      batch
-        ..set(
-          monthlyRef,
-          _buildMonthlySummaryInit(date),
-          SetOptions(merge: true),
-        )
-        ..update(monthlyRef, dto.toFirestoreUpdate());
-
-      // STEP 6: Commit batch
+      // STEP 5: Commit batch
       await _executeBatchWrite(
         batch: batch,
         operation: 'logMedicationSession',
@@ -250,7 +217,7 @@ class LoggingService {
         return;
       }
 
-      // STEP 3: Build 8-write batch with deltas
+      // STEP 3: Build 4-write batch with deltas
       final batch = _firestore.batch();
       final sessionRef = _getMedicationSessionRef(
         userId,
@@ -265,35 +232,29 @@ class LoggingService {
         newSession.copyWith(updatedAt: DateTime.now()).toJson(),
       );
 
-      // Operations 2-3: Daily summary (set + update)
+      // Operation 2: Daily summary (single set with merge + increments)
       final dailyRef = _getDailySummaryRef(userId, petId, date);
-      batch
-        ..set(
-          dailyRef,
-          _buildDailySummaryInit(date),
-          SetOptions(merge: true),
-        )
-        ..update(dailyRef, dto.toFirestoreUpdate());
+      batch.set(
+        dailyRef,
+        _buildDailySummaryWithIncrements(date, dto),
+        SetOptions(merge: true),
+      );
 
-      // Operations 4-5: Weekly summary (set + update)
+      // Operation 3: Weekly summary (single set with merge + increments)
       final weeklyRef = _getWeeklySummaryRef(userId, petId, date);
-      batch
-        ..set(
-          weeklyRef,
-          _buildWeeklySummaryInit(date),
-          SetOptions(merge: true),
-        )
-        ..update(weeklyRef, dto.toFirestoreUpdate());
+      batch.set(
+        weeklyRef,
+        _buildWeeklySummaryWithIncrements(date, dto),
+        SetOptions(merge: true),
+      );
 
-      // Operations 6-7: Monthly summary (set + update)
+      // Operation 4: Monthly summary (single set with merge + increments)
       final monthlyRef = _getMonthlySummaryRef(userId, petId, date);
-      batch
-        ..set(
-          monthlyRef,
-          _buildMonthlySummaryInit(date),
-          SetOptions(merge: true),
-        )
-        ..update(monthlyRef, dto.toFirestoreUpdate());
+      batch.set(
+        monthlyRef,
+        _buildMonthlySummaryWithIncrements(date, dto),
+        SetOptions(merge: true),
+      );
 
       // STEP 4: Commit batch
       await _executeBatchWrite(
@@ -385,50 +346,16 @@ class LoggingService {
         }
       }
 
-      // STEP 3: Create summary update DTO
-      final dto = SummaryUpdateDto.fromFluidSession(
-        sessionWithSchedule,
+      // STEP 3: Build 7-write batch
+      final batch = _firestore.batch();
+      _addFluidSessionToBatch(
+        batch: batch,
+        session: sessionWithSchedule,
+        userId: userId,
+        petId: petId,
       );
 
-      // STEP 4: Build 8-write batch
-      final batch = _firestore.batch();
-      final sessionRef = _getFluidSessionRef(userId, petId, session.id);
-      final date = AppDateUtils.startOfDay(session.dateTime);
-
-      // Operation 1: Write session
-      batch.set(sessionRef, sessionWithSchedule.toJson());
-
-      // Operations 2-3: Daily summary (set + update)
-      final dailyRef = _getDailySummaryRef(userId, petId, date);
-      batch
-        ..set(
-          dailyRef,
-          _buildDailySummaryInit(date),
-          SetOptions(merge: true),
-        )
-        ..update(dailyRef, dto.toFirestoreUpdate());
-
-      // Operations 4-5: Weekly summary (set + update)
-      final weeklyRef = _getWeeklySummaryRef(userId, petId, date);
-      batch
-        ..set(
-          weeklyRef,
-          _buildWeeklySummaryInit(date),
-          SetOptions(merge: true),
-        )
-        ..update(weeklyRef, dto.toFirestoreUpdate());
-
-      // Operations 6-7: Monthly summary (set + update)
-      final monthlyRef = _getMonthlySummaryRef(userId, petId, date);
-      batch
-        ..set(
-          monthlyRef,
-          _buildMonthlySummaryInit(date),
-          SetOptions(merge: true),
-        )
-        ..update(monthlyRef, dto.toFirestoreUpdate());
-
-      // STEP 5: Commit batch
+      // STEP 4: Commit batch
       await _executeBatchWrite(
         batch: batch,
         operation: 'logFluidSession',
@@ -510,7 +437,7 @@ class LoggingService {
         return;
       }
 
-      // STEP 3: Build 8-write batch with deltas
+      // STEP 3: Build 4-write batch with deltas
       final batch = _firestore.batch();
       final sessionRef = _getFluidSessionRef(userId, petId, newSession.id);
       final date = AppDateUtils.startOfDay(newSession.dateTime);
@@ -521,35 +448,29 @@ class LoggingService {
         newSession.copyWith(updatedAt: DateTime.now()).toJson(),
       );
 
-      // Operations 2-3: Daily summary (set + update)
+      // Operation 2: Daily summary (single set with merge + increments)
       final dailyRef = _getDailySummaryRef(userId, petId, date);
-      batch
-        ..set(
-          dailyRef,
-          _buildDailySummaryInit(date),
-          SetOptions(merge: true),
-        )
-        ..update(dailyRef, dto.toFirestoreUpdate());
+      batch.set(
+        dailyRef,
+        _buildDailySummaryWithIncrements(date, dto),
+        SetOptions(merge: true),
+      );
 
-      // Operations 4-5: Weekly summary (set + update)
+      // Operation 3: Weekly summary (single set with merge + increments)
       final weeklyRef = _getWeeklySummaryRef(userId, petId, date);
-      batch
-        ..set(
-          weeklyRef,
-          _buildWeeklySummaryInit(date),
-          SetOptions(merge: true),
-        )
-        ..update(weeklyRef, dto.toFirestoreUpdate());
+      batch.set(
+        weeklyRef,
+        _buildWeeklySummaryWithIncrements(date, dto),
+        SetOptions(merge: true),
+      );
 
-      // Operations 6-7: Monthly summary (set + update)
+      // Operation 4: Monthly summary (single set with merge + increments)
       final monthlyRef = _getMonthlySummaryRef(userId, petId, date);
-      batch
-        ..set(
-          monthlyRef,
-          _buildMonthlySummaryInit(date),
-          SetOptions(merge: true),
-        )
-        ..update(monthlyRef, dto.toFirestoreUpdate());
+      batch.set(
+        monthlyRef,
+        _buildMonthlySummaryWithIncrements(date, dto),
+        SetOptions(merge: true),
+      );
 
       // STEP 4: Commit batch
       await _executeBatchWrite(
@@ -579,6 +500,223 @@ class LoggingService {
       }
       throw LoggingException('Unexpected error updating fluid: $e');
     }
+  }
+
+  // ============================================
+  // PUBLIC API - Quick-Log
+  // ============================================
+
+  /// Logs all scheduled treatments for today in a single atomic batch
+  ///
+  /// Quick-log feature for FAB long-press. Creates sessions for all active
+  /// schedules with today's reminders, using scheduled times and marking
+  /// all medications as completed.
+  ///
+  /// Process:
+  /// 1. Validate input (non-empty schedules)
+  /// 2. Check cache for existing sessions (rejects if any found)
+  /// 3. Filter schedules to active schedules with today's reminders
+  /// 4. Generate all sessions from filtered schedules
+  /// 5. Build single batch with all sessions (4 writes per session)
+  /// 6. Commit atomically to Firestore
+  ///
+  /// Parameters:
+  /// - `userId`: Current authenticated user ID
+  /// - `petId`: Target pet ID
+  /// - `todaysSchedules`: All active schedules for today (from provider)
+  ///
+  /// Returns: Total number of sessions logged
+  ///
+  /// Throws:
+  /// - [LoggingException]: Empty schedules or sessions already logged
+  /// - [BatchWriteException]: Firestore write failed
+  ///
+  /// Cost: N sessions × 4 writes (typical: 5 sessions = 20 writes)
+  ///
+  /// Example:
+  /// ```dart
+  /// final count = await loggingService.quickLogAllTreatments(
+  ///   userId: user.id,
+  ///   petId: pet.id,
+  ///   todaysSchedules: schedules,
+  /// );
+  /// // Returns: 5 (logged 3 med sessions + 2 fluid sessions)
+  /// ```
+  Future<int> quickLogAllTreatments({
+    required String userId,
+    required String petId,
+    required List<Schedule> todaysSchedules,
+  }) async {
+    try {
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingService] Quick-log starting with '
+          '${todaysSchedules.length} schedules',
+        );
+      }
+
+      // STEP 1: Validate input
+      if (todaysSchedules.isEmpty) {
+        throw const LoggingException('No active schedules found for today.');
+      }
+
+      // STEP 2: Check cache for existing sessions (strict all-or-nothing)
+      final cache = await _getDailySummaryCache(userId, petId);
+      if (cache != null && cache.hasAnySessions) {
+        throw const LoggingException(
+          'Treatments already logged today. '
+          'Use individual logging to add more sessions.',
+        );
+      }
+
+      // STEP 3: Filter to active schedules with today's reminders
+      final now = DateTime.now();
+      final activeSchedules = todaysSchedules
+          .where((schedule) => schedule.isActive)
+          .where((schedule) => schedule.hasReminderTimeToday(now))
+          .toList();
+
+      if (activeSchedules.isEmpty) {
+        throw const LoggingException(
+          'No schedules have reminder times for today.',
+        );
+      }
+
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingService] Filtered to ${activeSchedules.length} '
+          "active schedules with today's reminders",
+        );
+      }
+
+      // STEP 4: Generate all sessions from schedules
+      final medicationSessions = <MedicationSession>[];
+      final fluidSessions = <FluidSession>[];
+
+      for (final schedule in activeSchedules) {
+        // Get today's reminder times only
+        final todaysReminders = schedule.reminderTimes.where((reminderTime) {
+          final reminderDate = DateTime(
+            reminderTime.year,
+            reminderTime.month,
+            reminderTime.day,
+          );
+          final today = DateTime(now.year, now.month, now.day);
+          return reminderDate.isAtSameMomentAs(today);
+        }).toList();
+
+        for (final reminderTime in todaysReminders) {
+          if (schedule.treatmentType == TreatmentType.medication) {
+            // Create medication session with scheduled time
+            medicationSessions.add(
+              MedicationSession.fromSchedule(
+                schedule: schedule,
+                scheduledTime: reminderTime,
+                petId: petId,
+                userId: userId,
+                actualDateTime: reminderTime, // Use scheduled time
+                wasCompleted: true, // All quick-logged meds marked complete
+              ),
+            );
+          } else if (schedule.treatmentType == TreatmentType.fluid) {
+            // Create fluid session with scheduled time
+            fluidSessions.add(
+              FluidSession.fromSchedule(
+                schedule: schedule,
+                scheduledTime: reminderTime,
+                petId: petId,
+                userId: userId,
+                actualDateTime: reminderTime, // Use scheduled time
+              ),
+            );
+          }
+        }
+      }
+
+      final totalSessions = medicationSessions.length + fluidSessions.length;
+
+      if (totalSessions == 0) {
+        throw const LoggingException(
+          'No sessions to log. Please check schedule configuration.',
+        );
+      }
+
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingService] Generated $totalSessions sessions: '
+          '${medicationSessions.length} medications, '
+          '${fluidSessions.length} fluids',
+        );
+      }
+
+      // STEP 5: Build batch with all sessions
+      final batch = _firestore.batch();
+
+      // Add all medication sessions to batch (4 writes each)
+      for (final session in medicationSessions) {
+        _addMedicationSessionToBatch(
+          batch: batch,
+          session: session,
+          userId: userId,
+          petId: petId,
+        );
+      }
+
+      // Add all fluid sessions to batch (4 writes each)
+      for (final session in fluidSessions) {
+        _addFluidSessionToBatch(
+          batch: batch,
+          session: session,
+          userId: userId,
+          petId: petId,
+        );
+      }
+
+      // STEP 6: Execute atomic commit
+      await _executeBatchWrite(
+        batch: batch,
+        operation: 'quickLogAllTreatments',
+      );
+
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingService] Quick-log complete: $totalSessions sessions logged',
+        );
+      }
+
+      return totalSessions;
+    } on LoggingException {
+      rethrow; // UI handles these
+    } on FirebaseException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[LoggingService] Firebase error: ${e.message}');
+      }
+      throw BatchWriteException(
+        'quickLogAllTreatments',
+        e.message ?? 'Failed to log all treatments',
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[LoggingService] Unexpected error: $e');
+      }
+      throw LoggingException('Unexpected error in quick-log: $e');
+    }
+  }
+
+  /// Gets cached daily summary (stub for now)
+  ///
+  /// This method will be integrated with SummaryCacheService in Phase 6.
+  /// For now, returns null to allow quick-log to proceed.
+  ///
+  /// Future implementation will check SharedPreferences cache to avoid
+  /// Firestore reads for duplicate detection.
+  Future<DailySummaryCache?> _getDailySummaryCache(
+    String userId,
+    String petId,
+  ) async {
+    //TODO(Phase 6): Inject SummaryCacheService via constructor
+    // and return actual cached data
+    return null;
   }
 
   // ============================================
@@ -889,13 +1027,108 @@ class LoggingService {
   }
 
   // ============================================
-  // PRIVATE HELPERS - Batch Writes (8-write pattern)
+  // PRIVATE HELPERS - Batch Writes (4-write pattern)
   // ============================================
+
+  /// Adds medication session to batch with summary updates
+  ///
+  /// Adds 4 operations to the batch (optimized from 7):
+  /// 1. Session document write
+  /// 2. Daily summary (single set with merge + increments)
+  /// 3. Weekly summary (single set with merge + increments)
+  /// 4. Monthly summary (single set with merge + increments)
+  ///
+  /// This helper is used by both single session logging and quick-log batch.
+  void _addMedicationSessionToBatch({
+    required WriteBatch batch,
+    required MedicationSession session,
+    required String userId,
+    required String petId,
+  }) {
+    final sessionRef = _getMedicationSessionRef(userId, petId, session.id);
+    final date = AppDateUtils.startOfDay(session.dateTime);
+    final dto = SummaryUpdateDto.fromMedicationSession(session);
+
+    // Operation 1: Write session
+    batch.set(sessionRef, session.toJson());
+
+    // Operation 2: Daily summary (single set with merge + increments)
+    final dailyRef = _getDailySummaryRef(userId, petId, date);
+    batch.set(
+      dailyRef,
+      _buildDailySummaryWithIncrements(date, dto),
+      SetOptions(merge: true),
+    );
+
+    // Operation 3: Weekly summary (single set with merge + increments)
+    final weeklyRef = _getWeeklySummaryRef(userId, petId, date);
+    batch.set(
+      weeklyRef,
+      _buildWeeklySummaryWithIncrements(date, dto),
+      SetOptions(merge: true),
+    );
+
+    // Operation 4: Monthly summary (single set with merge + increments)
+    final monthlyRef = _getMonthlySummaryRef(userId, petId, date);
+    batch.set(
+      monthlyRef,
+      _buildMonthlySummaryWithIncrements(date, dto),
+      SetOptions(merge: true),
+    );
+  }
+
+  /// Adds fluid session to batch with summary updates
+  ///
+  /// Adds 4 operations to the batch (optimized from 7):
+  /// 1. Session document write
+  /// 2. Daily summary (single set with merge + increments)
+  /// 3. Weekly summary (single set with merge + increments)
+  /// 4. Monthly summary (single set with merge + increments)
+  ///
+  /// This helper is used by both single session logging and quick-log batch.
+  void _addFluidSessionToBatch({
+    required WriteBatch batch,
+    required FluidSession session,
+    required String userId,
+    required String petId,
+  }) {
+    final sessionRef = _getFluidSessionRef(userId, petId, session.id);
+    final date = AppDateUtils.startOfDay(session.dateTime);
+    final dto = SummaryUpdateDto.fromFluidSession(session);
+
+    // Operation 1: Write session
+    batch.set(sessionRef, session.toJson());
+
+    // Operation 2: Daily summary (single set with merge + increments)
+    final dailyRef = _getDailySummaryRef(userId, petId, date);
+    batch.set(
+      dailyRef,
+      _buildDailySummaryWithIncrements(date, dto),
+      SetOptions(merge: true),
+    );
+
+    // Operation 3: Weekly summary (single set with merge + increments)
+    final weeklyRef = _getWeeklySummaryRef(userId, petId, date);
+    batch.set(
+      weeklyRef,
+      _buildWeeklySummaryWithIncrements(date, dto),
+      SetOptions(merge: true),
+    );
+
+    // Operation 4: Monthly summary (single set with merge + increments)
+    final monthlyRef = _getMonthlySummaryRef(userId, petId, date);
+    batch.set(
+      monthlyRef,
+      _buildMonthlySummaryWithIncrements(date, dto),
+      SetOptions(merge: true),
+    );
+  }
 
   /// Executes batch write with error handling and logging
   ///
   /// Wraps batch.commit() with try-catch and debug logging.
-  /// Total operations in batch: 8 (session + 3×(set+update) for summaries)
+  /// Total operations in batch: 4 per session (1 session + 3 summaries with
+  /// merge + increments)
   ///
   /// Throws [BatchWriteException] if commit fails.
   Future<void> _executeBatchWrite({
@@ -915,60 +1148,79 @@ class LoggingService {
     }
   }
 
-  /// Builds daily summary initialization data
+  /// Builds daily summary with increments (optimized single-write)
   ///
-  /// All counters initialized to 0, booleans to false.
-  /// Used with SetOptions(merge: true) - won't overwrite existing data.
+  /// Combines initialization and increments into a single map for use with
+  /// SetOptions(merge: true). This allows a single write operation that:
+  /// - Creates the document if it doesn't exist
+  /// - Updates existing fields if it does exist
+  ///
+  /// FieldValue.increment() works on non-existent fields (treats as 0).
   ///
   /// Note: overallStreak always 0 (calculated in Phase 7 by daily job)
-  Map<String, dynamic> _buildDailySummaryInit(DateTime date) {
-    return {
-      'date': Timestamp.fromDate(date),
-      'medicationTotalDoses': 0,
-      'medicationScheduledDoses': 0,
-      'medicationMissedCount': 0,
-      'fluidTotalVolume': 0.0,
-      'fluidSessionCount': 0,
-      'fluidTreatmentDone': false,
-      'overallTreatmentDone': false,
-      'overallStreak': 0, // Calculated in Phase 7
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    };
+  Map<String, dynamic> _buildDailySummaryWithIncrements(
+    DateTime date,
+    SummaryUpdateDto dto,
+  ) {
+    final map =
+        <String, dynamic>{
+            'date': Timestamp.fromDate(date),
+            'overallStreak': 0, // Calculated in Phase 7
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }
+          // Add DTO increments (will create or increment existing fields)
+          ..addAll(dto.toFirestoreUpdate());
+
+    return map;
   }
 
-  /// Builds weekly summary initialization data
+  /// Builds weekly summary with increments (optimized single-write)
   ///
-  /// All counters initialized to 0.
-  /// Used with SetOptions(merge: true) - won't overwrite existing data.
-  Map<String, dynamic> _buildWeeklySummaryInit(DateTime date) {
-    return {
-      'weekId': AppDateUtils.formatWeekForSummary(date), // "2025-W40"
-      'medicationTotalDoses': 0,
-      'medicationScheduledDoses': 0,
-      'medicationMissedCount': 0,
-      'fluidTotalVolume': 0.0,
-      'fluidSessionCount': 0,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    };
+  /// Combines initialization and increments into a single map for use with
+  /// SetOptions(merge: true). This allows a single write operation that:
+  /// - Creates the document if it doesn't exist
+  /// - Updates existing fields if it does exist
+  ///
+  /// FieldValue.increment() works on non-existent fields (treats as 0).
+  Map<String, dynamic> _buildWeeklySummaryWithIncrements(
+    DateTime date,
+    SummaryUpdateDto dto,
+  ) {
+    final map =
+        <String, dynamic>{
+            'weekId': AppDateUtils.formatWeekForSummary(date), // "2025-W40"
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }
+          // Add DTO increments (will create or increment existing fields)
+          ..addAll(dto.toFirestoreUpdate());
+
+    return map;
   }
 
-  /// Builds monthly summary initialization data
+  /// Builds monthly summary with increments (optimized single-write)
   ///
-  /// All counters initialized to 0.
-  /// Used with SetOptions(merge: true) - won't overwrite existing data.
-  Map<String, dynamic> _buildMonthlySummaryInit(DateTime date) {
-    return {
-      'monthId': AppDateUtils.formatMonthForSummary(date), // "2025-10"
-      'medicationTotalDoses': 0,
-      'medicationScheduledDoses': 0,
-      'medicationMissedCount': 0,
-      'fluidTotalVolume': 0.0,
-      'fluidSessionCount': 0,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    };
+  /// Combines initialization and increments into a single map for use with
+  /// SetOptions(merge: true). This allows a single write operation that:
+  /// - Creates the document if it doesn't exist
+  /// - Updates existing fields if it does exist
+  ///
+  /// FieldValue.increment() works on non-existent fields (treats as 0).
+  Map<String, dynamic> _buildMonthlySummaryWithIncrements(
+    DateTime date,
+    SummaryUpdateDto dto,
+  ) {
+    final map =
+        <String, dynamic>{
+            'monthId': AppDateUtils.formatMonthForSummary(date), // "2025-10"
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }
+          // Add DTO increments (will create or increment existing fields)
+          ..addAll(dto.toFirestoreUpdate());
+
+    return map;
   }
 
   // ============================================

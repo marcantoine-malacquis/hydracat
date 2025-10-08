@@ -240,8 +240,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       }
 
       // STEP 3: Get today's schedules from ProfileProvider
-      final medicationSchedules =
-          _ref.read(medicationSchedulesProvider) ?? [];
+      final medicationSchedules = _ref.read(medicationSchedulesProvider) ?? [];
       final fluidSchedule = _ref.read(fluidScheduleProvider);
 
       final allSchedules = [
@@ -269,24 +268,15 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         );
       }
 
-      // STEP 4: Call LoggingService (NOT IMPLEMENTED YET - Phase 2.4)
-      // TODO(logging): Implement LoggingService.quickLogAllTreatments()
-      //
-      // For now, throw unimplemented error to track progress
-      throw UnimplementedError(
-        'LoggingService.quickLogAllTreatments() not yet implemented. '
-        'This will be added in Phase 2.4 or Phase 5.',
-      );
-
-      // FUTURE CODE (after LoggingService.quickLogAllTreatments() exists):
-      /*
-      await _loggingService.quickLogAllTreatments(
+      // STEP 4: Call LoggingService.quickLogAllTreatments()
+      final sessionCount = await _loggingService.quickLogAllTreatments(
         userId: user.id,
         petId: pet.id,
         todaysSchedules: allSchedules,
       );
 
-      // STEP 5: Update cache after success
+      // STEP 5: Reload cache from Firestore after success
+      // The batch write updated Firestore summaries, so reload cache
       await loadTodaysCache();
 
       // STEP 6: Track analytics
@@ -294,7 +284,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       await analyticsService.trackFeatureUsed(
         featureName: 'quick_log_all_treatments',
         additionalParams: {
-          'session_count': allSchedules.length,
+          'session_count': sessionCount,
           'success': true,
         },
       );
@@ -302,13 +292,12 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       if (kDebugMode) {
         debugPrint(
           '[LoggingNotifier] Quick-log complete: '
-          '${allSchedules.length} sessions logged',
+          '$sessionCount sessions logged',
         );
       }
 
       state = state.copyWith(isLoading: false);
       return true;
-      */
     } on Exception catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -671,8 +660,9 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
 /// - LoggingService: For session writes and batch operations
 /// - SummaryCacheService: For local cache management
 /// - Auth/Profile/Analytics: For user context and tracking
-final loggingProvider =
-    StateNotifierProvider<LoggingNotifier, LoggingState>((ref) {
+final loggingProvider = StateNotifierProvider<LoggingNotifier, LoggingState>((
+  ref,
+) {
   final loggingService = ref.read(loggingServiceProvider);
   final cacheService = ref.read(summaryCacheServiceProvider);
 
@@ -746,7 +736,8 @@ final hasLoggedTodayProvider = Provider<bool>((ref) {
 /// - User has at least one active schedule (medication or fluid)
 /// - No sessions logged today (prevents duplicate quick-logs)
 final canQuickLogProvider = Provider<bool>((ref) {
-  final hasSchedules = ref.watch(hasMedicationSchedulesProvider) ||
+  final hasSchedules =
+      ref.watch(hasMedicationSchedulesProvider) ||
       ref.watch(hasFluidScheduleProvider);
   final hasLogged = ref.watch(hasLoggedTodayProvider);
 

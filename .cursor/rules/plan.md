@@ -21,11 +21,5 @@ Please follow Firebase and Flutter best practices and use built-in solutions whe
 
 Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself.
 
-Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
+Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily reference things we will need to remember long-term to understand how the app works or for future implementation. Don't include information related to linting. Keep it as short as possible.
 
-1. yes, it's just the UI for now
-2. Use HapticFeedback.mediumImpact() at the moment of long-press detection before validation checks
-3. Watch isLoggingProvider globally
-4. defer to phase 8
-5. Let it attempt and rely on Firestore's built-in offline persistence (already enabled per the plan). Adding connectivity checks here would be premature since Phase 6 will handle offline queue properly. Keep the simple cache-based check.
-6. Yes, add this to app_shell.dart. It's necessary for cache coherence and is simple to implement. 
