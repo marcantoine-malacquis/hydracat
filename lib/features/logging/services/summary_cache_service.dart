@@ -229,6 +229,70 @@ class SummaryCacheService {
     }
   }
 
+  /// Update cache after quick-log operation (optimistic update)
+  ///
+  /// Sets the cache directly from known session data without fetching from
+  /// Firestore. This is an optimistic update that assumes the batch write
+  /// succeeded and eliminates 1 Firestore read per quick-log operation.
+  ///
+  /// Use this after quick-log batch writes complete successfully.
+  ///
+  /// Parameters:
+  /// - All sessions counts, names, doses, and volumes from the batch write
+  ///
+  /// Cost optimization: 0 Firestore reads (vs 1 read with warmCache approach)
+  Future<void> updateCacheAfterQuickLog({
+    required String userId,
+    required String petId,
+    required int medicationSessionCount,
+    required int fluidSessionCount,
+    required List<String> medicationNames,
+    required double totalMedicationDoses,
+    required double totalFluidVolume,
+  }) async {
+    try {
+      final today = AppDateUtils.formatDateForSummary(DateTime.now());
+      final cacheKey = _getCacheKey(userId, petId);
+
+      // Create fresh cache from what was just logged
+      final cache = DailySummaryCache(
+        date: today,
+        medicationSessionCount: medicationSessionCount,
+        fluidSessionCount: fluidSessionCount,
+        medicationNames: medicationNames,
+        totalMedicationDosesGiven: totalMedicationDoses,
+        totalFluidVolumeGiven: totalFluidVolume,
+      );
+
+      // Write to SharedPreferences
+      final cacheJson = await compute(_encodeJson, cache.toJson());
+      await _prefs.setString(cacheKey, cacheJson);
+
+      if (kDebugMode) {
+        debugPrint(
+          '[SummaryCacheService] Cache updated optimistically after quick-log: '
+          '$medicationSessionCount med sessions, $fluidSessionCount fluid '
+          'sessions',
+        );
+      }
+    } on Exception catch (e) {
+      // Silent fallback - log error, continue
+      if (kDebugMode) {
+        debugPrint(
+          '[SummaryCacheService] Error updating cache after quick-log: $e',
+        );
+      }
+
+      // Track analytics
+      unawaited(
+        _analyticsService?.trackError(
+          errorType: AnalyticsErrorTypes.cacheUpdateFailure,
+          errorContext: 'updateCacheAfterQuickLog: $e',
+        ),
+      );
+    }
+  }
+
   /// Clear all caches that are not for today (startup cleanup)
   ///
   /// Removes expired caches from SharedPreferences by:

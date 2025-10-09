@@ -741,7 +741,7 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
           // Editing mode
           GestureDetector(
             onTap: () async {
-              final selectedTime = await showTimePicker(
+              final selectedTime = await HydraTimePicker.show(
                 context: context,
                 initialTime: _editingReminderTime != null
                     ? TimeOfDay.fromDateTime(_editingReminderTime!)

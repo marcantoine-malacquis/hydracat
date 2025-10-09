@@ -1,9 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/theme/theme.dart';
 
 /// Special Floating Action Button for logging sessions.
 /// Implements the droplet FAB design from the UI guidelines.
-class HydraFab extends StatelessWidget {
+class HydraFab extends StatefulWidget {
   /// Creates a HydraFab.
   const HydraFab({
     required this.onPressed,
@@ -30,10 +32,81 @@ class HydraFab extends StatelessWidget {
   final String tooltip;
 
   @override
+  State<HydraFab> createState() => _HydraFabState();
+}
+
+class _HydraFabState extends State<HydraFab> {
+  Timer? _longPressTimer;
+
+  @override
+  void dispose() {
+    _longPressTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onTapDown(TapDownDetails details) {
+    if (widget.onLongPress != null && !widget.isLoading) {
+      _longPressTimer = Timer(const Duration(milliseconds: 500), () {
+        widget.onLongPress!();
+      });
+    }
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    _longPressTimer?.cancel();
+  }
+
+  void _onTapCancel() {
+    _longPressTimer?.cancel();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final fab = FloatingActionButton(
-      onPressed: isLoading ? null : onPressed,
-      tooltip: tooltip,
+    // If we have a long press handler, create a custom FAB that handles
+    // gestures properly
+    if (widget.onLongPress != null) {
+      return Material(
+        shape: const CircleBorder(
+          side: BorderSide(
+            color: AppColors.border,
+          ),
+        ),
+        color: AppColors.surface,
+        child: InkWell(
+          onTap: widget.isLoading ? null : widget.onPressed,
+          // Use InkWell's native long-press to avoid conflicts
+          onLongPress: widget.isLoading
+              ? null
+              : () {
+                  widget.onLongPress?.call();
+                },
+          // Keep these for safety, but long-press above is the primary path
+          onTapDown: _onTapDown,
+          onTapUp: _onTapUp,
+          onTapCancel: _onTapCancel,
+          customBorder: const CircleBorder(),
+          child: Container(
+            width: 56,
+            height: 56,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+            ),
+            // IMPORTANT: Do NOT wrap in Tooltip here; Tooltip captures
+            // long-press gestures on mobile and prevents our handler
+            child: Icon(
+              widget.icon,
+              size: 32,
+              color: AppColors.primary,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Fallback to standard FloatingActionButton for simple press-only case
+    return FloatingActionButton(
+      onPressed: widget.isLoading ? null : widget.onPressed,
+      tooltip: widget.tooltip,
       backgroundColor: AppColors.surface, // White background
       foregroundColor: AppColors.primary, // Teal droplet
       elevation: 0,
@@ -44,20 +117,10 @@ class HydraFab extends StatelessWidget {
       ),
       child: _buildFabContent(),
     );
-
-    // Wrap with GestureDetector if long press is provided
-    if (onLongPress != null) {
-      return GestureDetector(
-        onLongPress: isLoading ? null : onLongPress,
-        child: fab,
-      );
-    }
-
-    return fab;
   }
 
   Widget _buildFabContent() {
-    if (isLoading) {
+    if (widget.isLoading) {
       return const SizedBox(
         width: 24,
         height: 24,
@@ -69,7 +132,7 @@ class HydraFab extends StatelessWidget {
     }
 
     return Icon(
-      icon,
+      widget.icon,
       size: 32, // Increased from 28 to make it stand out more
     );
   }

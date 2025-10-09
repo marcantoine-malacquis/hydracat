@@ -118,14 +118,10 @@ class _AppShellState extends ConsumerState<AppShell>
   }
 
   void _onFabPressed() {
-    debugPrint('[FAB] Button pressed');
-
     // Check if user has completed onboarding
     final hasCompletedOnboarding = ref.read(hasCompletedOnboardingProvider);
-    debugPrint('[FAB] hasCompletedOnboarding: $hasCompletedOnboarding');
 
     if (!hasCompletedOnboarding) {
-      debugPrint('[FAB] Redirecting to onboarding');
       context.go('/onboarding/welcome');
       return;
     }
@@ -134,9 +130,6 @@ class _AppShellState extends ConsumerState<AppShell>
     final profileState = ref.read(profileProvider);
     final hasFluid = profileState.hasFluidSchedule;
     final hasMedication = profileState.hasMedicationSchedules;
-    debugPrint(
-      '[FAB] Schedules - Fluid: $hasFluid, Medication: $hasMedication',
-    );
 
     // Track popup opened
     if (hasFluid || hasMedication) {
@@ -154,12 +147,10 @@ class _AppShellState extends ConsumerState<AppShell>
     // Route based on actual schedule data
     if (hasFluid && hasMedication) {
       // Both exist - show choice popup
-      debugPrint('[FAB] Showing treatment choice popup');
       _showLoggingDialog(
         context,
         TreatmentChoicePopup(
           onMedicationSelected: () {
-            debugPrint('[FAB] Medication selected from popup');
             OverlayService.hide();
             _showLoggingDialog(
               context,
@@ -168,7 +159,6 @@ class _AppShellState extends ConsumerState<AppShell>
             );
           },
           onFluidSelected: () {
-            debugPrint('[FAB] Fluid selected from popup');
             OverlayService.hide();
             _showLoggingDialog(
               context,
@@ -180,22 +170,17 @@ class _AppShellState extends ConsumerState<AppShell>
       );
     } else if (hasFluid) {
       // Only fluid - go direct
-      debugPrint('[FAB] Showing fluid logging dialog');
       _showLoggingDialog(context, const FluidLoggingScreen());
     } else if (hasMedication) {
       // Only medication - go direct
-      debugPrint('[FAB] Showing medication logging dialog');
       _showLoggingDialog(context, const MedicationLoggingScreen());
     } else {
       // No schedules yet - show setup dialog
-      debugPrint('[FAB] No schedules, showing setup dialog');
       showDialog<void>(
         context: context,
         builder: (context) => const NoSchedulesDialog(),
       );
     }
-
-    debugPrint('[FAB] Function completed');
   }
 
   void _showLoggingDialog(
@@ -209,54 +194,56 @@ class _AppShellState extends ConsumerState<AppShell>
       animationType: animationType,
       onDismiss: () {
         // Handle any cleanup if needed
-        debugPrint('[Overlay] Logging popup dismissed');
       },
     );
   }
 
   Future<void> _onFabLongPress() async {
-    debugPrint('[FAB] Long press detected - attempting quick-log');
-
     // Haptic feedback for immediate tactile confirmation
     unawaited(HapticFeedback.mediumImpact());
 
     final hasCompletedOnboarding = ref.read(hasCompletedOnboardingProvider);
     if (!hasCompletedOnboarding) {
-      debugPrint('[FAB] Onboarding not complete, redirecting');
       context.go('/onboarding/welcome');
       return;
     }
 
     final pet = ref.read(primaryPetProvider);
     if (pet == null) {
-      debugPrint('[FAB] No pet found, redirecting to onboarding');
       context.go('/onboarding/welcome');
       return;
     }
 
     // Check if can quick-log (uses cache, no Firestore reads)
     final canQuickLog = ref.read(canQuickLogProvider);
+
+    // FALLBACK: If canQuickLog is false but we have schedules, still try
+    // This handles cases where the cache might be stale or providers
+    // are out of sync
     if (!canQuickLog) {
-      debugPrint(
-        '[FAB] Quick-log not available (already logged or no schedules)',
-      );
-      LoggingErrorHandler.showLoggingError(
-        context,
-        'Already logged today or no schedules set',
-      );
-      return;
+      // Check if we actually have schedules (bypass the provider cache)
+      final profileState = ref.read(profileProvider);
+      final hasSchedules =
+          profileState.hasFluidSchedule || profileState.hasMedicationSchedules;
+
+      if (!hasSchedules) {
+        LoggingErrorHandler.showLoggingError(
+          context,
+          'No schedules found. Please set up your treatment schedule.',
+        );
+        return;
+      }
     }
 
     // Execute quick-log
-    final success = await ref
+    final sessionCount = await ref
         .read(loggingProvider.notifier)
         .quickLogAllTreatments();
 
     if (!mounted) return;
 
-    if (success) {
-      // Get session count from cache
-      final sessionCount = ref.read(todaysSessionCountProvider);
+    if (sessionCount > 0) {
+      // Quick-log succeeded
 
       // Show success popup
       OverlayService.showFullScreenPopup(
@@ -268,14 +255,12 @@ class _AppShellState extends ConsumerState<AppShell>
         animationType: OverlayAnimationType.scaleIn,
       );
     } else {
-      // Show error from state
+      // Quick-log failed - show error from state
       final error = ref.read(loggingErrorProvider);
       if (error != null) {
         LoggingErrorHandler.showLoggingError(context, error);
       }
     }
-
-    debugPrint('[FAB] Quick-log completed: success=$success');
   }
 
   @override

@@ -112,8 +112,10 @@ class _MedicationScheduleScreenState
         if (success && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Medication added successfully'),
-              backgroundColor: AppColors.success,
+              content: Center(
+                child: Text('Medication added successfully'),
+              ),
+              backgroundColor: AppColors.primary,
             ),
           );
         } else if (mounted) {
@@ -167,8 +169,10 @@ class _MedicationScheduleScreenState
         if (success && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Medication updated successfully'),
-              backgroundColor: AppColors.success,
+              content: Center(
+                child: Text('Medication updated successfully'),
+              ),
+              backgroundColor: AppColors.primary,
             ),
           );
         } else if (mounted) {
@@ -219,7 +223,9 @@ class _MedicationScheduleScreenState
         if (success && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Medication deleted successfully'),
+              content: Center(
+                child: Text('Medication deleted successfully'),
+              ),
               backgroundColor: AppColors.success,
             ),
           );

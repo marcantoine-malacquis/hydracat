@@ -5,6 +5,7 @@ import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/shared/widgets/accessibility/hydra_touch_target.dart';
+import 'package:hydracat/shared/widgets/pickers/hydra_time_picker.dart';
 
 /// A group of time pickers based on treatment frequency
 class TimePickerGroup extends StatefulWidget {
@@ -168,6 +169,7 @@ class CompactTimePicker extends StatelessWidget {
       child: GestureDetector(
         onTap: () => _showTimePicker(context),
         child: Container(
+          width: double.infinity,
           constraints: const BoxConstraints(
             minHeight: AppAccessibility.minTouchTarget,
           ),
@@ -183,16 +185,21 @@ class CompactTimePicker extends StatelessWidget {
             color: theme.colorScheme.surface,
           ),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize.max,
             children: [
               if (label != null) ...[
-                Text(
-                  label!,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface,
+                SizedBox(
+                  width: 120,
+                  child: Text(
+                    label!,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 16),
+                // Push the icon+time group to the right while keeping them tight
+                const Spacer(),
               ],
 
               Icon(
@@ -200,7 +207,7 @@ class CompactTimePicker extends StatelessWidget {
                 size: 20,
                 color: theme.colorScheme.primary,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 4),
 
               Text(
                 time.format(context),
@@ -217,23 +224,9 @@ class CompactTimePicker extends StatelessWidget {
   }
 
   Future<void> _showTimePicker(BuildContext context) async {
-    final result = await showTimePicker(
+    final result = await HydraTimePicker.show(
       context: context,
       initialTime: time,
-      builder: (context, child) {
-        // Customize time picker appearance
-        final theme = Theme.of(context);
-        return Theme(
-          data: theme.copyWith(
-            timePickerTheme: theme.timePickerTheme.copyWith(
-              backgroundColor: theme.colorScheme.surface,
-              hourMinuteTextColor: theme.colorScheme.onSurface,
-              dayPeriodTextColor: theme.colorScheme.onSurface,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
 
     if (result != null) {

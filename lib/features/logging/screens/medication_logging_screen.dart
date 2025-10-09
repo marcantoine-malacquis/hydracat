@@ -139,6 +139,26 @@ class _MedicationLoggingScreenState
       for (final medicationId in _selectedMedicationIds) {
         final schedule = schedules.firstWhere((s) => s.id == medicationId);
 
+        // Get today's scheduled time for this medication
+        final now = DateTime.now();
+        final todaysReminderTimes = schedule.reminderTimes.where((
+          reminderTime,
+        ) {
+          final reminderDate = DateTime(
+            reminderTime.year,
+            reminderTime.month,
+            reminderTime.day,
+          );
+          final today = DateTime(now.year, now.month, now.day);
+          return reminderDate.isAtSameMomentAs(today);
+        }).toList();
+
+        // Use the first reminder time for today as the scheduled time
+        // If no reminder time for today, use current time as fallback
+        final scheduledTime = todaysReminderTimes.isNotEmpty
+            ? todaysReminderTimes.first
+            : now;
+
         // Create medication session with fixed schedule dosage
         final session = MedicationSession.create(
           petId: pet.id,
@@ -154,6 +174,7 @@ class _MedicationLoggingScreenState
           completed: true, // Always true for manual logging
           notes: notes,
           scheduleId: schedule.id,
+          scheduledTime: scheduledTime, // ✅ Now properly set!
         );
 
         // Log the session
@@ -251,6 +272,26 @@ class _MedicationLoggingScreenState
     required CatProfile pet,
     required String? notes,
   }) async {
+    // Get today's scheduled time for this medication
+    final now = DateTime.now();
+    final todaysReminderTimes = medicationSchedule.reminderTimes.where((
+      reminderTime,
+    ) {
+      final reminderDate = DateTime(
+        reminderTime.year,
+        reminderTime.month,
+        reminderTime.day,
+      );
+      final today = DateTime(now.year, now.month, now.day);
+      return reminderDate.isAtSameMomentAs(today);
+    }).toList();
+
+    // Use the first reminder time for today as the scheduled time
+    // If no reminder time for today, use current time as fallback
+    final scheduledTime = todaysReminderTimes.isNotEmpty
+        ? todaysReminderTimes.first
+        : now;
+
     // Create a mock existing session (this will be replaced with actual
     // data from the exception in Phase 5)
     final mockExistingSession = MedicationSession.create(
@@ -267,6 +308,7 @@ class _MedicationLoggingScreenState
           medicationSchedule.customMedicationStrengthUnit,
       completed: true,
       scheduleId: medicationSchedule.id,
+      scheduledTime: scheduledTime,
     );
 
     // Create the new session from current form state
@@ -285,6 +327,7 @@ class _MedicationLoggingScreenState
       completed: true,
       notes: notes,
       scheduleId: medicationSchedule.id,
+      scheduledTime: scheduledTime,
     );
 
     // Use the saved navigator context instead of widget context

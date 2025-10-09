@@ -429,9 +429,13 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
   /// 4. Update cache and analytics
   ///
   /// Returns:
-  /// - true if successful
-  /// - false if failed (error in state.error)
-  Future<bool> quickLogAllTreatments() async {
+  /// - Session count if successful (number of sessions logged)
+  /// - 0 if failed (error in state.error)
+  Future<int> quickLogAllTreatments() async {
+    if (kDebugMode) {
+      debugPrint('[LoggingNotifier] Quick-log starting...');
+    }
+
     state = state.withLoading(loading: true);
 
     try {
@@ -440,12 +444,22 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       final pet = _ref.read(primaryPetProvider);
       final cache = state.dailyCache;
 
+      if (kDebugMode) {
+        debugPrint('[LoggingNotifier] User: ${user?.id}, Pet: ${pet?.id}');
+        debugPrint(
+          '[LoggingNotifier] Cache has sessions: ${cache?.hasAnySessions}',
+        );
+      }
+
       if (user == null || pet == null) {
+        if (kDebugMode) {
+          debugPrint('[LoggingNotifier] User or pet is null');
+        }
         state = state.copyWith(
           isLoading: false,
           error: 'User or pet not found. Please try again.',
         );
-        return false;
+        return 0;
       }
 
       // STEP 2: Check if already logged today (from cache)
@@ -462,12 +476,23 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
           );
         }
 
-        return false;
+        return 0;
       }
 
       // STEP 3: Get today's schedules from ProfileProvider
       final medicationSchedules = _ref.read(medicationSchedulesProvider) ?? [];
       final fluidSchedule = _ref.read(fluidScheduleProvider);
+
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingNotifier] Medication schedules: '
+          '${medicationSchedules.length}',
+        );
+        debugPrint(
+          '[LoggingNotifier] Fluid schedule exists: '
+          '${fluidSchedule != null}',
+        );
+      }
 
       final allSchedules = [
         ...medicationSchedules,
@@ -475,16 +500,17 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       ];
 
       if (allSchedules.isEmpty) {
+        if (kDebugMode) {
+          debugPrint(
+            '[LoggingNotifier] Quick-log rejected: no schedules found',
+          );
+        }
         state = state.copyWith(
           isLoading: false,
           error: 'No schedules found. Please set up your treatment schedule.',
         );
 
-        if (kDebugMode) {
-          debugPrint('[LoggingNotifier] Quick-log rejected: no schedules');
-        }
-
-        return false;
+        return 0;
       }
 
       if (kDebugMode) {
@@ -527,7 +553,8 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
             debugPrint('[LoggingNotifier] Quick-log queued for sync');
           }
 
-          return true;
+          // Can't determine exact count when queued offline
+          return 0;
         } on QueueWarningException catch (e) {
           // Operation succeeded but queue is getting full - show warning
           state = state.copyWith(isLoading: false, error: e.userMessage);
@@ -539,7 +566,8 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
             );
           }
 
-          return true; // Operation succeeded, just warn user
+          // Can't determine exact count when queued offline
+          return 0; // Operation succeeded, just warn user
         } on QueueFullException catch (e) {
           // Queue is full - cannot queue
           state = state.copyWith(isLoading: false, error: e.userMessage);
@@ -548,19 +576,85 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
             debugPrint('[LoggingNotifier] Quick-log failed: ${e.userMessage}');
           }
 
-          return false;
+          return 0;
         }
       }
 
       // STEP 5: Online - Call LoggingService.quickLogAllTreatments()
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingNotifier] Calling LoggingService.quickLogAllTreatments '
+          'with ${allSchedules.length} schedules',
+        );
+      }
+
       final sessionCount = await _loggingService.quickLogAllTreatments(
         userId: user.id,
         petId: pet.id,
         todaysSchedules: allSchedules,
       );
 
-      // STEP 6: Reload cache from Firestore after success
-      // The batch write updated Firestore summaries, so reload cache
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingNotifier] LoggingService returned sessionCount: '
+          '$sessionCount',
+        );
+      }
+
+      // STEP 6: Update cache optimistically (0 Firestore reads)
+      // We know exactly what was logged from the batch write, so update
+      // cache directly without reading from Firestore for cost optimization
+
+      // Calculate totals from schedules
+      var totalMedicationSessions = 0;
+      var totalFluidSessions = 0;
+      double totalMedicationDoses = 0;
+      double totalFluidVolume = 0;
+      final medicationNames = <String>[];
+
+      final today = DateTime.now();
+      final todayDate = DateTime(today.year, today.month, today.day);
+
+      for (final schedule in allSchedules) {
+        // Count reminder times for today
+        final todaysReminderCount = schedule.reminderTimes.where((
+          reminderTime,
+        ) {
+          final reminderDate = DateTime(
+            reminderTime.year,
+            reminderTime.month,
+            reminderTime.day,
+          );
+          return reminderDate.isAtSameMomentAs(todayDate);
+        }).length;
+
+        if (schedule.isMedication) {
+          totalMedicationSessions += todaysReminderCount;
+          totalMedicationDoses +=
+              (schedule.targetDosage ?? 0) * todaysReminderCount;
+          if (schedule.medicationName != null &&
+              !medicationNames.contains(schedule.medicationName)) {
+            medicationNames.add(schedule.medicationName!);
+          }
+        } else {
+          totalFluidSessions += todaysReminderCount;
+          totalFluidVolume +=
+              (schedule.targetVolume ?? 0) * todaysReminderCount;
+        }
+      }
+
+      // Update cache directly without Firestore read (cost optimization)
+      await _cacheService.updateCacheAfterQuickLog(
+        userId: user.id,
+        petId: pet.id,
+        medicationSessionCount: totalMedicationSessions,
+        fluidSessionCount: totalFluidSessions,
+        medicationNames: medicationNames,
+        totalMedicationDoses: totalMedicationDoses,
+        totalFluidVolume: totalFluidVolume,
+      );
+
+      // Reload from SharedPreferences to update state
       await loadTodaysCache();
 
       // STEP 7: Track analytics
@@ -584,7 +678,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       }
 
       state = state.copyWith(isLoading: false);
-      return true;
+      return sessionCount;
     } on Exception catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -602,7 +696,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         debugPrint('[LoggingNotifier] Quick-log error: $e');
       }
 
-      return false;
+      return 0;
     }
   }
 
