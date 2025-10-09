@@ -11,12 +11,12 @@ import 'package:hydracat/features/logging/screens/medication_logging_screen.dart
 import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/logging/widgets/quick_log_success_popup.dart';
 import 'package:hydracat/features/logging/widgets/treatment_choice_popup.dart';
-import 'package:hydracat/features/profile/models/user_persona.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/logging_queue_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
+import 'package:hydracat/shared/widgets/dialogs/no_schedules_dialog.dart';
 import 'package:hydracat/shared/widgets/navigation/hydra_navigation_bar.dart';
 
 /// Main app shell that provides consistent navigation and layout.
@@ -130,71 +130,69 @@ class _AppShellState extends ConsumerState<AppShell>
       return;
     }
 
-    // Get user's treatment approach to determine logging flow
-    final pet = ref.read(primaryPetProvider);
-    debugPrint('[FAB] Pet loaded: ${pet?.name}, ID: ${pet?.id}');
-
-    final treatmentApproach = pet?.treatmentApproach;
-    debugPrint('[FAB] Treatment approach: $treatmentApproach');
+    // Get schedule data from ProfileState (already cached - zero reads)
+    final profileState = ref.read(profileProvider);
+    final hasFluid = profileState.hasFluidSchedule;
+    final hasMedication = profileState.hasMedicationSchedules;
+    debugPrint(
+      '[FAB] Schedules - Fluid: $hasFluid, Medication: $hasMedication',
+    );
 
     // Track popup opened
-    if (treatmentApproach != null) {
+    if (hasFluid || hasMedication) {
       final analyticsService = ref.read(analyticsServiceDirectProvider);
-      final popupType = switch (treatmentApproach) {
-        UserPersona.medicationOnly => 'medication',
-        UserPersona.fluidTherapyOnly => 'fluid',
-        UserPersona.medicationAndFluidTherapy => 'choice',
-      };
+      final popupType = hasFluid && hasMedication
+          ? 'choice'
+          : hasFluid
+          ? 'fluid'
+          : 'medication';
       analyticsService.trackLoggingPopupOpened(
         popupType: popupType,
-        persona: treatmentApproach.name,
       );
     }
 
-    // Route based on treatment approach
-    switch (treatmentApproach) {
-      case null:
-        // No pet or treatment approach - shouldn't happen after onboarding
-        // Fallback to onboarding
-        debugPrint('[FAB] No treatment approach, redirecting to onboarding');
-        context.go('/onboarding/welcome');
-
-      case UserPersona.medicationOnly:
-        // Direct to medication logging
-        debugPrint('[FAB] Showing medication logging dialog');
-        _showLoggingDialog(context, const MedicationLoggingScreen());
-
-      case UserPersona.fluidTherapyOnly:
-        // Direct to fluid logging
-        debugPrint('[FAB] Showing fluid logging dialog');
-        _showLoggingDialog(context, const FluidLoggingScreen());
-
-      case UserPersona.medicationAndFluidTherapy:
-        // Show treatment choice popup
-        debugPrint('[FAB] Showing treatment choice popup');
-        _showLoggingDialog(
-          context,
-          TreatmentChoicePopup(
-            onMedicationSelected: () {
-              debugPrint('[FAB] Medication selected from popup');
-              OverlayService.hide();
-              _showLoggingDialog(
-                context,
-                const MedicationLoggingScreen(),
-                animationType: OverlayAnimationType.slideFromRight,
-              );
-            },
-            onFluidSelected: () {
-              debugPrint('[FAB] Fluid selected from popup');
-              OverlayService.hide();
-              _showLoggingDialog(
-                context,
-                const FluidLoggingScreen(),
-                animationType: OverlayAnimationType.slideFromRight,
-              );
-            },
-          ),
-        );
+    // Route based on actual schedule data
+    if (hasFluid && hasMedication) {
+      // Both exist - show choice popup
+      debugPrint('[FAB] Showing treatment choice popup');
+      _showLoggingDialog(
+        context,
+        TreatmentChoicePopup(
+          onMedicationSelected: () {
+            debugPrint('[FAB] Medication selected from popup');
+            OverlayService.hide();
+            _showLoggingDialog(
+              context,
+              const MedicationLoggingScreen(),
+              animationType: OverlayAnimationType.slideFromRight,
+            );
+          },
+          onFluidSelected: () {
+            debugPrint('[FAB] Fluid selected from popup');
+            OverlayService.hide();
+            _showLoggingDialog(
+              context,
+              const FluidLoggingScreen(),
+              animationType: OverlayAnimationType.slideFromRight,
+            );
+          },
+        ),
+      );
+    } else if (hasFluid) {
+      // Only fluid - go direct
+      debugPrint('[FAB] Showing fluid logging dialog');
+      _showLoggingDialog(context, const FluidLoggingScreen());
+    } else if (hasMedication) {
+      // Only medication - go direct
+      debugPrint('[FAB] Showing medication logging dialog');
+      _showLoggingDialog(context, const MedicationLoggingScreen());
+    } else {
+      // No schedules yet - show setup dialog
+      debugPrint('[FAB] No schedules, showing setup dialog');
+      showDialog<void>(
+        context: context,
+        builder: (context) => const NoSchedulesDialog(),
+      );
     }
 
     debugPrint('[FAB] Function completed');

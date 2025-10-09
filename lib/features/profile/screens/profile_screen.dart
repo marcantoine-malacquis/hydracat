@@ -698,6 +698,7 @@ class ProfileScreen extends ConsumerWidget {
   /// Builds the profile sections list
   Widget _buildProfileSections(BuildContext context, WidgetRef ref) {
     final primaryPet = ref.watch(primaryPetProvider);
+    final profileState = ref.watch(profileProvider);
     final petName = primaryPet?.name ?? 'Your Cat';
 
     return Column(
@@ -711,8 +712,8 @@ class ProfileScreen extends ConsumerWidget {
           onTap: () => context.go('/profile/ckd'),
         ),
 
-        // Fluid Schedule section (only for personas that include fluid therapy)
-        if (primaryPet?.treatmentApproach.includesFluidTherapy ?? false) ...[
+        // Fluid Schedule section (only if user has fluid schedule)
+        if (profileState.hasFluidSchedule) ...[
           const SizedBox(height: AppSpacing.sm),
           ProfileSectionItem(
             title: "$petName's Fluid Schedule",
@@ -722,15 +723,36 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ],
 
-        // Medication Schedule section
-        // (only for personas that include medication)
-        if (primaryPet?.treatmentApproach.includesMedication ?? false) ...[
+        // Add Fluid Therapy button (if no fluid schedule exists)
+        if (!profileState.hasFluidSchedule) ...[
+          const SizedBox(height: AppSpacing.sm),
+          ProfileSectionItem(
+            title: 'Add Fluid Therapy Tracking',
+            subtitle: 'Set up subcutaneous fluid schedules',
+            icon: Icons.add_circle_outline,
+            onTap: () => context.push('/profile/fluid/create'),
+          ),
+        ],
+
+        // Medication Schedule section (only if user has medication schedules)
+        if (profileState.hasMedicationSchedules) ...[
           const SizedBox(height: AppSpacing.sm),
           ProfileSectionItem(
             title: "$petName's Medication Schedule",
             subtitle: 'Medication settings and reminders',
             icon: Icons.medication,
             onTap: () => context.go('/profile/medication'),
+          ),
+        ],
+
+        // Add Medication button (if no medication schedules exist)
+        if (!profileState.hasMedicationSchedules) ...[
+          const SizedBox(height: AppSpacing.sm),
+          ProfileSectionItem(
+            title: 'Add Medication Tracking',
+            subtitle: 'Set up medication schedules',
+            icon: Icons.add_circle_outline,
+            onTap: () => context.push('/profile/medication'),
           ),
         ],
 

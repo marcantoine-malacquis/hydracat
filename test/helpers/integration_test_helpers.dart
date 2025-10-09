@@ -15,7 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/auth/models/app_user.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
-import 'package:hydracat/features/profile/models/user_persona.dart';
+// UserPersona removed - schedules now determine treatment type
 import 'package:hydracat/providers/connectivity_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/services/connectivity_service.dart';
@@ -96,7 +96,6 @@ Future<ProviderScope> buildIntegrationTestScope({
         userId: 'test-user-id',
         name: 'Whiskers',
         ageYears: 8,
-        treatmentApproach: UserPersona.medicationAndFluidTherapy,
         createdAt: DateTime(2024),
         updatedAt: DateTime(2024),
       );

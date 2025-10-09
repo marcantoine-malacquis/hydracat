@@ -14,11 +14,9 @@ import 'package:hydracat/features/learn/screens/learn_screen.dart';
 import 'package:hydracat/features/onboarding/screens/ckd_medical_info_screen.dart';
 import 'package:hydracat/features/onboarding/screens/onboarding_completion_screen.dart';
 import 'package:hydracat/features/onboarding/screens/pet_basics_screen.dart';
-import 'package:hydracat/features/onboarding/screens/treatment_fluid_screen.dart';
-import 'package:hydracat/features/onboarding/screens/treatment_medication_screen.dart';
-import 'package:hydracat/features/onboarding/screens/user_persona_screen.dart';
 import 'package:hydracat/features/onboarding/screens/welcome_screen.dart';
 import 'package:hydracat/features/profile/screens/ckd_profile_screen.dart';
+import 'package:hydracat/features/profile/screens/create_fluid_schedule_screen.dart';
 import 'package:hydracat/features/profile/screens/fluid_schedule_screen.dart';
 import 'package:hydracat/features/profile/screens/medication_schedule_screen.dart';
 import 'package:hydracat/features/profile/screens/profile_screen.dart';
@@ -222,6 +220,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                       child: const FluidScheduleScreen(),
                       key: state.pageKey,
                     ),
+                routes: [
+                  GoRoute(
+                    path: 'create',
+                    name: 'profile-fluid-create',
+                    pageBuilder: (context, state) =>
+                        AppPageTransitions.bidirectionalSlide(
+                          child: const CreateFluidScheduleScreen(),
+                          key: state.pageKey,
+                        ),
+                  ),
+                ],
               ),
               GoRoute(
                 path: 'medication',
@@ -309,15 +318,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 ),
           ),
           GoRoute(
-            path: 'persona',
-            name: 'onboarding-persona',
-            pageBuilder: (context, state) =>
-                AppPageTransitions.bidirectionalSlide(
-                  child: const UserPersonaScreen(),
-                  key: state.pageKey,
-                ),
-          ),
-          GoRoute(
             path: 'basics',
             name: 'onboarding-basics',
             pageBuilder: (context, state) =>
@@ -332,26 +332,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) =>
                 AppPageTransitions.bidirectionalSlide(
                   child: const CkdMedicalInfoScreen(),
-                  key: state.pageKey,
-                ),
-          ),
-          // Treatment medication route
-          GoRoute(
-            path: 'treatment/medication',
-            name: 'onboarding-treatment-medication',
-            pageBuilder: (context, state) =>
-                AppPageTransitions.bidirectionalSlide(
-                  child: const TreatmentMedicationScreen(),
-                  key: state.pageKey,
-                ),
-          ),
-          // Treatment fluid route
-          GoRoute(
-            path: 'treatment/fluid',
-            name: 'onboarding-treatment-fluid',
-            pageBuilder: (context, state) =>
-                AppPageTransitions.bidirectionalSlide(
-                  child: const TreatmentFluidScreen(),
                   key: state.pageKey,
                 ),
           ),

@@ -399,12 +399,11 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     }
 
     final currentStep = state.progress!.currentStep;
-    final nextStep = state.progress!.nextStep; // Uses persona-aware navigation
+    final nextStep = state.progress!.nextStep;
 
     if (kDebugMode) {
       debugPrint('[OnboardingNotifier] Current step: $currentStep');
       debugPrint('[OnboardingNotifier] Next step: $nextStep');
-      debugPrint('[OnboardingNotifier] Persona: ${state.progress!.persona}');
     }
 
     if (nextStep == null) {
@@ -435,11 +434,9 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       return null;
     }
 
-    // Get persona-aware route for next step
-    final persona = state.progress!.persona;
-    final route = nextStep.getRouteName(persona);
+    // Get route for next step
+    final route = nextStep.routeName;
     if (kDebugMode) {
-      debugPrint('[OnboardingNotifier] Persona: $persona');
       debugPrint('[OnboardingNotifier] Returning route: $route');
     }
     return route;
@@ -454,7 +451,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       return null;
     }
 
-    final previousStep = state.progress!.previousStep; // Uses persona-aware
+    final previousStep = state.progress!.previousStep;
 
     if (previousStep == null) {
       return null; // At welcome, no previous step
@@ -465,9 +462,8 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       return null;
     }
 
-    // Get persona-aware route for previous step
-    final persona = state.progress!.persona;
-    return previousStep.getRouteName(persona);
+    // Get route for previous step
+    return previousStep.routeName;
   }
 
   /// Navigate to the next step with validation

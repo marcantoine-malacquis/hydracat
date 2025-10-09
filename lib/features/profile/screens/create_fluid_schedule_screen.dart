@@ -3,34 +3,30 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/extensions/build_context_extensions.dart';
-import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
-import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.dart';
 import 'package:hydracat/features/onboarding/widgets/rotating_wheel_picker.dart';
+import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
-import 'package:hydracat/providers/onboarding_provider.dart';
+import 'package:hydracat/providers/profile_provider.dart';
+import 'package:uuid/uuid.dart';
 
-/// Screen for setting up fluid therapy treatment
-class TreatmentFluidScreen extends ConsumerStatefulWidget {
-  /// Creates a [TreatmentFluidScreen]
-  const TreatmentFluidScreen({
-    super.key,
-    this.onBack,
-    this.isCombinedFlow = false,
-  });
-
-  /// Optional callback for back navigation
-  final VoidCallback? onBack;
-
-  /// Whether this is part of a combined treatment flow
-  final bool isCombinedFlow;
+/// Screen for creating a new fluid schedule
+///
+/// This screen can be accessed from multiple entry points:
+/// - Profile screen "Add fluid therapy" button
+/// - Home screen empty state
+/// - FAB "No schedules" dialog
+class CreateFluidScheduleScreen extends ConsumerStatefulWidget {
+  /// Creates a [CreateFluidScheduleScreen]
+  const CreateFluidScheduleScreen({super.key});
 
   @override
-  ConsumerState<TreatmentFluidScreen> createState() =>
-      _TreatmentFluidScreenState();
+  ConsumerState<CreateFluidScheduleScreen> createState() =>
+      _CreateFluidScheduleScreenState();
 }
 
-class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
+class _CreateFluidScheduleScreenState
+    extends ConsumerState<CreateFluidScheduleScreen> {
   final TextEditingController _volumeController = TextEditingController();
   final TextEditingController _needleGaugeController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -46,7 +42,7 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeFromExisting();
+    _initializeDefaults();
   }
 
   @override
@@ -56,23 +52,12 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
     super.dispose();
   }
 
-  void _initializeFromExisting() {
-    final onboardingData = ref.read(onboardingDataProvider);
-    if (onboardingData?.fluidTherapy != null) {
-      final fluidTherapy = onboardingData!.fluidTherapy!;
-      _selectedFrequency = fluidTherapy.frequency;
-      _volumePerAdministration = fluidTherapy.volumePerAdministration;
-      _volumeController.text = _volumePerAdministration.toString();
-      _preferredLocation = fluidTherapy.preferredLocation;
-      _needleGauge = fluidTherapy.needleGauge;
-      _needleGaugeController.text = _needleGauge;
-    } else {
-      // Set default values
-      _volumeController.text = '100';
-      _volumePerAdministration = 100;
-      _needleGaugeController.text = '20G';
-      _needleGauge = '20G';
-    }
+  void _initializeDefaults() {
+    // Set default values for new schedule
+    _volumeController.text = '100';
+    _volumePerAdministration = 100;
+    _needleGaugeController.text = '20G';
+    _needleGauge = '20G';
   }
 
   @override
@@ -80,35 +65,42 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
     final theme = Theme.of(context);
     final l10n = context.l10n;
 
-    return OnboardingScreenWrapper(
-      currentStep: OnboardingStepType.treatmentFluid.stepIndex,
-      totalSteps: OnboardingStepType.totalSteps,
-      title: l10n.fluidTherapySetupTitle,
-      stepType: OnboardingStepType.treatmentFluid,
-      onBackPressed: _onBackPressed,
-      showNextButton: false,
-      showProgressInAppBar: true,
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header section
-            _buildHeader(context, theme, l10n),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Fluid Therapy Setup'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => context.pop(),
+        ),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header section
+                _buildHeader(context, theme, l10n),
 
-            // Content sections
-            _buildFrequencySection(theme, l10n),
-            const SizedBox(height: 32),
-            _buildVolumeSection(theme, l10n),
-            const SizedBox(height: 32),
-            _buildLocationSection(theme, l10n),
-            const SizedBox(height: 32),
-            _buildNeedleGaugeSection(theme, l10n),
-            const SizedBox(height: 32),
+                const SizedBox(height: 32),
 
-            // Footer with next button
-            _buildFooter(context, theme, l10n),
-          ],
+                // Content sections
+                _buildFrequencySection(theme, l10n),
+                const SizedBox(height: 32),
+                _buildVolumeSection(theme, l10n),
+                const SizedBox(height: 32),
+                _buildLocationSection(theme, l10n),
+                const SizedBox(height: 32),
+                _buildNeedleGaugeSection(theme, l10n),
+                const SizedBox(height: 32),
+
+                // Footer with save button
+                _buildFooter(context, theme, l10n),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -119,73 +111,71 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
     ThemeData theme,
     AppLocalizations l10n,
   ) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.water_drop,
-                color: theme.colorScheme.primary,
-                size: 28,
-              ),
-              const SizedBox(width: 12),
-              Text(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.water_drop,
+              color: theme.colorScheme.primary,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
                 'Fluid Therapy Setup',
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: theme.colorScheme.onSurface,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
 
-          Text(
-            'Configure your fluid therapy administration settings. '
-            'This helps us provide appropriate tracking and reminders.',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-              height: 1.4,
+        Text(
+          'Configure your fluid therapy administration settings. '
+          'This helps us provide appropriate tracking and reminders.',
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+            height: 1.4,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: theme.colorScheme.primary.withValues(alpha: 0.2),
             ),
           ),
-          const SizedBox(height: 16),
-
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: theme.colorScheme.primary.withValues(alpha: 0.2),
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: theme.colorScheme.primary,
+                size: 20,
               ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  color: theme.colorScheme.primary,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'You can update your schedules anytime in the '
-                    'Profile section',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w500,
-                    ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'You can update your fluid schedule anytime in the '
+                  'Profile section',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -466,11 +456,10 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
     ThemeData theme,
     AppLocalizations l10n,
   ) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 16),
       child: ElevatedButton(
-        onPressed: _isLoading ? null : _onNext,
+        onPressed: _isLoading ? null : _onSave,
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
         ),
@@ -481,7 +470,7 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             : const Text(
-                'Next',
+                'Save Fluid Schedule',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -491,64 +480,49 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
     );
   }
 
-  Future<void> _onBackPressed() async {
-    // Use custom back callback if provided
-    if (widget.onBack != null) {
-      widget.onBack!();
-      return;
-    }
-
-    // Default: go back to previous onboarding step
-    final previousRoute = await ref
-        .read(onboardingProvider.notifier)
-        .navigatePrevious();
-
-    if (previousRoute != null && mounted && context.mounted) {
-      context.go(previousRoute);
-    }
-  }
-
-  Future<void> _onNext() async {
+  Future<void> _onSave() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
-      final fluidTherapy = FluidTherapyData(
+      // Create Schedule object for fluid therapy
+      const uuid = Uuid();
+      final now = DateTime.now();
+      final schedule = Schedule(
+        id: uuid.v4(),
+        treatmentType: TreatmentType.fluid,
         frequency: _selectedFrequency,
-        volumePerAdministration: _volumePerAdministration,
+        targetVolume: _volumePerAdministration,
         preferredLocation: _preferredLocation,
         needleGauge: _needleGauge,
+        reminderTimes: _getDefaultReminderTimes(_selectedFrequency),
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
       );
 
-      // Update onboarding data
-      final currentData = ref.read(onboardingDataProvider);
-      if (currentData != null) {
-        await ref
-            .read(onboardingProvider.notifier)
-            .updateData(
-              currentData.copyWith(fluidTherapy: fluidTherapy),
-            );
-      }
+      // Save to Firestore via ProfileProvider
+      await ref.read(profileProvider.notifier).createFluidSchedule(schedule);
 
-      // Move to next step in onboarding
-      final nextRoute = await ref
-          .read(onboardingProvider.notifier)
-          .navigateNext();
+      if (mounted && context.mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Fluid schedule saved successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
 
-      if (nextRoute != null && mounted && context.mounted) {
-        // Navigate to next screen
-        context.go(nextRoute);
+        // Navigate back
+        context.pop();
       }
     } on Exception catch (e) {
       if (mounted) {
         final theme = Theme.of(context);
-        final errorMessage = ref
-            .read(onboardingProvider.notifier)
-            .getErrorMessage(e);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(errorMessage),
+            content: Text('Error saving fluid schedule: $e'),
             backgroundColor: theme.colorScheme.error,
           ),
         );
@@ -558,5 +532,32 @@ class _TreatmentFluidScreenState extends ConsumerState<TreatmentFluidScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  /// Helper to generate default reminder times based on frequency
+  List<DateTime> _getDefaultReminderTimes(TreatmentFrequency frequency) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    return switch (frequency) {
+      TreatmentFrequency.onceDaily => [
+        today.add(const Duration(hours: 9)),
+      ],
+      TreatmentFrequency.twiceDaily => [
+        today.add(const Duration(hours: 9)),
+        today.add(const Duration(hours: 21)),
+      ],
+      TreatmentFrequency.thriceDaily => [
+        today.add(const Duration(hours: 8)),
+        today.add(const Duration(hours: 14)),
+        today.add(const Duration(hours: 20)),
+      ],
+      TreatmentFrequency.everyOtherDay => [
+        today.add(const Duration(hours: 9)),
+      ],
+      TreatmentFrequency.every3Days => [
+        today.add(const Duration(hours: 9)),
+      ],
+    };
   }
 }

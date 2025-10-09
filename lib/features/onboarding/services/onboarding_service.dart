@@ -12,9 +12,7 @@ import 'package:hydracat/features/onboarding/exceptions/onboarding_exceptions.da
 import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_progress.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
-import 'package:hydracat/features/profile/models/user_persona.dart';
 import 'package:hydracat/features/profile/services/pet_service.dart';
-import 'package:hydracat/features/profile/services/schedule_service.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
 import 'package:hydracat/shared/services/secure_preferences_service.dart';
 
@@ -66,9 +64,6 @@ class OnboardingService {
 
   /// Pet service for profile operations
   final PetService _petService = PetService();
-
-  /// Schedule service for treatment schedule operations
-  final ScheduleService _scheduleService = const ScheduleService();
 
   /// Secure preferences for local storage
   final SecurePreferencesService _preferences = SecurePreferencesService();
@@ -255,14 +250,6 @@ class OnboardingService {
         validationErrors: validationErrors,
       );
 
-      // Update persona in progress if it changed for persona-aware navigation
-      if (newData.treatmentApproach != null &&
-          newData.treatmentApproach != _currentProgress!.persona) {
-        _currentProgress = _currentProgress!.copyWith(
-          persona: newData.treatmentApproach,
-        );
-      }
-
       // Auto-save at checkpoint steps
       if (_currentProgress!.isCurrentStepCheckpoint) {
         await _saveCheckpoint();
@@ -408,8 +395,8 @@ class OnboardingService {
         );
       }
 
-      // Ensure we have all required data
-      if (!_currentData!.isReadyForProfileCreation) {
+      // Ensure we have all required data (pet basics)
+      if (!_currentData!.isComplete) {
         final missingFields = _currentData!.getMissingRequiredFields();
         return OnboardingFailure(
           OnboardingValidationException(missingFields),
@@ -431,72 +418,12 @@ class OnboardingService {
 
       final petProfile = (petResult as PetSuccess).pet;
 
-      // Create fluid therapy schedule if applicable
-      if (_currentData!.fluidTherapy != null &&
-          _currentData!.treatmentApproach!.includesFluidTherapy) {
-        try {
-          final scheduleDto = _currentData!.fluidTherapy!.toSchedule();
-          await _scheduleService.createSchedule(
-            userId: _currentData!.userId!,
-            petId: petProfile.id,
-            scheduleDto: scheduleDto,
-          );
-
-          if (kDebugMode) {
-            debugPrint(
-              '[OnboardingService] Successfully created fluid schedule '
-              'for pet ${petProfile.id}',
-            );
-          }
-        } on Exception catch (e) {
-          // Log the error but don't fail the entire onboarding
-          if (kDebugMode) {
-            debugPrint(
-              '[OnboardingService] Failed to create fluid schedule: $e',
-            );
-          }
-          // Could optionally track this as a non-fatal error
-        }
-      }
-
-      // Create medication schedules if applicable
-      if (_currentData!.medications != null &&
-          _currentData!.medications!.isNotEmpty) {
-        try {
-          if (kDebugMode) {
-            debugPrint(
-              '[OnboardingService] Creating '
-              '${_currentData!.medications!.length} medication schedules '
-              'for pet ${petProfile.id}',
-            );
-          }
-
-          // Create all schedules in a single batch operation for efficiency
-          final scheduleDtos = _currentData!.medications!
-              .map((medication) => medication.toSchedule())
-              .toList();
-
-          await _scheduleService.createSchedulesBatch(
-            userId: _currentData!.userId!,
-            petId: petProfile.id,
-            scheduleDtos: scheduleDtos,
-          );
-
-          if (kDebugMode) {
-            debugPrint(
-              '[OnboardingService] Successfully created all medication '
-              'schedules for pet ${petProfile.id}',
-            );
-          }
-        } on Exception catch (e) {
-          // Log the error but don't fail the entire onboarding
-          if (kDebugMode) {
-            debugPrint(
-              '[OnboardingService] Failed to create medication schedules: $e',
-            );
-          }
-          // Could optionally track this as a non-fatal error
-        }
+      if (kDebugMode) {
+        debugPrint(
+          '[OnboardingService] Successfully created pet profile '
+          '${petProfile.id}. '
+          'Schedules can be added later from profile screens.',
+        );
       }
 
       // Mark onboarding as completed
@@ -506,7 +433,6 @@ class OnboardingService {
       await _trackAnalyticsEvent('onboarding_completed', {
         'user_id': _currentData!.userId,
         'pet_id': petProfile.id,
-        'treatment_approach': _currentData!.treatmentApproach!.name,
         'duration_seconds': _currentProgress!.totalDuration?.inSeconds,
         'completion_rate': 1.0,
       });
@@ -573,18 +499,9 @@ class OnboardingService {
   bool _isCurrentStepValid(OnboardingData data) {
     return switch (_currentProgress!.currentStep) {
       OnboardingStepType.welcome => true,
-      OnboardingStepType.userPersona => data.hasPersonaSelection,
       OnboardingStepType.petBasics => data.hasBasicPetInfo,
       OnboardingStepType.ckdMedicalInfo => true, // Optional step, always valid
-      OnboardingStepType.treatmentMedication =>
-        // For medication step, validate based on persona:
-        // 1. For medicationOnly: require at least one medication
-        // 2. For medicationAndFluidTherapy: require at least one medication
-        // 3. For fluidTherapyOnly: allow progression (skip medications)
-        data.treatmentApproach == UserPersona.fluidTherapyOnly ||
-            (data.medications != null && data.medications!.isNotEmpty),
-      OnboardingStepType.treatmentFluid => data.fluidTherapy != null,
-      OnboardingStepType.completion => data.isReadyForProfileCreation,
+      OnboardingStepType.completion => data.isComplete,
     };
   }
 
@@ -600,11 +517,6 @@ class OnboardingService {
         // No required fields
         break;
 
-      case OnboardingStepType.userPersona:
-        if (!data.hasPersonaSelection) {
-          missing.add('Treatment approach selection');
-        }
-
       case OnboardingStepType.petBasics:
         if (data.petName == null || data.petName!.isEmpty) {
           missing.add('Pet name');
@@ -612,23 +524,10 @@ class OnboardingService {
         if (data.petAge == null || data.petAge! <= 0) {
           missing.add('Pet age');
         }
-      // Note: Gender is also required but validated at UI level
 
       case OnboardingStepType.ckdMedicalInfo:
-      // Optional step, no required fields
-
-      case OnboardingStepType.treatmentMedication:
-        // Only require medications for medication-based personas
-        if (data.treatmentApproach?.includesMedication ?? false) {
-          if (data.medications == null || data.medications!.isEmpty) {
-            missing.add('At least one medication');
-          }
-        }
-
-      case OnboardingStepType.treatmentFluid:
-        if (data.fluidTherapy == null) {
-          missing.add('Fluid therapy setup');
-        }
+        // Optional step, no required fields
+        break;
 
       case OnboardingStepType.completion:
         // Use the comprehensive validation from OnboardingData

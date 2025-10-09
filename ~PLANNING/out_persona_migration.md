@@ -19,6 +19,117 @@
 
 ---
 
+## Quick Reference: New User Flow
+
+```
+BEFORE (7 screens):
+Welcome → Pet Basics → [Persona Selection] → CKD Info → [Medication Setup] → [Fluid Setup] → Completion
+
+AFTER (4 screens):
+Welcome → Pet Basics → CKD Info → Completion Screen
+                                        ↓
+                                  [Finish Button]
+                            (validates & saves to Firestore)
+                                        ↓
+                                   HOME SCREEN
+                                        ↓
+                              [Empty State Discovery]
+                                   [SelectionCards]
+                                   /              \
+                      Track Medications      Track Fluid Therapy
+                             ↓                      ↓
+              /profile/medication        /profile/fluid/create
+              (existing screen)         (moved from onboarding)
+```
+
+**Key UX Decision**: Completion screen stays simple and final (no SelectionCards).
+Feature discovery happens naturally on home screen after onboarding completes.
+
+---
+
+## Final Implementation Strategy (2025-01-09)
+
+### Key Decisions:
+1. **Onboarding Flow**: Remove treatment setup entirely → Welcome → Pet Basics → CKD Info → Completion (stays simple)
+2. **Code Reuse**: Move `treatment_fluid_screen.dart` to profile feature as `create_fluid_schedule_screen.dart`
+3. **Generic Widget**: Extract `PersonaSelectionCard` → generic `SelectionCard` for reuse across app
+4. **Feature Discovery**: Home screen shows SelectionCard CTAs when no schedules exist → navigate to creation screens
+5. **Screen Separation**: Clean create vs edit screen pattern
+6. **Completion Logic**: Keep existing "Finish" button functionality (validation + Firestore save + navigate home)
+
+### What Gets Deleted:
+- `user_persona.dart` (enum)
+- `user_persona_screen.dart` (selection screen)
+- `persona_selection_card.dart` (replaced by generic SelectionCard)
+- `treatment_medication_screen.dart` (redundant with profile screen)
+
+### What Gets Moved:
+- `treatment_fluid_screen.dart` → `profile/screens/create_fluid_schedule_screen.dart` (refactored)
+
+### What Gets Created:
+- `shared/widgets/selection_card.dart` (generic widget)
+- `shared/widgets/dialogs/no_schedules_dialog.dart` (FAB empty state)
+
+### What Gets Kept:
+- `medication_schedule_screen.dart` (already handles empty state)
+- `add_medication_screen.dart` (reusable modal)
+- `treatment_choice.dart` (for users with both schedules)
+
+### Benefits:
+- ✅ 4 screen onboarding instead of 7 (43% faster)
+- ✅ Maximum code reuse (90% of treatment screens reused)
+- ✅ Clean create/edit separation
+- ✅ Consistent SelectionCard pattern throughout app
+- ✅ Progressive feature discovery via empty states
+- ✅ Completion screen stays simple and final (no breaking changes to critical logic)
+
+### Progress System Impact:
+**Current**: `OnboardingStepType.totalSteps` calculated from enum length (7 steps)
+**After**: Enum shrinks from 7 to 4 values, `totalSteps` auto-updates to 4
+**Progress indicators**: Will automatically show "Step X of 4" correctly
+**No manual changes needed**: Progress calculation is dynamic based on enum
+
+```dart
+// Before:
+welcome (0/7) → userPersona (1/7) → petBasics (2/7) → ckdInfo (3/7) 
+→ treatmentMed (4/7) → treatmentFluid (5/7) → completion (6/7)
+
+// After:
+welcome (0/4) → petBasics (1/4) → ckdInfo (2/4) → completion (3/4)
+```
+
+✅ **No progress bar issues** - updates automatically when enum is modified
+
+### UX Rationale: Why Completion Screen Stays Simple
+
+**Problem with adding SelectionCards to completion screen**:
+1. ❌ Breaks the "completion" feeling - user thinks there's more to do
+2. ❌ User hasn't seen home screen yet, still feels like onboarding
+3. ❌ Confusing: "I clicked Finish but there's more setup?"
+4. ❌ Risks breaking existing critical logic (validation, Firestore save, navigation)
+
+**Better approach - Home screen discovery**:
+1. ✅ Onboarding feels truly complete when "Finish" is clicked
+2. ✅ User arrives at home screen, sees clean empty state
+3. ✅ Natural moment to discover features: "Now what can I do?"
+4. ✅ No pressure - user can explore app or set up schedules
+5. ✅ Preserves completion screen's existing robust logic
+
+**User mental model**:
+```
+Onboarding = Setup my cat's profile ✅
+    ↓
+[Finish] = Complete setup, save everything ✅
+    ↓
+Home Screen = Discover what I can do with the app ✅
+    ↓
+[Add first treatment] = Start using features ✅
+```
+
+This creates clear mental checkpoints and natural feature discovery.
+
+---
+
 ## Phase 1: Analysis & Preparation
 
 ### Step 1.1: Document Current Persona Usage ✅
@@ -139,11 +250,17 @@ List<String> getMissingFields() {
 
 ### Step 2.2: Update Onboarding Flow
 
-#### 2.2.1 Remove UserPersona selection screen
+#### 2.2.1 Remove UserPersona selection screen and create generic SelectionCard
 **Files to modify**:
 - `lib/features/onboarding/screens/user_persona_screen.dart` → DELETE
-- `lib/features/onboarding/widgets/persona_selection_card.dart` → DELETE
+- `lib/features/onboarding/widgets/persona_selection_card.dart` → EXTRACT to generic widget
 - `lib/features/onboarding/models/onboarding_step.dart` → Remove `userPersona` step from enum
+
+**New widget to create**:
+- `lib/shared/widgets/selection_card.dart` → Extract animation/styling from PersonaSelectionCard
+  - Keep: 3D press effects, loading overlay, square/rectangle layouts
+  - Remove: Persona-specific logic
+  - Make generic: Accept IconData, title, subtitle, onTap
 
 **Router changes**:
 - `lib/app/router.dart` → Remove route for `/onboarding/user-persona`
@@ -156,77 +273,91 @@ List<String> getMissingFields() {
 2. Pet Basics
 3. **User Persona** ← REMOVE
 4. CKD Medical Info
-5. Treatment Medication (conditional)
-6. Treatment Fluid (conditional)
+5. Treatment Medication (conditional) ← MOVE to profile feature
+6. Treatment Fluid (conditional) ← MOVE to profile feature
 7. Completion
 
-**New flow**:
+**New flow** (FINAL DECISION):
 1. Welcome
 2. Pet Basics
 3. CKD Medical Info
-4. Treatment Setup (combined screen showing both options)
-5. Completion
+4. Completion (stays simple and final)
 
-**Alternative new flow** (recommended - simpler):
-1. Welcome
-2. Pet Basics
-3. CKD Medical Info
-4. Completion (with empty state CTAs to add treatments)
+**Completion Screen** (NO CHANGES NEEDED):
+- ✅ Keep existing celebratory message and "Finish" button
+- ✅ Keep existing validation and Firestore save logic
+- ✅ Navigates to home screen on success
+- ❌ DO NOT add SelectionCards here (breaks "completion" feeling)
 
-**Recommendation**: Use second flow - get users to app faster, let them discover features organically
+**Home Screen Empty State** (NEW):
+- Shows SelectionCard widgets when no schedules exist
+- Natural feature discovery after onboarding completes
+- User can explore app first or set up schedules immediately
 
-#### 2.2.3 Update treatment setup screens
-**Option A** (if keeping treatment screens in onboarding):
-**File**: Create new `lib/features/onboarding/screens/treatment_setup_screen.dart`
-- Show both medication and fluid options
-- Both sections skippable
-- Copy: "You can set up your treatment tracking now, or add it later from the Profile screen"
-- Save button enabled even if both empty
+#### 2.2.3 Move treatment setup screens to profile feature (FINAL DECISION)
+**Strategy**: Reuse onboarding screens by moving them to profile feature for clean create/edit separation
 
-**Option B** (recommended):
-- Remove treatment setup from onboarding entirely
-- Show empty states on home screen with "Get Started" CTAs
-- Simpler, faster onboarding
-- Better feature discovery
+**Files to MOVE and REFACTOR**:
 
-#### 2.2.4 Update OnboardingService
+1. **Medication Creation** (already exists in profile):
+   - ✅ `lib/features/profile/screens/medication_schedule_screen.dart` - Already handles empty state
+   - ✅ `lib/features/onboarding/screens/add_medication_screen.dart` - Keep as is (already reusable)
+   - ❌ `lib/features/onboarding/screens/treatment_medication_screen.dart` - DELETE (not needed)
+
+2. **Fluid Therapy Creation** (needs to be moved):
+   - **MOVE**: `lib/features/onboarding/screens/treatment_fluid_screen.dart`
+   - **TO**: `lib/features/profile/screens/create_fluid_schedule_screen.dart`
+   - **Refactor**: Remove OnboardingScreenWrapper, use standard Scaffold
+   - **Keep**: All form logic, validation, and save functionality
+   - **Result**: Standalone creation screen accessible from anywhere
+
+**Benefits of this approach**:
+- ✅ Maximum code reuse (onboarding screens already work)
+- ✅ Clean separation: create screens vs edit screens
+- ✅ Consistent pattern for both treatment types
+- ✅ Can be called from completion screen, FAB dialog, or home screen CTAs
+- ✅ Less refactoring needed
+
+#### 2.2.4 Simplify OnboardingService (schedules now created outside onboarding)
 **File**: `lib/features/onboarding/services/onboarding_service.dart`
 
-**Line 433-440**: Update schedule creation logic
-```dart
-// Current (persona-based)
-if (_currentData!.fluidTherapy != null &&
-    _currentData!.treatmentApproach!.includesFluidTherapy) {
-  // Create fluid schedule
-}
+**Changes needed**:
+- Remove medication schedule creation logic (now happens in profile feature)
+- Remove fluid schedule creation logic (now happens in profile feature)
+- Onboarding only creates pet profile with basic info + CKD data
+- Treatment schedules created separately when user visits creation screens
 
-// New (data-based)
-if (_currentData!.fluidTherapy != null) {
-  // Create fluid schedule - if user provided data, create it
-}
-```
+**Rationale**: Since treatment setup moved out of onboarding flow, OnboardingService should only handle:
+1. Pet basic information
+2. CKD medical information
+3. Initial profile creation
 
-**Similar update for medication schedules** - just check if data exists
+Schedules are created when user taps SelectionCards on completion screen or adds them later from home/profile.
 
-#### 2.2.5 Remove onboarding validation based on persona
+#### 2.2.5 Simplify onboarding validation (remove treatment validation)
 **File**: `lib/features/onboarding/services/onboarding_validation_service.dart`
 
-**Lines 168-174 & 208-211**: Remove persona checks
+**Remove all persona-based treatment validation**:
 ```dart
-// Remove this entire block - medications always optional
+// DELETE: Persona checks for medications
 if (persona?.includesMedication ?? false) {
   if (data.medications == null || data.medications!.isEmpty) {
     errors.add(...);
   }
 }
 
-// Remove this entire block - fluid therapy always optional
+// DELETE: Persona checks for fluid therapy
 if (persona?.includesFluidTherapy ?? false) {
   if (data.fluidTherapy == null) {
     errors.add(...);
   }
 }
 ```
+
+**New validation logic**: Only validate pet basics and CKD info are complete
+- Medication and fluid data removed from OnboardingData model
+- Validation becomes much simpler
+- No treatment-related validation in onboarding
 
 ### Step 2.3: Update FAB Logic
 
@@ -274,10 +405,14 @@ if (hasFluid && hasMedication) {
 Shows when user taps FAB but has no schedules set up yet:
 ```dart
 "Get Started"
-- "Set up medication tracking" → navigate to medication setup
-- "Set up fluid therapy tracking" → navigate to fluid setup
-- "I'll do this later" → dismiss
+- SelectionCard: "Set up medication tracking" 
+  → navigate to /profile/medication (existing screen with empty state)
+- SelectionCard: "Set up fluid therapy tracking" 
+  → navigate to /profile/fluid/create (moved creation screen)
+- TextButton: "I'll do this later" → dismiss
 ```
+
+**Note**: Reuse the generic SelectionCard widget created from PersonaSelectionCard
 
 ### Step 2.4: Update Quick-Log Logic
 
@@ -330,32 +465,48 @@ if (!profileState.hasFluidSchedule) {
   ProfileActionButton(
     title: "Set up fluid therapy tracking",
     icon: AppIcons.fluidTherapy,
-    onTap: () => context.push('/profile/fluid'),
+    onTap: () => context.push('/profile/fluid/create'), // Navigate to creation screen
   );
 }
 ```
 
-Similar for medications if none exist.
+If no medication schedules:
+```dart
+if (!profileState.hasMedicationSchedules) {
+  ProfileActionButton(
+    title: "Set up medication tracking",
+    icon: AppIcons.medication,
+    onTap: () => context.push('/profile/medication'), // Existing screen handles empty state
+  );
+}
+```
 
 ### Step 2.6: Update Home Screen Empty States
 
 **File**: `lib/features/home/screens/home_screen.dart`
 
-Add progressive disclosure widgets:
+Add progressive disclosure widgets using the new generic SelectionCard:
 
 **If no schedules at all**:
 ```dart
 EmptyStateWidget(
   title: "Let's get started!",
   subtitle: "Set up your treatment tracking",
-  actions: [
-    PrimaryButton(
-      text: "Add medication schedule",
+  children: [
+    SelectionCard(
+      icon: Icons.medication_outlined,
+      title: "Track Medications",
+      subtitle: "Set up medication schedules",
+      layout: CardLayout.rectangle,
       onTap: () => context.push('/profile/medication'),
     ),
-    SecondaryButton(
-      text: "Add fluid therapy schedule",
-      onTap: () => context.push('/profile/fluid'),
+    SizedBox(height: AppSpacing.md),
+    SelectionCard(
+      icon: Icons.water_drop_outlined,
+      title: "Track Fluid Therapy",
+      subtitle: "Set up subcutaneous fluid tracking",
+      layout: CardLayout.rectangle,
+      onTap: () => context.push('/profile/fluid/create'),
     ),
   ],
 )
@@ -363,11 +514,11 @@ EmptyStateWidget(
 
 **If only medication exists**:
 - Show medication widgets prominently
-- Small CTA: "You can also track fluid therapy →"
+- Small CTA: "You can also track fluid therapy →" navigates to `/profile/fluid/create`
 
 **If only fluid exists**:
 - Show fluid widgets prominently
-- Small CTA: "You can also track medications →"
+- Small CTA: "You can also track medications →" navigates to `/profile/medication`
 
 **If both exist**:
 - Show both types of widgets
@@ -425,12 +576,26 @@ UI now adapts based on existence of schedules (fluidSchedule, medicationSchedule
 ### Step 2.9: Clean Up Unused Files
 
 **Delete these files**:
-1. `lib/features/profile/models/user_persona.dart`
-2. `lib/features/onboarding/screens/user_persona_screen.dart`
-3. `lib/features/onboarding/widgets/persona_selection_card.dart`
+1. `lib/features/profile/models/user_persona.dart` - Persona enum no longer needed
+2. `lib/features/onboarding/screens/user_persona_screen.dart` - Persona selection removed from flow
+3. `lib/features/onboarding/widgets/persona_selection_card.dart` - Replaced by generic SelectionCard
+4. `lib/features/onboarding/screens/treatment_medication_screen.dart` - Not needed (medication screen already exists in profile)
 
-**Keep this file** (still needed for combined-persona users):
-- `lib/features/logging/models/treatment_choice.dart` - Used when user with both schedules needs to choose which to log
+**Move these files** (code reuse):
+1. `lib/features/onboarding/screens/treatment_fluid_screen.dart` 
+   → MOVE TO `lib/features/profile/screens/create_fluid_schedule_screen.dart`
+   - Refactor to remove OnboardingScreenWrapper
+   - Use standard Scaffold with AppBar
+   - Keep all form logic and save functionality
+
+**Keep these files** (still needed):
+1. `lib/features/logging/models/treatment_choice.dart` - Used when user with both schedules needs to choose which to log
+2. `lib/features/onboarding/screens/add_medication_screen.dart` - Reusable modal for adding/editing medications
+3. `lib/features/profile/screens/medication_schedule_screen.dart` - Handles both viewing and creating medications
+
+**Create new files**:
+1. `lib/shared/widgets/selection_card.dart` - Generic version extracted from PersonaSelectionCard
+2. `lib/shared/widgets/dialogs/no_schedules_dialog.dart` - Dialog when FAB tapped with no schedules
 
 ### Step 2.10: Update Tests
 
@@ -450,42 +615,66 @@ UI now adapts based on existence of schedules (fluidSchedule, medicationSchedule
 
 ---
 
-## Phase 3: Implementation Order
+## Phase 3: Implementation Order (UPDATED WITH FINAL DECISIONS)
 
-### Batch 1: Data Models (Low Risk)
+### Batch 1: Create Reusable Components (Low Risk)
 1. ✅ Create migration plan document (this file)
-2. Remove `UserPersona` enum
-3. Update `CatProfile` model
-4. Update `OnboardingData` model
-5. Run `flutter analyze` - fix any immediate type errors
+2. **Create generic SelectionCard widget**
+   - Extract from `PersonaSelectionCard`
+   - Location: `lib/shared/widgets/selection_card.dart`
+   - Keep: animations, loading overlay, layouts
+   - Make generic: accept icon, title, subtitle, onTap
+3. Run `flutter analyze` on new widget
 
-### Batch 2: Onboarding Flow (Medium Risk)
-6. Remove user persona screen and widget files
-7. Update `OnboardingStep` enum
-8. Update router to remove persona route
-9. Update onboarding service to remove persona-based schedule creation
-10. Update onboarding validation service
-11. Test onboarding flow manually
+### Batch 2: Move Treatment Creation Screens (Low Risk)
+4. **Move fluid creation screen to profile feature**
+   - FROM: `lib/features/onboarding/screens/treatment_fluid_screen.dart`
+   - TO: `lib/features/profile/screens/create_fluid_schedule_screen.dart`
+   - Refactor: Remove OnboardingScreenWrapper, use Scaffold
+   - Keep: All form logic and save functionality
+5. **Add route** for `/profile/fluid/create` in router
+6. Test fluid creation screen standalone
 
-### Batch 3: UI Logic (Medium Risk)
-12. Update FAB logic in `app_shell.dart`
-13. Create "No Schedules" dialog
-14. Update profile screen sections
-15. Add "Add Treatment" buttons to profile
-16. Test FAB routing with different schedule states
+### Batch 3: Data Models (Low Risk)
+7. Remove `UserPersona` enum (`lib/features/profile/models/user_persona.dart`)
+8. Update `CatProfile` model (remove `treatmentApproach` field)
+9. Update `OnboardingData` model (remove `treatmentApproach`, medications, fluidTherapy)
+10. Run `flutter analyze` - fix any immediate type errors
 
-### Batch 4: Home Screen (Low Risk)
-17. Update home screen empty states
-18. Add progressive disclosure CTAs
-19. Test home screen with different schedule combinations
+### Batch 4: Onboarding Flow (Medium Risk)
+11. Delete user persona screen (`user_persona_screen.dart`)
+12. Delete persona selection card widget (`persona_selection_card.dart`)
+13. Delete onboarding medication screen (`treatment_medication_screen.dart`)
+14. Update `OnboardingStep` enum (remove userPersona, treatmentMedication, treatmentFluid)
+15. Update router (remove persona route, add fluid/create route)
+16. ✅ **Completion screen stays unchanged** (existing logic preserved)
+17. Simplify onboarding service (remove schedule creation)
+18. Simplify onboarding validation service (remove treatment validation)
+19. Test onboarding flow manually (should be 4 steps with progress showing correctly)
 
-### Batch 5: Cleanup & Polish (Low Risk)
-20. Update analytics tracking
-21. Update Firestore schema documentation
-22. Delete unused files
-23. Update tests
-24. Run full `flutter analyze`
-25. Manual testing of all flows
+### Batch 5: UI Logic (Medium Risk)
+20. Update FAB logic in `app_shell.dart`
+21. Create "No Schedules" dialog using SelectionCard
+22. Update profile screen sections (remove persona checks, use schedule checks)
+23. Add "Add Treatment" buttons to profile for missing schedules
+24. Test FAB routing with different schedule states
+
+### Batch 6: Home Screen (CRITICAL - Primary Feature Discovery)
+25. **Update home screen empty states with SelectionCard widgets** (main feature discovery point)
+26. Add progressive disclosure CTAs for users with only one treatment type
+27. Test home screen with different schedule combinations:
+    - No schedules → Shows prominent SelectionCard widgets for both options
+    - Only medication → Shows medication widgets + subtle fluid CTA
+    - Only fluid → Shows fluid widgets + subtle medication CTA
+    - Both → Shows both widgets, no CTAs
+
+### Batch 7: Cleanup & Polish (Low Risk)
+28. Update analytics tracking (remove persona events, add behavioral events)
+29. Update Firestore schema documentation
+30. Delete unused files (listed in Step 2.9)
+31. Update tests (remove persona tests, add schedule-based tests)
+32. Run full `flutter analyze`
+33. Manual testing of all flows from Phase 4 checklist
 
 ---
 
@@ -647,54 +836,79 @@ The PRD's "Progressive Caregiver" persona (line 33) explicitly mentions users wh
 
 ---
 
-## Questions Before Implementation
+## Design Decisions (FINALIZED)
 
-### Q1: Onboarding Flow Preference
-**Option A**: Keep treatment setup in onboarding, make both sections skippable
-**Option B**: Remove treatment setup from onboarding entirely, show empty state CTAs on home screen
+### Q1: Onboarding Flow ✅ ANSWERED
+**Decision**: Remove treatment setup from onboarding entirely
+- New flow: Welcome → Pet Basics → CKD Info → Completion (stays simple and final)
+- Treatment screens moved to profile feature
+- Users set up schedules after onboarding via **home screen empty states**
+- Completion screen preserves existing "Finish" logic (validation + save + navigate)
+- Faster onboarding, better feature discovery
 
-**Recommendation**: Option B - simpler, faster, better discovery
-**Your preference?**: _____________
+### Q2: Empty State Strategy ✅ ANSWERED
+**Decision**: Two separate SelectionCard widgets (rectangle layout)
+- Clear, scannable, equal prominence for both options
+- Used on: **Home screen empty state** (primary), FAB "No Schedules" dialog (secondary)
+- NOT used on completion screen (stays simple and final)
+- Consistent pattern throughout app
 
-### Q2: Empty State Strategy
-When user has no schedules on home screen, show:
-**Option A**: Single "Get Started" card with both options inside
-**Option B**: Two separate cards side-by-side (medication / fluid)
-**Option C**: Vertical list of both options with descriptions
+### Q3: Profile Screen "Add Treatment" Placement ✅ ANSWERED
+**Decision**: Show "+ Add [Treatment]" buttons in main profile list
+- Discoverable but not intrusive
+- Navigate to creation screens when tapped
+- Only show if that treatment type doesn't exist
 
-**Recommendation**: Option B - clear, scannable, equal prominence
-**Your preference?**: _____________
+### Q4: Analytics Migration ✅ ANSWERED
+**Decision**: Update all analytics calls to new behavioral approach
+- Clean break, better data going forward
+- Track schedule creation events instead of persona selection
+- Track actual usage patterns over time
 
-### Q3: Profile Screen "Add Treatment" Placement
-When user doesn't have a treatment type:
-**Option A**: Show empty section with "Add Fluid Therapy" button
-**Option B**: Show "+ Add Fluid Therapy" button in main profile list
-**Option C**: Don't show anything, let user discover from home screen
-
-**Recommendation**: Option B - discoverable but not intrusive
-**Your preference?**: _____________
-
-### Q4: Analytics Migration
-**Option A**: Keep historical persona analytics, add new behavioral analytics
-**Option B**: Update all analytics calls to new behavioral approach
-**Option C**: Hybrid - track both during transition period
-
-**Recommendation**: Option B - clean break, better data going forward
-**Your preference?**: _____________
+### Q5: Code Reuse Strategy ✅ DECIDED
+**Decision**: Reuse onboarding treatment screens by moving them to profile feature
+- Move `treatment_fluid_screen.dart` → `create_fluid_schedule_screen.dart` in profile
+- Keep `medication_schedule_screen.dart` (already handles empty state)
+- Delete `treatment_medication_screen.dart` (redundant)
+- Extract `PersonaSelectionCard` → generic `SelectionCard` widget
+- Clean create/edit screen separation
 
 ---
 
 ## Implementation Checklist
 
 **Plan Created**: 2025-01-08
-**Status**: ⏳ Pending your decisions on Q1-Q4 below
+**Plan Finalized**: 2025-01-09
+**Status**: ✅ READY TO IMPLEMENT
 
-### Before Starting Implementation:
-- [ ] Answer Q1: Onboarding flow preference
-- [ ] Answer Q2: Empty state strategy  
-- [ ] Answer Q3: Profile "Add Treatment" placement
-- [ ] Answer Q4: Analytics migration approach
-- [ ] Review full plan one more time
-- [ ] Begin with Batch 1
+### Design Decisions Confirmed:
+- [x] Q1: Remove treatment setup from onboarding - use completion screen CTAs
+- [x] Q2: Two separate SelectionCard widgets (rectangle layout)
+- [x] Q3: Show "+ Add [Treatment]" buttons in profile list
+- [x] Q4: Update all analytics to behavioral approach
+- [x] Q5: Reuse onboarding screens by moving to profile feature
+
+### Implementation Ready:
+- [x] All design decisions finalized
+- [x] Code reuse strategy defined (move screens, extract SelectionCard)
+- [x] Navigation flows documented
+- [x] File operations mapped (move, delete, create)
+- [x] Testing checklist prepared
+- [ ] Begin with Batch 1: Create SelectionCard widget
+
+### Key Implementation Points:
+1. **Start with Batch 1**: Create generic SelectionCard widget first
+2. **Then Batch 2**: Move fluid creation screen to profile feature
+3. **Then Batch 3-7**: Follow sequential order in Phase 3
+4. **Test after each batch**: Ensure no breaking changes
+5. **Final testing**: Complete Phase 4 checklist before closing migration
 
 ### Notes & Decisions:
+- Maximum code reuse approach selected
+- Clean create/edit screen separation
+- Consistent SelectionCard pattern throughout app
+- Faster onboarding flow (4 screens instead of 7)
+- Progressive feature discovery via home screen empty states
+- **CRITICAL**: Completion screen stays unchanged (preserves existing validation & save logic)
+- **CRITICAL**: Progress system updates automatically (no manual changes needed)
+- Feature discovery happens AFTER onboarding completes (better UX)

@@ -251,7 +251,6 @@ class _OnboardingCompletionScreenState
       final validationResult = OnboardingValidationService.validateCurrentStep(
         onboardingData,
         OnboardingStepType.completion,
-        onboardingData.treatmentApproach,
       );
 
       if (!validationResult.isValid) {

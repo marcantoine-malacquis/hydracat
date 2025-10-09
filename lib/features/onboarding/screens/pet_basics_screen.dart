@@ -187,7 +187,6 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
       final validationResult = OnboardingValidationService.validateCurrentStep(
         updatedData,
         OnboardingStepType.petBasics,
-        currentData.treatmentApproach,
       );
 
       if (!validationResult.isValid) {

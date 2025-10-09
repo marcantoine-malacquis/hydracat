@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 
 import 'package:hydracat/features/profile/models/medical_info.dart';
-import 'package:hydracat/features/profile/models/user_persona.dart';
 
 /// Core pet profile model for CKD management
 @immutable
@@ -12,7 +11,6 @@ class CatProfile {
     required this.userId,
     required this.name,
     required this.ageYears,
-    required this.treatmentApproach,
     required this.createdAt,
     required this.updatedAt,
     this.weightKg,
@@ -32,9 +30,6 @@ class CatProfile {
       weightKg: json['weightKg'] != null
           ? (json['weightKg'] as num).toDouble()
           : null,
-      treatmentApproach:
-          UserPersona.fromString(json['treatmentApproach'] as String) ??
-          UserPersona.medicationOnly,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       medicalInfo: json['medicalInfo'] != null
@@ -60,9 +55,6 @@ class CatProfile {
 
   /// Pet's weight in kilograms (optional)
   final double? weightKg;
-
-  /// Treatment approach/persona for this pet
-  final UserPersona treatmentApproach;
 
   /// Medical information specific to CKD
   final MedicalInfo medicalInfo;
@@ -103,7 +95,6 @@ class CatProfile {
       'name': name,
       'ageYears': ageYears,
       'weightKg': weightKg,
-      'treatmentApproach': treatmentApproach.name,
       'medicalInfo': medicalInfo.toJson(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
@@ -119,7 +110,6 @@ class CatProfile {
     String? userId,
     String? name,
     int? ageYears,
-    UserPersona? treatmentApproach,
     DateTime? createdAt,
     DateTime? updatedAt,
     double? weightKg,
@@ -133,7 +123,6 @@ class CatProfile {
       userId: userId ?? this.userId,
       name: name ?? this.name,
       ageYears: ageYears ?? this.ageYears,
-      treatmentApproach: treatmentApproach ?? this.treatmentApproach,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       weightKg: weightKg ?? this.weightKg,
@@ -210,7 +199,6 @@ class CatProfile {
         other.name == name &&
         other.ageYears == ageYears &&
         other.weightKg == weightKg &&
-        other.treatmentApproach == treatmentApproach &&
         other.medicalInfo == medicalInfo &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt &&
@@ -227,7 +215,6 @@ class CatProfile {
       name,
       ageYears,
       weightKg,
-      treatmentApproach,
       medicalInfo,
       createdAt,
       updatedAt,
@@ -245,7 +232,6 @@ class CatProfile {
         'name: $name, '
         'ageYears: $ageYears, '
         'weightKg: $weightKg, '
-        'treatmentApproach: $treatmentApproach, '
         'medicalInfo: $medicalInfo, '
         'createdAt: $createdAt, '
         'updatedAt: $updatedAt, '

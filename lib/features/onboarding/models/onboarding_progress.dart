@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
-import 'package:hydracat/features/profile/models/user_persona.dart';
 
 /// Overall progress tracking for the onboarding flow
 @immutable
@@ -13,7 +12,6 @@ class OnboardingProgress {
     required this.startedAt,
     this.completedAt,
     this.userId,
-    this.persona,
     this.totalTimeSpent = Duration.zero,
   });
 
@@ -62,9 +60,6 @@ class OnboardingProgress {
           ? DateTime.parse(json['completedAt'] as String)
           : null,
       userId: json['userId'] as String?,
-      persona: json['persona'] != null
-          ? UserPersona.fromString(json['persona'] as String)
-          : null,
       totalTimeSpent: Duration(
         milliseconds: json['totalTimeSpentMs'] as int? ?? 0,
       ),
@@ -85,9 +80,6 @@ class OnboardingProgress {
 
   /// User ID (if available)
   final String? userId;
-
-  /// Selected user persona for persona-aware navigation
-  final UserPersona? persona;
 
   /// Total time spent in onboarding so far
   final Duration totalTimeSpent;
@@ -125,12 +117,10 @@ class OnboardingProgress {
   bool get canSkipCurrentStep => currentStep.canSkip;
 
   /// Next step in the flow (null if current is last)
-  /// Uses persona-aware navigation
-  OnboardingStepType? get nextStep => currentStep.getNextStep(persona);
+  OnboardingStepType? get nextStep => currentStep.nextStep;
 
   /// Previous step in the flow (null if current is first)
-  /// Uses persona-aware navigation
-  OnboardingStepType? get previousStep => currentStep.getPreviousStep(persona);
+  OnboardingStepType? get previousStep => currentStep.previousStep;
 
   /// Whether current step triggers a checkpoint save
   bool get isCurrentStepCheckpoint => currentStep.isCheckpoint;
@@ -169,7 +159,6 @@ class OnboardingProgress {
       'startedAt': startedAt.toIso8601String(),
       'completedAt': completedAt?.toIso8601String(),
       'userId': userId,
-      'persona': persona?.name,
       'totalTimeSpentMs': totalTimeSpent.inMilliseconds,
     };
   }
@@ -181,7 +170,6 @@ class OnboardingProgress {
     DateTime? startedAt,
     DateTime? completedAt,
     String? userId,
-    UserPersona? persona,
     Duration? totalTimeSpent,
   }) {
     return OnboardingProgress(
@@ -190,7 +178,6 @@ class OnboardingProgress {
       startedAt: startedAt ?? this.startedAt,
       completedAt: completedAt ?? this.completedAt,
       userId: userId ?? this.userId,
-      persona: persona ?? this.persona,
       totalTimeSpent: totalTimeSpent ?? this.totalTimeSpent,
     );
   }
@@ -330,7 +317,6 @@ class OnboardingProgress {
         other.startedAt == startedAt &&
         other.completedAt == completedAt &&
         other.userId == userId &&
-        other.persona == persona &&
         other.totalTimeSpent == totalTimeSpent;
   }
 
@@ -342,7 +328,6 @@ class OnboardingProgress {
       startedAt,
       completedAt,
       userId,
-      persona,
       totalTimeSpent,
     );
   }
@@ -355,7 +340,6 @@ class OnboardingProgress {
         'startedAt: $startedAt, '
         'completedAt: $completedAt, '
         'userId: $userId, '
-        'persona: $persona, '
         'totalTimeSpent: $totalTimeSpent'
         ')';
   }

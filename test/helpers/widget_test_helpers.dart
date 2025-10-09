@@ -19,7 +19,7 @@ import 'package:hydracat/features/logging/widgets/treatment_choice_popup.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
-import 'package:hydracat/features/profile/models/user_persona.dart';
+// UserPersona removed - schedules now determine treatment type
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/connectivity_provider.dart';
@@ -66,14 +66,12 @@ CatProfile createTestPet({
   String id = 'test-pet-id',
   String userId = 'test-user-id',
   String name = 'Whiskers',
-  UserPersona treatmentApproach = UserPersona.medicationAndFluidTherapy,
 }) {
   return CatProfile(
     id: id,
     userId: userId,
     name: name,
     ageYears: 8,
-    treatmentApproach: treatmentApproach,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
   );

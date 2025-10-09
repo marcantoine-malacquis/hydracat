@@ -1,21 +1,22 @@
-// Required for clearMedicalInfo() and clearTreatmentInfo() methods
+// Required for clearMedicalInfo() method
 // where null values are explicitly passed to clear existing data
 // ignore_for_file: avoid_redundant_argument_values
 
 import 'package:flutter/foundation.dart';
 
-import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/models/medical_info.dart';
-import 'package:hydracat/features/profile/models/user_persona.dart';
 
 /// Temporary data collection during onboarding flow
+///
+/// Simplified to only handle pet basics and CKD medical information.
+/// Treatment setup (medications, fluid therapy) is handled separately
+/// through dedicated profile screens after onboarding completes.
 @immutable
 class OnboardingData {
   /// Creates an [OnboardingData] instance
   const OnboardingData({
     this.userId,
-    this.treatmentApproach,
     this.petName,
     this.petAge,
     this.petDateOfBirth,
@@ -31,14 +32,11 @@ class OnboardingData {
     this.creatinineMgDl,
     this.bunMgDl,
     this.sdmaMcgDl,
-    this.medications,
-    this.fluidTherapy,
   });
 
   /// Creates empty initial data
   const OnboardingData.empty()
     : userId = null,
-      treatmentApproach = null,
       petName = null,
       petAge = null,
       petDateOfBirth = null,
@@ -53,17 +51,12 @@ class OnboardingData {
       bloodworkDate = null,
       creatinineMgDl = null,
       bunMgDl = null,
-      sdmaMcgDl = null,
-      medications = null,
-      fluidTherapy = null;
+      sdmaMcgDl = null;
 
   /// Creates an [OnboardingData] from JSON data
   factory OnboardingData.fromJson(Map<String, dynamic> json) {
     return OnboardingData(
       userId: json['userId'] as String?,
-      treatmentApproach: json['treatmentApproach'] != null
-          ? UserPersona.fromString(json['treatmentApproach'] as String)
-          : null,
       petName: json['petName'] as String?,
       petAge: json['petAge'] as int?,
       petDateOfBirth: json['petDateOfBirth'] != null
@@ -95,24 +88,11 @@ class OnboardingData {
       sdmaMcgDl: json['sdmaMcgDl'] != null
           ? (json['sdmaMcgDl'] as num).toDouble()
           : null,
-      medications: json['medications'] != null
-          ? (json['medications'] as List<dynamic>)
-                .map((e) => MedicationData.fromJson(e as Map<String, dynamic>))
-                .toList()
-          : null,
-      fluidTherapy: json['fluidTherapy'] != null
-          ? FluidTherapyData.fromJson(
-              json['fluidTherapy'] as Map<String, dynamic>,
-            )
-          : null,
     );
   }
 
   /// User ID (if authenticated)
   final String? userId;
-
-  /// Selected treatment approach/persona
-  final UserPersona? treatmentApproach;
 
   /// Pet's name
   final String? petName;
@@ -159,28 +139,13 @@ class OnboardingData {
   /// Symmetric Dimethylarginine (SDMA) level in μg/dL
   final double? sdmaMcgDl;
 
-  /// List of medications for treatment
-  final List<MedicationData>? medications;
-
-  /// Fluid therapy configuration
-  final FluidTherapyData? fluidTherapy;
-
   /// Pet's weight in pounds (converted from kg)
   double? get petWeightLbs =>
       petWeightKg != null ? petWeightKg! * 2.20462 : null;
 
-  /// Whether persona selection is complete
-  bool get hasPersonaSelection => treatmentApproach != null;
-
   /// Whether basic pet info is complete
   bool get hasBasicPetInfo =>
       petName != null && petName!.isNotEmpty && petAge != null && petAge! > 0;
-
-  /// Whether we have minimum required data for first checkpoint
-  bool get hasMinimumData => hasPersonaSelection && hasBasicPetInfo;
-
-  /// Whether treatment setup is relevant (based on persona)
-  bool get needsTreatmentSetup => treatmentApproach != null;
 
   /// Whether any lab values are present
   bool get hasLabValues =>
@@ -196,69 +161,19 @@ class OnboardingData {
       (notes != null && notes!.isNotEmpty) ||
       hasLabValues;
 
-  /// Whether any treatment data is present
-  bool get hasTreatmentData {
-    return (medications != null && medications!.isNotEmpty) ||
-        fluidTherapy != null;
-  }
+  /// Whether onboarding is complete
+  /// Only requires pet basics - medical info is optional
+  bool get isComplete => hasBasicPetInfo;
 
-  /// Whether treatment setup is complete based on selected persona
-  bool get isTreatmentSetupComplete {
-    if (treatmentApproach == null) return false;
-
-    return switch (treatmentApproach!) {
-      UserPersona.medicationOnly =>
-        medications != null && medications!.isNotEmpty,
-      UserPersona.fluidTherapyOnly => fluidTherapy != null,
-      UserPersona.medicationAndFluidTherapy =>
-        medications != null && medications!.isNotEmpty && fluidTherapy != null,
-    };
-  }
-
-  /// Whether data is complete enough for final profile creation
-  bool get isReadyForProfileCreation {
-    if (!hasMinimumData) return false;
-
-    // For treatment-only personas, medical info is optional
-    if (treatmentApproach == UserPersona.fluidTherapyOnly) {
-      return isTreatmentSetupComplete;
-    }
-
-    // For other personas, require medical info OR treatment setup
-    return (hasMedicalInfo || ckdDiagnosisDate != null) &&
-        (!needsTreatmentSetup || isTreatmentSetupComplete);
-  }
-
-  /// Gets a list of missing required fields based on selected persona
-  ///
-  /// Returns human-readable field names that are required but not provided.
-  /// Used to generate specific error messages for incomplete onboarding.
+  /// Gets a list of missing required fields
   List<String> getMissingRequiredFields() {
     final missing = <String>[];
 
-    // Basic pet info (always required)
     if (petName == null || petName!.isEmpty) {
       missing.add('Pet name');
     }
     if (petAge == null || petAge! <= 0) {
       missing.add('Pet age');
-    }
-
-    // Treatment-specific requirements based on persona
-    if (treatmentApproach != null) {
-      // For medication-based personas
-      if (treatmentApproach!.includesMedication) {
-        if (medications == null || medications!.isEmpty) {
-          missing.add('At least one medication');
-        }
-      }
-
-      // For fluid therapy-based personas
-      if (treatmentApproach!.includesFluidTherapy) {
-        if (fluidTherapy == null) {
-          missing.add('Fluid therapy setup');
-        }
-      }
     }
 
     return missing;
@@ -268,7 +183,6 @@ class OnboardingData {
   Map<String, dynamic> toJson() {
     return {
       'userId': userId,
-      'treatmentApproach': treatmentApproach?.name,
       'petName': petName,
       'petAge': petAge,
       'petDateOfBirth': petDateOfBirth?.toIso8601String(),
@@ -284,15 +198,12 @@ class OnboardingData {
       'creatinineMgDl': creatinineMgDl,
       'bunMgDl': bunMgDl,
       'sdmaMcgDl': sdmaMcgDl,
-      'medications': medications?.map((e) => e.toJson()).toList(),
-      'fluidTherapy': fluidTherapy?.toJson(),
     };
   }
 
   /// Creates a copy of this [OnboardingData] with the given fields replaced
   OnboardingData copyWith({
     String? userId,
-    UserPersona? treatmentApproach,
     String? petName,
     int? petAge,
     DateTime? petDateOfBirth,
@@ -308,12 +219,9 @@ class OnboardingData {
     double? creatinineMgDl,
     double? bunMgDl,
     double? sdmaMcgDl,
-    List<MedicationData>? medications,
-    FluidTherapyData? fluidTherapy,
   }) {
     return OnboardingData(
       userId: userId ?? this.userId,
-      treatmentApproach: treatmentApproach ?? this.treatmentApproach,
       petName: petName ?? this.petName,
       petAge: petAge ?? this.petAge,
       petDateOfBirth: petDateOfBirth ?? this.petDateOfBirth,
@@ -329,8 +237,6 @@ class OnboardingData {
       creatinineMgDl: creatinineMgDl ?? this.creatinineMgDl,
       bunMgDl: bunMgDl ?? this.bunMgDl,
       sdmaMcgDl: sdmaMcgDl ?? this.sdmaMcgDl,
-      medications: medications ?? this.medications,
-      fluidTherapy: fluidTherapy ?? this.fluidTherapy,
     );
   }
 
@@ -356,45 +262,6 @@ class OnboardingData {
       bunMgDl: null,
       sdmaMcgDl: null,
     );
-  }
-
-  /// Clears all treatment information
-  OnboardingData clearTreatmentInfo() {
-    // We need to explicitly pass null values to clear existing treatment data
-    return copyWith(
-      medications: null,
-      fluidTherapy: null,
-    );
-  }
-
-  /// Adds a medication to the medications list
-  OnboardingData addMedication(MedicationData medication) {
-    final currentMedications = medications ?? <MedicationData>[];
-    return copyWith(
-      medications: [...currentMedications, medication],
-    );
-  }
-
-  /// Removes a medication from the medications list
-  OnboardingData removeMedication(int index) {
-    if (medications == null || index < 0 || index >= medications!.length) {
-      return this;
-    }
-    final updatedMedications = List<MedicationData>.from(medications!)
-      ..removeAt(index);
-    return copyWith(
-      medications: updatedMedications,
-    );
-  }
-
-  /// Updates a medication at the given index
-  OnboardingData updateMedication(int index, MedicationData medication) {
-    if (medications == null || index < 0 || index >= medications!.length) {
-      return this;
-    }
-    final updatedMedications = List<MedicationData>.from(medications!);
-    updatedMedications[index] = medication;
-    return copyWith(medications: updatedMedications);
   }
 
   /// Validates the collected data
@@ -470,59 +337,12 @@ class OnboardingData {
       errors.add('SDMA must be a positive number');
     }
 
-    // Validate medications
-    if (medications != null) {
-      for (var i = 0; i < medications!.length; i++) {
-        final medication = medications![i];
-        if (!medication.isValid) {
-          errors.add('Medication ${i + 1} has invalid data');
-        }
-      }
-    }
-
-    // Validate fluid therapy
-    if (fluidTherapy != null && !fluidTherapy!.isValid) {
-      errors.add('Fluid therapy has invalid data');
-    }
-
-    // Validate treatment completeness based on persona
-    // (skip validation during onboarding)
-    if (treatmentApproach != null && isReadyForProfileCreation) {
-      switch (treatmentApproach!) {
-        case UserPersona.medicationOnly:
-          if (medications == null || medications!.isEmpty) {
-            errors.add(
-              'At least one medication is required for '
-              'medication-only treatment',
-            );
-          }
-        case UserPersona.fluidTherapyOnly:
-          if (fluidTherapy == null) {
-            errors.add(
-              'Fluid therapy setup is required for fluid therapy treatment',
-            );
-          }
-        case UserPersona.medicationAndFluidTherapy:
-          if (medications == null || medications!.isEmpty) {
-            errors.add(
-              'At least one medication is required for '
-              'combination treatment',
-            );
-          }
-          if (fluidTherapy == null) {
-            errors.add(
-              'Fluid therapy setup is required for combination treatment',
-            );
-          }
-      }
-    }
-
     return errors;
   }
 
   /// Converts to a complete CatProfile for final save
   CatProfile? toCatProfile({required String petId}) {
-    if (!hasMinimumData || userId == null || treatmentApproach == null) {
+    if (!hasBasicPetInfo || userId == null) {
       return null;
     }
 
@@ -549,31 +369,8 @@ class OnboardingData {
       userId: userId!,
       name: petName!,
       ageYears: petAge!,
-      weightKg: petWeightKg, // Optional weight
-      treatmentApproach: treatmentApproach!,
+      weightKg: petWeightKg,
       medicalInfo: medicalInfo,
-      createdAt: now,
-      updatedAt: now,
-      gender: petGender,
-      breed: petBreed,
-    );
-  }
-
-  /// Creates a minimal CatProfile for checkpoint saves
-  CatProfile? toMinimalCatProfile({required String petId}) {
-    if (!hasBasicPetInfo || userId == null || treatmentApproach == null) {
-      return null;
-    }
-
-    final now = DateTime.now();
-
-    return CatProfile(
-      id: petId,
-      userId: userId!,
-      name: petName!,
-      ageYears: petAge!,
-      weightKg: petWeightKg, // Optional weight
-      treatmentApproach: treatmentApproach!,
       createdAt: now,
       updatedAt: now,
       gender: petGender,
@@ -587,7 +384,6 @@ class OnboardingData {
 
     return other is OnboardingData &&
         other.userId == userId &&
-        other.treatmentApproach == treatmentApproach &&
         other.petName == petName &&
         other.petAge == petAge &&
         other.petDateOfBirth == petDateOfBirth &&
@@ -602,16 +398,13 @@ class OnboardingData {
         other.bloodworkDate == bloodworkDate &&
         other.creatinineMgDl == creatinineMgDl &&
         other.bunMgDl == bunMgDl &&
-        other.sdmaMcgDl == sdmaMcgDl &&
-        listEquals(other.medications, medications) &&
-        other.fluidTherapy == fluidTherapy;
+        other.sdmaMcgDl == sdmaMcgDl;
   }
 
   @override
   int get hashCode {
     return Object.hash(
       userId,
-      treatmentApproach,
       petName,
       petAge,
       petDateOfBirth,
@@ -627,8 +420,6 @@ class OnboardingData {
       creatinineMgDl,
       bunMgDl,
       sdmaMcgDl,
-      Object.hashAll(medications ?? []),
-      fluidTherapy,
     );
   }
 
@@ -636,7 +427,6 @@ class OnboardingData {
   String toString() {
     return 'OnboardingData('
         'userId: $userId, '
-        'treatmentApproach: $treatmentApproach, '
         'petName: $petName, '
         'petAge: $petAge, '
         'petDateOfBirth: $petDateOfBirth, '
@@ -651,9 +441,7 @@ class OnboardingData {
         'bloodworkDate: $bloodworkDate, '
         'creatinineMgDl: $creatinineMgDl, '
         'bunMgDl: $bunMgDl, '
-        'sdmaMcgDl: $sdmaMcgDl, '
-        'medications: $medications, '
-        'fluidTherapy: $fluidTherapy'
+        'sdmaMcgDl: $sdmaMcgDl'
         ')';
   }
 }

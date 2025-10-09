@@ -114,9 +114,6 @@ class ProfileState {
   /// Pet's age if available
   int? get petAge => primaryPet?.ageYears;
 
-  /// Pet's treatment approach if available
-  String? get treatmentApproach => primaryPet?.treatmentApproach.displayName;
-
   /// Whether user has a fluid schedule
   bool get hasFluidSchedule => fluidSchedule != null;
 
@@ -541,6 +538,46 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
   Future<Schedule?> getFluidSchedule() async {
     await loadFluidSchedule();
     return state.fluidSchedule;
+  }
+
+  /// Create a new fluid schedule
+  Future<bool> createFluidSchedule(Schedule schedule) async {
+    final primaryPet = state.primaryPet;
+    if (primaryPet == null) return false;
+
+    final currentUser = _ref.read(currentUserProvider);
+    if (currentUser == null) return false;
+
+    state = state.copyWith(scheduleIsLoading: true);
+
+    try {
+      final scheduleId = await _scheduleService.createSchedule(
+        userId: currentUser.id,
+        petId: primaryPet.id,
+        scheduleDto: schedule.toDto(),
+      );
+
+      // Create the new schedule with the assigned ID
+      final newSchedule = schedule.copyWith(id: scheduleId);
+
+      // Update the cache with the new schedule data
+      state = state.copyWith(
+        fluidSchedule: newSchedule,
+        scheduleIsLoading: false,
+        lastUpdated: DateTime.now(),
+      );
+
+      return true;
+    } on Exception catch (e) {
+      state = state.copyWith(
+        scheduleIsLoading: false,
+        error: PetServiceException('Failed to create fluid schedule: $e'),
+      );
+      if (kDebugMode) {
+        debugPrint('[ProfileNotifier] Error creating fluid schedule: $e');
+      }
+      return false;
+    }
   }
 
   /// Update a fluid schedule
@@ -1008,11 +1045,6 @@ final petNameProvider = Provider<String?>((ref) {
 /// Optimized provider to get pet age
 final petAgeProvider = Provider<int?>((ref) {
   return ref.watch(profileProvider.select((state) => state.petAge));
-});
-
-/// Optimized provider to get treatment approach
-final treatmentApproachProvider = Provider<String?>((ref) {
-  return ref.watch(profileProvider.select((state) => state.treatmentApproach));
 });
 
 /// Optimized provider to get when profile was last updated

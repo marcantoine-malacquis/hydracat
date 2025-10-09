@@ -127,14 +127,17 @@ class AnalyticsParams {
   /// Progress percentage parameter name
   static const String progressPercentage = 'progress_percentage';
 
-  /// User persona parameter name
-  static const String userPersona = 'user_persona';
-
   /// Pet ID parameter name
   static const String petId = 'pet_id';
 
-  /// Treatment approach parameter name
-  static const String treatmentApproach = 'treatment_approach';
+  /// Schedule type parameter name (medication, fluid)
+  static const String scheduleType = 'schedule_type';
+
+  /// Has medication schedule parameter
+  static const String hasMedication = 'has_medication';
+
+  /// Has fluid schedule parameter
+  static const String hasFluid = 'has_fluid';
 
   /// Duration parameter name
   static const String duration = 'duration_seconds';
@@ -480,7 +483,6 @@ class AnalyticsService {
   Future<void> trackOnboardingCompleted({
     required String userId,
     required String petId,
-    required String treatmentApproach,
     int? durationSeconds,
     double completionRate = 1.0,
   }) async {
@@ -491,9 +493,46 @@ class AnalyticsService {
       parameters: {
         'user_id': userId,
         AnalyticsParams.petId: petId,
-        AnalyticsParams.treatmentApproach: treatmentApproach,
         if (durationSeconds != null) AnalyticsParams.duration: durationSeconds,
         AnalyticsParams.completionRate: completionRate,
+      },
+    );
+  }
+
+  /// Track first schedule created (behavioral event)
+  Future<void> trackFirstScheduleCreated({
+    required String scheduleType,
+    int? daysSinceSignup,
+    int? totalScheduleCount,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: 'first_schedule_created',
+      parameters: {
+        AnalyticsParams.scheduleType: scheduleType,
+        if (daysSinceSignup != null) 'days_since_signup': daysSinceSignup,
+        if (totalScheduleCount != null) 'total_schedules': totalScheduleCount,
+      },
+    );
+  }
+
+  /// Track treatment pattern detected (behavioral event)
+  Future<void> trackTreatmentPatternDetected({
+    required bool hasMedication,
+    required bool hasFluid,
+    int? medicationCount,
+    int? daysActive,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: 'treatment_pattern_detected',
+      parameters: {
+        AnalyticsParams.hasMedication: hasMedication,
+        AnalyticsParams.hasFluid: hasFluid,
+        if (medicationCount != null) 'medication_count': medicationCount,
+        if (daysActive != null) 'days_active': daysActive,
       },
     );
   }
@@ -579,7 +618,6 @@ class AnalyticsService {
   /// Track logging popup opened
   Future<void> trackLoggingPopupOpened({
     required String popupType,
-    required String persona,
   }) async {
     if (!_isEnabled) return;
 
@@ -587,7 +625,6 @@ class AnalyticsService {
       name: AnalyticsEvents.loggingPopupOpened,
       parameters: {
         AnalyticsParams.popupType: popupType,
-        AnalyticsParams.userPersona: persona,
       },
     );
   }
