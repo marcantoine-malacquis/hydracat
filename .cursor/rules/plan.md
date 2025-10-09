@@ -23,9 +23,3 @@ Don't try to run the app yourself to test. Just tell me when it's needed and I w
 
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
-1. Keep inline implementations. Flutter best practices favor composition over unnecessary abstraction. The current approach is clean, testable, and doesn't duplicate code. Creating wrapper widgets would add complexity without clear benefits.
-2. let's do b) , d) , e) , f)
-3. No RepaintBoundary needed.
-4. Maintain existing timing patterns.
-5. Yes, implement reduced motion support.
-Please let me know if this makes sense or contradict itself, the prd (prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them. I will test only once we fixed the linting issues.

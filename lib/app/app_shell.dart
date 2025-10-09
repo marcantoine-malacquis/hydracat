@@ -312,34 +312,6 @@ class _AppShellState extends ConsumerState<AppShell>
       });
     }
 
-    // Trigger schedule loading when conditions are met
-    // This ensures schedules are available when opening logging popup
-    if (hasCompletedOnboarding &&
-        isAuthenticated &&
-        primaryPet != null &&
-        !profileIsLoading &&
-        !isLoading) {
-      final medicationSchedules = ref.watch(medicationSchedulesProvider);
-      final fluidSchedule = ref.watch(fluidScheduleProvider);
-      final scheduleIsLoading = ref.watch(scheduleIsLoadingProvider);
-
-      // Load medication schedules if not loaded and not loading
-      if (medicationSchedules == null && !scheduleIsLoading) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          debugPrint('[AppShell] Auto-loading medication schedules');
-          ref.read(profileProvider.notifier).loadMedicationSchedules();
-        });
-      }
-
-      // Load fluid schedule if not loaded and not loading
-      if (fluidSchedule == null && !scheduleIsLoading) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          debugPrint('[AppShell] Auto-loading fluid schedule');
-          ref.read(profileProvider.notifier).loadFluidSchedule();
-        });
-      }
-    }
-
     // Watch logging state to disable FAB during operations
     final isLoggingInProgress = ref.watch(isLoggingProvider);
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,6 +32,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   final AuthService _authService;
   bool _hasRecentError = false;
+
+  /// Completer for in-progress user data loads to prevent duplicate fetches
+  Completer<AppUser>? _loadingCompleter;
 
   /// Firestore instance for user data persistence
   FirebaseFirestore get _firestore => FirebaseService().firestore;
@@ -108,6 +113,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// Load complete user data by merging Firebase Auth data with Firestore data
   /// Uses in-memory cache to reduce Firestore calls
+  ///
+  /// Prevents duplicate Firestore reads by using a Completer pattern:
+  /// concurrent calls wait for the in-progress fetch to complete
   Future<AppUser> _loadCompleteUserData(AppUser firebaseUser) async {
     // Check if we have valid cached data for this user
     if (_isCacheValid(firebaseUser.id)) {
@@ -116,6 +124,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
       return _cachedUserData!;
     }
+
+    // If a load is already in progress, wait for it to complete
+    if (_loadingCompleter != null) {
+      if (kDebugMode) {
+        debugPrint('User data already loading, waiting for result...');
+      }
+      return _loadingCompleter!.future;
+    }
+
+    // Start a new load
+    _loadingCompleter = Completer<AppUser>();
 
     if (kDebugMode) {
       debugPrint(
@@ -144,11 +163,24 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       // Cache the result
       _updateCache(completeUser);
+
+      // Complete the completer with success
+      _loadingCompleter!.complete(completeUser);
+
       return completeUser;
-    } on Exception {
-      // If Firestore fetch fails, return Firebase auth data with defaults
-      // Don't cache failed results
-      return firebaseUser;
+    } on Exception catch (e) {
+      // Complete with error or fallback
+      final fallbackUser = firebaseUser;
+      _loadingCompleter!.complete(fallbackUser);
+
+      if (kDebugMode) {
+        debugPrint('Failed to load user data from Firestore: $e');
+      }
+
+      return fallbackUser;
+    } finally {
+      // Clear the completer for next load
+      _loadingCompleter = null;
     }
   }
 
@@ -685,8 +717,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // Verify all subcollections are empty
       var allSubcollectionsEmpty = true;
       for (final subcollectionName in knownSubcollections) {
-        final remainingDocs =
-            await userDocRef.collection(subcollectionName).limit(1).get();
+        final remainingDocs = await userDocRef
+            .collection(subcollectionName)
+            .limit(1)
+            .get();
         if (remainingDocs.docs.isNotEmpty) {
           allSubcollectionsEmpty = false;
           if (kDebugMode) {
@@ -774,8 +808,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
             ];
 
             for (final nestedSubcollection in petNestedSubcollections) {
-              final nestedCollectionRef =
-                  petDoc.reference.collection(nestedSubcollection);
+              final nestedCollectionRef = petDoc.reference.collection(
+                nestedSubcollection,
+              );
 
               if (kDebugMode) {
                 debugPrint(
