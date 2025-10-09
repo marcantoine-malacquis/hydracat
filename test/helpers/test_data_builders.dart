@@ -11,11 +11,15 @@ import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 
+// Global counter to ensure unique IDs even in same millisecond
+int _globalIdCounter = 0;
+
 /// Builder for creating [MedicationSession] test instances
 class MedicationSessionBuilder {
   /// Creates a medication session builder with sensible defaults
   MedicationSessionBuilder() {
-    _id = 'test-med-session-${DateTime.now().millisecondsSinceEpoch}';
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    _id = 'test-med-session-$timestamp-${_globalIdCounter++}';
     _petId = 'test-pet-id';
     _userId = 'test-user-id';
     _dateTime = DateTime(2024, 1, 15, 8);
@@ -200,7 +204,8 @@ class MedicationSessionBuilder {
 class FluidSessionBuilder {
   /// Creates a fluid session builder with sensible defaults
   FluidSessionBuilder() {
-    _id = 'test-fluid-session-${DateTime.now().millisecondsSinceEpoch}';
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    _id = 'test-fluid-session-$timestamp-${_globalIdCounter++}';
     _petId = 'test-pet-id';
     _userId = 'test-user-id';
     _dateTime = DateTime(2024, 1, 15, 8);
@@ -334,7 +339,8 @@ class FluidSessionBuilder {
 class ScheduleBuilder {
   /// Creates a schedule builder with sensible defaults
   ScheduleBuilder() {
-    _id = 'test-schedule-${DateTime.now().millisecondsSinceEpoch}';
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    _id = 'test-schedule-$timestamp-${_globalIdCounter++}';
     _treatmentType = TreatmentType.medication;
     _frequency = TreatmentFrequency.onceDaily;
     _isActive = true;
@@ -354,6 +360,7 @@ class ScheduleBuilder {
   /// Creates a fluid schedule builder
   factory ScheduleBuilder.fluid() {
     return ScheduleBuilder()
+      ..withTreatmentType(TreatmentType.fluid)
       ..withTargetVolume(100)
       ..withPreferredLocation(FluidLocation.shoulderBladeLeft);
   }
@@ -389,6 +396,12 @@ class ScheduleBuilder {
   /// Sets the active status
   ScheduleBuilder withIsActive({required bool isActive}) {
     _isActive = isActive;
+    return this;
+  }
+
+  /// Sets the treatment type
+  ScheduleBuilder withTreatmentType(TreatmentType type) {
+    _treatmentType = type;
     return this;
   }
 
@@ -466,5 +479,230 @@ class ScheduleBuilder {
       targetVolume: _targetVolume,
       preferredLocation: _preferredLocation,
     );
+  }
+}
+
+// ============================================
+// Integration Test Extensions
+// ============================================
+
+/// Extension methods for integration-specific test scenarios
+extension ScheduleBuilderIntegrationExtensions on ScheduleBuilder {
+  /// Creates schedule with today's reminder at specified time
+  ///
+  /// Used for integration tests that need schedules matching today's date.
+  static ScheduleBuilder withTodaysReminder({
+    String? medicationName,
+    int hour = 8,
+    int minute = 0,
+  }) {
+    final now = DateTime.now();
+    final reminderTime = DateTime(now.year, now.month, now.day, hour, minute);
+
+    return ScheduleBuilder()
+      ..withReminderTimes([reminderTime])
+      ..withIsActive(isActive: true)
+      ..withMedicationName(medicationName ?? 'Amlodipine')
+      ..withTargetDosage(2.5)
+      ..withMedicationUnit('mg');
+  }
+
+  /// Creates schedule with multiple reminders for today
+  ///
+  /// Used for quick-log testing with multiple reminder times.
+  static ScheduleBuilder withMultipleReminders(
+    List<int> hours, {
+    String? medicationName,
+  }) {
+    final now = DateTime.now();
+    final reminderTimes = hours
+        .map(
+          (hour) => DateTime(now.year, now.month, now.day, hour),
+        )
+        .toList();
+
+    return ScheduleBuilder()
+      ..withReminderTimes(reminderTimes)
+      ..withIsActive(isActive: true)
+      ..withMedicationName(medicationName ?? 'Amlodipine')
+      ..withTargetDosage(2.5)
+      ..withMedicationUnit('mg');
+  }
+
+  /// Creates fluid schedule with today's reminder
+  static ScheduleBuilder withFluidTodaysReminder({
+    int hour = 8,
+    int minute = 0,
+    double targetVolume = 100.0,
+  }) {
+    final now = DateTime.now();
+    final reminderTime = DateTime(now.year, now.month, now.day, hour, minute);
+
+    // Use fluid factory constructor to set treatment type
+    return ScheduleBuilder.fluid()
+      ..withReminderTimes([reminderTime])
+      ..withTargetVolume(targetVolume)
+      ..withIsActive(isActive: true);
+  }
+}
+
+/// Extension methods for medication session integration tests
+extension MedicationSessionBuilderIntegrationExtensions
+    on MedicationSessionBuilder {
+  /// Creates session for duplicate detection testing
+  ///
+  /// Session will be within ±15 minute window for duplicate testing.
+  static MedicationSessionBuilder forDuplicateTest(
+    DateTime baseTime, {
+    int minuteOffset = 10,
+  }) {
+    return MedicationSessionBuilder()
+      ..withDateTime(baseTime.add(Duration(minutes: minuteOffset)))
+      ..withMedicationName('Amlodipine')
+      ..withDosageGiven(1);
+  }
+
+  /// Creates session pre-filled from schedule data
+  ///
+  /// Used for testing schedule-to-session conversion.
+  static MedicationSessionBuilder fromSchedule(Schedule schedule) {
+    if (schedule.treatmentType != TreatmentType.medication) {
+      throw ArgumentError('Schedule must be medication type');
+    }
+
+    final reminderTime = schedule.reminderTimes.first;
+
+    return MedicationSessionBuilder()
+      ..withMedicationName(schedule.medicationName!)
+      ..withDosageGiven(schedule.targetDosage!)
+      ..withDosageScheduled(schedule.targetDosage!)
+      ..withMedicationUnit(schedule.medicationUnit!)
+      ..withDateTime(reminderTime)
+      ..withScheduleId(schedule.id)
+      ..withScheduledTime(reminderTime);
+  }
+}
+
+/// Extension methods for fluid session integration tests
+extension FluidSessionBuilderIntegrationExtensions on FluidSessionBuilder {
+  /// Creates fluid session pre-filled from schedule data
+  ///
+  /// Used for testing schedule-to-session conversion.
+  static FluidSessionBuilder fromSchedule(Schedule schedule) {
+    if (schedule.treatmentType != TreatmentType.fluid) {
+      throw ArgumentError('Schedule must be fluid therapy type');
+    }
+
+    final reminderTime = schedule.reminderTimes.first;
+
+    return FluidSessionBuilder()
+      ..withVolumeGiven(schedule.targetVolume!)
+      ..withDateTime(reminderTime)
+      ..withInjectionSite(
+        schedule.preferredLocation ?? FluidLocation.shoulderBladeLeft,
+      )
+      ..withScheduleId(schedule.id)
+      ..withScheduledTime(reminderTime);
+  }
+}
+
+/// Builder for DailySummary test data
+class DailySummaryBuilder {
+  /// Creates a daily summary builder with sensible defaults
+  DailySummaryBuilder() {
+    _date = DateTime(2024, 1, 15);
+    _medicationTotalDoses = 0;
+    _medicationScheduledDoses = 0;
+    _medicationMissedCount = 0;
+    _fluidTotalVolume = 0.0;
+    _fluidSessionCount = 0;
+    _overallTreatmentDone = false;
+    _overallAdherence = 0.0;
+    _overallStreak = 0;
+    _createdAt = DateTime(2024, 1, 15);
+    _updatedAt = DateTime(2024, 1, 15);
+  }
+
+  late DateTime _date;
+  late int _medicationTotalDoses;
+  late int _medicationScheduledDoses;
+  late int _medicationMissedCount;
+  late double _fluidTotalVolume;
+  late int _fluidSessionCount;
+  late bool _overallTreatmentDone;
+  late double _overallAdherence;
+  late int _overallStreak;
+  late DateTime _createdAt;
+  late DateTime _updatedAt;
+
+  /// Sets the date
+  DailySummaryBuilder withDate(DateTime date) {
+    _date = date;
+    return this;
+  }
+
+  /// Sets medication count
+  DailySummaryBuilder withMedicationCount(int count) {
+    _medicationTotalDoses = count;
+    return this;
+  }
+
+  /// Sets medication scheduled doses
+  DailySummaryBuilder withMedicationScheduled(int count) {
+    _medicationScheduledDoses = count;
+    return this;
+  }
+
+  /// Sets medication missed count
+  DailySummaryBuilder withMedicationMissed(int count) {
+    _medicationMissedCount = count;
+    return this;
+  }
+
+  /// Sets fluid volume
+  DailySummaryBuilder withFluidVolume(double volume) {
+    _fluidTotalVolume = volume;
+    return this;
+  }
+
+  /// Sets fluid session count
+  DailySummaryBuilder withFluidSessionCount(int count) {
+    _fluidSessionCount = count;
+    return this;
+  }
+
+  /// Sets treatment done status
+  DailySummaryBuilder withTreatmentDone({required bool done}) {
+    _overallTreatmentDone = done;
+    return this;
+  }
+
+  /// Sets adherence percentage
+  DailySummaryBuilder withAdherence(double adherence) {
+    _overallAdherence = adherence;
+    return this;
+  }
+
+  /// Sets streak
+  DailySummaryBuilder withStreak(int streak) {
+    _overallStreak = streak;
+    return this;
+  }
+
+  /// Builds the daily summary (returns map for Firestore)
+  Map<String, dynamic> buildMap() {
+    return {
+      'date': _date,
+      'medicationTotalDoses': _medicationTotalDoses,
+      'medicationScheduledDoses': _medicationScheduledDoses,
+      'medicationMissedCount': _medicationMissedCount,
+      'fluidTotalVolume': _fluidTotalVolume,
+      'fluidSessionCount': _fluidSessionCount,
+      'overallTreatmentDone': _overallTreatmentDone,
+      'overallAdherence': _overallAdherence,
+      'overallStreak': _overallStreak,
+      'createdAt': _createdAt,
+      'updatedAt': _updatedAt,
+    };
   }
 }

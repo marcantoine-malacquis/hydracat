@@ -31,8 +31,28 @@ void main() {
       );
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byType(SuccessIndicator), findsNothing);
-      // Content should still exist but be dimmed (opacity)
+      // Both indicators exist in tree but success is hidden via AnimatedOpacity
+      expect(find.byType(SuccessIndicator), findsOneWidget);
+
+      // Verify loading indicator is visible (opacity = 1.0)
+      final loadingOpacity = tester.widget<AnimatedOpacity>(
+        find.ancestor(
+          of: find.byType(CircularProgressIndicator),
+          matching: find.byType(AnimatedOpacity),
+        ),
+      );
+      expect(loadingOpacity.opacity, 1.0);
+
+      // Verify success indicator is hidden (opacity = 0.0)
+      final successOpacity = tester.widget<AnimatedOpacity>(
+        find.ancestor(
+          of: find.byType(SuccessIndicator),
+          matching: find.byType(AnimatedOpacity),
+        ),
+      );
+      expect(successOpacity.opacity, 0.0);
+
+      // Content should still exist
       expect(find.text('Test Content'), findsOneWidget);
     });
 
@@ -49,7 +69,27 @@ void main() {
       );
 
       expect(find.byType(SuccessIndicator), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      // Both indicators exist in tree but loading is hidden via AnimatedOpacity
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      // Verify success indicator is visible (opacity = 1.0)
+      final successOpacity = tester.widget<AnimatedOpacity>(
+        find.ancestor(
+          of: find.byType(SuccessIndicator),
+          matching: find.byType(AnimatedOpacity),
+        ),
+      );
+      expect(successOpacity.opacity, 1.0);
+
+      // Verify loading indicator is hidden (opacity = 0.0)
+      final loadingOpacity = tester.widget<AnimatedOpacity>(
+        find.ancestor(
+          of: find.byType(CircularProgressIndicator),
+          matching: find.byType(AnimatedOpacity),
+        ),
+      );
+      expect(loadingOpacity.opacity, 0.0);
+
       expect(find.text('Test Content'), findsOneWidget);
     });
 
@@ -105,22 +145,30 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('respects custom content opacity', (tester) async {
+    testWidgets('overlay has centered indicators in stack', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: LoadingOverlay(
             state: LoadingOverlayState.loading,
-            contentOpacity: 0.5,
             child: Text('Test Content'),
           ),
         ),
       );
 
-      final opacity = tester.widget<Opacity>(find.byType(Opacity));
-      expect(opacity.opacity, 0.5);
+      // Verify both indicators are in the widget tree
+      expect(find.byType(Stack), findsWidgets);
+
+      // Both animated opacity widgets should be present
+      expect(find.byType(AnimatedOpacity), findsNWidgets(2));
+
+      // Verify AnimatedContainer exists (the overlay container)
+      expect(find.byType(AnimatedContainer), findsOneWidget);
+
+      // Verify content is accessible
+      expect(find.text('Test Content'), findsOneWidget);
     });
 
-    testWidgets('content has full opacity when state is none', (tester) async {
+    testWidgets('no overlay shown when state is none', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: LoadingOverlay(
@@ -130,8 +178,10 @@ void main() {
         ),
       );
 
-      final opacity = tester.widget<Opacity>(find.byType(Opacity));
-      expect(opacity.opacity, 1.0);
+      // When state is none, no overlay widgets should exist
+      expect(find.byType(AnimatedContainer), findsNothing);
+      expect(find.byType(AnimatedOpacity), findsNothing);
+      expect(find.text('Test Content'), findsOneWidget);
     });
   });
 }
