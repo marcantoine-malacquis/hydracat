@@ -204,16 +204,19 @@ class _MedicationLoggingScreenState
                   ? null
                   : _notesController.text;
 
+              // Capture a stable NavigatorState BEFORE closing overlay
+              final navigator = Navigator.of(context, rootNavigator: true);
+
               // Close the medication logging popup
               OverlayService.hide();
 
               // Wait a frame for popup to close
               await Future<void>.delayed(const Duration(milliseconds: 100));
 
-              // Show duplicate dialog with pre-fetched data
-              if (mounted && user != null && pet != null) {
+              // Show duplicate dialog (guard against disposed navigator)
+              if (user != null && pet != null && navigator.mounted) {
                 await _showDuplicateDialogWithData(
-                  navigatorContext: context,
+                  navigator: navigator,
                   medicationName: schedule.medicationName!,
                   medicationSchedule: medicationSchedule,
                   user: user,
@@ -265,7 +268,7 @@ class _MedicationLoggingScreenState
   /// This method is called after the popup is dismissed, so it doesn't use
   /// ref (which would be disposed). All data is passed as parameters.
   Future<void> _showDuplicateDialogWithData({
-    required BuildContext navigatorContext,
+    required NavigatorState navigator,
     required String medicationName,
     required Schedule medicationSchedule,
     required AppUser user,
@@ -332,7 +335,7 @@ class _MedicationLoggingScreenState
 
     // Use the saved navigator context instead of widget context
     await showDialog<void>(
-      context: navigatorContext,
+      context: navigator.context,
       builder: (context) => SessionUpdateDialog(
         existingSession: mockExistingSession,
         newSession: newSession,

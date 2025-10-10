@@ -377,6 +377,94 @@ LoggingException toLoggingException(ValidationResult result);
 - Exponential backoff retry logic
 - TTL management (30 days)
 
+## Cache Initialization & Lifecycle
+
+### Async Initialization Handling
+
+The logging system must handle a critical timing issue: **LoggingNotifier initializes before user authentication completes**.
+
+**The Problem:**
+```
+1. App starts → LoggingNotifier._initialize() runs
+2. Tries to load cache from SharedPreferences
+3. user = null (auth still in progress)
+4. pet = null (profile not loaded yet)
+5. Cache load silently fails
+6. User authenticates successfully
+7. ❌ Cache is never loaded!
+```
+
+**The Solution:**
+`LoggingNotifier` uses **reactive cache loading** that watches for auth/profile changes:
+
+```dart
+// Set up during initialization
+void _setupCacheReloadListeners() {
+  // Watch for user authentication
+  _ref.listen(currentUserProvider, (previous, next) {
+    if (_previousUserId == null && next != null) {
+      // User just authenticated - reload cache if pet also available
+      if (_ref.read(primaryPetProvider) != null) {
+        loadTodaysCache();
+      }
+    }
+  });
+  
+  // Watch for pet profile loading
+  _ref.listen(primaryPetProvider, (previous, next) {
+    if (_previousPetId == null && next != null) {
+      // Pet just loaded - reload cache if user also available
+      if (_ref.read(currentUserProvider) != null) {
+        loadTodaysCache();
+      }
+    }
+  });
+}
+```
+
+**Why This Matters:**
+
+1. **Cost Optimization**: Without cache, duplicate detection requires Firestore reads
+   - With cache: 0 reads for first-time medications ✅
+   - Without cache: 1-10 reads per duplicate check ❌
+   
+2. **Data Integrity**: Cache prevents duplicate logging
+   - With cache: Duplicate detection works correctly ✅
+   - Without cache: Allows duplicate sessions ❌
+
+3. **Aligns with Firebase CRUD Rules**: "Avoid unnecessary re-reads"
+
+**Cache Lifecycle Events:**
+
+| Event | Trigger | Action |
+|-------|---------|--------|
+| **App Startup** | `_initialize()` | Try to load cache (may fail if auth incomplete) |
+| **User Auth** | `currentUserProvider` changes | Reload cache if pet available |
+| **Pet Loaded** | `primaryPetProvider` changes | Reload cache if user available |
+| **App Resume** | `AppLifecycleState.resumed` | Clear expired caches, reload today's cache |
+| **After Logging** | Successful log operation | Update cache incrementally |
+| **After Quick-Log** | Successful batch log | Update cache optimistically (0 reads) |
+
+### Hot Restart Behavior
+
+**Before Fix:**
+```
+1. Hot restart → LoggingNotifier initializes
+2. user/pet are null → cache not loaded
+3. User authenticates → cache still not loaded
+4. Try to log medication → thinks nothing logged yet
+5. Allows duplicate logging ❌
+```
+
+**After Fix:**
+```
+1. Hot restart → LoggingNotifier initializes
+2. user/pet are null → cache not loaded (expected)
+3. User authenticates → reactive listener triggered
+4. Cache automatically reloaded ✅
+5. Try to log medication → detects duplicate correctly ✅
+```
+
 ## Integration Patterns
 
 ### Pattern 1: Manual Logging (with validation)
@@ -632,5 +720,5 @@ No breaking changes required - validation service is fully optional!
 
 ---
 
-*Last updated: Step 8.3 completion*
+*Last updated: October 10, 2025 - Added cache initialization & lifecycle documentation*
 *Author: HydraCat Development Team*

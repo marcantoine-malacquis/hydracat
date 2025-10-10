@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
-import 'package:hydracat/features/onboarding/screens/add_medication_screen.dart';
+import 'package:hydracat/features/onboarding/widgets/medication_overlay_wrapper.dart';
 import 'package:hydracat/features/onboarding/widgets/medication_summary_card.dart';
 import 'package:hydracat/features/onboarding/widgets/treatment_popup_wrapper.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
@@ -78,21 +81,42 @@ class _MedicationScheduleScreenState
       updatedAt: now,
       medicationName: medication.name,
       targetDosage: medication.dosage ?? 1,
-      medicationUnit: medication.unit.name,
+      medicationUnit: medication.unit.displayName,
       medicationStrengthAmount: medication.strengthAmount,
-      medicationStrengthUnit: medication.strengthUnit?.name,
+      medicationStrengthUnit: medication.strengthUnit?.displayName,
       customMedicationStrengthUnit: medication.customStrengthUnit,
     );
   }
 
-  /// Add a new medication
-  Future<void> _onAddMedication() async {
-    final result = await Navigator.of(context).push<MedicationData>(
-      MaterialPageRoute(
-        builder: (context) => const AddMedicationScreen(),
-        fullscreenDialog: true,
+  /// Show medication overlay with blur background
+  Future<MedicationData?> _showMedicationOverlay({
+    MedicationData? initialMedication,
+    bool isEditing = false,
+  }) async {
+    final completer = Completer<MedicationData?>();
+
+    OverlayService.showFullScreenPopup(
+      context: context,
+      child: MedicationOverlayWrapper(
+        initialMedication: initialMedication,
+        isEditing: isEditing,
+        onSave: (medication) {
+          completer.complete(medication);
+          OverlayService.hide();
+        },
+        onCancel: () {
+          completer.complete(null);
+          OverlayService.hide();
+        },
       ),
     );
+
+    return completer.future;
+  }
+
+  /// Add a new medication
+  Future<void> _onAddMedication() async {
+    final result = await _showMedicationOverlay();
 
     if (result != null) {
       setState(() {
@@ -143,14 +167,9 @@ class _MedicationScheduleScreenState
   Future<void> _onEditMedication(Schedule schedule) async {
     final medicationData = _scheduleToMedicationData(schedule);
 
-    final result = await Navigator.of(context).push<MedicationData>(
-      MaterialPageRoute(
-        builder: (context) => AddMedicationScreen(
-          initialMedication: medicationData,
-          isEditing: true,
-        ),
-        fullscreenDialog: true,
-      ),
+    final result = await _showMedicationOverlay(
+      initialMedication: medicationData,
+      isEditing: true,
     );
 
     if (result != null) {

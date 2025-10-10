@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/core/utils/dosage_utils.dart';
@@ -9,6 +8,7 @@ import 'package:hydracat/features/onboarding/widgets/rotating_wheel_picker.dart'
 import 'package:hydracat/features/onboarding/widgets/time_picker_group.dart';
 import 'package:hydracat/features/onboarding/widgets/treatment_popup_wrapper.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
+import 'package:hydracat/shared/widgets/custom_dropdown.dart';
 
 /// Multi-step screen for adding/editing medications
 class AddMedicationScreen extends StatefulWidget {
@@ -16,6 +16,9 @@ class AddMedicationScreen extends StatefulWidget {
   const AddMedicationScreen({
     this.initialMedication,
     this.isEditing = false,
+    this.onSave,
+    this.onCancel,
+    this.onFormChanged,
     super.key,
   });
 
@@ -24,6 +27,15 @@ class AddMedicationScreen extends StatefulWidget {
 
   /// Whether this is editing an existing medication
   final bool isEditing;
+
+  /// Callback when medication is saved
+  final void Function(MedicationData)? onSave;
+
+  /// Callback when medication editing is cancelled
+  final VoidCallback? onCancel;
+
+  /// Callback when form data changes (for unsaved changes tracking)
+  final VoidCallback? onFormChanged;
 
   @override
   State<AddMedicationScreen> createState() => _AddMedicationScreenState();
@@ -100,31 +112,27 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Center(
-        child: MedicationStepPopup(
-          title: _getStepTitle(l10n),
-          currentStep: _currentStep,
-          totalSteps: _totalSteps,
-          onPrevious: _currentStep > 1 ? _onPrevious : null,
-          onNext: _currentStep < _totalSteps ? _onNext : null,
-          onSave: _currentStep == _totalSteps ? _onSave : null,
-          isNextEnabled: _isCurrentStepValid(),
-          isLoading: _isLoading,
-          child: SizedBox(
-            height: 400,
-            child: PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                _buildNameAndUnitStep(),
-                _buildDosageStep(),
-                _buildFrequencyStep(),
-                _buildReminderTimesStep(),
-              ],
-            ),
-          ),
+    return MedicationStepPopup(
+      title: _getStepTitle(l10n),
+      currentStep: _currentStep,
+      totalSteps: _totalSteps,
+      onPrevious: _currentStep > 1 ? _onPrevious : null,
+      onNext: _currentStep < _totalSteps ? _onNext : null,
+      onSave: _currentStep == _totalSteps ? _onSave : null,
+      onCancel: widget.onCancel,
+      isNextEnabled: _isCurrentStepValid(),
+      isLoading: _isLoading,
+      child: SizedBox(
+        height: 400,
+        child: PageView(
+          controller: _pageController,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            _buildNameAndUnitStep(),
+            _buildDosageStep(),
+            _buildFrequencyStep(),
+            _buildReminderTimesStep(),
+          ],
         ),
       ),
     );
@@ -132,9 +140,10 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
   String _getStepTitle(AppLocalizations l10n) {
     return switch (_currentStep) {
-      1 => widget.isEditing
-          ? l10n.editMedicationDetails
-          : l10n.addMedicationDetails,
+      1 =>
+        widget.isEditing
+            ? l10n.editMedicationDetails
+            : l10n.addMedicationDetails,
       2 => l10n.setDosage,
       3 => l10n.setFrequency,
       4 => l10n.setReminderTimes,
@@ -173,6 +182,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
               setState(() {
                 _medicationName = value.trim();
               });
+              widget.onFormChanged?.call();
             },
             decoration: InputDecoration(
               labelText: l10n.medicationNameLabel,
@@ -214,6 +224,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                     setState(() {
                       _strengthAmount = value.trim();
                     });
+                    widget.onFormChanged?.call();
                   },
                   decoration: InputDecoration(
                     labelText: 'Amount',
@@ -237,35 +248,23 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
               const SizedBox(width: 12),
               Expanded(
                 flex: 2,
-                child: DropdownButtonFormField<MedicationStrengthUnit>(
-                  initialValue: _strengthUnit,
-                  decoration: InputDecoration(
-                    labelText: 'Unit',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 16,
-                    ),
+                child: CustomDropdown<MedicationStrengthUnit>(
+                  value: _strengthUnit,
+                  items: MedicationStrengthUnit.values,
+                  onChanged: (value) {
+                    if (_strengthAmount.isNotEmpty) {
+                      setState(() {
+                        _strengthUnit = value;
+                      });
+                      widget.onFormChanged?.call();
+                    }
+                  },
+                  itemBuilder: (unit) => Text(
+                    unit.displayName,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  isExpanded: true,
-                  items: MedicationStrengthUnit.values
-                      .map((unit) => DropdownMenuItem(
-                            value: unit,
-                            child: Text(
-                              unit.displayName,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ))
-                      .toList(),
-                  onChanged: _strengthAmount.isNotEmpty
-                      ? (value) {
-                          setState(() {
-                            _strengthUnit = value;
-                          });
-                        }
-                      : null,
+                  labelText: 'Unit',
+                  enabled: _strengthAmount.isNotEmpty,
                 ),
               ),
             ],
@@ -280,6 +279,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                 setState(() {
                   _customStrengthUnit = value.trim();
                 });
+                widget.onFormChanged?.call();
               },
               decoration: InputDecoration(
                 labelText: 'Custom Unit',
@@ -291,7 +291,6 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
               ),
             ),
           ],
-
         ],
       ),
     );
@@ -349,6 +348,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                         _dosageValue = DosageUtils.parseDosageString(_dosage);
                       }
                     });
+                    widget.onFormChanged?.call();
                   },
                   decoration: InputDecoration(
                     labelText: 'Dosage *',
@@ -372,35 +372,22 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
               const SizedBox(width: 12),
               Expanded(
                 flex: 2,
-                child: DropdownButtonFormField<MedicationUnit>(
-                  initialValue: _selectedUnit,
-                  decoration: InputDecoration(
-                    labelText: 'Unit *',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 16,
-                    ),
-                  ),
-                  isExpanded: true,
-                  items: MedicationUnit.values
-                      .map((unit) => DropdownMenuItem(
-                            value: unit,
-                            child: Text(
-                              unit.displayName,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ))
-                      .toList(),
+                child: CustomDropdown<MedicationUnit>(
+                  value: _selectedUnit,
+                  items: MedicationUnit.values,
                   onChanged: (value) {
                     if (value != null) {
                       setState(() {
                         _selectedUnit = value;
                       });
+                      widget.onFormChanged?.call();
                     }
                   },
+                  itemBuilder: (unit) => Text(
+                    unit.displayName,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  labelText: 'Unit *',
                 ),
               ),
             ],
@@ -453,6 +440,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                     _selectedFrequency.administrationsPerDay,
                   );
                 });
+                widget.onFormChanged?.call();
               },
             ),
           ),
@@ -537,6 +525,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
               setState(() {
                 _reminderTimes = times;
               });
+              widget.onFormChanged?.call();
             },
           ),
         ],
@@ -602,13 +591,14 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
         dosage: _dosageValue,
         strengthAmount: _strengthAmount.isEmpty ? null : _strengthAmount,
         strengthUnit: _strengthUnit,
-        customStrengthUnit:
-            _customStrengthUnit.isEmpty ? null : _customStrengthUnit,
+        customStrengthUnit: _customStrengthUnit.isEmpty
+            ? null
+            : _customStrengthUnit,
       );
 
-      // Return the medication to the previous screen
+      // Return the medication via callback
       if (mounted) {
-        Navigator.of(context).pop(medication);
+        widget.onSave?.call(medication);
       }
     } on Exception {
       if (mounted) {

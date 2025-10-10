@@ -444,12 +444,17 @@ extension ScheduleMedicationHelpers on Schedule {
       return medicationStrengthAmount;
     }
 
-    // Map strength unit codes to display names
+    // Map strength unit codes to display names, supporting both enum codes
+    // (e.g., "mgPerG") and already formatted strings (e.g., "mg/g").
     final unitDisplay = switch (medicationStrengthUnit) {
       'mg' => 'mg',
       'mcg' => 'mcg',
-      'mgPerMl' => 'mg/ml',
-      'mcgPerMl' => 'mcg/ml',
+      'g' => 'g',
+      'mgPerMl' => 'mg/mL',
+      'mcgPerMl' => 'mcg/mL',
+      'mgPerG' => 'mg/g',
+      'mcgPerG' => 'mcg/g',
+      'iuPerMl' => 'IU/mL',
       'percent' => '%',
       'iu' => 'IU',
       'other' => customMedicationStrengthUnit ?? 'Other',

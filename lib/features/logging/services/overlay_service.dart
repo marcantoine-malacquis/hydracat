@@ -30,6 +30,13 @@ enum OverlayAnimationType {
 /// - Animation support
 class OverlayService {
   static OverlayEntry? _currentOverlay;
+  // Keep a reference to the host screen context used to present the overlay.
+  // This allows downstream flows (e.g., dialogs after closing the overlay)
+  // to reliably obtain a navigator context that survives overlay dismissal.
+  static BuildContext? _hostContext;
+
+  /// Returns the last host [BuildContext] used to show an overlay.
+  static BuildContext? get hostContext => _hostContext;
 
   /// Shows a full-screen popup with blurred background.
   ///
@@ -56,6 +63,10 @@ class OverlayService {
   }) {
     // Remove any existing overlay first
     hide();
+
+    // Capture the host context so consumers can use a safe navigator context
+    // even after the overlay content is disposed.
+    _hostContext = context;
 
     _currentOverlay = OverlayEntry(
       builder: (context) => _FullScreenBlurOverlay(

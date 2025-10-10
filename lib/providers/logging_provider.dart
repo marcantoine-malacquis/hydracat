@@ -101,6 +101,10 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
   final SummaryCacheService _cacheService;
   final Ref _ref;
 
+  // Track previous auth/profile state to detect transitions
+  String? _previousUserId;
+  String? _previousPetId;
+
   // ============================================
   // Initialization & Cache Lifecycle
   // ============================================
@@ -110,6 +114,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
   /// - Clears expired caches from previous days
   /// - Loads today's cache if it exists
   /// - Warms cache from Firestore for accuracy
+  /// - Sets up reactive listeners for auth/profile changes
   Future<void> _initialize() async {
     try {
       // STEP 1: Clear any expired caches from previous days
@@ -120,6 +125,9 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
 
       // STEP 3: Warm cache from Firestore on cold start
       await _warmCacheFromFirestore();
+
+      // STEP 4: Set up reactive cache loading when user/pet becomes available
+      _setupCacheReloadListeners();
 
       if (kDebugMode) {
         debugPrint('[LoggingNotifier] Initialization complete');
@@ -142,6 +150,66 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
 
       // Don't block app startup on cache errors
     }
+  }
+
+  /// Set up listeners to reload cache when auth/profile data becomes available
+  ///
+  /// This fixes the hot-restart issue where:
+  /// 1. LoggingNotifier initializes before user auth completes
+  /// 2. loadTodaysCache() fails because user/pet are null
+  /// 3. Cache is never loaded even after successful auth
+  ///
+  /// Solution: Watch for changes in user/pet and retry loading cache
+  void _setupCacheReloadListeners() {
+    // Listen to both user and pet changes
+    _ref
+      ..listen(
+        currentUserProvider,
+        (previous, next) {
+          final user = next;
+          final pet = _ref.read(primaryPetProvider);
+
+          // Check if we transitioned from null → available
+          final userJustBecameAvailable =
+              _previousUserId == null && user != null;
+          final bothAvailable = user != null && pet != null;
+
+          if (userJustBecameAvailable && bothAvailable) {
+            if (kDebugMode) {
+              debugPrint(
+                '[LoggingNotifier] User authenticated - reloading cache',
+              );
+            }
+            loadTodaysCache();
+          }
+
+          _previousUserId = user?.id;
+        },
+        fireImmediately: false,
+      )
+      ..listen(
+        primaryPetProvider,
+        (previous, next) {
+          final pet = next;
+          final user = _ref.read(currentUserProvider);
+
+          // Check if we transitioned from null → available
+          final petJustBecameAvailable = _previousPetId == null && pet != null;
+          final bothAvailable = user != null && pet != null;
+
+          if (petJustBecameAvailable && bothAvailable) {
+            if (kDebugMode) {
+              debugPrint(
+                '[LoggingNotifier] Pet loaded - reloading cache',
+              );
+            }
+            loadTodaysCache();
+          }
+
+          _previousPetId = pet?.id;
+        },
+        fireImmediately: false,
+      );
   }
 
   /// Load today's cached summary

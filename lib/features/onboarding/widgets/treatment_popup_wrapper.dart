@@ -10,6 +10,7 @@ class TreatmentPopupWrapper extends StatelessWidget {
     this.onPrevious,
     this.onNext,
     this.onSave,
+    this.onCancel,
     this.nextButtonText = 'Next',
     this.saveButtonText = 'Save',
     this.showPreviousButton = true,
@@ -32,6 +33,9 @@ class TreatmentPopupWrapper extends StatelessWidget {
 
   /// Callback for save button (alternative to next)
   final VoidCallback? onSave;
+
+  /// Callback for cancel/close button
+  final VoidCallback? onCancel;
 
   /// Text for next button
   final String nextButtonText;
@@ -118,7 +122,7 @@ class TreatmentPopupWrapper extends StatelessWidget {
           ),
 
           TouchTargetIconButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: onCancel,
             icon: Icon(
               Icons.close,
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
@@ -150,32 +154,37 @@ class TreatmentPopupWrapper extends StatelessWidget {
       child: Row(
         children: [
           // Previous button
-          if (showPreviousButton && onPrevious != null) ...[
-            OutlinedButton(
-              onPressed: isLoading ? null : onPrevious,
-              child: const Text('Previous'),
+          if (showPreviousButton && onPrevious != null)
+            Expanded(
+              child: OutlinedButton(
+                onPressed: isLoading ? null : onPrevious,
+                child: const Text('Previous'),
+              ),
             ),
-            const SizedBox(width: 12),
-          ],
 
-          const Spacer(),
+          if (showPreviousButton &&
+              onPrevious != null &&
+              (onNext != null || onSave != null))
+            const SizedBox(width: 12),
 
           // Next or Save button
           if (onNext != null || onSave != null)
-            ElevatedButton(
-              onPressed: isLoading || !isNextEnabled
-                  ? null
-                  : (onSave ?? onNext),
-              child: isLoading
-                  ? SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: theme.colorScheme.onPrimary,
-                      ),
-                    )
-                  : Text(onSave != null ? saveButtonText : nextButtonText),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: isLoading || !isNextEnabled
+                    ? null
+                    : (onSave ?? onNext),
+                child: isLoading
+                    ? SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: theme.colorScheme.onPrimary,
+                        ),
+                      )
+                    : Text(onSave != null ? 'Save' : nextButtonText),
+              ),
             ),
         ],
       ),
@@ -194,6 +203,7 @@ class MedicationStepPopup extends StatelessWidget {
     this.onPrevious,
     this.onNext,
     this.onSave,
+    this.onCancel,
     this.isNextEnabled = true,
     this.isLoading = false,
     super.key,
@@ -220,6 +230,9 @@ class MedicationStepPopup extends StatelessWidget {
   /// Callback for save button (final step)
   final VoidCallback? onSave;
 
+  /// Callback for cancel/close button
+  final VoidCallback? onCancel;
+
   /// Whether next/save button is enabled
   final bool isNextEnabled;
 
@@ -236,6 +249,7 @@ class MedicationStepPopup extends StatelessWidget {
       onPrevious: onPrevious,
       onNext: isLastStep ? null : onNext,
       onSave: isLastStep ? onSave : null,
+      onCancel: onCancel,
       nextButtonText: isLastStep ? 'Save' : 'Next',
       saveButtonText: 'Save Medication',
       isNextEnabled: isNextEnabled,
@@ -262,64 +276,71 @@ class MedicationStepPopup extends StatelessWidget {
 
     return Row(
       children: [
-        ...List.generate(totalSteps, (index) {
-          final stepNumber = index + 1;
-          final isActive = stepNumber == currentStep;
-          final isCompleted = stepNumber < currentStep;
+        // Step indicators with flexible spacing
+        Expanded(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(totalSteps, (index) {
+              final stepNumber = index + 1;
+              final isActive = stepNumber == currentStep;
+              final isCompleted = stepNumber < currentStep;
 
-          return Row(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: isActive || isCompleted
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.outline.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: isCompleted
-                      ? Icon(
-                          Icons.check,
-                          size: 16,
-                          color: theme.colorScheme.onPrimary,
-                        )
-                      : Text(
-                          stepNumber.toString(),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: isActive
-                                ? theme.colorScheme.onPrimary
-                                : theme.colorScheme.onSurface.withValues(
-                                    alpha: 0.6,
-                                  ),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                ),
-              ),
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: isActive || isCompleted
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.outline.withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: isCompleted
+                          ? Icon(
+                              Icons.check,
+                              size: 14,
+                              color: theme.colorScheme.onPrimary,
+                            )
+                          : Text(
+                              stepNumber.toString(),
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: isActive
+                                    ? theme.colorScheme.onPrimary
+                                    : theme.colorScheme.onSurface.withValues(
+                                        alpha: 0.6,
+                                      ),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                    ),
+                  ),
+                  if (index < totalSteps - 1) ...[
+                    Container(
+                      width: 16,
+                      height: 2,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      color: isCompleted
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.outline.withValues(alpha: 0.2),
+                    ),
+                  ],
+                ],
+              );
+            }),
+          ),
+        ),
 
-              if (index < totalSteps - 1) ...[
-                Container(
-                  width: 24,
-                  height: 2,
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  color: isCompleted
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.outline.withValues(alpha: 0.2),
-                ),
-              ],
-            ],
-          );
-        }),
-
-        const Spacer(),
-
+        // Step text
         Text(
           'Step $currentStep of $totalSteps',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             fontWeight: FontWeight.w500,
+            fontSize: 12,
           ),
         ),
       ],

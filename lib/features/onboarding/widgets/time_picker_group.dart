@@ -185,7 +185,6 @@ class CompactTimePicker extends StatelessWidget {
             color: theme.colorScheme.surface,
           ),
           child: Row(
-            mainAxisSize: MainAxisSize.max,
             children: [
               if (label != null) ...[
                 SizedBox(
@@ -198,7 +197,8 @@ class CompactTimePicker extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 16),
-                // Push the icon+time group to the right while keeping them tight
+                // Push the icon+time group to the right while
+                // keeping them tight
                 const Spacer(),
               ],
 
