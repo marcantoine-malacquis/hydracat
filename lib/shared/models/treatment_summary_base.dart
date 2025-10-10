@@ -228,6 +228,14 @@ abstract class TreatmentSummaryBase {
     }
   }
 
+  /// Null-tolerant DateTime parser
+  ///
+  /// Returns null if input is null; otherwise delegates to parseDateTime.
+  static DateTime? parseDateTimeNullable(dynamic value) {
+    if (value == null) return null;
+    return parseDateTime(value);
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;

@@ -81,6 +81,42 @@
       }
     }
   },
+  "petGenderRequired": "Please select your cat's gender",
+  "@petGenderRequired": {
+    "description": "Error message when gender is not selected"
+  },
+  "petGenderInvalid": "Gender must be either male or female",
+  "@petGenderInvalid": {
+    "description": "Error message when gender value is invalid"
+  },
+  "petNameRequired": "Pet name is required",
+  "@petNameRequired": {
+    "description": "Error message when pet name is not provided"
+  },
+  "petNameTooLong": "Pet name must be 50 characters or less",
+  "@petNameTooLong": {
+    "description": "Error message when pet name exceeds maximum length"
+  },
+  "petAgeRequired": "Pet age is required",
+  "@petAgeRequired": {
+    "description": "Error message when pet age is not provided"
+  },
+  "petAgeInvalid": "Pet age must be greater than 0",
+  "@petAgeInvalid": {
+    "description": "Error message when pet age is invalid"
+  },
+  "petAgeUnrealistic": "Pet age seems unrealistic (over 25 years)",
+  "@petAgeUnrealistic": {
+    "description": "Error message when pet age seems too high"
+  },
+  "petWeightInvalid": "Weight must be greater than 0",
+  "@petWeightInvalid": {
+    "description": "Error message when weight is invalid"
+  },
+  "petWeightUnrealistic": "Weight seems unrealistic (over 15kg for a cat)",
+  "@petWeightUnrealistic": {
+    "description": "Error message when weight seems too high for a cat"
+  },
 
   "@_ONBOARDING_MEDICAL_INFO": {},
   "medicalInfoTitle": "Medical Information",

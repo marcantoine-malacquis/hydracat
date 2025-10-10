@@ -23,11 +23,7 @@ Don't try to run the app yourself to test. Just tell me when it's needed and I w
 
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
-1. Convert to OverlayService for consistency with logging popups. This provides better visual integration and follows the established pattern
-2. Use OverlayAnimationType.slideUp to match the logging popups,
-3. Allow background dismissal but show a confirmation dialog if there are unsaved changes, similar to the existing UnsavedChangesDialog
-4. Keep the current state management but modify the return mechanism to use callbacks instead of Navigator.pop()
-5. Maintain the current styling but ensure proper contrast against the blur background. The existing MedicationStepPopup styling should work well.
-6. Maintain current error handling patterns and ensure proper cleanup of the overlay on errors.
-Please let me know if this makes sense or contradict itself, the prd (prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them. I will test only once we fixed the linting issues.
+
+
+
 

@@ -145,7 +145,12 @@ class OnboardingData {
 
   /// Whether basic pet info is complete
   bool get hasBasicPetInfo =>
-      petName != null && petName!.isNotEmpty && petAge != null && petAge! > 0;
+      petName != null &&
+      petName!.isNotEmpty &&
+      petAge != null &&
+      petAge! > 0 &&
+      petGender != null &&
+      petGender!.isNotEmpty;
 
   /// Whether any lab values are present
   bool get hasLabValues =>
@@ -174,6 +179,9 @@ class OnboardingData {
     }
     if (petAge == null || petAge! <= 0) {
       missing.add('Pet age');
+    }
+    if (petGender == null || petGender!.isEmpty) {
+      missing.add('Gender');
     }
 
     return missing;
@@ -293,6 +301,13 @@ class OnboardingData {
       } else if (petWeightKg! > 15) {
         errors.add('Weight seems unrealistic (over 15kg for a cat)');
       }
+    }
+
+    // Gender validation (required)
+    if (petGender == null || petGender!.isEmpty) {
+      errors.add('Gender is required');
+    } else if (petGender != 'male' && petGender != 'female') {
+      errors.add('Gender must be either male or female');
     }
 
     // CKD diagnosis date validation

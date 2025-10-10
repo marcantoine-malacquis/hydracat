@@ -47,13 +47,36 @@ import 'package:hydracat/shared/models/weekly_summary.dart';
 /// ```
 class SummaryService {
   /// Creates a [SummaryService] instance
-  const SummaryService(this._firestore, this._cacheService);
+  SummaryService(this._firestore, this._cacheService);
 
   /// Firestore instance
   final FirebaseFirestore _firestore;
 
   /// Cache service for today's summary optimization
   final SummaryCacheService _cacheService;
+
+  // ============================================
+  // In-memory TTL caches for analytics views
+  // ============================================
+
+  // Daily/weekly/monthly TTLs (active views only)
+  static const Duration _dailyTtl = Duration(minutes: 5);
+  static const Duration _weeklyTtl = Duration(minutes: 15);
+  static const Duration _monthlyTtl = Duration(minutes: 15);
+
+  final Map<String, (_CacheClock, DailySummary?)> _dailyMemCache = {};
+  final Map<String, (_CacheClock, WeeklySummary?)> _weeklyMemCache = {};
+  final Map<String, (_CacheClock, MonthlySummary?)> _monthlyMemCache = {};
+
+  bool _isValid(_CacheClock clock, Duration ttl) =>
+      DateTime.now().isBefore(clock.cachedAt.add(ttl));
+
+  String _dailyKey(String userId, String petId, DateTime date) =>
+      'u:$userId|p:$petId|d:${AppDateUtils.formatDateForSummary(date)}';
+  String _weeklyKey(String userId, String petId, DateTime date) =>
+      'u:$userId|p:$petId|w:${AppDateUtils.formatWeekForSummary(date)}';
+  String _monthlyKey(String userId, String petId, DateTime date) =>
+      'u:$userId|p:$petId|m:${AppDateUtils.formatMonthForSummary(date)}';
 
   // ============================================
   // PUBLIC API - Daily Summary Reads
@@ -74,6 +97,7 @@ class SummaryService {
   Future<DailySummary?> getTodaySummary({
     required String userId,
     required String petId,
+    bool lightweight = false,
   }) async {
     try {
       // STEP 1: Check cache first (0 reads)
@@ -87,13 +111,26 @@ class SummaryService {
           debugPrint("[SummaryService] Cache hit for today's summary");
         }
 
-        // Cache exists - convert to DailySummary
-        // Note: DailySummaryCache has fewer fields than DailySummary
-        // We only have counts/totals in cache, not full aggregation data
-        // For full summary, still need Firestore read
-        //
-        // For now, return null to force Firestore read
-        // Provider can use cache for quick checks (hasAnySessions, etc.)
+        if (lightweight) {
+          // Build a lightweight DailySummary from cache without Firestore read
+          final today = DateTime.now();
+          final summary = DailySummary(
+            date: DateTime(today.year, today.month, today.day),
+            overallStreak: 0, // not tracked in cache
+            medicationTotalDoses: cachedSummary.totalMedicationDosesGiven
+                .toInt(),
+            medicationScheduledDoses: cachedSummary.medicationSessionCount,
+            medicationMissedCount: 0, // not tracked in cache
+            fluidTotalVolume: cachedSummary.totalFluidVolumeGiven,
+            fluidTreatmentDone: cachedSummary.fluidSessionCount > 0,
+            fluidSessionCount: cachedSummary.fluidSessionCount,
+            overallTreatmentDone:
+                cachedSummary.medicationSessionCount > 0 ||
+                cachedSummary.fluidSessionCount > 0,
+            createdAt: DateTime.now(),
+          );
+          return summary;
+        }
       }
 
       // STEP 2: Cache miss or need full data - fetch from Firestore (1 read)
@@ -130,6 +167,13 @@ class SummaryService {
     required DateTime date,
   }) async {
     try {
+      // In-memory cache (TTL) for active views
+      final key = _dailyKey(userId, petId, date);
+      final cached = _dailyMemCache[key];
+      if (cached != null && _isValid(cached.$1, _dailyTtl)) {
+        return cached.$2;
+      }
+
       final docRef = _getDailySummaryRef(userId, petId, date);
       final docSnapshot = await docRef.get();
 
@@ -149,7 +193,9 @@ class SummaryService {
         return null;
       }
 
-      return DailySummary.fromJson(data as Map<String, dynamic>);
+      final summary = DailySummary.fromJson(data as Map<String, dynamic>);
+      _dailyMemCache[key] = (_CacheClock(DateTime.now()), summary);
+      return summary;
     } on FirebaseException catch (e) {
       if (kDebugMode) {
         debugPrint(
@@ -199,6 +245,13 @@ class SummaryService {
     required DateTime date,
   }) async {
     try {
+      // In-memory cache (TTL)
+      final key = _weeklyKey(userId, petId, date);
+      final cached = _weeklyMemCache[key];
+      if (cached != null && _isValid(cached.$1, _weeklyTtl)) {
+        return cached.$2;
+      }
+
       final docRef = _getWeeklySummaryRef(userId, petId, date);
       final docSnapshot = await docRef.get();
 
@@ -218,7 +271,9 @@ class SummaryService {
         return null;
       }
 
-      return WeeklySummary.fromJson(data as Map<String, dynamic>);
+      final summary = WeeklySummary.fromJson(data as Map<String, dynamic>);
+      _weeklyMemCache[key] = (_CacheClock(DateTime.now()), summary);
+      return summary;
     } on FirebaseException catch (e) {
       if (kDebugMode) {
         debugPrint(
@@ -267,6 +322,13 @@ class SummaryService {
     required DateTime date,
   }) async {
     try {
+      // In-memory cache (TTL)
+      final key = _monthlyKey(userId, petId, date);
+      final cached = _monthlyMemCache[key];
+      if (cached != null && _isValid(cached.$1, _monthlyTtl)) {
+        return cached.$2;
+      }
+
       final docRef = _getMonthlySummaryRef(userId, petId, date);
       final docSnapshot = await docRef.get();
 
@@ -286,7 +348,9 @@ class SummaryService {
         return null;
       }
 
-      return MonthlySummary.fromJson(data as Map<String, dynamic>);
+      final summary = MonthlySummary.fromJson(data as Map<String, dynamic>);
+      _monthlyMemCache[key] = (_CacheClock(DateTime.now()), summary);
+      return summary;
     } on FirebaseException catch (e) {
       if (kDebugMode) {
         debugPrint(
@@ -374,4 +438,10 @@ class SummaryService {
         .collection('summaries')
         .doc(docId);
   }
+}
+
+/// Simple clock wrapper so we can extend easily later
+class _CacheClock {
+  const _CacheClock(this.cachedAt);
+  final DateTime cachedAt;
 }

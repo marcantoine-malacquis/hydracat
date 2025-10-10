@@ -105,6 +105,9 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
   String? _previousUserId;
   String? _previousPetId;
 
+  // Prevent duplicate startup warming; ensures we only warm once
+  bool _startupPreparationDone = false;
+
   // ============================================
   // Initialization & Cache Lifecycle
   // ============================================
@@ -120,14 +123,17 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       // STEP 1: Clear any expired caches from previous days
       await clearExpiredCaches();
 
-      // STEP 2: Load today's cache from SharedPreferences
-      await loadTodaysCache();
-
-      // STEP 3: Warm cache from Firestore on cold start
-      await _warmCacheFromFirestore();
-
-      // STEP 4: Set up reactive cache loading when user/pet becomes available
+      // STEP 2: Set up reactive cache loading when user/pet becomes available
       _setupCacheReloadListeners();
+
+      // STEP 3: If user & pet are already available, prepare cache now
+      final user = _ref.read(currentUserProvider);
+      final pet = _ref.read(primaryPetProvider);
+      if (user != null && pet != null) {
+        await loadTodaysCache();
+        await _warmCacheFromFirestore();
+        _startupPreparationDone = true;
+      }
 
       if (kDebugMode) {
         debugPrint('[LoggingNotifier] Initialization complete');
@@ -181,6 +187,12 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
               );
             }
             loadTodaysCache();
+
+            // Also warm cache on first availability after startup
+            if (!_startupPreparationDone) {
+              _warmCacheFromFirestore();
+              _startupPreparationDone = true;
+            }
           }
 
           _previousUserId = user?.id;
@@ -204,6 +216,12 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
               );
             }
             loadTodaysCache();
+
+            // Also warm cache on first availability after startup
+            if (!_startupPreparationDone) {
+              _warmCacheFromFirestore();
+              _startupPreparationDone = true;
+            }
           }
 
           _previousPetId = pet?.id;
@@ -327,54 +345,75 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       return []; // No Firestore query needed
     }
 
-    // TIER 2: Firestore query (cache indicates medication was logged)
-    if (kDebugMode) {
-      debugPrint(
-        '[LoggingNotifier] Cache shows $medicationName logged - '
-        'querying Firestore for exact times',
-      );
-    }
-
-    // Track cache miss
-    final analyticsService = _ref.read(analyticsServiceDirectProvider);
-    await analyticsService.trackFeatureUsed(
-      featureName: AnalyticsEvents.duplicateCheckCacheMiss,
-      additionalParams: {
-        'medication_name': medicationName,
-      },
-    );
-
+    // TIER 2: zero-read cache window check
     try {
+      final cacheService = _ref.read(summaryCacheServiceProvider);
+      final now = DateTime.now();
+      final isDup = await cacheService.isLikelyDuplicate(
+        userId: userId,
+        petId: petId,
+        medicationName: medicationName,
+        candidateTime: now,
+      );
+
+      if (isDup) {
+        if (kDebugMode) {
+          debugPrint(
+            '[LoggingNotifier] Cache indicates duplicate within window '
+            'for $medicationName — zero-read path',
+          );
+        }
+
+        // Synthesize a minimal session at the nearest cached time to fit
+        // existing duplicate comparison logic
+        final times = await cacheService.getRecentTimesForMedication(
+          userId,
+          petId,
+          medicationName,
+        );
+        if (times.isNotEmpty) {
+          // Pick the closest time to now
+          times.sort(
+            (a, b) =>
+                a.difference(now).abs().compareTo(b.difference(now).abs()),
+          );
+          final synthetic = MedicationSession.syntheticForDuplicate(
+            petId: petId,
+            userId: userId,
+            dateTime: times.first,
+            medicationName: medicationName,
+          );
+          return [synthetic];
+        }
+      }
+
+      // Fallback to Firestore when cache cannot decide
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingNotifier] Cache shows med logged but no window match — '
+          'querying Firestore',
+        );
+      }
+
+      final analyticsService = _ref.read(analyticsServiceDirectProvider);
+      await analyticsService.trackFeatureUsed(
+        featureName: AnalyticsEvents.duplicateCheckCacheMiss,
+        additionalParams: {
+          'medication_name': medicationName,
+        },
+      );
+
       final sessions = await _loggingService.getTodaysMedicationSessions(
         userId: userId,
         petId: petId,
         medicationName: medicationName,
       );
-
-      if (kDebugMode) {
-        debugPrint(
-          '[LoggingNotifier] Found ${sessions.length} recent sessions '
-          'for $medicationName',
-        );
-      }
-
       return sessions;
-    } on FirebaseException catch (e) {
-      // Gracefully handle missing index or other Firebase errors
+    } on Exception catch (e) {
+      // Conservative fallback on any error: return empty list
       if (kDebugMode) {
-        debugPrint(
-          '[LoggingNotifier] Firestore query failed: ${e.message}',
-        );
+        debugPrint('[LoggingNotifier] Duplicate cache path error: $e');
       }
-
-      // Track error
-      await analyticsService.trackError(
-        errorType: AnalyticsErrorTypes.duplicateCheckQueryFailed,
-        errorContext: 'medicationName: $medicationName, error: ${e.message}',
-      );
-
-      // Return empty list - allow logging to continue without
-      // duplicate detection
       return [];
     }
   }

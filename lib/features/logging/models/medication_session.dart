@@ -108,6 +108,29 @@ class MedicationSession {
     );
   }
 
+  /// Factory to create a lightweight synthetic session used only for
+  /// duplicate detection comparisons when sourced from local cache.
+  factory MedicationSession.syntheticForDuplicate({
+    required String petId,
+    required String userId,
+    required DateTime dateTime,
+    required String medicationName,
+  }) {
+    return MedicationSession(
+      id: 'synthetic-${dateTime.microsecondsSinceEpoch}',
+      petId: petId,
+      userId: userId,
+      dateTime: dateTime,
+      medicationName: medicationName,
+      // Use safe defaults; values are irrelevant to duplicate time comparison
+      dosageGiven: 0,
+      dosageScheduled: 0,
+      medicationUnit: '',
+      completed: true,
+      createdAt: DateTime.now(),
+    );
+  }
+
   /// Creates a [MedicationSession] from JSON data
   ///
   /// Handles Firestore Timestamp conversion for all DateTime fields.
@@ -132,10 +155,12 @@ class MedicationSession {
           ? _parseDateTime(json['scheduledTime'])
           : null,
       createdAt: _parseDateTime(json['createdAt']),
-      syncedAt:
-          json['syncedAt'] != null ? _parseDateTime(json['syncedAt']) : null,
-      updatedAt:
-          json['updatedAt'] != null ? _parseDateTime(json['updatedAt']) : null,
+      syncedAt: json['syncedAt'] != null
+          ? _parseDateTime(json['syncedAt'])
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? _parseDateTime(json['updatedAt'])
+          : null,
     );
   }
 
@@ -217,8 +242,7 @@ class MedicationSession {
   bool get isSynced => syncedAt != null;
 
   /// Whether this session has been modified after creation
-  bool get wasModified =>
-      updatedAt != null && updatedAt!.isAfter(createdAt);
+  bool get wasModified => updatedAt != null && updatedAt!.isAfter(createdAt);
 
   /// Whether this session is pending sync
   bool get isPendingSync => !isSynced;

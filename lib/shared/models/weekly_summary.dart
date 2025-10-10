@@ -73,26 +73,41 @@ class WeeklySummary extends TreatmentSummaryBase {
   ///
   /// Handles Firestore Timestamp conversion for all DateTime fields.
   factory WeeklySummary.fromJson(Map<String, dynamic> json) {
+    bool asBool(dynamic value) {
+      if (value is bool) return value;
+      if (value is num) return value != 0;
+      if (value is String) {
+        final v = value.toLowerCase();
+        if (v == 'true' || v == '1') return true;
+        if (v == 'false' || v == '0') return false;
+      }
+      return false;
+    }
+
     return WeeklySummary(
       startDate: TreatmentSummaryBase.parseDateTime(json['startDate']),
       endDate: TreatmentSummaryBase.parseDateTime(json['endDate']),
-      fluidTreatmentDays: json['fluidTreatmentDays'] as int,
-      fluidMissedDays: json['fluidMissedDays'] as int,
+      fluidTreatmentDays: (json['fluidTreatmentDays'] as num?)?.toInt() ?? 0,
+      fluidMissedDays: (json['fluidMissedDays'] as num?)?.toInt() ?? 0,
       medicationAvgAdherence:
-          (json['medicationAvgAdherence'] as num).toDouble(),
-      overallTreatmentDays: json['overallTreatmentDays'] as int,
-      overallMissedDays: json['overallMissedDays'] as int,
-      medicationTotalDoses: json['medicationTotalDoses'] as int,
-      medicationScheduledDoses: json['medicationScheduledDoses'] as int,
-      medicationMissedCount: json['medicationMissedCount'] as int,
-      fluidTotalVolume: (json['fluidTotalVolume'] as num).toDouble(),
-      fluidTreatmentDone: json['fluidTreatmentDone'] as bool,
-      fluidSessionCount: json['fluidSessionCount'] as int,
-      overallTreatmentDone: json['overallTreatmentDone'] as bool,
-      createdAt: TreatmentSummaryBase.parseDateTime(json['createdAt']),
-      updatedAt: json['updatedAt'] != null
-          ? TreatmentSummaryBase.parseDateTime(json['updatedAt'])
-          : null,
+          (json['medicationAvgAdherence'] as num?)?.toDouble() ?? 0.0,
+      overallTreatmentDays:
+          (json['overallTreatmentDays'] as num?)?.toInt() ?? 0,
+      overallMissedDays: (json['overallMissedDays'] as num?)?.toInt() ?? 0,
+      medicationTotalDoses:
+          (json['medicationTotalDoses'] as num?)?.toInt() ?? 0,
+      medicationScheduledDoses:
+          (json['medicationScheduledDoses'] as num?)?.toInt() ?? 0,
+      medicationMissedCount:
+          (json['medicationMissedCount'] as num?)?.toInt() ?? 0,
+      fluidTotalVolume: (json['fluidTotalVolume'] as num?)?.toDouble() ?? 0.0,
+      fluidTreatmentDone: asBool(json['fluidTreatmentDone']),
+      fluidSessionCount: (json['fluidSessionCount'] as num?)?.toInt() ?? 0,
+      overallTreatmentDone: asBool(json['overallTreatmentDone']),
+      createdAt:
+          TreatmentSummaryBase.parseDateTimeNullable(json['createdAt']) ??
+          DateTime.now(),
+      updatedAt: TreatmentSummaryBase.parseDateTimeNullable(json['updatedAt']),
     );
   }
 
@@ -244,11 +259,9 @@ class WeeklySummary extends TreatmentSummaryBase {
       fluidMissedDays: fluidMissedDays ?? this.fluidMissedDays,
       medicationAvgAdherence:
           medicationAvgAdherence ?? this.medicationAvgAdherence,
-      overallTreatmentDays:
-          overallTreatmentDays ?? this.overallTreatmentDays,
+      overallTreatmentDays: overallTreatmentDays ?? this.overallTreatmentDays,
       overallMissedDays: overallMissedDays ?? this.overallMissedDays,
-      medicationTotalDoses:
-          medicationTotalDoses ?? this.medicationTotalDoses,
+      medicationTotalDoses: medicationTotalDoses ?? this.medicationTotalDoses,
       medicationScheduledDoses:
           medicationScheduledDoses ?? this.medicationScheduledDoses,
       medicationMissedCount:
@@ -256,8 +269,7 @@ class WeeklySummary extends TreatmentSummaryBase {
       fluidTotalVolume: fluidTotalVolume ?? this.fluidTotalVolume,
       fluidTreatmentDone: fluidTreatmentDone ?? this.fluidTreatmentDone,
       fluidSessionCount: fluidSessionCount ?? this.fluidSessionCount,
-      overallTreatmentDone:
-          overallTreatmentDone ?? this.overallTreatmentDone,
+      overallTreatmentDone: overallTreatmentDone ?? this.overallTreatmentDone,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

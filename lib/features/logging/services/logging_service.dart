@@ -800,34 +800,67 @@ class LoggingService {
         );
       }
 
-      // STEP 5: Build batch with all sessions
-      final batch = _firestore.batch();
-
-      // Add all medication sessions to batch (4 writes each)
-      for (final session in medicationSessions) {
-        _addMedicationSessionToBatch(
-          batch: batch,
-          session: session,
-          userId: userId,
-          petId: petId,
-        );
-      }
-
-      // Add all fluid sessions to batch (4 writes each)
-      for (final session in fluidSessions) {
-        _addFluidSessionToBatch(
-          batch: batch,
-          session: session,
-          userId: userId,
-          petId: petId,
-        );
-      }
-
-      // STEP 6: Execute atomic commit
-      await _executeBatchWrite(
-        batch: batch,
-        operation: 'quickLogAllTreatments',
+      // STEP 5: Aggregate summary deltas (used for summaries)
+      final todayDate = DateTime(now.year, now.month, now.day);
+      final aggregatedDto = _aggregateSummaryForQuickLog(
+        medicationSessions: medicationSessions,
+        fluidSessions: fluidSessions,
       );
+
+      // STEP 6: Guardrail — split into chunks if near Firestore 500 op limit
+      // Ops estimate: one write per session + 3 summary writes
+      final totalOpsEstimate = totalSessions + 3;
+      if (totalOpsEstimate <= 500) {
+        // Single batch path
+        final batch = _firestore.batch();
+
+        // Write sessions
+        for (final session in medicationSessions) {
+          final ref = _getMedicationSessionRef(userId, petId, session.id);
+          batch.set(ref, _buildSessionCreateData(session.toJson()));
+        }
+        for (final session in fluidSessions) {
+          final ref = _getFluidSessionRef(userId, petId, session.id);
+          batch.set(ref, _buildSessionCreateData(session.toJson()));
+        }
+
+        // Add exactly 3 summary writes
+        final dailyRef = _getDailySummaryRef(userId, petId, todayDate);
+        batch.set(
+          dailyRef,
+          _buildDailySummaryWithIncrements(todayDate, aggregatedDto),
+          SetOptions(merge: true),
+        );
+
+        final weeklyRef = _getWeeklySummaryRef(userId, petId, todayDate);
+        batch.set(
+          weeklyRef,
+          _buildWeeklySummaryWithIncrements(todayDate, aggregatedDto),
+          SetOptions(merge: true),
+        );
+
+        final monthlyRef = _getMonthlySummaryRef(userId, petId, todayDate);
+        batch.set(
+          monthlyRef,
+          _buildMonthlySummaryWithIncrements(todayDate, aggregatedDto),
+          SetOptions(merge: true),
+        );
+
+        await _executeBatchWrite(
+          batch: batch,
+          operation: 'quickLogAllTreatments',
+        );
+      } else {
+        // Chunked path — summaries included in first batch only
+        await _commitQuickLogInChunks(
+          userId: userId,
+          petId: petId,
+          medicationSessions: medicationSessions,
+          fluidSessions: fluidSessions,
+          todayDate: todayDate,
+          aggregatedDto: aggregatedDto,
+        );
+      }
 
       if (kDebugMode) {
         debugPrint(
@@ -1216,7 +1249,7 @@ class LoggingService {
     final dto = SummaryUpdateDto.fromMedicationSession(session);
 
     // Operation 1: Write session
-    batch.set(sessionRef, session.toJson());
+    batch.set(sessionRef, _buildSessionCreateData(session.toJson()));
 
     // Operation 2: Daily summary (single set with merge + increments)
     final dailyRef = _getDailySummaryRef(userId, petId, date);
@@ -1263,7 +1296,7 @@ class LoggingService {
     final dto = SummaryUpdateDto.fromFluidSession(session);
 
     // Operation 1: Write session
-    batch.set(sessionRef, session.toJson());
+    batch.set(sessionRef, _buildSessionCreateData(session.toJson()));
 
     // Operation 2: Daily summary (single set with merge + increments)
     final dailyRef = _getDailySummaryRef(userId, petId, date);
@@ -1312,6 +1345,17 @@ class LoggingService {
       }
       throw BatchWriteException(operation, e.message ?? 'Unknown error');
     }
+  }
+
+  /// Wraps session payload to ensure server timestamps for audit fields.
+  ///
+  /// - Sets `createdAt` when missing
+  /// - Always sets `updatedAt` to server timestamp
+  Map<String, dynamic> _buildSessionCreateData(Map<String, dynamic> json) {
+    final map = Map<String, dynamic>.from(json);
+    map['createdAt'] = map['createdAt'] ?? FieldValue.serverTimestamp();
+    map['updatedAt'] = FieldValue.serverTimestamp();
+    return map;
   }
 
   /// Builds daily summary with increments (optimized single-write)
@@ -1387,6 +1431,141 @@ class LoggingService {
           ..addAll(dto.toFirestoreUpdate());
 
     return map;
+  }
+
+  // ============================================
+  // PRIVATE HELPERS - Aggregation for quick-log
+  // ============================================
+
+  /// Aggregates summary deltas for all quick-log sessions to minimize writes.
+  ///
+  /// Instead of writing daily/weekly/monthly summaries per session, we
+  /// compute a single [SummaryUpdateDto] representing the union of all
+  /// sessions and perform exactly three writes (one per period).
+  SummaryUpdateDto _aggregateSummaryForQuickLog({
+    required List<MedicationSession> medicationSessions,
+    required List<FluidSession> fluidSessions,
+  }) {
+    var completedMedicationDoses = 0;
+    var scheduledMedicationDoses = 0;
+    var missedMedicationDoses = 0;
+
+    for (final session in medicationSessions) {
+      scheduledMedicationDoses += 1;
+      if (session.completed) {
+        completedMedicationDoses += 1;
+      } else {
+        missedMedicationDoses += 1;
+      }
+    }
+
+    var fluidVolumeTotal = 0.0;
+    var fluidSessionsCount = 0;
+    for (final session in fluidSessions) {
+      fluidVolumeTotal += session.volumeGiven;
+      fluidSessionsCount += 1;
+    }
+
+    return SummaryUpdateDto(
+      medicationDosesDelta: completedMedicationDoses == 0
+          ? null
+          : completedMedicationDoses,
+      medicationScheduledDelta: scheduledMedicationDoses == 0
+          ? null
+          : scheduledMedicationDoses,
+      medicationMissedDelta: missedMedicationDoses == 0
+          ? null
+          : missedMedicationDoses,
+      fluidVolumeDelta: fluidVolumeTotal == 0.0 ? null : fluidVolumeTotal,
+      fluidSessionDelta: fluidSessionsCount == 0 ? null : fluidSessionsCount,
+      fluidTreatmentDone: fluidSessions.isNotEmpty,
+      overallTreatmentDone: true,
+    );
+  }
+
+  /// Commits quick-log sessions in chunks if operation count nears 500 limit.
+  ///
+  /// First batch writes all summaries plus as many sessions as will fit; the
+  /// remaining sessions are written in subsequent batches without summaries.
+  Future<void> _commitQuickLogInChunks({
+    required String userId,
+    required String petId,
+    required List<MedicationSession> medicationSessions,
+    required List<FluidSession> fluidSessions,
+    required DateTime todayDate,
+    required SummaryUpdateDto aggregatedDto,
+  }) async {
+    const maxOps = 500;
+
+    var medIndex = 0;
+    var fluidIndex = 0;
+    var isFirstBatch = true;
+
+    while (medIndex < medicationSessions.length ||
+        fluidIndex < fluidSessions.length ||
+        isFirstBatch) {
+      var ops = 0;
+      final batch = _firestore.batch();
+
+      // Include summaries only in first batch (3 ops)
+      if (isFirstBatch) {
+        final dailyRef = _getDailySummaryRef(userId, petId, todayDate);
+        batch.set(
+          dailyRef,
+          _buildDailySummaryWithIncrements(todayDate, aggregatedDto),
+          SetOptions(merge: true),
+        );
+        ops++;
+
+        final weeklyRef = _getWeeklySummaryRef(userId, petId, todayDate);
+        batch.set(
+          weeklyRef,
+          _buildWeeklySummaryWithIncrements(todayDate, aggregatedDto),
+          SetOptions(merge: true),
+        );
+        ops++;
+
+        final monthlyRef = _getMonthlySummaryRef(userId, petId, todayDate);
+        batch.set(
+          monthlyRef,
+          _buildMonthlySummaryWithIncrements(todayDate, aggregatedDto),
+          SetOptions(merge: true),
+        );
+        ops++;
+      }
+
+      // Add medication sessions until the batch is filled
+      while (ops < maxOps && medIndex < medicationSessions.length) {
+        final s = medicationSessions[medIndex++];
+        final ref = _getMedicationSessionRef(userId, petId, s.id);
+        batch.set(ref, s.toJson());
+        ops++;
+      }
+
+      // Add fluid sessions until the batch is filled
+      while (ops < maxOps && fluidIndex < fluidSessions.length) {
+        final s = fluidSessions[fluidIndex++];
+        final ref = _getFluidSessionRef(userId, petId, s.id);
+        batch.set(ref, s.toJson());
+        ops++;
+      }
+
+      await _executeBatchWrite(
+        batch: batch,
+        operation: isFirstBatch
+            ? 'quickLogAllTreatments:chunk1'
+            : 'quickLogAllTreatments:chunk',
+      );
+
+      // After first batch, summaries should not be written again
+      isFirstBatch = false;
+
+      // Loop continues if there are remaining sessions
+      if (medIndex >= medicationSessions.length &&
+          fluidIndex >= fluidSessions.length) {
+        break;
+      }
+    }
   }
 
   // ============================================

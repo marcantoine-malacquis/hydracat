@@ -123,6 +123,34 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get petGenderRequired => 'Please select your cat\'s gender';
+
+  @override
+  String get petGenderInvalid => 'Gender must be either male or female';
+
+  @override
+  String get petNameRequired => 'Pet name is required';
+
+  @override
+  String get petNameTooLong => 'Pet name must be 50 characters or less';
+
+  @override
+  String get petAgeRequired => 'Pet age is required';
+
+  @override
+  String get petAgeInvalid => 'Pet age must be greater than 0';
+
+  @override
+  String get petAgeUnrealistic => 'Pet age seems unrealistic (over 25 years)';
+
+  @override
+  String get petWeightInvalid => 'Weight must be greater than 0';
+
+  @override
+  String get petWeightUnrealistic =>
+      'Weight seems unrealistic (over 15kg for a cat)';
+
+  @override
   String get medicalInfoTitle => 'Medical Information';
 
   @override

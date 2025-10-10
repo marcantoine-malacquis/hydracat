@@ -137,6 +137,7 @@ class SummaryCacheService {
     required String petId,
     required String medicationName,
     required double dosageGiven,
+    DateTime? dateTime,
   }) async {
     try {
       final today = AppDateUtils.formatDateForSummary(DateTime.now());
@@ -152,8 +153,22 @@ class SummaryCacheService {
         dosageGiven: dosageGiven,
       );
 
+      // Update recent times (bounded to last 8 times per medication)
+      final times = Map<String, List<String>>.from(cache.medicationRecentTimes);
+      final entries = List<String>.from(times[medicationName] ?? const []);
+      final iso = (dateTime ?? DateTime.now()).toIso8601String();
+      entries.add(iso);
+      // Keep latest 8 only
+      final trimmed = entries.length <= 8
+          ? entries
+          : entries.sublist(entries.length - 8, entries.length);
+      times[medicationName] = trimmed;
+      final updatedWithTimes = updatedCache.copyWith(
+        medicationRecentTimes: times,
+      );
+
       // Write to SharedPreferences
-      final cacheJson = await compute(_encodeJson, updatedCache.toJson());
+      final cacheJson = await compute(_encodeJson, updatedWithTimes.toJson());
       await _prefs.setString(cacheKey, cacheJson);
 
       if (kDebugMode) {
@@ -176,6 +191,41 @@ class SummaryCacheService {
         ),
       );
     }
+  }
+
+  /// Get recent log times for a medication (today only)
+  Future<List<DateTime>> getRecentTimesForMedication(
+    String userId,
+    String petId,
+    String medicationName,
+  ) async {
+    final cache = await getTodaySummary(userId, petId);
+    if (cache == null) return const [];
+    final list = cache.medicationRecentTimes[medicationName];
+    if (list == null || list.isEmpty) return const [];
+    return list.map(DateTime.parse).toList()..sort();
+  }
+
+  /// Quick decision helper: is the candidate time within the duplicate window
+  /// of any recent cached time for the medication?
+  Future<bool> isLikelyDuplicate({
+    required String userId,
+    required String petId,
+    required String medicationName,
+    required DateTime candidateTime,
+    Duration window = const Duration(minutes: 15),
+  }) async {
+    final times = await getRecentTimesForMedication(
+      userId,
+      petId,
+      medicationName,
+    );
+    for (final t in times) {
+      if (t.difference(candidateTime).abs() <= window) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// Update cache with new fluid session data

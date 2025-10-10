@@ -173,6 +173,13 @@ class CatProfile {
       }
     }
 
+    // Gender validation (required)
+    if (gender == null || gender!.isEmpty) {
+      errors.add('Gender is required');
+    } else if (gender != 'male' && gender != 'female') {
+      errors.add('Gender must be either male or female');
+    }
+
     // Medical info validation
     errors.addAll(medicalInfo.validate());
 

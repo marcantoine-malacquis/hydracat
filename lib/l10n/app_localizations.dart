@@ -310,6 +310,60 @@ abstract class AppLocalizations {
   /// **'Error saving pet information: {error}'**
   String errorSavingPetInfo(String error);
 
+  /// Error message when gender is not selected
+  ///
+  /// In en, this message translates to:
+  /// **'Please select your cat\'s gender'**
+  String get petGenderRequired;
+
+  /// Error message when gender value is invalid
+  ///
+  /// In en, this message translates to:
+  /// **'Gender must be either male or female'**
+  String get petGenderInvalid;
+
+  /// Error message when pet name is not provided
+  ///
+  /// In en, this message translates to:
+  /// **'Pet name is required'**
+  String get petNameRequired;
+
+  /// Error message when pet name exceeds maximum length
+  ///
+  /// In en, this message translates to:
+  /// **'Pet name must be 50 characters or less'**
+  String get petNameTooLong;
+
+  /// Error message when pet age is not provided
+  ///
+  /// In en, this message translates to:
+  /// **'Pet age is required'**
+  String get petAgeRequired;
+
+  /// Error message when pet age is invalid
+  ///
+  /// In en, this message translates to:
+  /// **'Pet age must be greater than 0'**
+  String get petAgeInvalid;
+
+  /// Error message when pet age seems too high
+  ///
+  /// In en, this message translates to:
+  /// **'Pet age seems unrealistic (over 25 years)'**
+  String get petAgeUnrealistic;
+
+  /// Error message when weight is invalid
+  ///
+  /// In en, this message translates to:
+  /// **'Weight must be greater than 0'**
+  String get petWeightInvalid;
+
+  /// Error message when weight seems too high for a cat
+  ///
+  /// In en, this message translates to:
+  /// **'Weight seems unrealistic (over 15kg for a cat)'**
+  String get petWeightUnrealistic;
+
   /// No description provided for @medicalInfoTitle.
   ///
   /// In en, this message translates to:

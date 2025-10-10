@@ -84,32 +84,51 @@ class MonthlySummary extends TreatmentSummaryBase {
   ///
   /// Handles Firestore Timestamp conversion for all DateTime fields.
   factory MonthlySummary.fromJson(Map<String, dynamic> json) {
+    bool asBool(dynamic value) {
+      if (value is bool) return value;
+      if (value is num) return value != 0;
+      if (value is String) {
+        final v = value.toLowerCase();
+        if (v == 'true' || v == '1') return true;
+        if (v == 'false' || v == '0') return false;
+      }
+      return false;
+    }
+
     return MonthlySummary(
       startDate: TreatmentSummaryBase.parseDateTime(json['startDate']),
       endDate: TreatmentSummaryBase.parseDateTime(json['endDate']),
-      fluidTreatmentDays: json['fluidTreatmentDays'] as int,
-      fluidMissedDays: json['fluidMissedDays'] as int,
-      fluidLongestStreak: json['fluidLongestStreak'] as int,
-      fluidCurrentStreak: json['fluidCurrentStreak'] as int,
+      fluidTreatmentDays: (json['fluidTreatmentDays'] as num?)?.toInt() ?? 0,
+      fluidMissedDays: (json['fluidMissedDays'] as num?)?.toInt() ?? 0,
+      fluidLongestStreak: (json['fluidLongestStreak'] as num?)?.toInt() ?? 0,
+      fluidCurrentStreak: (json['fluidCurrentStreak'] as num?)?.toInt() ?? 0,
       medicationMonthlyAdherence:
-          (json['medicationMonthlyAdherence'] as num).toDouble(),
-      medicationLongestStreak: json['medicationLongestStreak'] as int,
-      medicationCurrentStreak: json['medicationCurrentStreak'] as int,
-      overallTreatmentDays: json['overallTreatmentDays'] as int,
-      overallMissedDays: json['overallMissedDays'] as int,
-      overallLongestStreak: json['overallLongestStreak'] as int,
-      overallCurrentStreak: json['overallCurrentStreak'] as int,
-      medicationTotalDoses: json['medicationTotalDoses'] as int,
-      medicationScheduledDoses: json['medicationScheduledDoses'] as int,
-      medicationMissedCount: json['medicationMissedCount'] as int,
-      fluidTotalVolume: (json['fluidTotalVolume'] as num).toDouble(),
-      fluidTreatmentDone: json['fluidTreatmentDone'] as bool,
-      fluidSessionCount: json['fluidSessionCount'] as int,
-      overallTreatmentDone: json['overallTreatmentDone'] as bool,
-      createdAt: TreatmentSummaryBase.parseDateTime(json['createdAt']),
-      updatedAt: json['updatedAt'] != null
-          ? TreatmentSummaryBase.parseDateTime(json['updatedAt'])
-          : null,
+          (json['medicationMonthlyAdherence'] as num?)?.toDouble() ?? 0.0,
+      medicationLongestStreak:
+          (json['medicationLongestStreak'] as num?)?.toInt() ?? 0,
+      medicationCurrentStreak:
+          (json['medicationCurrentStreak'] as num?)?.toInt() ?? 0,
+      overallTreatmentDays:
+          (json['overallTreatmentDays'] as num?)?.toInt() ?? 0,
+      overallMissedDays: (json['overallMissedDays'] as num?)?.toInt() ?? 0,
+      overallLongestStreak:
+          (json['overallLongestStreak'] as num?)?.toInt() ?? 0,
+      overallCurrentStreak:
+          (json['overallCurrentStreak'] as num?)?.toInt() ?? 0,
+      medicationTotalDoses:
+          (json['medicationTotalDoses'] as num?)?.toInt() ?? 0,
+      medicationScheduledDoses:
+          (json['medicationScheduledDoses'] as num?)?.toInt() ?? 0,
+      medicationMissedCount:
+          (json['medicationMissedCount'] as num?)?.toInt() ?? 0,
+      fluidTotalVolume: (json['fluidTotalVolume'] as num?)?.toDouble() ?? 0.0,
+      fluidTreatmentDone: asBool(json['fluidTreatmentDone']),
+      fluidSessionCount: (json['fluidSessionCount'] as num?)?.toInt() ?? 0,
+      overallTreatmentDone: asBool(json['overallTreatmentDone']),
+      createdAt:
+          TreatmentSummaryBase.parseDateTimeNullable(json['createdAt']) ??
+          DateTime.now(),
+      updatedAt: TreatmentSummaryBase.parseDateTimeNullable(json['updatedAt']),
     );
   }
 
@@ -244,8 +263,7 @@ class MonthlySummary extends TreatmentSummaryBase {
     }
 
     // Month validation (both dates must be in same month)
-    if (startDate.year != endDate.year ||
-        startDate.month != endDate.month) {
+    if (startDate.year != endDate.year || startDate.month != endDate.month) {
       errors.add('Start and end dates must be in the same month');
     }
 
@@ -303,8 +321,7 @@ class MonthlySummary extends TreatmentSummaryBase {
     }
 
     // Adherence validation
-    if (medicationMonthlyAdherence < 0.0 ||
-        medicationMonthlyAdherence > 1.0) {
+    if (medicationMonthlyAdherence < 0.0 || medicationMonthlyAdherence > 1.0) {
       errors.add(
         'Medication monthly adherence must be between 0.0 and 1.0',
       );
@@ -351,15 +368,11 @@ class MonthlySummary extends TreatmentSummaryBase {
           medicationLongestStreak ?? this.medicationLongestStreak,
       medicationCurrentStreak:
           medicationCurrentStreak ?? this.medicationCurrentStreak,
-      overallTreatmentDays:
-          overallTreatmentDays ?? this.overallTreatmentDays,
+      overallTreatmentDays: overallTreatmentDays ?? this.overallTreatmentDays,
       overallMissedDays: overallMissedDays ?? this.overallMissedDays,
-      overallLongestStreak:
-          overallLongestStreak ?? this.overallLongestStreak,
-      overallCurrentStreak:
-          overallCurrentStreak ?? this.overallCurrentStreak,
-      medicationTotalDoses:
-          medicationTotalDoses ?? this.medicationTotalDoses,
+      overallLongestStreak: overallLongestStreak ?? this.overallLongestStreak,
+      overallCurrentStreak: overallCurrentStreak ?? this.overallCurrentStreak,
+      medicationTotalDoses: medicationTotalDoses ?? this.medicationTotalDoses,
       medicationScheduledDoses:
           medicationScheduledDoses ?? this.medicationScheduledDoses,
       medicationMissedCount:
@@ -367,8 +380,7 @@ class MonthlySummary extends TreatmentSummaryBase {
       fluidTotalVolume: fluidTotalVolume ?? this.fluidTotalVolume,
       fluidTreatmentDone: fluidTreatmentDone ?? this.fluidTreatmentDone,
       fluidSessionCount: fluidSessionCount ?? this.fluidSessionCount,
-      overallTreatmentDone:
-          overallTreatmentDone ?? this.overallTreatmentDone,
+      overallTreatmentDone: overallTreatmentDone ?? this.overallTreatmentDone,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

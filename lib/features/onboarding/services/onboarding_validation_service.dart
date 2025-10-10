@@ -91,6 +91,24 @@ class OnboardingValidationService {
       );
     }
 
+    // Gender validation (required)
+    if (data.petGender == null || data.petGender!.isEmpty) {
+      errors.add(
+        const ValidationError(
+          message: "Please select your cat's gender",
+          fieldName: 'petGender',
+        ),
+      );
+    } else if (data.petGender != 'male' && data.petGender != 'female') {
+      errors.add(
+        const ValidationError(
+          message: 'Gender must be either male or female',
+          fieldName: 'petGender',
+          type: ValidationErrorType.invalid,
+        ),
+      );
+    }
+
     // Weight validation (optional but must be valid if provided)
     if (data.petWeightKg != null) {
       if (data.petWeightKg! <= 0) {

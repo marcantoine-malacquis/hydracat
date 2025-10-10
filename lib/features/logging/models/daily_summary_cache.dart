@@ -20,7 +20,8 @@ class DailySummaryCache {
     required this.medicationNames,
     required this.totalMedicationDosesGiven,
     required this.totalFluidVolumeGiven,
-  });
+    Map<String, List<String>>? medicationRecentTimes,
+  }) : medicationRecentTimes = medicationRecentTimes ?? const {};
 
   /// Creates an empty cache for the given date
   ///
@@ -34,6 +35,7 @@ class DailySummaryCache {
       medicationNames: const [],
       totalMedicationDosesGiven: 0,
       totalFluidVolumeGiven: 0,
+      medicationRecentTimes: const {},
     );
   }
 
@@ -46,10 +48,17 @@ class DailySummaryCache {
       medicationNames: (json['medicationNames'] as List<dynamic>)
           .map((e) => e as String)
           .toList(),
-      totalMedicationDosesGiven:
-          (json['totalMedicationDosesGiven'] as num).toDouble(),
-      totalFluidVolumeGiven:
-          (json['totalFluidVolumeGiven'] as num).toDouble(),
+      totalMedicationDosesGiven: (json['totalMedicationDosesGiven'] as num)
+          .toDouble(),
+      totalFluidVolumeGiven: (json['totalFluidVolumeGiven'] as num).toDouble(),
+      medicationRecentTimes:
+          (json['medicationRecentTimes'] as Map<String, dynamic>?)?.map(
+            (key, value) => MapEntry(
+              key,
+              (value as List).map((e) => e as String).toList(),
+            ),
+          ) ??
+          const {},
     );
   }
 
@@ -92,6 +101,12 @@ class DailySummaryCache {
   /// Used for home screen adherence display. This is the sum of all
   /// `volumeGiven` values from today's fluid therapy sessions.
   final double totalFluidVolumeGiven;
+
+  /// Recent log times per medication name for today (ISO strings)
+  ///
+  /// Used for zero-read duplicate detection. This is an ephemeral cache for
+  /// the current day only and is pruned at midnight by the cache service.
+  final Map<String, List<String>> medicationRecentTimes;
 
   // Domain validation and queries
 
@@ -169,10 +184,11 @@ class DailySummaryCache {
       medicationSessionCount: medicationName != null
           ? medicationSessionCount + 1
           : medicationSessionCount,
-      fluidSessionCount:
-          volumeGiven != null ? fluidSessionCount + 1 : fluidSessionCount,
-      medicationNames: medicationName != null &&
-              !medicationNames.contains(medicationName)
+      fluidSessionCount: volumeGiven != null
+          ? fluidSessionCount + 1
+          : fluidSessionCount,
+      medicationNames:
+          medicationName != null && !medicationNames.contains(medicationName)
           ? [...medicationNames, medicationName]
           : medicationNames,
       totalMedicationDosesGiven:
@@ -192,6 +208,7 @@ class DailySummaryCache {
     List<String>? medicationNames,
     double? totalMedicationDosesGiven,
     double? totalFluidVolumeGiven,
+    Map<String, List<String>>? medicationRecentTimes,
   }) {
     return DailySummaryCache(
       date: date ?? this.date,
@@ -203,6 +220,8 @@ class DailySummaryCache {
           totalMedicationDosesGiven ?? this.totalMedicationDosesGiven,
       totalFluidVolumeGiven:
           totalFluidVolumeGiven ?? this.totalFluidVolumeGiven,
+      medicationRecentTimes:
+          medicationRecentTimes ?? this.medicationRecentTimes,
     );
   }
 
@@ -210,13 +229,14 @@ class DailySummaryCache {
 
   /// Converts [DailySummaryCache] to JSON for SharedPreferences storage
   Map<String, dynamic> toJson() => {
-        'date': date,
-        'medicationSessionCount': medicationSessionCount,
-        'fluidSessionCount': fluidSessionCount,
-        'medicationNames': medicationNames,
-        'totalMedicationDosesGiven': totalMedicationDosesGiven,
-        'totalFluidVolumeGiven': totalFluidVolumeGiven,
-      };
+    'date': date,
+    'medicationSessionCount': medicationSessionCount,
+    'fluidSessionCount': fluidSessionCount,
+    'medicationNames': medicationNames,
+    'totalMedicationDosesGiven': totalMedicationDosesGiven,
+    'totalFluidVolumeGiven': totalFluidVolumeGiven,
+    'medicationRecentTimes': medicationRecentTimes,
+  };
 
   @override
   bool operator ==(Object other) {
