@@ -24,6 +24,7 @@ Don't try to run the app yourself to test. Just tell me when it's needed and I w
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
 
+I just finished creating the Implementation plan for the home screen dashboard in @dashboard_plan.md . I want it to include the 
 
 
 
