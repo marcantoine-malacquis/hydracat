@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/core/utils/dosage_text_utils.dart';
+import 'package:hydracat/core/utils/medication_unit_utils.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/shared/models/schedule_dto.dart';
 
@@ -163,7 +164,7 @@ class Schedule {
       final dosageText = targetDosage != null && medicationUnit != null
           ? DosageTextUtils.formatDosageWithUnit(
               targetDosage!,
-              _getShortForm(medicationUnit!),
+              MedicationUnitUtils.shortForm(medicationUnit!),
             )
           : '';
       return '$dosageText $medicationName '
@@ -172,24 +173,7 @@ class Schedule {
     return frequency.displayName;
   }
 
-  /// Get short form of medication unit
-  String _getShortForm(String unit) {
-    return switch (unit) {
-      'ampoules' => 'ampoule',
-      'capsules' => 'capsule',
-      'drops' => 'drop',
-      'injections' => 'injection',
-      'micrograms' => 'mcg',
-      'milligrams' => 'mg',
-      'milliliters' => 'ml',
-      'pills' => 'pill',
-      'portions' => 'portion',
-      'sachets' => 'sachet',
-      'tablespoon' => 'tbsp',
-      'teaspoon' => 'tsp',
-      _ => unit,
-    };
-  }
+  // Unit short-form logic centralized in MedicationUnitUtils
 
   /// Whether this schedule has valid data
   bool get isValid {
@@ -406,35 +390,65 @@ extension ScheduleDateHelpers on Schedule {
   /// - true if at least one reminder time is for today
   /// - false if no reminder times match today's date
   bool hasReminderTimeToday(DateTime now) {
-    return hasReminderOnDate(now);
+    // Treat reminderTimes as recurring time-of-day values.
+    // For daily frequencies, times repeat every day.
+    // For everyOtherDay/every3Days, use createdAt as the anchor day.
+    return todaysReminderTimes(now).isNotEmpty;
   }
 
   /// Returns true if at least one reminder falls on the provided [date].
   /// Normalizes comparisons using [AppDateUtils.startOfDay] to avoid drift.
   bool hasReminderOnDate(DateTime date) {
-    final day = AppDateUtils.startOfDay(date);
-    for (final reminder in reminderTimes) {
-      if (AppDateUtils.startOfDay(reminder).isAtSameMomentAs(day)) {
-        return true;
-      }
-    }
-    return false;
+    return reminderTimesOnDate(date).isNotEmpty;
   }
 
   /// Returns all reminder times that fall on the provided [date].
   /// Normalizes comparisons using [AppDateUtils.startOfDay].
   Iterable<DateTime> reminderTimesOnDate(DateTime date) sync* {
+    // Skip if this schedule is not active on the given day per frequency
+    if (!_isActiveOnDate(date)) return;
+
+    // Generate today's datetimes using stored time-of-day components
     final day = AppDateUtils.startOfDay(date);
     for (final reminder in reminderTimes) {
-      if (AppDateUtils.startOfDay(reminder).isAtSameMomentAs(day)) {
-        yield reminder;
-      }
+      yield DateTime(
+        day.year,
+        day.month,
+        day.day,
+        reminder.hour,
+        reminder.minute,
+        reminder.second,
+        reminder.millisecond,
+        reminder.microsecond,
+      );
     }
   }
 
   /// Convenience wrapper to get today's reminder times based on [now].
   Iterable<DateTime> todaysReminderTimes(DateTime now) =>
       reminderTimesOnDate(now);
+
+  /// Whether this schedule should be considered active on the specified date
+  /// based on its [frequency]. For non-daily frequencies, we anchor the
+  /// cadence to the schedule's [createdAt] day.
+  bool _isActiveOnDate(DateTime date) {
+    switch (frequency) {
+      case TreatmentFrequency.onceDaily:
+      case TreatmentFrequency.twiceDaily:
+      case TreatmentFrequency.thriceDaily:
+        return true; // repeats every day
+      case TreatmentFrequency.everyOtherDay:
+        final createdDay = AppDateUtils.startOfDay(createdAt);
+        final targetDay = AppDateUtils.startOfDay(date);
+        final diff = targetDay.difference(createdDay).inDays;
+        return diff >= 0 && diff.isEven;
+      case TreatmentFrequency.every3Days:
+        final createdDay = AppDateUtils.startOfDay(createdAt);
+        final targetDay = AppDateUtils.startOfDay(date);
+        final diff = targetDay.difference(createdDay).inDays;
+        return diff >= 0 && diff % 3 == 0;
+    }
+  }
 }
 
 /// Extension for medication display helpers

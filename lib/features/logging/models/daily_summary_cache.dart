@@ -151,6 +151,46 @@ class DailySummaryCache {
   /// medication quick-log button.
   bool get hasMedicationSession => medicationSessionCount > 0;
 
+  /// Check if medication has been logged within time window of scheduled time
+  ///
+  /// Used for dashboard completion detection with ±2h window.
+  /// Returns true if any session for this medication exists within ±2h
+  /// of the target scheduled time.
+  ///
+  /// Example:
+  /// ```dart
+  /// final cache = DailySummaryCache(...);
+  /// final scheduledTime = DateTime(2025, 10, 13, 8, 0); // 8:00 AM
+  /// cache.hasMedicationLoggedNear('Amlodipine', scheduledTime);
+  /// // Returns true if logged between 6:00 AM - 10:00 AM
+  /// ```
+  bool hasMedicationLoggedNear(String medicationName, DateTime scheduledTime) {
+    // Check if medication logged today at all
+    if (!medicationNames.contains(medicationName)) {
+      return false;
+    }
+
+    // Check recent times for this medication
+    final recentTimes = medicationRecentTimes[medicationName];
+    if (recentTimes == null || recentTimes.isEmpty) {
+      return false;
+    }
+
+    // Check if any logged time is within ±2 hours of scheduled time
+    const timeWindow = Duration(hours: 2);
+
+    for (final timeStr in recentTimes) {
+      final loggedTime = DateTime.parse(timeStr);
+      final difference = loggedTime.difference(scheduledTime).abs();
+
+      if (difference <= timeWindow) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   // Immutability support
 
   /// Creates a copy with updated session data
@@ -271,7 +311,8 @@ class DailySummaryCache {
         'fluidSessionCount: $fluidSessionCount, '
         'medicationNames: $medicationNames, '
         'totalMedicationDosesGiven: $totalMedicationDosesGiven, '
-        'totalFluidVolumeGiven: $totalFluidVolumeGiven'
+        'totalFluidVolumeGiven: $totalFluidVolumeGiven, '
+        'medicationRecentTimes: $medicationRecentTimes'
         ')';
   }
 }

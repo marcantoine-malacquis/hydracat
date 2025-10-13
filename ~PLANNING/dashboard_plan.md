@@ -121,6 +121,20 @@ ProfileProvider (schedules) + DailySummaryCache (logged sessions)
 
 #### 2. Schedule Matching Logic
 
+##### Recurring schedule logic (Fix)
+- Previous drafts compared the full date of `reminderTimes` with today. Because
+  those stored values often carry the schedule's creation date, this caused
+  “no schedules today” and the dashboard to show the success state.
+- We now treat `reminderTimes` as time-of-day values that repeat:
+  - Daily/2x/3x: repeat every day
+  - Every other day / every 3 days: repeat anchored to `createdAt` (even/third
+    day cadence)
+- Helpers in `ScheduleDateHelpers`:
+  - `hasReminderTimeToday(now)`
+  - `todaysReminderTimes(now)`
+  - Internally builds today’s DateTime for each stored time-of-day and applies
+    frequency rules.
+
 **Medications** (Name + Time Window):
 ```dart
 bool isMedicationCompleted(Schedule schedule, DateTime reminderTime, DailySummaryCache cache) {
@@ -144,11 +158,8 @@ double calculateRemainingFluidVolume(
   DailySummaryCache cache,
   DateTime now,
 ) {
-  // Step 1: Count only today's planned sessions
-  final today = DateTime(now.year, now.month, now.day);
-  final sessionsToday = schedule.reminderTimes.where((t) =>
-    DateTime(t.year, t.month, t.day).isAtSameMomentAs(today),
-  ).length;
+  // Step 1: Count only today's planned sessions (recurring time-of-day)
+  final sessionsToday = schedule.todaysReminderTimes(now).length;
 
   // Step 2: Calculate total scheduled volume for today
   final perSession = schedule.targetVolume ?? 0.0;
@@ -237,7 +248,8 @@ class DashboardNotifier extends _$DashboardNotifier {
     // Calculate pending medications
     final pendingMeds = <PendingTreatment>[];
     for (final schedule in todaysSchedules.where((s) => s.isMedication)) {
-      for (final reminderTime in schedule.reminderTimes) {
+      // Use recurring helper to get today's times
+      for (final reminderTime in schedule.todaysReminderTimes(now)) {
         if (!_isMedicationCompleted(schedule, reminderTime, cache)) {
           pendingMeds.add(PendingTreatment(
             schedule: schedule,
@@ -257,8 +269,11 @@ class DashboardNotifier extends _$DashboardNotifier {
         pendingFluid = PendingFluidTreatment(
           schedule: fluidSchedule,
           remainingVolume: remaining,
-          scheduledTimes: fluidSchedule.reminderTimes,
-          hasOverdueTimes: fluidSchedule.reminderTimes.any((t) => _isOverdue(t, now)),
+          // Today's recurring times for display/overdue checks
+          scheduledTimes: fluidSchedule.todaysReminderTimes(now).toList(),
+          hasOverdueTimes: fluidSchedule
+              .todaysReminderTimes(now)
+              .any((t) => _isOverdue(t, now)),
         );
       }
     }
@@ -650,9 +665,9 @@ analytics.logEvent(
 ## Implementation Checklist
 
 ### Phase 1: Data Layer 
-- [ ] Create `PendingTreatment` model
-- [ ] Create `PendingFluidTreatment` model
-- [ ] Create `DashboardState` model
+- [x] Create `PendingTreatment` model
+- [x] Create `PendingFluidTreatment` model
+- [x] Create `DashboardState` model
 - [ ] Extend `DailySummaryCache` with `hasMedicationLoggedNear()`
 - [ ] Update `SummaryCacheService` to populate `medicationRecentTimes`
 - [ ] Create `DashboardProvider` with zero-read logic
