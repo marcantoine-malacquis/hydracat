@@ -67,6 +67,52 @@ class LoggingValidationService {
     required List<MedicationSession> recentSessions,
     Duration timeWindow = const Duration(minutes: 15),
   }) {
+    final duplicate = findDuplicateSession(
+      newSession: newSession,
+      recentSessions: recentSessions,
+      timeWindow: timeWindow,
+    );
+
+    if (duplicate != null) {
+      return ValidationResult.failure([
+        ValidationError(
+          message:
+              "You've already logged ${newSession.medicationName} today. "
+              'Would you like to update it instead?',
+          fieldName: 'medication',
+          type: ValidationErrorType.duplicate,
+        ),
+      ]);
+    }
+
+    return const ValidationResult.success();
+  }
+
+  /// Finds duplicate medication session if one exists
+  ///
+  /// Returns the existing session that conflicts with the new session,
+  /// or null if no duplicate found.
+  ///
+  /// Duplicate criteria:
+  /// - Same medication name (case-sensitive exact match)
+  /// - Within specified time window (default ±15 minutes)
+  ///
+  /// Example:
+  /// ```dart
+  /// final duplicate = validationService.findDuplicateSession(
+  ///   newSession: medicationSession,
+  ///   recentSessions: todaysSessions,
+  /// );
+  ///
+  /// if (duplicate != null) {
+  ///   // Handle duplicate - show update dialog
+  /// }
+  /// ```
+  MedicationSession? findDuplicateSession({
+    required MedicationSession newSession,
+    required List<MedicationSession> recentSessions,
+    Duration timeWindow = const Duration(minutes: 15),
+  }) {
     for (final existing in recentSessions) {
       // Same medication name (case-sensitive exact match)
       if (existing.medicationName != newSession.medicationName) continue;
@@ -74,20 +120,11 @@ class LoggingValidationService {
       // Within time window
       final timeDiff = existing.dateTime.difference(newSession.dateTime).abs();
       if (timeDiff <= timeWindow) {
-        // Duplicate found
-        return ValidationResult.failure([
-          ValidationError(
-            message:
-                "You've already logged ${newSession.medicationName} today. "
-                'Would you like to update it instead?',
-            fieldName: 'medication',
-            type: ValidationErrorType.duplicate,
-          ),
-        ]);
+        return existing; // Duplicate found
       }
     }
 
-    return const ValidationResult.success();
+    return null; // No duplicate
   }
 
   // ============================================
@@ -421,11 +458,20 @@ class LoggingValidationService {
   /// Handles conversion from ValidationResult errors to specific
   /// LoggingException subclasses based on error type.
   ///
+  /// Parameters:
+  /// - [result]: The validation result to convert
+  /// - [duplicateSession]: Optional duplicate session for context
+  ///  (when converting duplicate errors)
+  ///
   /// Example:
   /// ```dart
-  /// final result = validationService.validateMedicationSession(session);
+  /// final result = validationService.validateForDuplicates(...);
   /// if (!result.isValid) {
-  ///   throw validationService.toLoggingException(result);
+  ///   final duplicate = validationService.findDuplicateSession(...);
+  ///   throw validationService.toLoggingException(
+  ///     result,
+  ///     duplicateSession: duplicate,
+  ///   );
   /// }
   /// ```
   ///
@@ -433,7 +479,10 @@ class LoggingValidationService {
   /// - [ArgumentError]: If called with valid ValidationResult
   /// - [DuplicateSessionException]: If duplicate error detected
   /// - [SessionValidationException]: For general validation failures
-  LoggingException toLoggingException(ValidationResult result) {
+  LoggingException toLoggingException(
+    ValidationResult result, {
+    MedicationSession? duplicateSession,
+  }) {
     if (result.isValid) {
       throw ArgumentError('Cannot create exception from valid result');
     }
@@ -443,24 +492,10 @@ class LoggingValidationService {
       ValidationErrorType.duplicate,
     );
     if (duplicateErrors.isNotEmpty) {
-      // Extract medication name from error message if available
-      final errorMessage = duplicateErrors.first.message;
-      String? medicationName;
-
-      // Try to extract medication name from error message
-      // Message format: "You've already logged {name} today..."
-      final match = RegExp(
-        "You've already logged (.+?) today",
-      ).firstMatch(errorMessage);
-      if (match != null && match.groupCount >= 1) {
-        medicationName = match.group(1);
-      }
-
       return DuplicateSessionException(
         sessionType: 'medication',
-        conflictingTime:
-            DateTime.now(), // Approximate - would need to pass actual time
-        medicationName: medicationName,
+        conflictingTime: duplicateSession?.dateTime ?? DateTime.now(),
+        medicationName: duplicateSession?.medicationName,
       );
     }
 

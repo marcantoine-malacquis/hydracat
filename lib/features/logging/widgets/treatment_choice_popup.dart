@@ -4,6 +4,7 @@ import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/features/logging/models/treatment_choice.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
@@ -51,6 +52,7 @@ class TreatmentChoicePopup extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final mediaQuery = MediaQuery.of(context);
 
     return PopScope(
@@ -65,7 +67,7 @@ class TreatmentChoicePopup extends ConsumerWidget {
         child: Material(
           type: MaterialType.transparency,
           child: Semantics(
-            label: 'Choose treatment type to log',
+            label: l10n.treatmentChoiceSemanticLabel,
             child: Container(
               margin: EdgeInsets.only(
                 left: AppSpacing.md,
@@ -99,7 +101,7 @@ class TreatmentChoicePopup extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.md),
                     child: Text(
-                      'Add one-time entry',
+                      l10n.treatmentChoiceTitle,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -108,8 +110,8 @@ class TreatmentChoicePopup extends ConsumerWidget {
 
                   // Medication button
                   Semantics(
-                    label: 'Log medication',
-                    hint: 'Opens medication logging form to record treatment',
+                    label: l10n.treatmentChoiceMedicationLabel,
+                    hint: l10n.treatmentChoiceMedicationHint,
                     button: true,
                     child: _TreatmentChoiceButton(
                       icon: AppIcons.medication,
@@ -140,10 +142,8 @@ class TreatmentChoicePopup extends ConsumerWidget {
 
                   // Fluid therapy button
                   Semantics(
-                    label: 'Log fluid therapy',
-                    hint:
-                        'Opens fluid therapy logging form to record '
-                        'subcutaneous fluids',
+                    label: l10n.treatmentChoiceFluidLabel,
+                    hint: l10n.treatmentChoiceFluidHint,
                     button: true,
                     child: _TreatmentChoiceButton(
                       icon: AppIcons.fluidTherapy,
@@ -170,8 +170,8 @@ class TreatmentChoicePopup extends ConsumerWidget {
 
                   // Cancel button
                   Semantics(
-                    label: 'Cancel',
-                    hint: 'Closes treatment selection without logging',
+                    label: l10n.cancel,
+                    hint: l10n.treatmentChoiceCancelSemantic,
                     button: true,
                     child: _CancelButton(
                       onTap: () {
@@ -265,6 +265,7 @@ class _CancelButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return InkWell(
       onTap: onTap,
@@ -292,7 +293,7 @@ class _CancelButton extends StatelessWidget {
         ),
         child: Center(
           child: Text(
-            'Cancel',
+            l10n.cancel,
             style: theme.textTheme.titleMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,

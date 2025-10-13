@@ -1,6 +1,8 @@
 /// Exceptions for treatment logging operations
 library;
 
+import 'package:hydracat/l10n/app_localizations.dart';
+
 /// Base exception for all logging operations
 ///
 /// Provides common interface for all logging-related errors with optional
@@ -15,11 +17,16 @@ class LoggingException implements Exception {
   /// Optional error code for programmatic handling
   final String? code;
 
-  /// User-friendly message for display in UI
+  /// User-friendly message for display in UI (English fallback)
   ///
-  /// Override this in subclasses to provide context-specific messages
-  /// with empathetic, caregiver tone.
+  /// Use [getUserMessage] when AppLocalizations is available for localization.
   String get userMessage => 'Something went wrong. Please try again.';
+
+  /// User-friendly localized message for display in UI
+  ///
+  /// Override this in subclasses to provide context-specific localized messages
+  /// with empathetic, caregiver tone.
+  String getUserMessage(AppLocalizations l10n) => l10n.errorGeneric;
 
   @override
   String toString() =>
@@ -67,10 +74,12 @@ class DuplicateSessionException extends LoggingException {
   final dynamic existingSession;
 
   @override
-  String get userMessage {
-    return "You've already logged this treatment today. "
-        'Would you like to update it instead?';
-  }
+  String get userMessage =>
+      "You've already logged this treatment today. "
+      'Would you like to update it instead?';
+
+  @override
+  String getUserMessage(AppLocalizations l10n) => l10n.errorDuplicateSession;
 
   @override
   String toString() {
@@ -101,15 +110,18 @@ class SessionValidationException extends LoggingException {
   /// List of validation error messages
   final List<String> validationErrors;
 
-  /// User-friendly message (shows first error only)
-  ///
-  /// Validation errors are already formatted with empathetic tone,
-  /// so we return the first one directly. If list is empty, provides
-  /// a generic helpful message.
   @override
   String get userMessage {
     if (validationErrors.isEmpty) {
       return 'Please check your entries and try again.';
+    }
+    return validationErrors.first;
+  }
+
+  @override
+  String getUserMessage(AppLocalizations l10n) {
+    if (validationErrors.isEmpty) {
+      return l10n.errorValidationGeneric;
     }
     return validationErrors.first;
   }
@@ -136,6 +148,9 @@ class ScheduleMatchException extends LoggingException {
   @override
   String get userMessage =>
       "We couldn't find a matching schedule. Logging as a one-time entry.";
+
+  @override
+  String getUserMessage(AppLocalizations l10n) => l10n.errorScheduleNotFound;
 }
 
 /// Thrown when Firestore batch write operation fails
@@ -159,10 +174,12 @@ class BatchWriteException extends LoggingException {
   final String operation;
 
   @override
-  String get userMessage {
-    return 'Unable to save right now. Your data is saved offline and will '
-        'sync automatically.';
-  }
+  String get userMessage =>
+      'Unable to save right now. Your data is saved offline and will '
+      'sync automatically.';
+
+  @override
+  String getUserMessage(AppLocalizations l10n) => l10n.errorOffline;
 
   @override
   String toString() => message;
@@ -174,9 +191,11 @@ class OfflineLoggingException extends LoggingException {
   const OfflineLoggingException() : super('Operation queued for sync');
 
   @override
-  String get userMessage {
-    return 'Logged successfully! Will sync when you are back online.';
-  }
+  String get userMessage =>
+      'Logged successfully! Will sync when you are back online.';
+
+  @override
+  String getUserMessage(AppLocalizations l10n) => l10n.successOfflineLogged;
 }
 
 /// Thrown when sync operation fails after retries
@@ -197,6 +216,11 @@ class SyncFailedException extends LoggingException {
     return '$operationCount treatment$plural could not sync. '
         'Check your connection and tap retry.';
   }
+
+  @override
+  String getUserMessage(AppLocalizations l10n) {
+    return l10n.errorSyncFailed(operationCount);
+  }
 }
 
 /// Thrown when offline queue reaches soft warning threshold (50 items)
@@ -213,6 +237,11 @@ class QueueWarningException extends LoggingException {
     return 'You have $queueSize treatments waiting to sync. '
         'Connect to internet soon to avoid data loss.';
   }
+
+  @override
+  String getUserMessage(AppLocalizations l10n) {
+    return l10n.warningQueueSize(queueSize);
+  }
 }
 
 /// Thrown when offline queue reaches hard limit (200 items)
@@ -227,5 +256,10 @@ class QueueFullException extends LoggingException {
   String get userMessage {
     return 'Too many treatments waiting to sync ($queueSize). '
         'Please connect to internet to free up space.';
+  }
+
+  @override
+  String getUserMessage(AppLocalizations l10n) {
+    return l10n.errorQueueFull(queueSize);
   }
 }

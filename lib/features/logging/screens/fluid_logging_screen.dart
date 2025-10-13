@@ -159,27 +159,28 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
   /// Validate volume input
   void _validateVolume() {
     final text = _volumeController.text.trim();
+    final l10n = AppLocalizations.of(context)!;
 
     setState(() {
       if (text.isEmpty) {
-        _volumeError = 'Volume is required';
+        _volumeError = l10n.fluidVolumeRequired;
         return;
       }
 
       final volume = double.tryParse(text);
 
       if (volume == null) {
-        _volumeError = 'Please enter a valid number';
+        _volumeError = l10n.fluidVolumeInvalid;
         return;
       }
 
       if (volume < 1) {
-        _volumeError = 'Volume must be at least 1ml';
+        _volumeError = l10n.fluidVolumeMin;
         return;
       }
 
       if (volume > 500) {
-        _volumeError = 'Volume must be 500ml or less';
+        _volumeError = l10n.fluidVolumeMax;
         return;
       }
 
@@ -210,9 +211,10 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
       final user = ref.read(currentUserProvider);
       final pet = ref.read(primaryPetProvider);
       final fluidSchedule = ref.read(fluidScheduleProvider);
+      final l10n = AppLocalizations.of(context)!;
 
       if (user == null || pet == null) {
-        _showError('User or pet not found. Please try again.');
+        _showError(l10n.loggingUserNotFound);
         return;
       }
 
@@ -319,13 +321,13 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
     });
 
     return LoggingPopupWrapper(
-      title: 'Log Fluid Session',
+      title: l10n.fluidLoggingTitle,
       onDismiss: () {
         ref.read(loggingProvider.notifier).reset();
       },
       child: LoadingOverlay(
         state: _loadingState,
-        loadingMessage: 'Logging fluid session',
+        loadingMessage: l10n.fluidLoggingLoadingMessage,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -354,8 +356,9 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Text(
-                      '${cache.totalFluidVolumeGiven.toInt()}mL already '
-                      'logged today',
+                      l10n.fluidAlreadyLoggedToday(
+                        cache.totalFluidVolumeGiven.toInt(),
+                      ),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface,
                         fontWeight: FontWeight.w500,
@@ -411,7 +414,7 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Stress Level (optional):',
+                  l10n.fluidStressLevelLabel,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: theme.colorScheme.onSurface,
@@ -441,8 +444,8 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
               keyboardType: TextInputType.text,
               textInputAction: TextInputAction.done,
               decoration: InputDecoration(
-                labelText: 'Notes (optional)',
-                hintText: 'Add any notes about this session...',
+                labelText: l10n.loggingNotesLabel,
+                hintText: l10n.loggingNotesHintSession,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -481,8 +484,8 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
             // Log button
             const SizedBox(height: AppSpacing.lg),
             Semantics(
-              label: 'Log fluid session button',
-              hint: 'Logs fluid therapy session and updates treatment records',
+              label: l10n.fluidLogButtonLabel,
+              hint: l10n.fluidLogButtonHint,
               button: true,
               child: FilledButton(
                 onPressed:
@@ -499,9 +502,9 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                child: const Text(
-                  'Log Fluid Session',
-                  style: TextStyle(
+                child: Text(
+                  l10n.fluidLoggingTitle,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),

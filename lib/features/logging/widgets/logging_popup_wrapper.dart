@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/shared/widgets/accessibility/touch_target_icon_button.dart';
 
 /// A reusable bottom-sheet-style popup container for logging screens.
@@ -51,6 +52,7 @@ class LoggingPopupWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final mediaQuery = MediaQuery.of(context);
 
     return PopScope(
@@ -73,7 +75,7 @@ class LoggingPopupWrapper extends StatelessWidget {
           child: Material(
             type: MaterialType.transparency,
             child: Semantics(
-              label: '$title popup',
+              label: l10n.loggingPopupSemantic(title),
               child: Container(
                 constraints: BoxConstraints(
                   maxHeight: mediaQuery.size.height * 0.8,
@@ -126,6 +128,8 @@ class LoggingPopupWrapper extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context, ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
@@ -161,8 +165,8 @@ class LoggingPopupWrapper extends StatelessWidget {
                 color: theme.colorScheme.onSurfaceVariant,
                 size: 24,
               ),
-              tooltip: 'Close',
-              semanticLabel: 'Close popup',
+              tooltip: l10n.loggingCloseTooltip,
+              semanticLabel: l10n.loggingClosePopupSemantic,
             ),
         ],
       ),

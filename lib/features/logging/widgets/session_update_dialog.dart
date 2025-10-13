@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 /// Dialog shown when attempting to log a duplicate medication session
@@ -59,9 +60,10 @@ class SessionUpdateDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return AlertDialog(
-      title: const Text('Already Logged'),
+      title: Text(l10n.duplicateDialogTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -69,8 +71,10 @@ class SessionUpdateDialog extends StatelessWidget {
           children: [
             // Header message
             Text(
-              'You already logged ${existingSession.medicationName} '
-              'at ${_formatTime(existingSession.dateTime)}.',
+              l10n.duplicateDialogMessage(
+                existingSession.medicationName,
+                _formatTime(existingSession.dateTime),
+              ),
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -78,7 +82,8 @@ class SessionUpdateDialog extends StatelessWidget {
             // Current session card
             _buildSessionCard(
               context: context,
-              title: 'Current Session',
+              l10n: l10n,
+              title: l10n.duplicateDialogCurrentSession,
               session: existingSession,
               isExisting: true,
             ),
@@ -88,7 +93,8 @@ class SessionUpdateDialog extends StatelessWidget {
             // New session card
             _buildSessionCard(
               context: context,
-              title: 'Your New Entry',
+              l10n: l10n,
+              title: l10n.duplicateDialogNewEntry,
               session: newSession,
               isExisting: false,
             ),
@@ -117,8 +123,7 @@ class SessionUpdateDialog extends StatelessWidget {
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
-                        'Your treatment records will be updated to reflect '
-                        'the new values.',
+                        l10n.duplicateDialogSummaryWarning,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface,
                         ),
@@ -135,7 +140,7 @@ class SessionUpdateDialog extends StatelessWidget {
         // Cancel button
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
 
         // Create New button (secondary)
@@ -143,14 +148,12 @@ class SessionUpdateDialog extends StatelessWidget {
           onPressed: () {
             Navigator.of(context).pop();
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Creating duplicate sessions will be available soon',
-                ),
+              SnackBar(
+                content: Text(l10n.duplicateDialogCreateNewMessage),
               ),
             );
           },
-          child: const Text('Create New'),
+          child: Text(l10n.duplicateDialogCreateNew),
         ),
 
         // Update button (primary)
@@ -158,12 +161,12 @@ class SessionUpdateDialog extends StatelessWidget {
           onPressed: () {
             Navigator.of(context).pop();
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Update feature coming soon'),
+              SnackBar(
+                content: Text(l10n.duplicateDialogUpdateMessage),
               ),
             );
           },
-          child: const Text('Update'),
+          child: Text(l10n.duplicateDialogUpdate),
         ),
       ],
     );
@@ -172,6 +175,7 @@ class SessionUpdateDialog extends StatelessWidget {
   /// Build a session comparison card
   Widget _buildSessionCard({
     required BuildContext context,
+    required AppLocalizations l10n,
     required String title,
     required MedicationSession session,
     required bool isExisting,
@@ -203,7 +207,7 @@ class SessionUpdateDialog extends StatelessWidget {
           if (isExisting) ...[
             const SizedBox(height: 2),
             Text(
-              'Logged at ${_formatTime(session.dateTime)}',
+              l10n.duplicateDialogLoggedAt(_formatTime(session.dateTime)),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -215,7 +219,7 @@ class SessionUpdateDialog extends StatelessWidget {
           if (!_hasChanges || _dosageChanged)
             _buildFieldRow(
               context: context,
-              label: 'Dosage',
+              label: l10n.duplicateDialogDosage,
               value: '${session.dosageGiven} ${session.medicationUnit}',
               hasChanged: _dosageChanged && !isExisting,
             ),
@@ -223,18 +227,20 @@ class SessionUpdateDialog extends StatelessWidget {
           if (!_hasChanges || _completedChanged)
             _buildFieldRow(
               context: context,
-              label: 'Status',
-              value: session.completed ? 'Completed' : 'Not completed',
+              label: l10n.duplicateDialogStatus,
+              value: session.completed
+                  ? l10n.duplicateDialogStatusCompleted
+                  : l10n.duplicateDialogStatusNotCompleted,
               hasChanged: _completedChanged && !isExisting,
             ),
 
           if (!_hasChanges || _notesChanged)
             _buildFieldRow(
               context: context,
-              label: 'Notes',
+              label: l10n.duplicateDialogNotes,
               value: (session.notes?.isNotEmpty ?? false)
                   ? session.notes!
-                  : 'No notes',
+                  : l10n.duplicateDialogNoNotes,
               hasChanged: _notesChanged && !isExisting,
             ),
         ],
@@ -279,8 +285,9 @@ class SessionUpdateDialog extends StatelessWidget {
                       color: hasChanged
                           ? theme.colorScheme.primary
                           : theme.colorScheme.onSurface,
-                      fontWeight:
-                          hasChanged ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight: hasChanged
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
                   ),
                 ),

@@ -15,6 +15,7 @@ import 'package:hydracat/features/logging/widgets/medication_selection_card.dart
 import 'package:hydracat/features/logging/widgets/session_update_dialog.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
@@ -128,7 +129,8 @@ class _MedicationLoggingScreenState
       final pet = ref.read(primaryPetProvider);
 
       if (user == null || pet == null) {
-        _showError('User or pet not found. Please try again.');
+        final l10n = AppLocalizations.of(context)!;
+        _showError(l10n.loggingUserNotFound);
         return;
       }
       final notes = _notesController.text.trim().isEmpty
@@ -354,16 +356,17 @@ class _MedicationLoggingScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final schedules = ref.watch(todaysMedicationSchedulesProvider);
 
     return LoggingPopupWrapper(
-      title: 'Log Medication',
+      title: l10n.medicationLoggingTitle,
       onDismiss: () {
         ref.read(loggingProvider.notifier).reset();
       },
       child: LoadingOverlay(
         state: _loadingState,
-        loadingMessage: 'Logging medication session',
+        loadingMessage: l10n.medicationLoggingLoadingMessage,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -398,8 +401,8 @@ class _MedicationLoggingScreenState
                   ),
                   child: Text(
                     _selectedMedicationIds.length == schedules.length
-                        ? 'Deselect All'
-                        : 'Select All',
+                        ? l10n.medicationDeselectAll
+                        : l10n.medicationSelectAll,
                     style: TextStyle(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.w500,
@@ -412,7 +415,7 @@ class _MedicationLoggingScreenState
 
             // Medication selection section
             Text(
-              'Select Medications:',
+              l10n.medicationSelectLabel,
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: theme.colorScheme.onSurface,
@@ -425,7 +428,7 @@ class _MedicationLoggingScreenState
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Text(
-                  'No medications scheduled for today',
+                  l10n.medicationNoneScheduled,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -457,8 +460,8 @@ class _MedicationLoggingScreenState
               keyboardType: TextInputType.text,
               textInputAction: TextInputAction.done,
               decoration: InputDecoration(
-                labelText: 'Notes (optional)',
-                hintText: 'Add any notes about this treatment...',
+                labelText: l10n.loggingNotesLabel,
+                hintText: l10n.loggingNotesHintTreatment,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -497,12 +500,12 @@ class _MedicationLoggingScreenState
             // Log button
             const SizedBox(height: AppSpacing.lg),
             Semantics(
-              label: 'Log medication button',
+              label: l10n.medicationLogButton,
               hint: _selectedMedicationIds.length == 1
-                  ? 'Logs 1 selected medication and updates treatment '
-                        'records'
-                  : 'Logs ${_selectedMedicationIds.length} selected '
-                        'medications and updates treatment records',
+                  ? l10n.medicationLogButtonSemanticSingle
+                  : l10n.medicationLogButtonSemanticMultiple(
+                      _selectedMedicationIds.length,
+                    ),
               button: true,
               child: FilledButton(
                 onPressed:
@@ -521,8 +524,10 @@ class _MedicationLoggingScreenState
                 ),
                 child: Text(
                   _selectedMedicationIds.length == 1
-                      ? 'Log Medication'
-                      : 'Log ${_selectedMedicationIds.length} Medications',
+                      ? l10n.medicationLogButton
+                      : l10n.medicationLogButtonMultiple(
+                          _selectedMedicationIds.length,
+                        ),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,

@@ -939,6 +939,498 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add notes...'**
   String get addNotes;
+
+  /// No description provided for @loggingNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes (optional)'**
+  String get loggingNotesLabel;
+
+  /// No description provided for @loggingNotesHintSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Add any notes about this session...'**
+  String get loggingNotesHintSession;
+
+  /// No description provided for @loggingNotesHintTreatment.
+  ///
+  /// In en, this message translates to:
+  /// **'Add any notes about this treatment...'**
+  String get loggingNotesHintTreatment;
+
+  /// No description provided for @loggingUserNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'User or pet not found. Please try again.'**
+  String get loggingUserNotFound;
+
+  /// No description provided for @loggingCloseTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get loggingCloseTooltip;
+
+  /// No description provided for @loggingClosePopupSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Close popup'**
+  String get loggingClosePopupSemantic;
+
+  /// No description provided for @loggingPopupSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} popup'**
+  String loggingPopupSemantic(String title);
+
+  /// No description provided for @fluidLoggingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Fluid Session'**
+  String get fluidLoggingTitle;
+
+  /// No description provided for @fluidLoggingLoadingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Logging fluid session'**
+  String get fluidLoggingLoadingMessage;
+
+  /// No description provided for @fluidVolumeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume is required'**
+  String get fluidVolumeRequired;
+
+  /// No description provided for @fluidVolumeInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid number'**
+  String get fluidVolumeInvalid;
+
+  /// No description provided for @fluidVolumeMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume must be at least 1ml'**
+  String get fluidVolumeMin;
+
+  /// No description provided for @fluidVolumeMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume must be 500ml or less'**
+  String get fluidVolumeMax;
+
+  /// No description provided for @fluidAlreadyLoggedToday.
+  ///
+  /// In en, this message translates to:
+  /// **'{volume}mL already logged today'**
+  String fluidAlreadyLoggedToday(int volume);
+
+  /// No description provided for @fluidStressLevelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stress Level (optional):'**
+  String get fluidStressLevelLabel;
+
+  /// No description provided for @fluidLogButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Log fluid session button'**
+  String get fluidLogButtonLabel;
+
+  /// No description provided for @fluidLogButtonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs fluid therapy session and updates treatment records'**
+  String get fluidLogButtonHint;
+
+  /// No description provided for @medicationLoggingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Medication'**
+  String get medicationLoggingTitle;
+
+  /// No description provided for @medicationLoggingLoadingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Logging medication session'**
+  String get medicationLoggingLoadingMessage;
+
+  /// No description provided for @medicationSelectLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Medications:'**
+  String get medicationSelectLabel;
+
+  /// No description provided for @medicationSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select All'**
+  String get medicationSelectAll;
+
+  /// No description provided for @medicationDeselectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect All'**
+  String get medicationDeselectAll;
+
+  /// No description provided for @medicationNoneScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'No medications scheduled for today'**
+  String get medicationNoneScheduled;
+
+  /// No description provided for @medicationLogButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Medication'**
+  String get medicationLogButton;
+
+  /// No description provided for @medicationLogButtonMultiple.
+  ///
+  /// In en, this message translates to:
+  /// **'Log {count} Medications'**
+  String medicationLogButtonMultiple(int count);
+
+  /// No description provided for @medicationLogButtonSemanticSingle.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs 1 selected medication and updates treatment records'**
+  String get medicationLogButtonSemanticSingle;
+
+  /// No description provided for @medicationLogButtonSemanticMultiple.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs {count} selected medications and updates treatment records'**
+  String medicationLogButtonSemanticMultiple(int count);
+
+  /// No description provided for @treatmentChoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add one-time entry'**
+  String get treatmentChoiceTitle;
+
+  /// No description provided for @treatmentChoiceMedicationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Log medication'**
+  String get treatmentChoiceMedicationLabel;
+
+  /// No description provided for @treatmentChoiceMedicationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens medication logging form to record treatment'**
+  String get treatmentChoiceMedicationHint;
+
+  /// No description provided for @treatmentChoiceFluidLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Log fluid therapy'**
+  String get treatmentChoiceFluidLabel;
+
+  /// No description provided for @treatmentChoiceFluidHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens fluid therapy logging form to record subcutaneous fluids'**
+  String get treatmentChoiceFluidHint;
+
+  /// No description provided for @treatmentChoiceSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose treatment type to log'**
+  String get treatmentChoiceSemanticLabel;
+
+  /// No description provided for @treatmentChoiceCancelSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Closes treatment selection without logging'**
+  String get treatmentChoiceCancelSemantic;
+
+  /// No description provided for @duplicateDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Already Logged'**
+  String get duplicateDialogTitle;
+
+  /// No description provided for @duplicateDialogMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You already logged {medication} at {time}.'**
+  String duplicateDialogMessage(String medication, String time);
+
+  /// No description provided for @duplicateDialogCurrentSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Session'**
+  String get duplicateDialogCurrentSession;
+
+  /// No description provided for @duplicateDialogNewEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Your New Entry'**
+  String get duplicateDialogNewEntry;
+
+  /// No description provided for @duplicateDialogSummaryWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Your treatment records will be updated to reflect the new values.'**
+  String get duplicateDialogSummaryWarning;
+
+  /// No description provided for @duplicateDialogCreateNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Create New'**
+  String get duplicateDialogCreateNew;
+
+  /// No description provided for @duplicateDialogCreateNewMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating duplicate sessions will be available soon'**
+  String get duplicateDialogCreateNewMessage;
+
+  /// No description provided for @duplicateDialogUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get duplicateDialogUpdate;
+
+  /// No description provided for @duplicateDialogUpdateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Update feature coming soon'**
+  String get duplicateDialogUpdateMessage;
+
+  /// No description provided for @duplicateDialogLoggedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Logged at {time}'**
+  String duplicateDialogLoggedAt(String time);
+
+  /// No description provided for @duplicateDialogDosage.
+  ///
+  /// In en, this message translates to:
+  /// **'Dosage'**
+  String get duplicateDialogDosage;
+
+  /// No description provided for @duplicateDialogStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get duplicateDialogStatus;
+
+  /// No description provided for @duplicateDialogStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get duplicateDialogStatusCompleted;
+
+  /// No description provided for @duplicateDialogStatusNotCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not completed'**
+  String get duplicateDialogStatusNotCompleted;
+
+  /// No description provided for @duplicateDialogNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get duplicateDialogNotes;
+
+  /// No description provided for @duplicateDialogNoNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'No notes'**
+  String get duplicateDialogNoNotes;
+
+  /// No description provided for @quickLogTreatmentSingular.
+  ///
+  /// In en, this message translates to:
+  /// **'treatment'**
+  String get quickLogTreatmentSingular;
+
+  /// No description provided for @quickLogTreatmentPlural.
+  ///
+  /// In en, this message translates to:
+  /// **'treatments'**
+  String get quickLogTreatmentPlural;
+
+  /// No description provided for @quickLogSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} {treatment} logged for {petName} ✓'**
+  String quickLogSuccess(int count, String treatment, String petName);
+
+  /// No description provided for @quickLogSuccessSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} {treatment} logged for {petName}'**
+  String quickLogSuccessSemantic(int count, String treatment, String petName);
+
+  /// No description provided for @quickLogSuccessHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Success. Tap anywhere to dismiss.'**
+  String get quickLogSuccessHint;
+
+  /// No description provided for @injectionSiteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Injection Site'**
+  String get injectionSiteLabel;
+
+  /// No description provided for @injectionSiteSelectorSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Injection site selector'**
+  String get injectionSiteSelectorSemantic;
+
+  /// No description provided for @injectionSiteCurrentSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Current selection: {site}'**
+  String injectionSiteCurrentSelection(String site);
+
+  /// No description provided for @injectionSiteNoSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'No injection site selected'**
+  String get injectionSiteNoSelection;
+
+  /// No description provided for @stressLevelSelectorSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Stress level selector'**
+  String get stressLevelSelectorSemantic;
+
+  /// No description provided for @stressLevelLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get stressLevelLow;
+
+  /// No description provided for @stressLevelMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get stressLevelMedium;
+
+  /// No description provided for @stressLevelHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get stressLevelHigh;
+
+  /// No description provided for @stressLevelLowTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Low stress level'**
+  String get stressLevelLowTooltip;
+
+  /// No description provided for @stressLevelMediumTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium stress level'**
+  String get stressLevelMediumTooltip;
+
+  /// No description provided for @stressLevelHighTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'High stress level'**
+  String get stressLevelHighTooltip;
+
+  /// No description provided for @stressLevelCurrentSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Current selection: {level} stress level'**
+  String stressLevelCurrentSelection(String level);
+
+  /// No description provided for @stressLevelNoSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'No stress level selected'**
+  String get stressLevelNoSelection;
+
+  /// No description provided for @errorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get errorGeneric;
+
+  /// No description provided for @errorPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to save. Please check your account permissions.'**
+  String get errorPermissionDenied;
+
+  /// No description provided for @errorConnectionTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection timeout. Your data is saved offline and will sync automatically.'**
+  String get errorConnectionTimeout;
+
+  /// No description provided for @errorServiceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Service temporarily unavailable. Please try again in a moment.'**
+  String get errorServiceUnavailable;
+
+  /// No description provided for @errorOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to save right now. Your data is saved offline.'**
+  String get errorOffline;
+
+  /// No description provided for @errorSyncLater.
+  ///
+  /// In en, this message translates to:
+  /// **'(will sync later)'**
+  String get errorSyncLater;
+
+  /// No description provided for @errorSyncWhenOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Will sync when online.'**
+  String get errorSyncWhenOnline;
+
+  /// No description provided for @errorValidationGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Please check your entries and try again.'**
+  String get errorValidationGeneric;
+
+  /// No description provided for @errorScheduleNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t find a matching schedule. Logging as a one-time entry.'**
+  String get errorScheduleNotFound;
+
+  /// No description provided for @errorDuplicateSession.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve already logged this treatment today. Would you like to update it instead?'**
+  String get errorDuplicateSession;
+
+  /// No description provided for @successOfflineLogged.
+  ///
+  /// In en, this message translates to:
+  /// **'Logged successfully! Will sync when you are back online.'**
+  String get successOfflineLogged;
+
+  /// No description provided for @errorSyncFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 treatment} other{{count} treatments}} could not sync. Check your connection and tap retry.'**
+  String errorSyncFailed(int count);
+
+  /// No description provided for @warningQueueSize.
+  ///
+  /// In en, this message translates to:
+  /// **'You have {count} treatments waiting to sync. Connect to internet soon to avoid data loss.'**
+  String warningQueueSize(int count);
+
+  /// No description provided for @errorQueueFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many treatments waiting to sync ({count}). Please connect to internet to free up space.'**
+  String errorQueueFull(int count);
 }
 
 class _AppLocalizationsDelegate

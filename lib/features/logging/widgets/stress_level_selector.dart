@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
 
 /// A Material 3 segmented button selector for stress levels.
@@ -48,45 +49,46 @@ class StressLevelSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Semantics(
-      label: 'Stress level selector',
+      label: l10n.stressLevelSelectorSemantic,
       hint: value != null
-          ? 'Current selection: $value stress level'
-          : 'No stress level selected',
+          ? l10n.stressLevelCurrentSelection(value!)
+          : l10n.stressLevelNoSelection,
       child: SizedBox(
         width: double.infinity,
         child: SegmentedButton<String>(
           segments: [
             ButtonSegment<String>(
               value: 'low',
-              label: const Text('Low'),
+              label: Text(l10n.stressLevelLow),
               icon: HydraIcon(
                 icon: AppIcons.stressLow,
                 size: 18,
                 color: theme.colorScheme.onSurface,
               ),
-              tooltip: 'Low stress level',
+              tooltip: l10n.stressLevelLowTooltip,
             ),
             ButtonSegment<String>(
               value: 'medium',
-              label: const Text('Medium'),
+              label: Text(l10n.stressLevelMedium),
               icon: HydraIcon(
                 icon: AppIcons.stressMedium,
                 size: 18,
                 color: theme.colorScheme.onSurface,
               ),
-              tooltip: 'Medium stress level',
+              tooltip: l10n.stressLevelMediumTooltip,
             ),
             ButtonSegment<String>(
               value: 'high',
-              label: const Text('High'),
+              label: Text(l10n.stressLevelHigh),
               icon: HydraIcon(
                 icon: AppIcons.stressHigh,
                 size: 18,
                 color: theme.colorScheme.onSurface,
               ),
-              tooltip: 'High stress level',
+              tooltip: l10n.stressLevelHighTooltip,
             ),
           ],
           selected: value != null ? {value!} : {},

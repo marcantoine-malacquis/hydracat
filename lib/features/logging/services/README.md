@@ -230,12 +230,18 @@ List<String> validate() {
 **Example:**
 ```dart
 // LoggingValidationService
-ValidationResult validateForDuplicates({
-  required MedicationSession newSession,
-  required List<MedicationSession> recentSessions,
-}) {
-  // Compare against existing sessions
-  // Return ValidationResult with duplicate error type
+// Find duplicate session
+final duplicate = validationService.findDuplicateSession(
+  newSession: session,
+  recentSessions: recentSessions,
+);
+
+if (duplicate != null) {
+  throw DuplicateSessionException(
+    sessionType: 'medication',
+    conflictingTime: duplicate.dateTime,
+    medicationName: duplicate.medicationName,
+  );
 }
 ```
 
@@ -294,12 +300,16 @@ if (_validationService != null) {
     throw SessionValidationException(result.errors);
   }
   
-  final duplicateResult = _validationService.validateForDuplicates(
+  final duplicate = _validationService.findDuplicateSession(
     newSession: session,
     recentSessions: recentSessions,
   );
-  if (!duplicateResult.isValid) {
-    throw DuplicateSessionException(...);
+  if (duplicate != null) {
+    throw DuplicateSessionException(
+      sessionType: 'medication',
+      conflictingTime: duplicate.dateTime,
+      medicationName: duplicate.medicationName,
+    );
   }
 }
 ```

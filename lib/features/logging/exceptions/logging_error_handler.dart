@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/logging/exceptions/logging_exceptions.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 
 /// Static utility class for consistent error handling across logging feature
 ///
@@ -31,17 +32,19 @@ class LoggingErrorHandler {
   ///
   /// Uses the exception's `userMessage` if it's a [LoggingException],
   /// otherwise maps Firebase errors or returns a generic message.
-  static String getErrorMessage(Exception exception) {
+  ///
+  /// Requires [l10n] for localized error messages.
+  static String getErrorMessage(Exception exception, AppLocalizations l10n) {
     if (exception is LoggingException) {
-      return exception.userMessage;
+      return exception.getUserMessage(l10n);
     }
 
     if (exception is FirebaseException) {
-      return handleFirebaseError(exception);
+      return handleFirebaseError(exception, l10n);
     }
 
     // Generic fallback for unknown exceptions
-    return 'Something went wrong. Please try again.';
+    return l10n.errorGeneric;
   }
 
   /// Maps Firebase error codes to user-friendly messages
@@ -51,22 +54,25 @@ class LoggingErrorHandler {
   /// - unavailable/deadline-exceeded: Network timeouts
   /// - resource-exhausted: Rate limits or quotas
   /// - All others: Generic offline fallback
-  static String handleFirebaseError(FirebaseException firebaseError) {
+  ///
+  /// Requires [l10n] for localized error messages.
+  static String handleFirebaseError(
+    FirebaseException firebaseError,
+    AppLocalizations l10n,
+  ) {
     switch (firebaseError.code) {
       case 'permission-denied':
-        return 'Unable to save. Please check your account permissions.';
+        return l10n.errorPermissionDenied;
 
       case 'unavailable':
       case 'deadline-exceeded':
-        return 'Connection timeout. Your data is saved offline and will '
-            'sync automatically.';
+        return l10n.errorConnectionTimeout;
 
       case 'resource-exhausted':
-        return 'Service temporarily unavailable. Please try again in a '
-            'moment.';
+        return l10n.errorServiceUnavailable;
 
       default:
-        return 'Unable to save right now. Your data is saved offline.';
+        return l10n.errorOffline;
     }
   }
 
@@ -95,8 +101,8 @@ class LoggingErrorHandler {
 
   /// Shows a success message with optional offline indicator
   ///
-  /// When [isOffline] is true, appends " (will sync later)" to message
-  /// to inform users that their data will sync when reconnected.
+  /// When [isOffline] is true, appends localized offline message to inform
+  /// users that their data will sync when reconnected.
   ///
   /// Uses success background color and floating behavior.
   /// Announces message to screen readers via SemanticsService.
@@ -105,13 +111,16 @@ class LoggingErrorHandler {
     String message, {
     bool isOffline = false,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context)..clearSnackBars();
 
-    final displayMessage = isOffline ? '$message (will sync later)' : message;
+    final displayMessage = isOffline
+        ? '$message ${l10n.errorSyncLater}'
+        : message;
 
     // Announce to screen readers with offline context if applicable
     final announcement = isOffline
-        ? '$message. Will sync when online.'
+        ? '$message. ${l10n.errorSyncWhenOnline}'
         : message;
     SemanticsService.announce(announcement, TextDirection.ltr);
 
@@ -137,9 +146,11 @@ class LoggingErrorHandler {
     String message,
     VoidCallback onRetry,
   ) {
+    final l10n = AppLocalizations.of(context)!;
+
     // Announce to screen readers with retry context
     SemanticsService.announce(
-      '$message. Retry button available.',
+      '$message. ${l10n.retry} button available.',
       TextDirection.ltr,
     );
 
@@ -155,7 +166,7 @@ class LoggingErrorHandler {
           ),
           duration: const Duration(seconds: 6), // Longer for retry action
           action: SnackBarAction(
-            label: 'Retry',
+            label: l10n.retry,
             textColor: Colors.white,
             onPressed: onRetry,
           ),

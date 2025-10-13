@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 
 /// A custom dropdown selector for fluid injection sites.
 ///
@@ -160,14 +161,15 @@ class _InjectionSiteSelectorState extends State<InjectionSiteSelector> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return CompositedTransformTarget(
       link: _layerLink,
       child: Semantics(
-        label: 'Injection site selector',
+        label: l10n.injectionSiteSelectorSemantic,
         hint: widget.value != null
-            ? 'Current selection: ${widget.value!.displayName}'
-            : 'No injection site selected',
+            ? l10n.injectionSiteCurrentSelection(widget.value!.displayName)
+            : l10n.injectionSiteNoSelection,
         button: true,
         child: Material(
           color: Colors.transparent,
@@ -176,7 +178,7 @@ class _InjectionSiteSelectorState extends State<InjectionSiteSelector> {
             borderRadius: BorderRadius.circular(10),
             child: InputDecorator(
               decoration: InputDecoration(
-                labelText: 'Injection Site',
+                labelText: l10n.injectionSiteLabel,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),

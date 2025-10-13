@@ -459,4 +459,298 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addNotes => 'Add notes...';
+
+  @override
+  String get loggingNotesLabel => 'Notes (optional)';
+
+  @override
+  String get loggingNotesHintSession => 'Add any notes about this session...';
+
+  @override
+  String get loggingNotesHintTreatment =>
+      'Add any notes about this treatment...';
+
+  @override
+  String get loggingUserNotFound => 'User or pet not found. Please try again.';
+
+  @override
+  String get loggingCloseTooltip => 'Close';
+
+  @override
+  String get loggingClosePopupSemantic => 'Close popup';
+
+  @override
+  String loggingPopupSemantic(String title) {
+    return '$title popup';
+  }
+
+  @override
+  String get fluidLoggingTitle => 'Log Fluid Session';
+
+  @override
+  String get fluidLoggingLoadingMessage => 'Logging fluid session';
+
+  @override
+  String get fluidVolumeRequired => 'Volume is required';
+
+  @override
+  String get fluidVolumeInvalid => 'Please enter a valid number';
+
+  @override
+  String get fluidVolumeMin => 'Volume must be at least 1ml';
+
+  @override
+  String get fluidVolumeMax => 'Volume must be 500ml or less';
+
+  @override
+  String fluidAlreadyLoggedToday(int volume) {
+    return '${volume}mL already logged today';
+  }
+
+  @override
+  String get fluidStressLevelLabel => 'Stress Level (optional):';
+
+  @override
+  String get fluidLogButtonLabel => 'Log fluid session button';
+
+  @override
+  String get fluidLogButtonHint =>
+      'Logs fluid therapy session and updates treatment records';
+
+  @override
+  String get medicationLoggingTitle => 'Log Medication';
+
+  @override
+  String get medicationLoggingLoadingMessage => 'Logging medication session';
+
+  @override
+  String get medicationSelectLabel => 'Select Medications:';
+
+  @override
+  String get medicationSelectAll => 'Select All';
+
+  @override
+  String get medicationDeselectAll => 'Deselect All';
+
+  @override
+  String get medicationNoneScheduled => 'No medications scheduled for today';
+
+  @override
+  String get medicationLogButton => 'Log Medication';
+
+  @override
+  String medicationLogButtonMultiple(int count) {
+    return 'Log $count Medications';
+  }
+
+  @override
+  String get medicationLogButtonSemanticSingle =>
+      'Logs 1 selected medication and updates treatment records';
+
+  @override
+  String medicationLogButtonSemanticMultiple(int count) {
+    return 'Logs $count selected medications and updates treatment records';
+  }
+
+  @override
+  String get treatmentChoiceTitle => 'Add one-time entry';
+
+  @override
+  String get treatmentChoiceMedicationLabel => 'Log medication';
+
+  @override
+  String get treatmentChoiceMedicationHint =>
+      'Opens medication logging form to record treatment';
+
+  @override
+  String get treatmentChoiceFluidLabel => 'Log fluid therapy';
+
+  @override
+  String get treatmentChoiceFluidHint =>
+      'Opens fluid therapy logging form to record subcutaneous fluids';
+
+  @override
+  String get treatmentChoiceSemanticLabel => 'Choose treatment type to log';
+
+  @override
+  String get treatmentChoiceCancelSemantic =>
+      'Closes treatment selection without logging';
+
+  @override
+  String get duplicateDialogTitle => 'Already Logged';
+
+  @override
+  String duplicateDialogMessage(String medication, String time) {
+    return 'You already logged $medication at $time.';
+  }
+
+  @override
+  String get duplicateDialogCurrentSession => 'Current Session';
+
+  @override
+  String get duplicateDialogNewEntry => 'Your New Entry';
+
+  @override
+  String get duplicateDialogSummaryWarning =>
+      'Your treatment records will be updated to reflect the new values.';
+
+  @override
+  String get duplicateDialogCreateNew => 'Create New';
+
+  @override
+  String get duplicateDialogCreateNewMessage =>
+      'Creating duplicate sessions will be available soon';
+
+  @override
+  String get duplicateDialogUpdate => 'Update';
+
+  @override
+  String get duplicateDialogUpdateMessage => 'Update feature coming soon';
+
+  @override
+  String duplicateDialogLoggedAt(String time) {
+    return 'Logged at $time';
+  }
+
+  @override
+  String get duplicateDialogDosage => 'Dosage';
+
+  @override
+  String get duplicateDialogStatus => 'Status';
+
+  @override
+  String get duplicateDialogStatusCompleted => 'Completed';
+
+  @override
+  String get duplicateDialogStatusNotCompleted => 'Not completed';
+
+  @override
+  String get duplicateDialogNotes => 'Notes';
+
+  @override
+  String get duplicateDialogNoNotes => 'No notes';
+
+  @override
+  String get quickLogTreatmentSingular => 'treatment';
+
+  @override
+  String get quickLogTreatmentPlural => 'treatments';
+
+  @override
+  String quickLogSuccess(int count, String treatment, String petName) {
+    return '$count $treatment logged for $petName ✓';
+  }
+
+  @override
+  String quickLogSuccessSemantic(int count, String treatment, String petName) {
+    return '$count $treatment logged for $petName';
+  }
+
+  @override
+  String get quickLogSuccessHint => 'Success. Tap anywhere to dismiss.';
+
+  @override
+  String get injectionSiteLabel => 'Injection Site';
+
+  @override
+  String get injectionSiteSelectorSemantic => 'Injection site selector';
+
+  @override
+  String injectionSiteCurrentSelection(String site) {
+    return 'Current selection: $site';
+  }
+
+  @override
+  String get injectionSiteNoSelection => 'No injection site selected';
+
+  @override
+  String get stressLevelSelectorSemantic => 'Stress level selector';
+
+  @override
+  String get stressLevelLow => 'Low';
+
+  @override
+  String get stressLevelMedium => 'Medium';
+
+  @override
+  String get stressLevelHigh => 'High';
+
+  @override
+  String get stressLevelLowTooltip => 'Low stress level';
+
+  @override
+  String get stressLevelMediumTooltip => 'Medium stress level';
+
+  @override
+  String get stressLevelHighTooltip => 'High stress level';
+
+  @override
+  String stressLevelCurrentSelection(String level) {
+    return 'Current selection: $level stress level';
+  }
+
+  @override
+  String get stressLevelNoSelection => 'No stress level selected';
+
+  @override
+  String get errorGeneric => 'Something went wrong. Please try again.';
+
+  @override
+  String get errorPermissionDenied =>
+      'Unable to save. Please check your account permissions.';
+
+  @override
+  String get errorConnectionTimeout =>
+      'Connection timeout. Your data is saved offline and will sync automatically.';
+
+  @override
+  String get errorServiceUnavailable =>
+      'Service temporarily unavailable. Please try again in a moment.';
+
+  @override
+  String get errorOffline =>
+      'Unable to save right now. Your data is saved offline.';
+
+  @override
+  String get errorSyncLater => '(will sync later)';
+
+  @override
+  String get errorSyncWhenOnline => 'Will sync when online.';
+
+  @override
+  String get errorValidationGeneric =>
+      'Please check your entries and try again.';
+
+  @override
+  String get errorScheduleNotFound =>
+      'We couldn\'t find a matching schedule. Logging as a one-time entry.';
+
+  @override
+  String get errorDuplicateSession =>
+      'You\'ve already logged this treatment today. Would you like to update it instead?';
+
+  @override
+  String get successOfflineLogged =>
+      'Logged successfully! Will sync when you are back online.';
+
+  @override
+  String errorSyncFailed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count treatments',
+      one: '1 treatment',
+    );
+    return '$_temp0 could not sync. Check your connection and tap retry.';
+  }
+
+  @override
+  String warningQueueSize(int count) {
+    return 'You have $count treatments waiting to sync. Connect to internet soon to avoid data loss.';
+  }
+
+  @override
+  String errorQueueFull(int count) {
+    return 'Too many treatments waiting to sync ($count). Please connect to internet to free up space.';
+  }
 }

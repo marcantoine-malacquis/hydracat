@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 
 /// A success popup that appears after quick-log completion.
 ///
@@ -68,20 +69,24 @@ class _QuickLogSuccessPopupState extends State<QuickLogSuccessPopup> {
     super.dispose();
   }
 
-  String get _treatmentLabel =>
-      widget.sessionCount == 1 ? 'treatment' : 'treatments';
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final mediaQuery = MediaQuery.of(context);
+
+    final treatmentLabel = widget.sessionCount == 1
+        ? l10n.quickLogTreatmentSingular
+        : l10n.quickLogTreatmentPlural;
 
     return Semantics(
       liveRegion: true,
-      label:
-          '${widget.sessionCount} $_treatmentLabel logged '
-          'for ${widget.petName}',
-      hint: 'Success. Tap anywhere to dismiss.',
+      label: l10n.quickLogSuccessSemantic(
+        widget.sessionCount,
+        treatmentLabel,
+        widget.petName,
+      ),
+      hint: l10n.quickLogSuccessHint,
       child: GestureDetector(
         onTap: () {
           _dismissTimer?.cancel();
@@ -122,8 +127,11 @@ class _QuickLogSuccessPopupState extends State<QuickLogSuccessPopup> {
                 const SizedBox(width: AppSpacing.sm),
                 Flexible(
                   child: Text(
-                    '${widget.sessionCount} $_treatmentLabel logged '
-                    'for ${widget.petName} ✓',
+                    l10n.quickLogSuccess(
+                      widget.sessionCount,
+                      treatmentLabel,
+                      widget.petName,
+                    ),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurface,
                       fontWeight: FontWeight.w500,

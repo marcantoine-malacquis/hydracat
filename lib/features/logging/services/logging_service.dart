@@ -119,8 +119,11 @@ class LoggingService {
           recentSessions: recentSessions,
         );
         if (!duplicateResult.isValid) {
-          // Find the actual duplicate session
-          final duplicate = _detectDuplicateMedication(session, recentSessions);
+          // Find the actual duplicate session using validation service
+          final duplicate = _validationService.findDuplicateSession(
+            newSession: session,
+            recentSessions: recentSessions,
+          );
           if (kDebugMode) {
             debugPrint(
               '[LoggingService] Duplicate medication detected: '
@@ -131,13 +134,16 @@ class LoggingService {
           throw DuplicateSessionException(
             sessionType: 'medication',
             conflictingTime: duplicate?.dateTime ?? session.dateTime,
-            medicationName: duplicate?.medicationName,
             existingSession: duplicate,
+            medicationName: duplicate?.medicationName,
           );
         }
       } else {
-        // Fallback to existing method for backward compatibility
-        final duplicate = _detectDuplicateMedication(session, recentSessions);
+        // Fallback: use validation service's helper directly
+        final duplicate = const LoggingValidationService().findDuplicateSession(
+          newSession: session,
+          recentSessions: recentSessions,
+        );
         if (duplicate != null) {
           if (kDebugMode) {
             debugPrint(
@@ -149,8 +155,8 @@ class LoggingService {
           throw DuplicateSessionException(
             sessionType: 'medication',
             conflictingTime: duplicate.dateTime,
-            medicationName: duplicate.medicationName,
             existingSession: duplicate,
+            medicationName: duplicate.medicationName,
           );
         }
       }
@@ -1077,36 +1083,6 @@ class LoggingService {
     if (businessErrors.isNotEmpty) {
       throw SessionValidationException(businessErrors);
     }
-  }
-
-  /// Detects duplicate medication sessions
-  ///
-  /// A duplicate is defined as:
-  /// - Same medication name (exact match)
-  /// - Within ±15 minutes of existing session
-  ///
-  /// Returns the existing session if duplicate found, null otherwise.
-  ///
-  /// Note: Ignores scheduleId - manual logs and scheduled logs are both
-  /// considered duplicates if they match name+time criteria.
-  MedicationSession? _detectDuplicateMedication(
-    MedicationSession newSession,
-    List<MedicationSession> recentSessions,
-  ) {
-    const duplicateWindow = Duration(minutes: 15);
-
-    for (final existing in recentSessions) {
-      // Same medication name (case-sensitive exact match)
-      if (existing.medicationName != newSession.medicationName) continue;
-
-      // Within ±15 minutes
-      final timeDiff = existing.dateTime.difference(newSession.dateTime).abs();
-      if (timeDiff <= duplicateWindow) {
-        return existing; // Duplicate found
-      }
-    }
-
-    return null; // No duplicate
   }
 
   // Note: No duplicate detection for fluid sessions (per medical requirements)
