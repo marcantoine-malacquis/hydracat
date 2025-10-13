@@ -319,7 +319,7 @@ class MedicationSession {
       'id': id,
       'petId': petId,
       'userId': userId,
-      'dateTime': dateTime.toIso8601String(),
+      'dateTime': dateTime,
       'medicationName': medicationName,
       'dosageGiven': dosageGiven,
       'dosageScheduled': dosageScheduled,
@@ -329,10 +329,10 @@ class MedicationSession {
       'completed': completed,
       'notes': notes,
       'scheduleId': scheduleId,
-      'scheduledTime': scheduledTime?.toIso8601String(),
-      'createdAt': createdAt.toIso8601String(),
-      'syncedAt': syncedAt?.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
+      'scheduledTime': scheduledTime,
+      'createdAt': createdAt,
+      'syncedAt': syncedAt,
+      'updatedAt': updatedAt,
     };
 
     // Only include customMedicationStrengthUnit if it's actually used

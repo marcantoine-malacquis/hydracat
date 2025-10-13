@@ -655,7 +655,7 @@ abstract class AppLocalizations {
   /// No description provided for @volumeLabel.
   ///
   /// In en, this message translates to:
-  /// **'Volume (ml) *'**
+  /// **'Volume per session (mL) *'**
   String get volumeLabel;
 
   /// No description provided for @volumeHint.
@@ -669,6 +669,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Typical range: 50-300ml for cats'**
   String get volumeHelperText;
+
+  /// No description provided for @totalPlannedToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Total planned today: {volume} mL'**
+  String totalPlannedToday(int volume);
 
   /// No description provided for @preferredLocationLabel.
   ///

@@ -197,9 +197,17 @@
 
   "@_ONBOARDING_FLUID_THERAPY": {},
   "fluidTherapySetupTitle": "Fluid Therapy Setup",
-  "volumeLabel": "Volume (ml) *",
+  "volumeLabel": "Volume per session (mL) *",
   "volumeHint": "100.0",
   "volumeHelperText": "Typical range: 50-300ml for cats",
+  "totalPlannedToday": "Total planned today: {volume} mL",
+  "@totalPlannedToday": {
+    "placeholders": {
+      "volume": {
+        "type": "int"
+      }
+    }
+  },
   "preferredLocationLabel": "Preferred Administration Location",
   "needleGaugeLabel": "Needle Gauge *",
   "needleGaugeHint": "20G, 22G, 25G",

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +14,7 @@ import 'package:hydracat/features/logging/widgets/injection_site_selector.dart';
 import 'package:hydracat/features/logging/widgets/logging_popup_wrapper.dart';
 import 'package:hydracat/features/logging/widgets/stress_level_selector.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
@@ -66,6 +68,41 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _prefillFromSchedule();
     });
+
+    // Ensure schedule is loaded if not present yet (robustness on hot restart)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final hasSchedule = ref.read(fluidScheduleProvider) != null;
+      final isLoading = ref.read(scheduleIsLoadingProvider);
+      final pet = ref.read(primaryPetProvider);
+      if (pet != null && !hasSchedule && !isLoading) {
+        ref.read(profileProvider.notifier).loadFluidSchedule();
+      }
+    });
+
+    // Listen for schedule changes and update pre-filled values
+    // This ensures the form reflects the latest schedule data even if
+    // user updates the schedule in the profile screen
+    ref.listenManual(
+      fluidScheduleProvider,
+      (previous, next) {
+        if (kDebugMode) {
+          debugPrint('[FluidLoggingScreen] Schedule provider changed:');
+          debugPrint('  Previous volume: ${previous?.targetVolume}ml');
+          debugPrint('  Next volume: ${next?.targetVolume}ml');
+          debugPrint('  Previous location: ${previous?.preferredLocation}');
+          debugPrint('  Next location: ${next?.preferredLocation}');
+        }
+
+        // Update if schedule data changed
+        if (previous?.targetVolume != next?.targetVolume ||
+            previous?.preferredLocation != next?.preferredLocation) {
+          if (kDebugMode) {
+            debugPrint('[FluidLoggingScreen] Schedule changed - updating form');
+          }
+          _prefillFromSchedule();
+        }
+      },
+    );
   }
 
   @override
@@ -78,23 +115,41 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
 
   /// Pre-fill form from schedule (if available) or use defaults
   void _prefillFromSchedule() {
-    final fluidSchedule = ref.read(todaysFluidScheduleProvider);
+    final fluidSchedule = ref.read(fluidScheduleProvider);
 
     if (fluidSchedule != null) {
-      // Pre-fill from schedule
-      _volumeController.text =
-          fluidSchedule.targetVolume?.toInt().toString() ?? '100';
+      // Pre-fill from schedule - always use the latest data
+      final newVolume = fluidSchedule.targetVolume?.toInt().toString() ?? '100';
+
+      // Only update if the value has actually changed to
+      // avoid unnecessary rebuilds
+      if (_volumeController.text != newVolume) {
+        _volumeController.text = newVolume;
+      }
 
       setState(() {
         _selectedInjectionSite = fluidSchedule.preferredLocation;
       });
+
+      if (kDebugMode) {
+        debugPrint(
+          '[FluidLoggingScreen] Pre-filled from schedule: '
+          'volume=${fluidSchedule.targetVolume}ml',
+        );
+      }
     } else {
       // Manual logging - use defaults
-      _volumeController.text = '100';
+      if (_volumeController.text != '100') {
+        _volumeController.text = '100';
+      }
 
       setState(() {
         _selectedInjectionSite = FluidLocation.shoulderBladeLeft;
       });
+
+      if (kDebugMode) {
+        debugPrint('[FluidLoggingScreen] Using default values (no schedule)');
+      }
     }
 
     // Initial validation
@@ -154,7 +209,7 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
     try {
       final user = ref.read(currentUserProvider);
       final pet = ref.read(primaryPetProvider);
-      final fluidSchedule = ref.read(todaysFluidScheduleProvider);
+      final fluidSchedule = ref.read(fluidScheduleProvider);
 
       if (user == null || pet == null) {
         _showError('User or pet not found. Please try again.');
@@ -238,7 +293,30 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final cache = ref.watch(dailyCacheProvider);
+
+    // Watch the schedule provider to ensure form stays in sync
+    // This is a fallback in case the listener doesn't work properly
+    final currentSchedule = ref.watch(fluidScheduleProvider);
+
+    // Update form if schedule data changed (reactive approach)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (currentSchedule != null) {
+        final expectedVolume =
+            currentSchedule.targetVolume?.toInt().toString() ?? '100';
+        if (_volumeController.text != expectedVolume) {
+          _volumeController.text = expectedVolume;
+          _validateVolume();
+        }
+
+        if (_selectedInjectionSite != currentSchedule.preferredLocation) {
+          setState(() {
+            _selectedInjectionSite = currentSchedule.preferredLocation;
+          });
+        }
+      }
+    });
 
     return LoggingPopupWrapper(
       title: 'Log Fluid Session',
@@ -297,8 +375,8 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
               ),
               textInputAction: TextInputAction.next,
               decoration: InputDecoration(
-                labelText: 'Volume (ml)',
-                hintText: 'Enter volume in milliliters',
+                labelText: l10n.volumeLabel,
+                hintText: l10n.volumeHint,
                 errorText: _volumeError,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),

@@ -228,7 +228,7 @@ class _CreateFluidScheduleScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Volume per Administration',
+          'Volume per session (mL)',
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
             color: theme.colorScheme.onSurface,
@@ -279,6 +279,19 @@ class _CreateFluidScheduleScreenState
             return null;
           },
         ),
+        const SizedBox(height: 8),
+        if (_selectedFrequency.administrationsPerDay > 0 &&
+            _volumePerAdministration > 0)
+          Text(
+            l10n.totalPlannedToday(
+              (_selectedFrequency.administrationsPerDay *
+                      _volumePerAdministration)
+                  .toInt(),
+            ),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
       ],
     );
   }

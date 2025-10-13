@@ -64,7 +64,7 @@ class LoggingService {
   /// 1. Validates session (model + business rules)
   /// 2. Detects duplicates (throws [DuplicateSessionException] if found)
   /// 3. Matches to schedule by medication name + closest time (±2 hours)
-  /// 4. Creates 8-write batch: session + (daily + weekly + monthly) summaries
+  /// 4. Creates 4-write batch: session + (daily + weekly + monthly) summaries
   /// 5. Commits atomically to Firestore
   ///
   /// Parameters:
@@ -173,7 +173,7 @@ class LoggingService {
         }
       }
 
-      // STEP 4: Build 7-write batch
+      // STEP 4: Build 4-write batch
       final batch = _firestore.batch();
       _addMedicationSessionToBatch(
         batch: batch,
@@ -294,9 +294,10 @@ class LoggingService {
           petId,
           newSession.id,
         );
-        await sessionRef.update(
-          newSession.copyWith(updatedAt: DateTime.now()).toJson(),
-        );
+        await sessionRef.update({
+          ...newSession.toJson(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
         return;
       }
 
@@ -312,7 +313,10 @@ class LoggingService {
       // Operation 1: Update session
       batch.update(
         sessionRef,
-        newSession.copyWith(updatedAt: DateTime.now()).toJson(),
+        {
+          ...newSession.toJson(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
       );
 
       // Operation 2: Daily summary (single set with merge + increments)
@@ -456,7 +460,7 @@ class LoggingService {
         }
       }
 
-      // STEP 3: Build 7-write batch
+      // STEP 3: Build 4-write batch
       final batch = _firestore.batch();
       _addFluidSessionToBatch(
         batch: batch,
@@ -568,9 +572,10 @@ class LoggingService {
         }
         // Still update the session document
         final sessionRef = _getFluidSessionRef(userId, petId, newSession.id);
-        await sessionRef.update(
-          newSession.copyWith(updatedAt: DateTime.now()).toJson(),
-        );
+        await sessionRef.update({
+          ...newSession.toJson(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
         return;
       }
 
@@ -582,7 +587,10 @@ class LoggingService {
       // Operation 1: Update session
       batch.update(
         sessionRef,
-        newSession.copyWith(updatedAt: DateTime.now()).toJson(),
+        {
+          ...newSession.toJson(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
       );
 
       // Operation 2: Daily summary (single set with merge + increments)
@@ -971,7 +979,7 @@ class LoggingService {
           .where('medicationName', isEqualTo: medicationName)
           .where(
             'dateTime',
-            isGreaterThanOrEqualTo: startOfDay.toIso8601String(),
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
           )
           .orderBy('dateTime', descending: true)
           .limit(10)
@@ -1349,11 +1357,11 @@ class LoggingService {
 
   /// Wraps session payload to ensure server timestamps for audit fields.
   ///
-  /// - Sets `createdAt` when missing
+  /// - Always sets `createdAt` to server timestamp (on creation)
   /// - Always sets `updatedAt` to server timestamp
   Map<String, dynamic> _buildSessionCreateData(Map<String, dynamic> json) {
     final map = Map<String, dynamic>.from(json);
-    map['createdAt'] = map['createdAt'] ?? FieldValue.serverTimestamp();
+    map['createdAt'] = FieldValue.serverTimestamp();
     map['updatedAt'] = FieldValue.serverTimestamp();
     return map;
   }
@@ -1368,6 +1376,9 @@ class LoggingService {
   /// FieldValue.increment() works on non-existent fields (treats as 0).
   ///
   /// Note: overallStreak always 0 (calculated in Phase 7 by daily job)
+  /// Note: For summaries with continuous updates, createdAt and updatedAt both
+  /// use server timestamps and will be updated on each write (acceptable for
+  /// aggregated data that changes frequently).
   Map<String, dynamic> _buildDailySummaryWithIncrements(
     DateTime date,
     SummaryUpdateDto dto,
@@ -1538,7 +1549,7 @@ class LoggingService {
       while (ops < maxOps && medIndex < medicationSessions.length) {
         final s = medicationSessions[medIndex++];
         final ref = _getMedicationSessionRef(userId, petId, s.id);
-        batch.set(ref, s.toJson());
+        batch.set(ref, _buildSessionCreateData(s.toJson()));
         ops++;
       }
 
@@ -1546,7 +1557,7 @@ class LoggingService {
       while (ops < maxOps && fluidIndex < fluidSessions.length) {
         final s = fluidSessions[fluidIndex++];
         final ref = _getFluidSessionRef(userId, petId, s.id);
-        batch.set(ref, s.toJson());
+        batch.set(ref, _buildSessionCreateData(s.toJson()));
         ops++;
       }
 

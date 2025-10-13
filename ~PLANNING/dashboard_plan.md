@@ -18,26 +18,26 @@ This feature provides an action-oriented, clear visual list of pending treatment
 ## User Experience Requirements
 
 ### Core User Flow
-1. **User opens home screen** ’ Sees list of pending treatments for today
-2. **User taps treatment card** ’ Popup appears with treatment summary
-3. **User confirms/skips** ’ Treatment immediately updates with animation
-4. **Visual feedback** ’ Success animation, card disappears or updates
+1. **User opens home screen** ï¿½ Sees list of pending treatments for today
+2. **User taps treatment card** ï¿½ Popup appears with treatment summary
+3. **User confirms/skips** ï¿½ Treatment immediately updates with animation
+4. **Visual feedback** ï¿½ Success animation, card disappears or updates
 
 ### Treatment Display Logic
 
 #### Medications (Individual Reminder Times)
 - **Display**: One card per scheduled reminder time
 - **Format**: "Amlodipine 1 pill at 8:00 AM"
-- **Granularity**: If medication scheduled 2x/day (8am, 8pm) ’ Show 2 separate cards
-- **Completion Detection**: Use ±2h window matching (same as `LoggingService`)
-  - If scheduled 8am and logged 7:30am ’ Mark as complete
+- **Granularity**: If medication scheduled 2x/day (8am, 8pm) ï¿½ Show 2 separate cards
+- **Completion Detection**: Use ï¿½2h window matching (same as `LoggingService`)
+  - If scheduled 8am and logged 7:30am ï¿½ Mark as complete
   - Cache check: `medicationNames.contains(medicationName)` for today
 
 #### Fluids (Aggregated Volume)
 - **Display**: Single card showing remaining volume for today
 - **Format**: "Fluid Therapy: 200mL remaining"
 - **Aggregation**: `totalScheduledVolume - totalLoggedVolume`
-- **Example**: Scheduled 100mL 2x/day, logged 80mL ’ Show "120mL remaining"
+- **Example**: Scheduled 100mL 2x/day, logged 80mL ï¿½ Show "120mL remaining"
 
 ### Visual States
 
@@ -111,11 +111,11 @@ This feature provides an action-oriented, clear visual list of pending treatment
 #### 1. Client-Side Aggregation (Zero Firestore Reads)
 ```
 ProfileProvider (schedules) + DailySummaryCache (logged sessions)
-                    “
+                    ï¿½
         DashboardProvider (NEW)
-                    “
+                    ï¿½
     Calculates pending treatments
-                    “
+                    ï¿½
         HomeScreen displays cards
 ```
 
@@ -129,9 +129,9 @@ bool isMedicationCompleted(Schedule schedule, DateTime reminderTime, DailySummar
     return false; // Not logged today
   }
 
-  // Step 2: Check time window (±2 hours, same as LoggingService)
+  // Step 2: Check time window (ï¿½2 hours, same as LoggingService)
   // Use cache.medicationRecentTimes[medicationName] for time-based check
-  // If any logged session within ±2h of reminderTime, mark complete
+  // If any logged session within ï¿½2h of reminderTime, mark complete
 
   return hasSessionWithin2Hours(cache, schedule.medicationName, reminderTime);
 }
@@ -139,19 +139,31 @@ bool isMedicationCompleted(Schedule schedule, DateTime reminderTime, DailySummar
 
 **Fluids** (Volume Aggregation):
 ```dart
-double calculateRemainingFluidVolume(Schedule schedule, DailySummaryCache cache) {
-  // Step 1: Calculate total scheduled volume for today
-  final totalScheduled = schedule.targetVolume! * schedule.reminderTimes.length;
+double calculateRemainingFluidVolume(
+  Schedule schedule,
+  DailySummaryCache cache,
+  DateTime now,
+) {
+  // Step 1: Count only today's planned sessions
+  final today = DateTime(now.year, now.month, now.day);
+  final sessionsToday = schedule.reminderTimes.where((t) =>
+    DateTime(t.year, t.month, t.day).isAtSameMomentAs(today),
+  ).length;
 
-  // Step 2: Get total logged volume from cache
+  // Step 2: Calculate total scheduled volume for today
+  final perSession = schedule.targetVolume ?? 0.0;
+  final totalScheduled = perSession * sessionsToday;
+
+  // Step 3: Get total logged volume from cache
   final totalLogged = cache.totalFluidVolumeGiven;
 
-  // Step 3: Calculate remaining
+  // Step 4: Calculate remaining
   final remaining = totalScheduled - totalLogged;
 
   return remaining > 0 ? remaining : 0;
 }
 ```
+Note: The sessions-today counting mirrors the helper used in `fluid_schedule_screen.dart`. Keep this logic provider-side and independent of any UI editing state.
 
 #### 3. Overdue Detection
 ```dart
@@ -166,7 +178,7 @@ bool isOverdue(DateTime scheduledTime, DateTime now) {
 #### New Provider: `dashboardProvider`
 **Location**: `lib/providers/dashboard_provider.dart`
 
-**Purpose**: Aggregate schedules + cache ’ pending treatments
+**Purpose**: Aggregate schedules + cache ï¿½ pending treatments
 
 **State Model**: `DashboardState`
 ```dart
@@ -427,8 +439,8 @@ class DashboardState {
 ```dart
 /// Check if medication has been logged within time window of scheduled time
 ///
-/// Used for dashboard completion detection with ±2h window.
-/// Returns true if any session for this medication exists within ±2h
+/// Used for dashboard completion detection with ï¿½2h window.
+/// Returns true if any session for this medication exists within ï¿½2h
 /// of the target scheduled time.
 bool hasMedicationLoggedNear(String medicationName, DateTime scheduledTime) {
   // Check if medication logged today at all
@@ -442,7 +454,7 @@ bool hasMedicationLoggedNear(String medicationName, DateTime scheduledTime) {
     return false;
   }
 
-  // Check if any logged time is within ±2 hours of scheduled time
+  // Check if any logged time is within ï¿½2 hours of scheduled time
   const timeWindow = Duration(hours: 2);
 
   for (final timeStr in recentTimes) {
@@ -528,7 +540,7 @@ Replace placeholder cards with actual dashboard implementation - see detailed co
    - Pending medication calculation
    - Pending fluid aggregation
    - Overdue detection
-   - Time window matching (±2h)
+   - Time window matching (ï¿½2h)
 
 2. **Model Tests** (`models/pending_treatment_test.dart`):
    - Display helper formatting
@@ -552,10 +564,10 @@ Replace placeholder cards with actual dashboard implementation - see detailed co
 **Location**: `integration_test/`
 
 1. **End-to-End Flow** (`dashboard_flow_test.dart`):
-   - Create schedule ’ View pending ’ Confirm ’ Verify disappears
-   - Create schedule ’ View pending ’ Skip ’ Verify logged as skipped
-   - Multiple medications ’ Verify correct ordering
-   - Fluid + meds ’ Verify both sections display
+   - Create schedule ï¿½ View pending ï¿½ Confirm ï¿½ Verify disappears
+   - Create schedule ï¿½ View pending ï¿½ Skip ï¿½ Verify logged as skipped
+   - Multiple medications ï¿½ Verify correct ordering
+   - Fluid + meds ï¿½ Verify both sections display
 
 ---
 

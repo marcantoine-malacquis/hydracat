@@ -305,13 +305,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fluidTherapySetupTitle => 'Fluid Therapy Setup';
 
   @override
-  String get volumeLabel => 'Volume (ml) *';
+  String get volumeLabel => 'Volume per session (mL) *';
 
   @override
   String get volumeHint => '100.0';
 
   @override
   String get volumeHelperText => 'Typical range: 50-300ml for cats';
+
+  @override
+  String totalPlannedToday(int volume) {
+    return 'Total planned today: $volume mL';
+  }
 
   @override
   String get preferredLocationLabel => 'Preferred Administration Location';

@@ -6,6 +6,7 @@ import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/onboarding/widgets/rotating_wheel_picker.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/features/profile/widgets/editable_medical_field.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 
@@ -457,11 +458,21 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
 
   /// Build volume section
   Widget _buildVolumeSection() {
+    final schedule = ref.watch(fluidScheduleProvider);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final countToday = (schedule?.reminderTimes ?? [])
+        .where((t) => DateTime(t.year, t.month, t.day).isAtSameMomentAs(today))
+        .length;
+    final totalPlannedToday = (countToday > 0 && (_editingVolume ?? 0) > 0)
+        ? (countToday * (_editingVolume ?? 0)).toInt()
+        : 0;
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Volume per Administration',
+          'Volume per session (mL)',
           style: AppTextStyles.h3.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,
@@ -524,7 +535,7 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
         ] else ...[
           // Display mode
           EditableMedicalField(
-            label: 'Volume per Administration',
+            label: 'Volume per session (mL)',
             value: _editingVolume != null
                 ? '${_editingVolume!.toInt()}ml'
                 : 'No information',
@@ -537,6 +548,14 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
             },
           ),
         ],
+        const SizedBox(height: AppSpacing.sm),
+        if (totalPlannedToday > 0)
+          Text(
+            l10n.totalPlannedToday(totalPlannedToday),
+            style: AppTextStyles.body.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
       ],
     );
   }

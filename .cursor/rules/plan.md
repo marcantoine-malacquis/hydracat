@@ -21,10 +21,28 @@ Please follow Firebase and Flutter best practices and use built-in solutions whe
 
 Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself.
 
+## Review prompt example ##
+  
+I would like to review the code related my onboarding feature in @onboarding/ to identify inconsistencies or dead code meaning:
+- two different ways of achieving the same thing
+- custom solutions when simpler and future-proof Flutter/Dart built-in solutions exist
+- dead code (code that isn't actually used anywhere)
+- deviance from industry-standards
+- documentation reflects actual code
+- incoherence with @prd.md @firebase_CRUDrules.md
+- wrong use of the file architecture including code present in @core/ 
+- useless dependencies when more robust methods could be implemented instead 
+
+Please also use the useful guidelines in @code_review.md to make sure the code is up to my standards.
+Basically, I want to make sure the onboarding code is production ready, follow best practices, industry-standards whenever possible so I can share it in the future with a developper team that will understand it easily.
+After your careful and detailled analysis, please write your result in ... before we tackle each fix one by one.
+I already did something similar in @onboarding_code_review_report.md . I don't need to know how long it would take to fix the issue. I don't need a checklist. Regarding database, I don't need to worry about backward compatibility since I will regularily delete the database manually anyway for testing throughout the development.
+
+##
+
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
 
-I just finished creating the Implementation plan for the home screen dashboard in @dashboard_plan.md . I want it to include the 
 
 
 

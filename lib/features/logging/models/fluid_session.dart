@@ -111,10 +111,12 @@ class FluidSession {
           ? _parseDateTime(json['scheduledTime'])
           : null,
       createdAt: _parseDateTime(json['createdAt']),
-      syncedAt:
-          json['syncedAt'] != null ? _parseDateTime(json['syncedAt']) : null,
-      updatedAt:
-          json['updatedAt'] != null ? _parseDateTime(json['updatedAt']) : null,
+      syncedAt: json['syncedAt'] != null
+          ? _parseDateTime(json['syncedAt'])
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? _parseDateTime(json['updatedAt'])
+          : null,
     );
   }
 
@@ -181,8 +183,7 @@ class FluidSession {
   bool get isSynced => syncedAt != null;
 
   /// Whether this session has been modified after creation
-  bool get wasModified =>
-      updatedAt != null && updatedAt!.isAfter(createdAt);
+  bool get wasModified => updatedAt != null && updatedAt!.isAfter(createdAt);
 
   /// Whether this session is pending sync
   bool get isPendingSync => !isSynced;
@@ -235,16 +236,16 @@ class FluidSession {
       'id': id,
       'petId': petId,
       'userId': userId,
-      'dateTime': dateTime.toIso8601String(),
+      'dateTime': dateTime,
       'volumeGiven': volumeGiven,
       'injectionSite': injectionSite?.name,
       'stressLevel': stressLevel,
       'notes': notes,
       'scheduleId': scheduleId,
-      'scheduledTime': scheduledTime?.toIso8601String(),
-      'createdAt': createdAt.toIso8601String(),
-      'syncedAt': syncedAt?.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
+      'scheduledTime': scheduledTime,
+      'createdAt': createdAt,
+      'syncedAt': syncedAt,
+      'updatedAt': updatedAt,
     };
   }
 
