@@ -127,12 +127,11 @@ All six critical integration points are optimally designed for logging implement
 
 **Key Implementation Details:**
 
-**Enhanced Timestamp Schema (4 timestamps):**
+**Enhanced Timestamp Schema (3 timestamps):**
 ```
 medicationSessions/{sessionId}
   ├── dateTime: Timestamp       // Medical: when treatment occurred
   ├── createdAt: Timestamp      // Audit: when user logged it (client-side)
-  ├── syncedAt: Timestamp       // Sync: server confirmation (optional)
   └── updatedAt: Timestamp      // Modification: last edit time (optional)
 ```
 
@@ -140,7 +139,7 @@ medicationSessions/{sessionId}
 - UUID-based session IDs (client-side generation)
 - Factory constructors: `create()` and `fromSchedule()`
 - Adherence helpers: `adherencePercentage`, `isFullDose`, `isPartialDose`, `isMissed`
-- Sync helpers: `isSynced`, `wasModified`, `isPendingSync`
+- Sync helpers: `wasModified`
 - Structural validation following `ProfileValidationService` pattern
 - Conditional JSON serialization (only includes `customMedicationStrengthUnit` if non-null)
 - Firestore Timestamp parsing support
@@ -149,7 +148,7 @@ medicationSessions/{sessionId}
 - UUID-based session IDs (client-side generation)
 - Factory constructors: `create()` and `fromSchedule()`
 - Type-safe `FluidLocation` enum for injection sites (not string!)
-- Sync helpers: `isSynced`, `wasModified`, `isPendingSync`
+- Sync helpers: `wasModified`
 - Volume validation: 1-500ml range
 - Stress level validation: "low", "medium", "high"
 - Enum ↔ string conversion in JSON serialization
@@ -181,7 +180,6 @@ class MedicationSession {
   final String? scheduleId;           // Link to reminder schedule
   final DateTime? scheduledTime;      // Original scheduled time
   final DateTime createdAt;           // Audit: client logging time
-  final DateTime? syncedAt;           // Sync: server confirmation
   final DateTime? updatedAt;          // Modification: last edit time
 
   // Factory constructors, validation, adherence helpers, JSON methods...
@@ -200,7 +198,6 @@ class FluidSession {
   final String? scheduleId;           // Link to reminder schedule
   final DateTime? scheduledTime;      // Original scheduled time
   final DateTime createdAt;           // Audit: client logging time
-  final DateTime? syncedAt;           // Sync: server confirmation
   final DateTime? updatedAt;          // Modification: last edit time
 
   // Factory constructors, validation, sync helpers, JSON methods...

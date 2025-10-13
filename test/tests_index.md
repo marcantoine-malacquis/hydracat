@@ -95,7 +95,7 @@ This document provides a comprehensive index of all test files in the HydraCat p
 **Coverage**:
 - Factory constructors (`create()`, `fromSchedule()`)
 - Validation rules (volume 1-500ml, stress level, future dates)
-- Sync helpers (`isSynced`, `isPendingSync`, `wasModified`)
+- Sync helpers (`wasModified`)
 - JSON serialization with FluidLocation enum
 - `copyWith` functionality
 

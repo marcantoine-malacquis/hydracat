@@ -69,7 +69,6 @@ class MedicationSessionBuilder {
   String? _notes;
   String? _scheduleId;
   DateTime? _scheduledTime;
-  DateTime? _syncedAt;
   DateTime? _updatedAt;
 
   /// Sets the session ID
@@ -163,12 +162,6 @@ class MedicationSessionBuilder {
     return this;
   }
 
-  /// Sets synced at timestamp
-  MedicationSessionBuilder withSyncedAt(DateTime? syncedAt) {
-    _syncedAt = syncedAt;
-    return this;
-  }
-
   /// Sets updated at timestamp
   MedicationSessionBuilder withUpdatedAt(DateTime? updatedAt) {
     _updatedAt = updatedAt;
@@ -194,7 +187,6 @@ class MedicationSessionBuilder {
       scheduleId: _scheduleId,
       scheduledTime: _scheduledTime,
       createdAt: _createdAt,
-      syncedAt: _syncedAt,
       updatedAt: _updatedAt,
     );
   }
@@ -234,7 +226,6 @@ class FluidSessionBuilder {
   String? _notes;
   String? _scheduleId;
   DateTime? _scheduledTime;
-  DateTime? _syncedAt;
   DateTime? _updatedAt;
 
   /// Sets the session ID
@@ -303,12 +294,6 @@ class FluidSessionBuilder {
     return this;
   }
 
-  /// Sets synced at timestamp
-  FluidSessionBuilder withSyncedAt(DateTime? syncedAt) {
-    _syncedAt = syncedAt;
-    return this;
-  }
-
   /// Sets updated at timestamp
   FluidSessionBuilder withUpdatedAt(DateTime? updatedAt) {
     _updatedAt = updatedAt;
@@ -329,7 +314,6 @@ class FluidSessionBuilder {
       scheduleId: _scheduleId,
       scheduledTime: _scheduledTime,
       createdAt: _createdAt,
-      syncedAt: _syncedAt,
       updatedAt: _updatedAt,
     );
   }

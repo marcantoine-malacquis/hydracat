@@ -141,19 +141,9 @@ class _MedicationLoggingScreenState
       for (final medicationId in _selectedMedicationIds) {
         final schedule = schedules.firstWhere((s) => s.id == medicationId);
 
-        // Get today's scheduled time for this medication
+        // Get today's scheduled time for this medication (centralized helper)
         final now = DateTime.now();
-        final todaysReminderTimes = schedule.reminderTimes.where((
-          reminderTime,
-        ) {
-          final reminderDate = DateTime(
-            reminderTime.year,
-            reminderTime.month,
-            reminderTime.day,
-          );
-          final today = DateTime(now.year, now.month, now.day);
-          return reminderDate.isAtSameMomentAs(today);
-        }).toList();
+        final todaysReminderTimes = schedule.todaysReminderTimes(now).toList();
 
         // Use the first reminder time for today as the scheduled time
         // If no reminder time for today, use current time as fallback
@@ -277,19 +267,11 @@ class _MedicationLoggingScreenState
     required CatProfile pet,
     required String? notes,
   }) async {
-    // Get today's scheduled time for this medication
+    // Get today's scheduled time for this medication (centralized helper)
     final now = DateTime.now();
-    final todaysReminderTimes = medicationSchedule.reminderTimes.where((
-      reminderTime,
-    ) {
-      final reminderDate = DateTime(
-        reminderTime.year,
-        reminderTime.month,
-        reminderTime.day,
-      );
-      final today = DateTime(now.year, now.month, now.day);
-      return reminderDate.isAtSameMomentAs(today);
-    }).toList();
+    final todaysReminderTimes = medicationSchedule
+        .todaysReminderTimes(now)
+        .toList();
 
     // Use the first reminder time for today as the scheduled time
     // If no reminder time for today, use current time as fallback

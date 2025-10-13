@@ -93,6 +93,25 @@ class AnalyticsEvents {
 
   /// Cache warmed on startup event name
   static const String cacheWarmedOnStartup = 'cache_warmed_on_startup';
+
+  // Failures (explicit hooks for product insights)
+  /// Session log failed event name
+  static const String sessionLogFailed = 'session_log_failed';
+
+  /// Session update failed event name
+  static const String sessionUpdateFailed = 'session_update_failed';
+
+  /// Quick log failed event name
+  static const String quickLogFailed = 'quick_log_failed';
+
+  /// Offline sync failed event name
+  static const String offlineSyncFailed = 'offline_sync_failed';
+
+  /// Validation failed event name
+  static const String validationFailed = 'validation_failed';
+
+  /// Duplicate prevented event name
+  static const String duplicatePrevented = 'duplicate_prevented';
 }
 
 /// Analytics parameters
@@ -193,6 +212,19 @@ class AnalyticsParams {
 
   /// Fluid session count parameter name
   static const String fluidSessionCount = 'fluid_session_count';
+
+  // Extended logging params
+  /// Source of logging action (manual | quick_log | update)
+  static const String source = 'source';
+
+  /// Error code reported by backend if any
+  static const String errorCode = 'error_code';
+
+  /// Exception type/class name (non-sensitive)
+  static const String exception = 'exception';
+
+  /// Duration in milliseconds for the operation
+  static const String durationMs = 'duration_ms';
 }
 
 /// Standardized error type constants for analytics tracking
@@ -435,6 +467,34 @@ class AnalyticsService {
     );
   }
 
+  /// Track logging failures with standardized context
+  Future<void> trackLoggingFailure({
+    required String errorType,
+    String? treatmentType,
+    String? source,
+    String? errorCode,
+    String? exception,
+    Map<String, Object?> extra = const {},
+  }) async {
+    if (!_isEnabled) return;
+
+    final params = <String, Object?>{
+      AnalyticsParams.errorType: errorType,
+      if (treatmentType != null) AnalyticsParams.treatmentType: treatmentType,
+      if (source != null) AnalyticsParams.source: source,
+      if (errorCode != null) AnalyticsParams.errorCode: errorCode,
+      if (exception != null) AnalyticsParams.exception: exception,
+      ...extra,
+    };
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.error,
+      parameters: Map<String, Object>.from(
+        params..removeWhere((k, v) => v == null),
+      ),
+    );
+  }
+
   /// Clear user data (on sign out)
   Future<void> clearUserData() async {
     if (!_isEnabled) return;
@@ -565,6 +625,8 @@ class AnalyticsService {
     required String adherenceStatus,
     String? medicationName,
     double? volumeGiven,
+    String? source,
+    int? durationMs,
   }) async {
     if (!_isEnabled) return;
 
@@ -577,6 +639,8 @@ class AnalyticsService {
         AnalyticsParams.adherenceStatus: adherenceStatus,
         if (medicationName != null) 'medication_name': medicationName,
         if (volumeGiven != null) AnalyticsParams.volumeGiven: volumeGiven,
+        if (source != null) AnalyticsParams.source: source,
+        if (durationMs != null) AnalyticsParams.durationMs: durationMs,
       },
     );
   }
@@ -586,6 +650,7 @@ class AnalyticsService {
     required int sessionCount,
     required int medicationCount,
     required int fluidCount,
+    int? durationMs,
   }) async {
     if (!_isEnabled) return;
 
@@ -595,6 +660,7 @@ class AnalyticsService {
         AnalyticsParams.sessionCount: sessionCount,
         AnalyticsParams.medicationCount: medicationCount,
         'fluid_count': fluidCount,
+        if (durationMs != null) AnalyticsParams.durationMs: durationMs,
       },
     );
   }
@@ -603,6 +669,8 @@ class AnalyticsService {
   Future<void> trackSessionUpdated({
     required String treatmentType,
     required String updateReason,
+    String? source,
+    int? durationMs,
   }) async {
     if (!_isEnabled) return;
 
@@ -611,6 +679,8 @@ class AnalyticsService {
       parameters: {
         AnalyticsParams.treatmentType: treatmentType,
         'update_reason': updateReason,
+        if (source != null) AnalyticsParams.source: source,
+        if (durationMs != null) AnalyticsParams.durationMs: durationMs,
       },
     );
   }

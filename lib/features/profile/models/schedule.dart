@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/core/utils/dosage_text_utils.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/shared/models/schedule_dto.dart';
@@ -405,22 +406,35 @@ extension ScheduleDateHelpers on Schedule {
   /// - true if at least one reminder time is for today
   /// - false if no reminder times match today's date
   bool hasReminderTimeToday(DateTime now) {
-    final today = DateTime(now.year, now.month, now.day);
+    return hasReminderOnDate(now);
+  }
 
-    for (final reminderTime in reminderTimes) {
-      final reminderDate = DateTime(
-        reminderTime.year,
-        reminderTime.month,
-        reminderTime.day,
-      );
-
-      if (reminderDate.isAtSameMomentAs(today)) {
+  /// Returns true if at least one reminder falls on the provided [date].
+  /// Normalizes comparisons using [AppDateUtils.startOfDay] to avoid drift.
+  bool hasReminderOnDate(DateTime date) {
+    final day = AppDateUtils.startOfDay(date);
+    for (final reminder in reminderTimes) {
+      if (AppDateUtils.startOfDay(reminder).isAtSameMomentAs(day)) {
         return true;
       }
     }
-
     return false;
   }
+
+  /// Returns all reminder times that fall on the provided [date].
+  /// Normalizes comparisons using [AppDateUtils.startOfDay].
+  Iterable<DateTime> reminderTimesOnDate(DateTime date) sync* {
+    final day = AppDateUtils.startOfDay(date);
+    for (final reminder in reminderTimes) {
+      if (AppDateUtils.startOfDay(reminder).isAtSameMomentAs(day)) {
+        yield reminder;
+      }
+    }
+  }
+
+  /// Convenience wrapper to get today's reminder times based on [now].
+  Iterable<DateTime> todaysReminderTimes(DateTime now) =>
+      reminderTimesOnDate(now);
 }
 
 /// Extension for medication display helpers

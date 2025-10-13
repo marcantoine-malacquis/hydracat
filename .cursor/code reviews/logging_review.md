@@ -3,8 +3,8 @@ Date: 2025-10-13
 
 ### Executive Summary
 - Overall assessment: 9/10 – Strong architecture, good Firebase cost practices; timestamp issues resolved
-- **Fixed (2025-10-13)**: ✅ Timestamp consistency, ✅ Quick-log chunk server timestamps, ✅ Stale write-count docs, ✅ Duplicate detection consolidation
-- Remaining: Hardcoded strings (i18n), unused syncedAt field
+- **Fixed (2025-10-13)**: ✅ Timestamp consistency, ✅ Quick-log chunk server timestamps, ✅ Stale write-count docs, ✅ Duplicate detection consolidation, ✅ Validation exception conversion centralized
+- Remaining: Hardcoded strings (i18n)
 - Strengths: Clear layering (models/services/UI), batch writes, cache-first reads, offline queue, good separation of concerns
 
 ---
@@ -212,20 +212,10 @@ Text(
 
 ## 🟨 Moderate Issues
 
-### A) `syncedAt` field present but unused
-- Models expose `syncedAt` and `isSynced`, but no service ever sets `syncedAt`.
+### A) ✅ RESOLVED: `syncedAt` field present but unused
+- ~~Models expose `syncedAt` and `isSynced`, but no service ever sets `syncedAt`.~~
 
-Code reference:
-```172:176:/Users/marc-antoinemalacquis/Development/projects/hydracat/lib/features/logging/models/medication_session.dart
-/// Sync timestamp: when Firestore confirmed receipt (server timestamp)
-final DateTime? syncedAt;
-```
-```180:186:/Users/marc-antoinemalacquis/Development/projects/hydracat/lib/features/logging/models/fluid_session.dart
-/// Sync timestamp: when Firestore confirmed receipt (server timestamp)
-final DateTime? syncedAt;
-```
-
-- Recommendation: Remove `syncedAt` (use `updatedAt` as audit), or implement setting it (server-side via Cloud Functions). Prefer removal for simplicity.
+**Resolution**: Removed `syncedAt` field and related `isSynced`/`isPendingSync` getters from both `MedicationSession` and `FluidSession` models. The `updatedAt` field (set via server timestamp) serves as the sync confirmation audit trail. The `wasModified` getter remains for tracking edits.
 
 ### B) Update paths use client time for `updatedAt`
 - `updateMedicationSession`/`updateFluidSession` set `updatedAt: DateTime.now()` and update raw JSON without server timestamp.
@@ -240,15 +230,64 @@ batch.update(
 
 - Recommendation: Apply `FieldValue.serverTimestamp()` for `updatedAt` on updates, not client time.
 
-### C) Validation exception conversion is brittle
-- Medication name is extracted from error message with regex in `toLoggingException`, which is fragile.
+### C) ✅ FIXED (2025-10-13) - Validation exception conversion is brittle
+**Status**: Resolved – Centralized conversion via `toLoggingException(...)` with structured duplicate context. Regex parsing removed. `LoggingService` now throws exceptions exclusively through the converter.
 
-Code reference:
-```441:465:/Users/marc-antoinemalacquis/Development/projects/hydracat/lib/features/logging/services/logging_validation_service.dart
-final match = RegExp("You've already logged (.+?) today").firstMatch(errorMessage);
+Code references:
+```115:138:/Users/marc-antoinemalacquis/Development/projects/hydracat/lib/features/logging/services/logging_service.dart
+      // STEP 2: Duplicate detection (throws if found)
+      if (_validationService != null) {
+        final duplicateResult = _validationService.validateForDuplicates(
+          newSession: session,
+          recentSessions: recentSessions,
+        );
+        if (!duplicateResult.isValid) {
+          // Find the actual duplicate session using validation service
+          final duplicate = _validationService.findDuplicateSession(
+            newSession: session,
+            recentSessions: recentSessions,
+          );
+          if (kDebugMode) {
+            debugPrint(
+              '[LoggingService] Duplicate medication detected: '
+              '${duplicate?.medicationName} at ${duplicate?.dateTime}',
+            );
+          }
+
+          throw _validationService.toLoggingException(
+            duplicateResult,
+            duplicateSession: duplicate,
+          );
+        }
+      }
+```
+```482:501:/Users/marc-antoinemalacquis/Development/projects/hydracat/lib/features/logging/services/logging_validation_service.dart
+LoggingException toLoggingException(
+  ValidationResult result, {
+  MedicationSession? duplicateSession,
+}) {
+  if (result.isValid) {
+    throw ArgumentError('Cannot create exception from valid result');
+  }
+
+  // Check if any errors are duplicates
+  final duplicateErrors = result.getErrorsByType(
+    ValidationErrorType.duplicate,
+  );
+  if (duplicateErrors.isNotEmpty) {
+    return DuplicateSessionException(
+      sessionType: 'medication',
+      conflictingTime: duplicateSession?.dateTime ?? DateTime.now(),
+      medicationName: duplicateSession?.medicationName,
+      existingSession: duplicateSession,
+    );
+  }
 ```
 
-- Recommendation: Return structured duplicate context (e.g., matched session) from validation to avoid parsing strings.
+**Resolution Applied**:
+- ✅ Centralized `ValidationResult` → `LoggingException` mapping
+- ✅ Removed regex parsing; pass `existingSession`, `medicationName`, `conflictingTime`
+- ✅ Updated README samples to use the converter
 
 ### D) Minor design token drift
 - Several hardcoded radii (`10`) and icon sizes not tokenized. Spacing is mostly tokenized via `AppSpacing` – good.
@@ -272,6 +311,7 @@ final match = RegExp("You've already logged (.+?) today").firstMatch(errorMessag
 - ✅ Server timestamps now enforced consistently across all create/update/quick-log operations
 - ✅ All datetime fields now use `Timestamp` type for storage and querying
 - ✅ Query performance improved with proper Timestamp-based filtering
+- ✅ Validation exception conversion centralized with structured duplicate context
 
 ---
 

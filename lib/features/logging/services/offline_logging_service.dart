@@ -195,6 +195,19 @@ class OfflineLoggingService {
       syncDurationMs: durationMs,
     );
 
+    // Explicit failure hook for product insights
+    if (failureCount > 0) {
+      await _analyticsService?.trackLoggingFailure(
+        errorType: AnalyticsEvents.offlineSyncFailed,
+        source: 'offline_sync',
+        exception: 'SyncFailedException',
+        extra: {
+          AnalyticsParams.queueSize: initialQueueSize,
+          AnalyticsParams.failureCount: failureCount,
+        },
+      );
+    }
+
     // Throw exception if any operations failed
     // This signals to the UI that sync partially failed and
     // user should see retry option

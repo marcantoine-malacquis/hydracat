@@ -695,6 +695,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         );
       }
 
+      final quickLogStart = DateTime.now();
       final sessionCount = await _loggingService.quickLogAllTreatments(
         userId: user.id,
         petId: pet.id,
@@ -775,6 +776,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         sessionCount: sessionCount,
         medicationCount: medicationCount,
         fluidCount: fluidCount,
+        durationMs: DateTime.now().difference(quickLogStart).inMilliseconds,
       );
 
       if (kDebugMode) {
@@ -792,12 +794,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         error: _handleError(e),
       );
 
-      // Track analytics failure
-      final analyticsService = _ref.read(analyticsServiceDirectProvider);
-      await analyticsService.trackError(
-        errorType: AnalyticsErrorTypes.quickLogFailure,
-        errorContext: e.toString(),
-      );
+      // Error analytics tracked in service to avoid double-counting
 
       if (kDebugMode) {
         debugPrint('[LoggingNotifier] Quick-log error: $e');
@@ -960,6 +957,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       await loadTodaysCache();
 
       // STEP 6: Track analytics
+      final medStart = DateTime.now();
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
       await analyticsService.trackSessionLogged(
         treatmentType: 'medication',
@@ -967,6 +965,8 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         isQuickLog: false,
         adherenceStatus: session.completed ? 'complete' : 'partial',
         medicationName: session.medicationName,
+        source: 'manual',
+        durationMs: DateTime.now().difference(medStart).inMilliseconds,
       );
 
       if (kDebugMode) {
@@ -1016,12 +1016,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         error: _handleError(e),
       );
 
-      // Track analytics failure
-      final analyticsService = _ref.read(analyticsServiceDirectProvider);
-      await analyticsService.trackError(
-        errorType: AnalyticsErrorTypes.logMedicationFailure,
-        errorContext: e.toString(),
-      );
+      // Error analytics tracked in service to avoid double-counting
 
       if (kDebugMode) {
         debugPrint('[LoggingNotifier] Medication logging error: $e');
@@ -1168,6 +1163,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       await loadTodaysCache();
 
       // STEP 5: Track analytics
+      final fluidStart = DateTime.now();
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
       await analyticsService.trackSessionLogged(
         treatmentType: 'fluid',
@@ -1175,6 +1171,8 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         isQuickLog: false,
         adherenceStatus: 'complete',
         volumeGiven: session.volumeGiven,
+        source: 'manual',
+        durationMs: DateTime.now().difference(fluidStart).inMilliseconds,
       );
 
       if (kDebugMode) {
@@ -1189,12 +1187,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         error: _handleError(e),
       );
 
-      // Track analytics failure
-      final analyticsService = _ref.read(analyticsServiceDirectProvider);
-      await analyticsService.trackError(
-        errorType: AnalyticsErrorTypes.logFluidFailure,
-        errorContext: e.toString(),
-      );
+      // Error analytics tracked in service to avoid double-counting
 
       if (kDebugMode) {
         debugPrint('[LoggingNotifier] Fluid logging error: $e');

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/onboarding/widgets/rotating_wheel_picker.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
@@ -460,9 +461,9 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
   Widget _buildVolumeSection() {
     final schedule = ref.watch(fluidScheduleProvider);
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final today = AppDateUtils.startOfDay(now);
     final countToday = (schedule?.reminderTimes ?? [])
-        .where((t) => DateTime(t.year, t.month, t.day).isAtSameMomentAs(today))
+        .where((t) => AppDateUtils.startOfDay(t).isAtSameMomentAs(today))
         .length;
     final totalPlannedToday = (countToday > 0 && (_editingVolume ?? 0) > 0)
         ? (countToday * (_editingVolume ?? 0)).toInt()

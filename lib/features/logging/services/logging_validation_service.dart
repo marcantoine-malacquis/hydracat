@@ -496,6 +496,7 @@ class LoggingValidationService {
         sessionType: 'medication',
         conflictingTime: duplicateSession?.dateTime ?? DateTime.now(),
         medicationName: duplicateSession?.medicationName,
+        existingSession: duplicateSession,
       );
     }
 

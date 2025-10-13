@@ -183,20 +183,6 @@ void main() {
     });
 
     group('Sync Helpers', () {
-      test('isSynced returns true when syncedAt is not null', () {
-        final session = FluidSessionBuilder()
-            .withSyncedAt(DateTime.now())
-            .build();
-
-        expect(session.isSynced, true);
-      });
-
-      test('isSynced returns false when syncedAt is null', () {
-        final session = FluidSessionBuilder().build();
-
-        expect(session.isSynced, false);
-      });
-
       test('wasModified returns true when updatedAt is not null', () {
         final session = FluidSessionBuilder()
             .withUpdatedAt(DateTime.now())
@@ -209,20 +195,6 @@ void main() {
         final session = FluidSessionBuilder().build();
 
         expect(session.wasModified, false);
-      });
-
-      test('isPendingSync returns true when not synced', () {
-        final session = FluidSessionBuilder().withSyncedAt(null).build();
-
-        expect(session.isPendingSync, true);
-      });
-
-      test('isPendingSync returns false when synced', () {
-        final session = FluidSessionBuilder()
-            .withSyncedAt(DateTime.now())
-            .build();
-
-        expect(session.isPendingSync, false);
       });
     });
 
@@ -316,7 +288,6 @@ void main() {
         expect(session.stressLevel, null);
         expect(session.notes, null);
         expect(session.scheduleId, null);
-        expect(session.syncedAt, null);
         expect(session.updatedAt, null);
       });
     });

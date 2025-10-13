@@ -24,7 +24,6 @@ class FluidSession {
     this.notes,
     this.scheduleId,
     this.scheduledTime,
-    this.syncedAt,
     this.updatedAt,
   });
 
@@ -111,9 +110,6 @@ class FluidSession {
           ? _parseDateTime(json['scheduledTime'])
           : null,
       createdAt: _parseDateTime(json['createdAt']),
-      syncedAt: json['syncedAt'] != null
-          ? _parseDateTime(json['syncedAt'])
-          : null,
       updatedAt: json['updatedAt'] != null
           ? _parseDateTime(json['updatedAt'])
           : null,
@@ -171,22 +167,13 @@ class FluidSession {
   /// Audit timestamp: when the user created this log entry
   final DateTime createdAt;
 
-  /// Sync timestamp: when Firestore confirmed receipt (server timestamp)
-  final DateTime? syncedAt;
-
   /// Modification timestamp: when this session was last edited
   final DateTime? updatedAt;
 
   // Sync helpers
 
-  /// Whether this session has been synced to the server
-  bool get isSynced => syncedAt != null;
-
   /// Whether this session has been modified after creation
   bool get wasModified => updatedAt != null && updatedAt!.isAfter(createdAt);
-
-  /// Whether this session is pending sync
-  bool get isPendingSync => !isSynced;
 
   // Validation
 
@@ -244,7 +231,6 @@ class FluidSession {
       'scheduleId': scheduleId,
       'scheduledTime': scheduledTime,
       'createdAt': createdAt,
-      'syncedAt': syncedAt,
       'updatedAt': updatedAt,
     };
   }
@@ -262,7 +248,6 @@ class FluidSession {
     String? scheduleId,
     DateTime? scheduledTime,
     DateTime? createdAt,
-    DateTime? syncedAt,
     DateTime? updatedAt,
   }) {
     return FluidSession(
@@ -277,7 +262,6 @@ class FluidSession {
       scheduleId: scheduleId ?? this.scheduleId,
       scheduledTime: scheduledTime ?? this.scheduledTime,
       createdAt: createdAt ?? this.createdAt,
-      syncedAt: syncedAt ?? this.syncedAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
@@ -298,7 +282,6 @@ class FluidSession {
         other.scheduleId == scheduleId &&
         other.scheduledTime == scheduledTime &&
         other.createdAt == createdAt &&
-        other.syncedAt == syncedAt &&
         other.updatedAt == updatedAt;
   }
 
@@ -316,7 +299,6 @@ class FluidSession {
       scheduleId,
       scheduledTime,
       createdAt,
-      syncedAt,
       updatedAt,
     );
   }
@@ -335,7 +317,6 @@ class FluidSession {
         'scheduleId: $scheduleId, '
         'scheduledTime: $scheduledTime, '
         'createdAt: $createdAt, '
-        'syncedAt: $syncedAt, '
         'updatedAt: $updatedAt'
         ')';
   }

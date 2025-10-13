@@ -131,11 +131,9 @@ class LoggingService {
             );
           }
 
-          throw DuplicateSessionException(
-            sessionType: 'medication',
-            conflictingTime: duplicate?.dateTime ?? session.dateTime,
-            existingSession: duplicate,
-            medicationName: duplicate?.medicationName,
+          throw _validationService.toLoggingException(
+            duplicateResult,
+            duplicateSession: duplicate,
           );
         }
       } else {
@@ -152,11 +150,13 @@ class LoggingService {
             );
           }
 
-          throw DuplicateSessionException(
-            sessionType: 'medication',
-            conflictingTime: duplicate.dateTime,
-            existingSession: duplicate,
-            medicationName: duplicate.medicationName,
+          final result = const LoggingValidationService().validateForDuplicates(
+            newSession: session,
+            recentSessions: recentSessions,
+          );
+          throw const LoggingValidationService().toLoggingException(
+            result,
+            duplicateSession: duplicate,
           );
         }
       }
@@ -212,9 +212,12 @@ class LoggingService {
       }
 
       // Track analytics
-      await _analyticsService?.trackError(
+      await _analyticsService?.trackLoggingFailure(
         errorType: 'batch_write_failure',
-        errorContext: 'logMedicationSession: ${e.code}: ${e.message}',
+        treatmentType: 'medication',
+        source: 'manual',
+        errorCode: e.code,
+        exception: 'FirebaseException',
       );
 
       throw BatchWriteException(
@@ -227,9 +230,11 @@ class LoggingService {
       }
 
       // Track analytics
-      await _analyticsService?.trackError(
+      await _analyticsService?.trackLoggingFailure(
         errorType: 'unexpected_logging_error',
-        errorContext: 'logMedicationSession: $e',
+        treatmentType: 'medication',
+        source: 'manual',
+        exception: e.runtimeType.toString(),
       );
 
       throw LoggingException('Unexpected error logging medication: $e');
@@ -369,9 +374,12 @@ class LoggingService {
       }
 
       // Track analytics
-      await _analyticsService?.trackError(
+      await _analyticsService?.trackLoggingFailure(
         errorType: 'batch_write_failure',
-        errorContext: 'updateMedicationSession: ${e.code}: ${e.message}',
+        treatmentType: 'medication',
+        source: 'update',
+        errorCode: e.code,
+        exception: 'FirebaseException',
       );
 
       throw BatchWriteException(
@@ -384,9 +392,11 @@ class LoggingService {
       }
 
       // Track analytics
-      await _analyticsService?.trackError(
+      await _analyticsService?.trackLoggingFailure(
         errorType: 'unexpected_logging_error',
-        errorContext: 'updateMedicationSession: $e',
+        treatmentType: 'medication',
+        source: 'update',
+        exception: e.runtimeType.toString(),
       );
 
       throw LoggingException('Unexpected error updating medication: $e');
@@ -497,9 +507,12 @@ class LoggingService {
       }
 
       // Track analytics
-      await _analyticsService?.trackError(
+      await _analyticsService?.trackLoggingFailure(
         errorType: 'batch_write_failure',
-        errorContext: 'logFluidSession: ${e.code}: ${e.message}',
+        treatmentType: 'fluid',
+        source: 'manual',
+        errorCode: e.code,
+        exception: 'FirebaseException',
       );
 
       throw BatchWriteException(
@@ -512,9 +525,11 @@ class LoggingService {
       }
 
       // Track analytics
-      await _analyticsService?.trackError(
+      await _analyticsService?.trackLoggingFailure(
         errorType: 'unexpected_logging_error',
-        errorContext: 'logFluidSession: $e',
+        treatmentType: 'fluid',
+        source: 'manual',
+        exception: e.runtimeType.toString(),
       );
 
       throw LoggingException('Unexpected error logging fluid: $e');
@@ -643,9 +658,12 @@ class LoggingService {
       }
 
       // Track analytics
-      await _analyticsService?.trackError(
+      await _analyticsService?.trackLoggingFailure(
         errorType: 'batch_write_failure',
-        errorContext: 'updateFluidSession: ${e.code}: ${e.message}',
+        treatmentType: 'fluid',
+        source: 'update',
+        errorCode: e.code,
+        exception: 'FirebaseException',
       );
 
       throw BatchWriteException(
@@ -658,9 +676,11 @@ class LoggingService {
       }
 
       // Track analytics
-      await _analyticsService?.trackError(
+      await _analyticsService?.trackLoggingFailure(
         errorType: 'unexpected_logging_error',
-        errorContext: 'updateFluidSession: $e',
+        treatmentType: 'fluid',
+        source: 'update',
+        exception: e.runtimeType.toString(),
       );
 
       throw LoggingException('Unexpected error updating fluid: $e');
@@ -759,16 +779,8 @@ class LoggingService {
       final fluidSessions = <FluidSession>[];
 
       for (final schedule in activeSchedules) {
-        // Get today's reminder times only
-        final todaysReminders = schedule.reminderTimes.where((reminderTime) {
-          final reminderDate = DateTime(
-            reminderTime.year,
-            reminderTime.month,
-            reminderTime.day,
-          );
-          final today = DateTime(now.year, now.month, now.day);
-          return reminderDate.isAtSameMomentAs(today);
-        }).toList();
+        // Get today's reminder times only (centralized helper)
+        final todaysReminders = schedule.todaysReminderTimes(now).toList();
 
         for (final reminderTime in todaysReminders) {
           if (schedule.treatmentType == TreatmentType.medication) {
@@ -815,7 +827,7 @@ class LoggingService {
       }
 
       // STEP 5: Aggregate summary deltas (used for summaries)
-      final todayDate = DateTime(now.year, now.month, now.day);
+      final todayDate = AppDateUtils.startOfDay(now);
       final aggregatedDto = _aggregateSummaryForQuickLog(
         medicationSessions: medicationSessions,
         fluidSessions: fluidSessions,
@@ -891,9 +903,11 @@ class LoggingService {
       }
 
       // Track analytics
-      await _analyticsService?.trackError(
+      await _analyticsService?.trackLoggingFailure(
         errorType: 'batch_write_failure',
-        errorContext: 'quickLogAllTreatments: ${e.code}: ${e.message}',
+        source: 'quick_log',
+        errorCode: e.code,
+        exception: 'FirebaseException',
       );
 
       throw BatchWriteException(
@@ -906,9 +920,10 @@ class LoggingService {
       }
 
       // Track analytics
-      await _analyticsService?.trackError(
+      await _analyticsService?.trackLoggingFailure(
         errorType: 'unexpected_logging_error',
-        errorContext: 'quickLogAllTreatments: $e',
+        source: 'quick_log',
+        exception: e.runtimeType.toString(),
       );
 
       throw LoggingException('Unexpected error in quick-log: $e');
@@ -973,7 +988,7 @@ class LoggingService {
 
       // Calculate start of today (00:00:00 local time)
       final now = DateTime.now();
-      final startOfDay = DateTime(now.year, now.month, now.day);
+      final startOfDay = AppDateUtils.startOfDay(now);
 
       // Query medication sessions
       final snapshot = await _firestore

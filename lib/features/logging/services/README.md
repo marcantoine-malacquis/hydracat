@@ -237,10 +237,13 @@ final duplicate = validationService.findDuplicateSession(
 );
 
 if (duplicate != null) {
-  throw DuplicateSessionException(
-    sessionType: 'medication',
-    conflictingTime: duplicate.dateTime,
-    medicationName: duplicate.medicationName,
+  final result = validationService.validateForDuplicates(
+    newSession: session,
+    recentSessions: recentSessions,
+  );
+  throw validationService.toLoggingException(
+    result,
+    duplicateSession: duplicate,
   );
 }
 ```
@@ -305,10 +308,13 @@ if (_validationService != null) {
     recentSessions: recentSessions,
   );
   if (duplicate != null) {
-    throw DuplicateSessionException(
-      sessionType: 'medication',
-      conflictingTime: duplicate.dateTime,
-      medicationName: duplicate.medicationName,
+    final duplicateResult = _validationService.validateForDuplicates(
+      newSession: session,
+      recentSessions: recentSessions,
+    );
+    throw _validationService.toLoggingException(
+      duplicateResult,
+      duplicateSession: duplicate,
     );
   }
 }
