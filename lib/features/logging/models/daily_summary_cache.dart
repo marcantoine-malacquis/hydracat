@@ -234,6 +234,9 @@ class DailySummaryCache {
       totalMedicationDosesGiven:
           totalMedicationDosesGiven + (dosageGiven ?? 0.0),
       totalFluidVolumeGiven: totalFluidVolumeGiven + (volumeGiven ?? 0.0),
+      // CRITICAL: preserve recent times map across updates so dashboard
+      // completion checks remain accurate after fluid logs.
+      medicationRecentTimes: medicationRecentTimes,
     );
   }
 

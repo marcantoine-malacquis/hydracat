@@ -300,25 +300,13 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
 
     // Watch the schedule provider to ensure form stays in sync
     // This is a fallback in case the listener doesn't work properly
-    final currentSchedule = ref.watch(fluidScheduleProvider);
+    // Read schedule to keep the widget reactive, but avoid overwriting
+    // user's input within build. Prefill is handled in initState.
+    ref.watch(fluidScheduleProvider);
 
-    // Update form if schedule data changed (reactive approach)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (currentSchedule != null) {
-        final expectedVolume =
-            currentSchedule.targetVolume?.toInt().toString() ?? '100';
-        if (_volumeController.text != expectedVolume) {
-          _volumeController.text = expectedVolume;
-          _validateVolume();
-        }
-
-        if (_selectedInjectionSite != currentSchedule.preferredLocation) {
-          setState(() {
-            _selectedInjectionSite = currentSchedule.preferredLocation;
-          });
-        }
-      }
-    });
+    // Do NOT overwrite user's input during build; schedule prefill happens in
+    // initState via _prefillFromSchedule and ref.listenManual above.
+    // Overwriting here would cause the volume field to reset as the user types.
 
     return LoggingPopupWrapper(
       title: l10n.fluidLoggingTitle,

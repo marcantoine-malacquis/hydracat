@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/extensions/build_context_extensions.dart';
@@ -395,6 +396,9 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
             TextFormField(
               controller: _breedController,
               textCapitalization: TextCapitalization.words,
+              inputFormatters: [
+                FilteringTextInputFormatter.deny(RegExp(r'\d')),
+              ],
               decoration: InputDecoration(
                 hintText: l10n.petBreedHint,
                 border: OutlineInputBorder(

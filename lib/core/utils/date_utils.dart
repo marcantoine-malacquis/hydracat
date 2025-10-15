@@ -71,6 +71,38 @@ class AppDateUtils {
     return date.subtract(Duration(days: weekday - 1));
   }
 
+  /// Get start of week (Monday) normalized to 00:00:00
+  ///
+  /// Returns the Monday at midnight for the week containing the given date.
+  /// Uses ISO 8601 week definition (Monday as first day of week).
+  /// Normalizes to 00:00:00 to avoid time-of-day drift and DST issues.
+  ///
+  /// Example:
+  /// ```dart
+  /// final date = DateTime(2025, 10, 5, 14, 30); // Sunday afternoon
+  /// final monday = startOfWeekMonday(date);
+  /// // Returns: Monday, September 29, 2025 00:00:00
+  /// ```
+  static DateTime startOfWeekMonday(DateTime date) {
+    final monday = date.subtract(
+      Duration(days: date.weekday - DateTime.monday),
+    );
+    return DateTime(monday.year, monday.month, monday.day);
+  }
+
+  /// Check if two dates are the same day (ignoring time)
+  ///
+  /// Compares only year, month, and day components.
+  ///
+  /// Example:
+  /// ```dart
+  /// final date1 = DateTime(2025, 10, 5, 9, 0);
+  /// final date2 = DateTime(2025, 10, 5, 18, 30);
+  /// isSameDay(date1, date2); // true
+  /// ```
+  static bool isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
   /// Get end of week
   static DateTime endOfWeek(DateTime date) {
     final weekday = date.weekday;
@@ -102,16 +134,16 @@ class AppDateUtils {
   /// Calculate total age in months from birth date
   static int calculateAgeInMonths(DateTime birthDate) {
     final now = DateTime.now();
-    
+
     // Calculate total months
     var months = (now.year - birthDate.year) * 12;
     months += now.month - birthDate.month;
-    
+
     // Adjust if the day hasn't been reached yet this month
     if (now.day < birthDate.day) {
       months--;
     }
-    
+
     return months;
   }
 
@@ -120,7 +152,7 @@ class AppDateUtils {
     final totalMonths = calculateAgeInMonths(birthDate);
     final years = totalMonths ~/ 12;
     final months = totalMonths % 12;
-    
+
     if (years == 0) {
       return months == 1 ? '1 month' : '$months months';
     } else if (months == 0) {
@@ -153,11 +185,11 @@ class AppDateUtils {
     return switch (administrationsPerDay) {
       1 => [const TimeOfDay(hour: 9, minute: 0)], // 9:00 AM
       2 => [
-        const TimeOfDay(hour: 9, minute: 0),  // 9:00 AM
+        const TimeOfDay(hour: 9, minute: 0), // 9:00 AM
         const TimeOfDay(hour: 21, minute: 0), // 9:00 PM
       ],
       3 => [
-        const TimeOfDay(hour: 9, minute: 0),  // 9:00 AM
+        const TimeOfDay(hour: 9, minute: 0), // 9:00 AM
         const TimeOfDay(hour: 15, minute: 0), // 3:00 PM
         const TimeOfDay(hour: 21, minute: 0), // 9:00 PM
       ],

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/features/progress/widgets/progress_day_detail_popup.dart';
+import 'package:hydracat/features/progress/widgets/progress_week_calendar.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/shared/widgets/empty_states/onboarding_cta_empty_state.dart';
 
@@ -19,8 +21,19 @@ class ProgressScreen extends ConsumerWidget {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: hasCompletedOnboarding
-          ? const Center(
-              child: Text('Progress Screen - Coming Soon'),
+          ? Column(
+              children: [
+                ProgressWeekCalendar(
+                  onDaySelected: (day) {
+                    showProgressDayDetailPopup(context, day);
+                  },
+                ),
+                const Expanded(
+                  child: Center(
+                    child: Text('Analytics cards coming soon'),
+                  ),
+                ),
+              ],
             )
           : OnboardingEmptyStates.progress(
               onGetStarted: () => context.go('/onboarding/welcome'),

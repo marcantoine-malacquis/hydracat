@@ -875,6 +875,9 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
             petId: pet.id,
             medicationName: session.medicationName,
             dosageGiven: session.dosageGiven,
+            // Use scheduledTime when available so dashboard window matching
+            // works
+            dateTime: session.scheduledTime ?? session.dateTime,
           );
 
           await loadTodaysCache();
@@ -893,6 +896,9 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
             petId: pet.id,
             medicationName: session.medicationName,
             dosageGiven: session.dosageGiven,
+            // Use scheduledTime when available so dashboard window matching
+            // works
+            dateTime: session.scheduledTime ?? session.dateTime,
           );
 
           await loadTodaysCache();
@@ -951,6 +957,8 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         petId: pet.id,
         medicationName: session.medicationName,
         dosageGiven: session.dosageGiven,
+        // Use scheduledTime when available so dashboard window matching works
+        dateTime: session.scheduledTime ?? session.dateTime,
       );
 
       // Reload cache to get fresh data
