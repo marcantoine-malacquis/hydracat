@@ -35,6 +35,14 @@ class OverlayService {
   // to reliably obtain a navigator context that survives overlay dismissal.
   static BuildContext? _hostContext;
 
+  /// Notifies listeners whether a full-screen overlay is currently visible.
+  ///
+  /// Used by the app shell to hide UI elements like the bottom navigation bar
+  /// while overlays are presented.
+  static final ValueNotifier<bool> isShowingNotifier = ValueNotifier<bool>(
+    false,
+  );
+
   /// Returns the last host [BuildContext] used to show an overlay.
   static BuildContext? get hostContext => _hostContext;
 
@@ -80,12 +88,16 @@ class OverlayService {
     );
 
     Overlay.of(context).insert(_currentOverlay!);
+    isShowingNotifier.value = true;
   }
 
   /// Hides the current full-screen popup if one is showing.
   static void hide() {
     _currentOverlay?.remove();
     _currentOverlay = null;
+    if (isShowingNotifier.value) {
+      isShowingNotifier.value = false;
+    }
   }
 
   /// Returns true if a popup is currently showing.

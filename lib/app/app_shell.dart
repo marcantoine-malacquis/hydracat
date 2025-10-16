@@ -36,6 +36,7 @@ class AppShell extends ConsumerStatefulWidget {
 
 class _AppShellState extends ConsumerState<AppShell>
     with WidgetsBindingObserver {
+  late final VoidCallback _overlayListener;
   final List<HydraNavigationItem> _navigationItems = const [
     HydraNavigationItem(icon: AppIcons.home, label: 'Home', route: '/'),
     HydraNavigationItem(
@@ -87,11 +88,14 @@ class _AppShellState extends ConsumerState<AppShell>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _overlayListener = () => setState(() {});
+    OverlayService.isShowingNotifier.addListener(_overlayListener);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    OverlayService.isShowingNotifier.removeListener(_overlayListener);
     super.dispose();
   }
 
@@ -270,6 +274,7 @@ class _AppShellState extends ConsumerState<AppShell>
     final isVerified = currentUser?.emailVerified ?? false;
     final currentLocation = GoRouterState.of(context).uri.path;
     final isInOnboardingFlow = currentLocation.startsWith('/onboarding');
+    final isOverlayVisible = OverlayService.isShowingNotifier.value;
     final isInProfileEditScreens = [
       '/profile/settings',
       '/profile/ckd',
@@ -353,7 +358,8 @@ class _AppShellState extends ConsumerState<AppShell>
       ),
       // Hide bottom navigation during onboarding flow and on profile
       // edit screens
-      bottomNavigationBar: (isInOnboardingFlow || isInProfileEditScreens)
+      bottomNavigationBar:
+          (isInOnboardingFlow || isInProfileEditScreens || isOverlayVisible)
           ? null
           : HydraNavigationBar(
               items: _navigationItems,

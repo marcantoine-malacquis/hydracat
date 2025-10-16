@@ -7,6 +7,7 @@ import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/models/daily_summary.dart';
+import 'package:hydracat/shared/models/fluid_daily_summary_view.dart';
 
 /// Provider for the currently focused day in the progress calendar.
 ///
@@ -35,6 +36,9 @@ final AutoDisposeFutureProviderFamily<Map<DateTime, DailySummary?>, DateTime>
 weekSummariesProvider = FutureProvider.autoDispose
     .family<Map<DateTime, DailySummary?>, DateTime>(
       (ref, weekStart) async {
+        // Invalidate when today's local cache changes so UI updates instantly
+        ref.watch(dailyCacheProvider);
+
         final user = ref.read(currentUserProvider);
         final pet = ref.read(primaryPetProvider);
         if (user == null || pet == null) return {};
@@ -53,7 +57,25 @@ weekSummariesProvider = FutureProvider.autoDispose
             ),
           ),
         );
-        return {for (var i = 0; i < days.length; i++) days[i]: results[i]};
+
+        // Build initial map from Firestore results
+        final map = {for (var i = 0; i < days.length; i++) days[i]: results[i]};
+
+        // Override today's entry with lightweight cache-based summary to avoid
+        // TTL delays and extra reads. This ensures immediate dot updates.
+        final today = AppDateUtils.startOfDay(DateTime.now());
+        if (map.containsKey(today)) {
+          final todaySummary = await summaryService.getTodaySummary(
+            userId: user.id,
+            petId: pet.id,
+            lightweight: true,
+          );
+          if (todaySummary != null) {
+            map[today] = todaySummary;
+          }
+        }
+
+        return map;
       },
     );
 
@@ -101,3 +123,36 @@ weekStatusProvider = FutureProvider.autoDispose
         );
       },
     );
+
+/// Fluid daily summary for a specific day using cached weekly summaries and
+/// the cached fluid schedule to compute the daily goal. Reads at most the
+/// weekly summaries already loaded by [weekSummariesProvider], avoiding any
+/// direct session queries per firebase_CRUDrules.
+final AutoDisposeProviderFamily<FluidDailySummaryView?, DateTime>
+fluidDailySummaryViewProvider = Provider.autoDispose
+    .family<FluidDailySummaryView?, DateTime>((ref, day) {
+      final normalized = AppDateUtils.startOfDay(day);
+
+      final weekStart = AppDateUtils.startOfWeekMonday(normalized);
+      final summariesAsync = ref.watch(weekSummariesProvider(weekStart));
+      final schedule = ref.watch(fluidScheduleProvider);
+
+      return summariesAsync.maybeWhen(
+        data: (map) {
+          final summary = map[normalized];
+          final givenMl = (summary?.fluidTotalVolume ?? 0).round();
+
+          final goalPerSession = (schedule?.targetVolume ?? 0).round();
+          final sessionsCount =
+              schedule?.reminderTimesOnDate(normalized).length ?? 0;
+          final goalMl = goalPerSession * sessionsCount;
+
+          return FluidDailySummaryView(
+            givenMl: givenMl,
+            goalMl: goalMl,
+            isToday: AppDateUtils.isToday(normalized),
+          );
+        },
+        orElse: () => null,
+      );
+    });

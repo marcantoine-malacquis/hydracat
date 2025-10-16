@@ -1037,6 +1037,63 @@ class LoggingService {
     }
   }
 
+  /// Fetches today's medication sessions across all medications (bounded)
+  ///
+  /// Used during cache warm when the local cache lacks medication names/times
+  /// but the daily summary indicates medication activity today. This single
+  /// query is capped via [limit] to comply with Firebase CRUD rules and cost
+  /// guidelines.
+  Future<List<MedicationSession>> getTodaysMedicationSessionsAll({
+    required String userId,
+    required String petId,
+    int limit = 20,
+  }) async {
+    try {
+      if (kDebugMode) {
+        debugPrint(
+          "[LoggingService] Fetching today's medication sessions (all)"
+          ' limit=$limit',
+        );
+      }
+
+      final now = DateTime.now();
+      final startOfDay = AppDateUtils.startOfDay(now);
+
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('pets')
+          .doc(petId)
+          .collection('medicationSessions')
+          .where(
+            'dateTime',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
+          )
+          .orderBy('dateTime', descending: true)
+          .limit(limit)
+          .get();
+
+      return snapshot.docs
+          .map((doc) => MedicationSession.fromJson(doc.data()))
+          .toList();
+    } on FirebaseException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          "[LoggingService] Firebase error fetching today's all sessions: "
+          '${e.message}',
+        );
+      }
+      return const [];
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          "[LoggingService] Unexpected error fetching today's all sessions: $e",
+        );
+      }
+      return const [];
+    }
+  }
+
   // ============================================
   // PRIVATE HELPERS - Validation
   // ============================================

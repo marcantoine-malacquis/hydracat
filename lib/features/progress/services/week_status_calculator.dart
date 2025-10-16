@@ -67,10 +67,10 @@ Map<DateTime, DayDotStatus> computeWeekStatuses({
       // Check if all scheduled items are completed
       final medOk =
           scheduledMedCount == 0 ||
-          (summary?.medicationTotalDoses ?? 0) == scheduledMedCount;
+          (summary?.medicationTotalDoses ?? 0) >= scheduledMedCount;
       final fluidOk =
           scheduledFluidCount == 0 ||
-          (summary?.fluidSessionCount ?? 0) == scheduledFluidCount;
+          (summary?.fluidSessionCount ?? 0) >= scheduledFluidCount;
 
       if (medOk && fluidOk) {
         // All scheduled items completed → green
@@ -92,10 +92,10 @@ Map<DateTime, DayDotStatus> computeWeekStatuses({
     // Check adherence for past day
     final medOk =
         scheduledMedCount == 0 ||
-        summary.medicationTotalDoses == scheduledMedCount;
+        summary.medicationTotalDoses >= scheduledMedCount;
     final fluidOk =
         scheduledFluidCount == 0 ||
-        summary.fluidSessionCount == scheduledFluidCount;
+        summary.fluidSessionCount >= scheduledFluidCount;
 
     if (medOk && fluidOk) {
       // All scheduled items completed → green

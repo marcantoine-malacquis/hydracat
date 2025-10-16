@@ -324,25 +324,58 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
     // TIER 1: Cache check
     final cache = state.dailyCache;
 
-    if (cache == null || !cache.hasMedicationLogged(medicationName)) {
+    // If no cache exists, fall back to bounded Firestore query for safety
+    if (cache == null) {
       if (kDebugMode) {
         debugPrint(
-          '[LoggingNotifier] Cache indicates $medicationName not logged yet '
-          '- skipping Firestore query',
+          '[LoggingNotifier] No cache — querying Firestore for duplicates',
         );
       }
 
-      // Track cache hit
+      final sessions = await _loggingService.getTodaysMedicationSessions(
+        userId: userId,
+        petId: petId,
+        medicationName: medicationName,
+      );
+      return sessions;
+    }
+
+    // If cache exists but shows other meds today (count>0) and not this med,
+    // query Firestore by name to be resilient to prior cache warming gaps.
+    if (!cache.hasMedicationLogged(medicationName) &&
+        (cache.medicationSessionCount > 0)) {
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingNotifier] Cache incomplete for $medicationName — '
+          'querying Firestore',
+        );
+      }
+
+      final sessions = await _loggingService.getTodaysMedicationSessions(
+        userId: userId,
+        petId: petId,
+        medicationName: medicationName,
+      );
+      return sessions;
+    }
+
+    // If cache shows no meds at all today and does not include this med,
+    // we can safely skip querying (zero-read path).
+    if (!cache.hasMedicationLogged(medicationName) &&
+        cache.medicationSessionCount == 0) {
+      if (kDebugMode) {
+        debugPrint('[LoggingNotifier] Cache shows no meds today — zero-read');
+      }
+
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
       await analyticsService.trackFeatureUsed(
         featureName: AnalyticsEvents.duplicateCheckCacheHit,
         additionalParams: {
           'medication_name': medicationName,
-          'had_cache': cache != null,
+          'had_cache': true,
         },
       );
-
-      return []; // No Firestore query needed
+      return [];
     }
 
     // TIER 2: zero-read cache window check
@@ -457,18 +490,62 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       );
 
       if (summary != null) {
-        // Convert DailySummary to DailySummaryCache
-        // Note: DailySummary doesn't track medicationNames, so we use
-        // empty list. This is acceptable since duplicate detection queries
-        // Firestore directly
+        // Preserve existing cache data (names/times) when available
+        final existing = await _cacheService.getTodaySummary(user.id, pet.id);
         final dateStr = AppDateUtils.formatDateForSummary(summary.date);
+
+        // If existing cache lacks names/times but summary shows meds today,
+        // rebuild minimal structures from a bounded Firestore query
+        var medicationRecentTimes = Map<String, List<String>>.from(
+          existing?.medicationRecentTimes ?? const {},
+        );
+        var medicationNames = List<String>.from(
+          existing?.medicationNames ?? const [],
+        );
+
+        if (medicationNames.isEmpty && (summary.medicationTotalDoses > 0)) {
+          final sessions = await _loggingService.getTodaysMedicationSessionsAll(
+            userId: user.id,
+            petId: pet.id,
+          );
+
+          if (sessions.isNotEmpty) {
+            // Derive names
+            final nameSet = <String>{};
+            for (final s in sessions) {
+              nameSet.add(s.medicationName);
+            }
+            medicationNames = nameSet.toList();
+
+            // Derive recent times per name (keep latest 8)
+            final tmp = <String, List<DateTime>>{};
+            for (final s in sessions) {
+              // Prefer scheduledTime to make dashboard window matching reliable
+              final t = s.scheduledTime ?? s.dateTime;
+              tmp.putIfAbsent(s.medicationName, () => []).add(t);
+            }
+            medicationRecentTimes = tmp.map((name, list) {
+              list.sort((a, b) => a.compareTo(b));
+              final trimmed = list.length <= 8
+                  ? list
+                  : list.sublist(list.length - 8, list.length);
+              return MapEntry(
+                name,
+                trimmed.map((t) => t.toIso8601String()).toList(),
+              );
+            });
+          }
+        }
+
+        // Build warmed cache preserving derived data
         final cache = DailySummaryCache(
           date: dateStr,
           medicationSessionCount: summary.medicationScheduledDoses,
           fluidSessionCount: summary.fluidSessionCount,
-          medicationNames: const [], // Not tracked in DailySummary
+          medicationNames: medicationNames,
           totalMedicationDosesGiven: summary.medicationTotalDoses.toDouble(),
           totalFluidVolumeGiven: summary.fluidTotalVolume,
+          medicationRecentTimes: medicationRecentTimes,
         );
 
         // Write to SharedPreferences

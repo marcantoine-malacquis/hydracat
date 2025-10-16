@@ -4,7 +4,6 @@ import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
-import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/logging/services/session_read_service.dart';
@@ -12,6 +11,7 @@ import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/progress_provider.dart';
+import 'package:hydracat/shared/widgets/fluid/fluid_daily_summary_card.dart';
 import 'package:intl/intl.dart';
 
 /// Full-screen popup showing treatment details for a specific day.
@@ -33,7 +33,10 @@ class ProgressDayDetailPopup extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isFuture = date.isAfter(AppDateUtils.startOfDay(DateTime.now()));
+    // Compare by normalized day so "today" is not misclassified as future
+    final day = AppDateUtils.startOfDay(date);
+    final today = AppDateUtils.startOfDay(DateTime.now());
+    final isFuture = day.isAfter(today);
     final mediaQuery = MediaQuery.of(context);
 
     return Align(
@@ -213,120 +216,14 @@ class ProgressDayDetailPopup extends ConsumerWidget {
     if (isFuture) {
       return _buildPlannedView(context, ref);
     } else {
-      return _buildLoggedView(context, ref);
+      // For past/today, render planned view enriched with completion status
+      return _buildPlannedWithStatus(context, ref);
     }
   }
 
-  /// Builds the logged view showing actual sessions from Firestore.
-  Widget _buildLoggedView(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserProvider);
-    final pet = ref.watch(primaryPetProvider);
+  // Old logged view kept for reference behind dev flag if needed.
 
-    if (user == null || pet == null) {
-      return const Text('User or pet not found');
-    }
-
-    final service = ref.read(sessionReadServiceProvider);
-
-    return FutureBuilder(
-      future: service.getAllSessionsForDate(
-        userId: user.id,
-        petId: pet.id,
-        date: date,
-      ),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(AppSpacing.lg),
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
-        if (snapshot.hasError) {
-          return Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Text(
-              'Error loading sessions: ${snapshot.error}',
-              style: const TextStyle(color: AppColors.error),
-            ),
-          );
-        }
-
-        final (medSessions, fluidSessions) = snapshot.data!;
-
-        if (medSessions.isEmpty && fluidSessions.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(AppSpacing.md),
-            child: Text('No treatments logged for this day'),
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (medSessions.isNotEmpty) ...[
-              const Text('Medications', style: AppTextStyles.h3),
-              const SizedBox(height: AppSpacing.xs),
-              ...medSessions.map(_buildMedicationSessionTile),
-            ],
-            if (medSessions.isNotEmpty && fluidSessions.isNotEmpty)
-              const SizedBox(height: AppSpacing.md),
-            if (fluidSessions.isNotEmpty) ...[
-              const Text('Fluid Therapy', style: AppTextStyles.h3),
-              const SizedBox(height: AppSpacing.xs),
-              ...fluidSessions.map(_buildFluidSessionTile),
-            ],
-          ],
-        );
-      },
-    );
-  }
-
-  /// Builds a tile for a medication session.
-  Widget _buildMedicationSessionTile(MedicationSession session) {
-    final timeStr = DateFormat.jm().format(session.dateTime);
-
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(
-        session.completed ? Icons.check_circle : Icons.cancel,
-        color: session.completed ? AppColors.primary : AppColors.warning,
-        size: 24,
-      ),
-      title: Text(
-        session.medicationName,
-        style: AppTextStyles.body,
-      ),
-      subtitle: Text(
-        '$timeStr • ${session.dosageGiven} ${session.medicationUnit}',
-        style: AppTextStyles.caption,
-      ),
-    );
-  }
-
-  /// Builds a tile for a fluid session.
-  Widget _buildFluidSessionTile(FluidSession session) {
-    final timeStr = DateFormat.jm().format(session.dateTime);
-
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: const Icon(
-        Icons.water_drop,
-        color: AppColors.primary,
-        size: 24,
-      ),
-      title: Text(
-        '${session.volumeGiven}ml',
-        style: AppTextStyles.body,
-      ),
-      subtitle: Text(
-        timeStr,
-        style: AppTextStyles.caption,
-      ),
-    );
-  }
+  // Session tiles for the legacy logged view were removed.
 
   /// Builds the planned view showing expected treatments.
   Widget _buildPlannedView(BuildContext context, WidgetRef ref) {
@@ -359,6 +256,9 @@ class ProgressDayDetailPopup extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _maybeSummaryCard(context, ref),
+        if (medReminders.isNotEmpty || fluidReminders.isNotEmpty)
+          const SizedBox(height: AppSpacing.md),
         if (medReminders.isNotEmpty) ...[
           const Text('Planned Medications', style: AppTextStyles.h3),
           const SizedBox(height: AppSpacing.xs),
@@ -377,8 +277,214 @@ class ProgressDayDetailPopup extends ConsumerWidget {
     );
   }
 
+  /// Builds the planned view but enriched with completion state for past/today.
+  ///
+  /// Fetches the day's sessions once (meds + fluids in parallel) and marks
+  /// planned reminders as completed when matching sessions exist. Also computes
+  /// the total fluid administered that day and shows it as the fluid title.
+  Widget _buildPlannedWithStatus(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider);
+    final pet = ref.watch(primaryPetProvider);
+
+    if (user == null || pet == null) {
+      return const Text('User or pet not found');
+    }
+
+    final medSchedules = ref.watch(medicationSchedulesProvider) ?? [];
+    final fluidSchedule = ref.watch(fluidScheduleProvider);
+
+    // Filter medication schedules only
+    final medicationSchedules = medSchedules
+        .where((s) => s.treatmentType == TreatmentType.medication)
+        .toList();
+
+    final medReminders = <(Schedule, DateTime)>[];
+    for (final schedule in medicationSchedules) {
+      for (final time in schedule.reminderTimesOnDate(date)) {
+        medReminders.add((schedule, time));
+      }
+    }
+
+    final fluidReminders = fluidSchedule != null
+        ? fluidSchedule.reminderTimesOnDate(date).toList()
+        : <DateTime>[];
+
+    if (medReminders.isEmpty && fluidReminders.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(AppSpacing.md),
+        child: Text('No treatments scheduled for this day'),
+      );
+    }
+
+    final service = ref.read(sessionReadServiceProvider);
+
+    return FutureBuilder(
+      future: service.getAllSessionsForDate(
+        userId: user.id,
+        petId: pet.id,
+        date: date,
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Text(
+              'Error loading sessions: ${snapshot.error}',
+              style: const TextStyle(color: AppColors.error),
+            ),
+          );
+        }
+
+        final (medSessions, fluidSessions) = snapshot.data!;
+
+        // Greedy match: scheduleId-first, then name-based within the day.
+        final completedReminderTimes = _matchMedicationRemindersToSessions(
+          reminders: medReminders,
+          sessions: medSessions,
+        );
+
+        final totalFluidMl = fluidSessions.fold<double>(
+          0,
+          (sum, s) => sum + s.volumeGiven,
+        );
+        final hasAnyFluid = fluidSessions.isNotEmpty;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _maybeSummaryCard(context, ref),
+            const SizedBox(height: AppSpacing.md),
+            if (medReminders.isNotEmpty) ...[
+              const Text('Planned Medications', style: AppTextStyles.h3),
+              const SizedBox(height: AppSpacing.xs),
+              ...medReminders.map(
+                (r) => _buildPlannedMedicationTile(
+                  r.$1,
+                  r.$2,
+                  completed: completedReminderTimes.contains(r.$2),
+                ),
+              ),
+            ],
+            if (medReminders.isNotEmpty && fluidReminders.isNotEmpty)
+              const SizedBox(height: AppSpacing.md),
+            if (fluidReminders.isNotEmpty) ...[
+              const Text('Planned Fluid Therapy', style: AppTextStyles.h3),
+              const SizedBox(height: AppSpacing.xs),
+              ...fluidReminders.map(
+                (time) => _buildPlannedFluidTile(
+                  fluidSchedule!,
+                  time,
+                  totalFluidMl: totalFluidMl,
+                  completed: hasAnyFluid,
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  // Legacy schedule key helper removed with new greedy matcher.
+
+  /// Greedy matcher to determine which medication reminder times are completed
+  /// by sessions for the selected day. Prefers scheduleId matches and consumes
+  /// sessions so each can satisfy at most one reminder.
+  Set<DateTime> _matchMedicationRemindersToSessions({
+    required List<(Schedule, DateTime)> reminders,
+    required List<MedicationSession> sessions,
+  }) {
+    if (reminders.isEmpty || sessions.isEmpty) return <DateTime>{};
+
+    final day = AppDateUtils.startOfDay(date);
+    final nextDay = AppDateUtils.endOfDay(date);
+
+    // Split sessions by having scheduleId (preferred) vs not
+    final byScheduleId = <String, List<MedicationSession>>{};
+    final unnamedByMed = <String, List<MedicationSession>>{};
+
+    for (final s in sessions.where((s) => s.completed)) {
+      if (s.scheduleId != null) {
+        byScheduleId.putIfAbsent(s.scheduleId!, () => []).add(s);
+      } else {
+        final key = s.medicationName.trim().toLowerCase();
+        unnamedByMed.putIfAbsent(key, () => []).add(s);
+      }
+    }
+
+    // Sort each list by proximity to planned time to improve greedy match
+    for (final list in byScheduleId.values) {
+      list.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    }
+    for (final list in unnamedByMed.values) {
+      list.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    }
+
+    final completed = <DateTime>{};
+
+    // 1) scheduleId-first greedy match
+    for (final (schedule, plannedTime) in reminders) {
+      final list = byScheduleId[schedule.id];
+      if (list == null || list.isEmpty) continue;
+
+      // pick nearest unused session on the same day
+      MedicationSession? best;
+      var bestDelta = 1 << 30;
+      for (final s in list) {
+        if (s.dateTime.isBefore(day) || s.dateTime.isAfter(nextDay)) continue;
+        final delta = s.dateTime.difference(plannedTime).inSeconds.abs();
+        if (delta < bestDelta) {
+          best = s;
+          bestDelta = delta;
+        }
+      }
+      if (best != null) {
+        completed.add(plannedTime);
+        list.remove(best); // consume session
+      }
+    }
+
+    // 2) Fallback: name-based match for remaining
+    for (final (schedule, plannedTime) in reminders) {
+      if (completed.contains(plannedTime)) continue;
+      final key = (schedule.medicationName ?? '').trim().toLowerCase();
+      final list = unnamedByMed[key];
+      if (list == null || list.isEmpty) continue;
+
+      MedicationSession? best;
+      var bestDelta = 1 << 30;
+      for (final s in list) {
+        if (s.dateTime.isBefore(day) || s.dateTime.isAfter(nextDay)) continue;
+        final delta = s.dateTime.difference(plannedTime).inSeconds.abs();
+        if (delta < bestDelta) {
+          best = s;
+          bestDelta = delta;
+        }
+      }
+      if (best != null) {
+        completed.add(plannedTime);
+        list.remove(best);
+      }
+    }
+
+    return completed;
+  }
+
   /// Builds a tile for a planned medication.
-  Widget _buildPlannedMedicationTile(Schedule schedule, DateTime time) {
+  Widget _buildPlannedMedicationTile(
+    Schedule schedule,
+    DateTime time, {
+    bool completed = false,
+  }) {
     final timeStr = DateFormat.jm().format(time);
 
     return ListTile(
@@ -396,11 +502,26 @@ class ProgressDayDetailPopup extends ConsumerWidget {
         '$timeStr • ${schedule.targetDosage} ${schedule.medicationUnit}',
         style: AppTextStyles.caption,
       ),
+      trailing: completed
+          ? Semantics(
+              label: 'Completed',
+              child: const Icon(
+                Icons.check_circle,
+                color: AppColors.primary,
+                size: 28,
+              ),
+            )
+          : null,
     );
   }
 
   /// Builds a tile for planned fluid therapy.
-  Widget _buildPlannedFluidTile(Schedule schedule, DateTime time) {
+  Widget _buildPlannedFluidTile(
+    Schedule schedule,
+    DateTime time, {
+    double? totalFluidMl,
+    bool completed = false,
+  }) {
     final timeStr = DateFormat.jm().format(time);
 
     return ListTile(
@@ -411,14 +532,37 @@ class ProgressDayDetailPopup extends ConsumerWidget {
         size: 24,
       ),
       title: Text(
-        '${schedule.targetVolume}ml',
+        totalFluidMl != null
+            ? '${totalFluidMl.toStringAsFixed(1)}ml'
+            : '${schedule.targetVolume}ml',
         style: AppTextStyles.body,
       ),
       subtitle: Text(
         timeStr,
         style: AppTextStyles.caption,
       ),
+      trailing: completed
+          ? Semantics(
+              label: 'Completed',
+              child: const Icon(
+                Icons.check_circle,
+                color: AppColors.primary,
+                size: 28,
+              ),
+            )
+          : null,
     );
+  }
+
+  /// Builds the fluid summary card when data is available.
+  Widget _maybeSummaryCard(BuildContext context, WidgetRef ref) {
+    final view = ref.watch(
+      fluidDailySummaryViewProvider(AppDateUtils.startOfDay(date)),
+    );
+
+    if (view == null) return const SizedBox.shrink();
+
+    return FluidDailySummaryCard(summary: view);
   }
 
   /// Builds the semantic label for accessibility.

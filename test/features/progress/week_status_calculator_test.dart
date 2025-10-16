@@ -268,6 +268,67 @@ void main() {
       expect(statuses[today], DayDotStatus.complete);
     });
 
+    test('past day complete when actual exceeds scheduled (>= rule)', () {
+      final weekStart = DateTime(2025, 10, 6);
+      final now = DateTime(2025, 10, 13, 10);
+      final monday = DateTime(2025, 10, 6);
+
+      // 1 med schedule on Monday
+      final schedule = _createMedicationSchedule(
+        id: 'med1',
+        createdAt: weekStart,
+        frequency: TreatmentFrequency.onceDaily,
+        reminderTimes: [DateTime(2025, 10, 1, 9)],
+      );
+
+      // Summary shows 2 doses (user split dose) → should still be complete
+      final summary = _createSummary(
+        date: monday,
+        medicationTotalDoses: 2,
+        fluidSessionCount: 0,
+      );
+
+      final statuses = computeWeekStatuses(
+        weekStart: weekStart,
+        medicationSchedules: [schedule],
+        fluidSchedule: null,
+        summaries: {monday: summary},
+        now: now,
+      );
+
+      expect(statuses[monday], DayDotStatus.complete);
+    });
+
+    test('today complete when fluid sessions exceed scheduled (>= rule)', () {
+      final weekStart = DateTime(2025, 10, 6);
+      final now = DateTime(2025, 10, 8, 20);
+      final today = DateTime(2025, 10, 8);
+
+      final fluidSchedule = _createFluidSchedule(
+        id: 'fluid1',
+        createdAt: weekStart,
+        frequency: TreatmentFrequency.onceDaily,
+        reminderTimes: [DateTime(2025, 10, 1, 18)],
+      );
+
+      // Summary has 2 fluid sessions (split), scheduled is 1 → complete
+      final summary = _createSummary(
+        date: today,
+        medicationTotalDoses: 0,
+        fluidSessionCount: 2,
+      );
+
+      final statuses = computeWeekStatuses(
+        weekStart: weekStart,
+        medicationSchedules: [],
+        fluidSchedule: fluidSchedule,
+        summaries: {today: summary},
+        now: now,
+      );
+
+      expect(statuses[today], DayDotStatus.complete);
+    });
+
     test('mixed week realistic scenario', () {
       // Setup: Week starting Monday Oct 6, current time Wednesday Oct 8
       final weekStart = DateTime(2025, 10, 6);

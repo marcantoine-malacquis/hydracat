@@ -59,10 +59,12 @@ This section explains exactly what happens when you log treatments, where data i
    - User taps "Log Treatment"
 
 3. **Check for duplicates**
-   - 📖 **READ** local cache: "Has this medication been logged today?"
-   - If **not in cache** → Skip Firestore check (0 reads) ✅
-   - If **in cache** → 📖 **READ** Firestore for exact times (1-10 reads)
-   - Check if same medication within ±15 minutes
+   - 📖 **READ** local cache: names + recent times per medication
+   - If **cache is missing** → 📖 **READ** Firestore by medication name (0–10 reads) to be safe
+   - If **cache exists but shows other meds today (count > 0) and not this med** → 📖 **READ** Firestore by medication name (0–10 reads)
+   - If **cache shows no meds today** → Skip Firestore check (0 reads) ✅
+   - If **cache includes this medication** → Zero-read window check via cache; if inconclusive, 📖 **READ** Firestore (0–10 reads)
+   - Duplicate window: ±15 minutes
 
 4. **Write to Firestore** (1 batch operation)
    - ✍️ **WRITE** medication session to Firestore
@@ -79,8 +81,8 @@ This section explains exactly what happens when you log treatments, where data i
    - Green banner: "Medication logged successfully"
 
 **Firestore Cost:** 
-- Best case: 4 writes, 0 reads (first time logging this medication today)
-- Worst case: 4 writes, 10 reads (duplicate check for frequently logged medication)
+- Best case: 4 writes, 0 reads (no cache meds yet today)
+- Typical: 4 writes, 0–10 reads (only when cache is missing/incomplete or name present)
 
 ---
 
@@ -384,6 +386,13 @@ LoggingException toLoggingException(ValidationResult result);
 - Check cache before hitting Firestore (cost optimization)
 - Document ID generation for time-based collections
 
+### Session Queries (LoggingService)
+
+- `getTodaysMedicationSessions({ userId, petId, medicationName })`
+  - Bounded to the current day; used for duplicate checks by name
+- `getTodaysMedicationSessionsAll({ userId, petId, limit = 20 })`
+  - New: bounded single query across all medications for today, used during cache warm to rebuild names/times when missing
+
 ### OfflineLoggingService
 **Purpose:** Queue management for offline logging
 
@@ -460,6 +469,15 @@ void _setupCacheReloadListeners() {
 | **App Resume** | `AppLifecycleState.resumed` | Clear expired caches, reload today's cache |
 | **After Logging** | Successful log operation | Update cache incrementally |
 | **After Quick-Log** | Successful batch log | Update cache optimistically (0 reads) |
+
+### Cache Warming Behavior (preserve + rebuild)
+
+- On startup, today's summary is fetched once from Firestore for accuracy.
+- The app preserves existing cache fields (`medicationNames`, `medicationRecentTimes`).
+- If those fields are missing but the summary shows medication activity today, the app performs a single bounded query (≤20 docs) to rebuild:
+  - `medicationNames` from today's sessions
+  - `medicationRecentTimes[name]` with the latest ≤8 times (prefer `scheduledTime`, fallback to `dateTime`)
+- Result: dashboard completion checks and duplicate detection remain correct across app restarts with minimal reads.
 
 ### Hot Restart Behavior
 

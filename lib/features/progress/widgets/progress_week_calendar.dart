@@ -51,13 +51,21 @@ class _ProgressWeekCalendarState extends ConsumerState<ProgressWeekCalendar> {
         weekdayStyle: Theme.of(context).textTheme.labelMedium!,
         weekendStyle: Theme.of(context).textTheme.labelMedium!,
       ),
-      calendarStyle: const CalendarStyle(
-        todayDecoration: BoxDecoration(
+      calendarStyle: CalendarStyle(
+        todayDecoration: const BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.transparent,
         ),
+        todayTextStyle: Theme.of(context).textTheme.labelMedium!,
+        selectedDecoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        selectedTextStyle: Theme.of(context).textTheme.labelMedium!.copyWith(
+          color: Theme.of(context).colorScheme.onPrimary,
+        ),
         outsideDaysVisible: false,
-        cellMargin: EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        cellMargin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
       ),
       onPageChanged: (newFocusedDay) {
         ref.read(focusedDayProvider.notifier).state = newFocusedDay;
