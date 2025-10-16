@@ -4,6 +4,7 @@ import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
+import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/logging/services/session_read_service.dart';
@@ -253,25 +254,28 @@ class ProgressDayDetailPopup extends ConsumerWidget {
       );
     }
 
+    final showFluidSection = fluidReminders.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _maybeSummaryCard(context, ref),
-        if (medReminders.isNotEmpty || fluidReminders.isNotEmpty)
+        if (showFluidSection) ...[
+          const Text('Fluid therapy', style: AppTextStyles.h3),
+          const SizedBox(height: AppSpacing.xs),
+          _maybeSummaryCard(context, ref),
+          if (fluidReminders.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.xs),
+            ...fluidReminders.map(
+              (time) => _buildPlannedFluidTile(fluidSchedule!, time),
+            ),
+          ],
           const SizedBox(height: AppSpacing.md),
+        ],
+
         if (medReminders.isNotEmpty) ...[
-          const Text('Planned Medications', style: AppTextStyles.h3),
+          const Text('Medications', style: AppTextStyles.h3),
           const SizedBox(height: AppSpacing.xs),
           ...medReminders.map((r) => _buildPlannedMedicationTile(r.$1, r.$2)),
-        ],
-        if (medReminders.isNotEmpty && fluidReminders.isNotEmpty)
-          const SizedBox(height: AppSpacing.md),
-        if (fluidReminders.isNotEmpty) ...[
-          const Text('Planned Fluid Therapy', style: AppTextStyles.h3),
-          const SizedBox(height: AppSpacing.xs),
-          ...fluidReminders.map(
-            (time) => _buildPlannedFluidTile(fluidSchedule!, time),
-          ),
         ],
       ],
     );
@@ -358,33 +362,39 @@ class ProgressDayDetailPopup extends ConsumerWidget {
         );
         final hasAnyFluid = fluidSessions.isNotEmpty;
 
+        final showFluidSection = hasAnyFluid || fluidReminders.isNotEmpty;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _maybeSummaryCard(context, ref),
-            const SizedBox(height: AppSpacing.md),
+            if (showFluidSection) ...[
+              const Text('Fluid therapy', style: AppTextStyles.h3),
+              const SizedBox(height: AppSpacing.xs),
+              _maybeSummaryCard(context, ref),
+              const SizedBox(height: AppSpacing.sm),
+              ..._buildFluidSessionsList(fluidSessions),
+              if (fluidReminders.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.xs),
+                ...fluidReminders.map(
+                  (time) => _buildPlannedFluidTile(
+                    fluidSchedule!,
+                    time,
+                    totalFluidMl: totalFluidMl,
+                    completed: hasAnyFluid,
+                  ),
+                ),
+              ],
+              const SizedBox(height: AppSpacing.md),
+            ],
+
             if (medReminders.isNotEmpty) ...[
-              const Text('Planned Medications', style: AppTextStyles.h3),
+              const Text('Medications', style: AppTextStyles.h3),
               const SizedBox(height: AppSpacing.xs),
               ...medReminders.map(
                 (r) => _buildPlannedMedicationTile(
                   r.$1,
                   r.$2,
                   completed: completedReminderTimes.contains(r.$2),
-                ),
-              ),
-            ],
-            if (medReminders.isNotEmpty && fluidReminders.isNotEmpty)
-              const SizedBox(height: AppSpacing.md),
-            if (fluidReminders.isNotEmpty) ...[
-              const Text('Planned Fluid Therapy', style: AppTextStyles.h3),
-              const SizedBox(height: AppSpacing.xs),
-              ...fluidReminders.map(
-                (time) => _buildPlannedFluidTile(
-                  fluidSchedule!,
-                  time,
-                  totalFluidMl: totalFluidMl,
-                  completed: hasAnyFluid,
                 ),
               ),
             ],
@@ -552,6 +562,30 @@ class ProgressDayDetailPopup extends ConsumerWidget {
             )
           : null,
     );
+  }
+
+  /// Builds list tiles for actual fluid sessions on the selected day.
+  List<Widget> _buildFluidSessionsList(List<FluidSession> sessions) {
+    if (sessions.isEmpty) return const [];
+
+    final sorted = [...sessions]
+      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+
+    return sorted.map((s) {
+      final timeStr = DateFormat.jm().format(s.dateTime);
+      final volumeStr = '${s.volumeGiven.toStringAsFixed(0)}ml';
+
+      return ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: const Icon(
+          Icons.water_drop,
+          color: AppColors.textSecondary,
+          size: 24,
+        ),
+        title: Text(volumeStr, style: AppTextStyles.body),
+        subtitle: Text(timeStr, style: AppTextStyles.caption),
+      );
+    }).toList();
   }
 
   /// Builds the fluid summary card when data is available.

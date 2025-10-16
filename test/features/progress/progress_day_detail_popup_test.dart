@@ -69,7 +69,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify fluid section header
-      expect(find.text('Fluid Therapy'), findsOneWidget);
+      expect(find.text('Fluid therapy'), findsOneWidget);
 
       // Verify fluid details
       expect(find.textContaining('ml'), findsOneWidget);
@@ -110,14 +110,16 @@ void main() {
 
       // Verify both sections exist
       expect(find.text('Medications'), findsOneWidget);
-      expect(find.text('Fluid Therapy'), findsOneWidget);
+      expect(find.text('Fluid therapy'), findsOneWidget);
 
       // Verify both treatments
       expect(find.text('Benazepril'), findsOneWidget);
       expect(find.textContaining('ml'), findsOneWidget);
     });
 
-    testWidgets('shows missed medication with warning icon', (tester) async {
+    testWidgets('shows missed medication without completion tick', (
+      tester,
+    ) async {
       final missedSession = MedicationSession.create(
         petId: 'test-pet-id',
         userId: 'test-user-id',
@@ -137,8 +139,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify warning icon for missed medication
-      expect(find.byIcon(Icons.cancel), findsOneWidget);
+      // Should not show completion check for missed medication
+      expect(find.byIcon(Icons.check_circle), findsNothing);
       expect(find.text('Missed Med'), findsOneWidget);
     });
   });
@@ -160,7 +162,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify planned section header
-      expect(find.text('Planned Medications'), findsOneWidget);
+      expect(find.text('Medications'), findsOneWidget);
 
       // Verify medication details
       expect(find.text('Future Med'), findsOneWidget);
@@ -183,7 +185,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify planned section header
-      expect(find.text('Planned Fluid Therapy'), findsOneWidget);
+      expect(find.text('Fluid therapy'), findsOneWidget);
 
       // Verify fluid details
       expect(find.textContaining('ml'), findsOneWidget);
@@ -203,8 +205,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify both planned sections
-      expect(find.text('Planned Medications'), findsOneWidget);
-      expect(find.text('Planned Fluid Therapy'), findsOneWidget);
+      expect(find.text('Medications'), findsOneWidget);
+      expect(find.text('Fluid therapy'), findsOneWidget);
     });
   });
 
@@ -291,7 +293,7 @@ void main() {
   });
 
   group('ProgressDayDetailPopup - Empty States', () {
-    testWidgets('shows empty message for past date with no sessions', (
+    testWidgets('shows empty message for past date with no schedules', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -303,7 +305,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('No treatments logged for this day'), findsOneWidget);
+      // With new planned-with-status view, message is the same as future
+      expect(
+        find.text('No treatments scheduled for this day'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('shows empty message for future date with no schedules', (
