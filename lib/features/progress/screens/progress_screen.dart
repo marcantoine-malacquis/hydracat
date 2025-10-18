@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/features/progress/widgets/calendar_help_popup.dart';
 import 'package:hydracat/features/progress/widgets/progress_day_detail_popup.dart';
 import 'package:hydracat/features/progress/widgets/progress_week_calendar.dart';
 import 'package:hydracat/providers/auth_provider.dart';
@@ -19,6 +20,15 @@ class ProgressScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Progress & Analytics'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: hasCompletedOnboarding
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.help_outline),
+                  onPressed: () => showCalendarHelpPopup(context),
+                  tooltip: 'Calendar help',
+                ),
+              ]
+            : null,
       ),
       body: hasCompletedOnboarding
           ? Column(

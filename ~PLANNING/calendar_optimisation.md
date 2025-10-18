@@ -18,100 +18,155 @@ This document outlines optimizations and UX improvements for the Progress calend
 
 ---
 
-## <Ø QUICK WINS (Phase 1)
+## <ÔøΩ QUICK WINS (Phase 1)
 **Time Estimate**: 2-3 hours total
 **Impact**: Immediate UX improvements with minimal effort
 
-### 1. Add "Today" Button
-**Files**: `progress_screen.dart`, `progress_week_calendar.dart`
+### 1. Add "Today" Button ‚úÖ COMPLETED
+**Files**: `progress_week_calendar.dart`
 **Priority**: HIGH
-**Effort**: 15 minutes
+**Effort**: 30 minutes (actual)
 **Impact**: Critical UX feature - users get lost when swiping back months
 
 **Issue**: No quick way to return to current date after browsing historical data
 
-**Implementation**:
+**Implementation** (as completed):
 ```dart
-// In progress_screen.dart AppBar
-AppBar(
-  title: const Text('Progress & Analytics'),
-  actions: [
-    IconButton(
-      icon: const Icon(Icons.today),
-      tooltip: 'Jump to today',
-      onPressed: () {
-        ref.read(focusedDayProvider.notifier).state = DateTime.now();
-      },
-    ),
-  ],
-)
-```
+// Custom header in progress_week_calendar.dart
+// Layout: [< chevron] [October 2025] [> chevron] [Spacer] [Today]
+Widget _buildCustomHeader(BuildContext context, DateTime day) {
+  final focusedDay = ref.watch(focusedDayProvider);
+  final monthYearFormat = DateFormat('MMMM yyyy');
+  final monthYearText = monthYearFormat.format(day);
 
-**Learning Goal**: AppBar actions pattern for quick navigation
+  // Determine if we're viewing the current week
+  final focusedWeekStart = AppDateUtils.startOfWeekMonday(focusedDay);
+  final currentWeekStart = AppDateUtils.startOfWeekMonday(DateTime.now());
+  final isOnCurrentWeek = focusedWeekStart == currentWeekStart;
 
----
-
-### 2. Add Status Legend
-**Files**: `progress_week_calendar.dart`
-**Priority**: HIGH
-**Effort**: 20 minutes
-**Impact**: Users shouldn't have to guess what dots mean
-
-**Issue**: No explanation of dot colors (teal/coral/amber/none)
-
-**Implementation**:
-```dart
-// Add below calendar widget
-Widget _buildStatusLegend(BuildContext context) {
   return Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _LegendItem(
-          color: AppColors.primary,
-          label: 'Complete',
-        ),
-        _LegendItem(
-          color: Colors.amber[600]!,
-          label: 'Today',
-        ),
-        _LegendItem(
-          color: AppColors.warning,
-          label: 'Missed',
-        ),
+        // Navigation chevrons grouped together on left
+        IconButton(icon: const Icon(Icons.chevron_left), /* ... */),
+        const SizedBox(width: 8),
+        Text(monthYearText, style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(width: 8),
+        IconButton(icon: const Icon(Icons.chevron_right), /* ... */),
+        const Spacer(),
+        // "Today" button on right (only when NOT on current week)
+        if (!isOnCurrentWeek)
+          TextButton(
+            onPressed: () {
+              final today = DateTime.now();
+              ref.read(focusedDayProvider.notifier).state = today;
+              widget.onDaySelected(today); // Opens day detail popup
+            },
+            child: Text(
+              'Today',
+              style: AppTextStyles.buttonSecondary.copyWith(
+                color: AppColors.primary, // Teal color
+              ),
+            ),
+          ),
       ],
     ),
   );
 }
-
-class _LegendItem extends StatelessWidget {
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(label, style: AppTextStyles.caption),
-      ],
-    );
-  }
-}
 ```
 
-**Location**: Insert after `ProgressWeekCalendar` widget in Column
+**Key differences from original plan**:
+- Implemented as custom calendar header (not AppBar button)
+- Uses text "Today" instead of icon for clarity
+- Conditionally visible: hidden when viewing current week
+- Navigation chevrons moved close to month name
+- Opens day detail popup when tapped (not just navigation)
 
-**Learning Goal**: Legend UI pattern for visual indicators
+**Learning Goal**: Custom calendar header layout, conditional widget visibility
+
+---
+
+### 2. Add Status Legend ‚úÖ COMPLETED
+**Files**: `progress_screen.dart`, `calendar_help_popup.dart` (new)
+**Priority**: HIGH
+**Effort**: 30 minutes (actual)
+**Impact**: Users shouldn't have to guess what dots mean
+
+**Issue**: No explanation of dot colors (teal/coral/amber/none)
+
+**Implementation** (as completed):
+```dart
+// New file: lib/features/progress/widgets/calendar_help_popup.dart
+// Accessible via help icon (?) in AppBar
+
+// Main popup widget using OverlayService
+class CalendarHelpPopup extends StatelessWidget {
+  // Popup container with blur background
+  // Header: "Calendar Legend" + close button
+  // Body: Expandable help sections structure
+}
+
+// Expandable section widget for future help content
+class _HelpSection extends StatelessWidget {
+  const _HelpSection({
+    required this.children,
+    this.title,
+  });
+  // Allows easy addition of new help sections
+}
+
+// Legend item widget - 8x8 dot + label + description
+class _LegendItem extends StatelessWidget {
+  const _LegendItem({
+    required this.color,
+    required this.label,
+    required this.description,
+  });
+
+  // Layout: [8x8 colored dot] [Label (bold)] + [Description]
+  // Matches calendar dot appearance exactly
+}
+
+// Show function using OverlayService
+void showCalendarHelpPopup(BuildContext context) {
+  OverlayService.showFullScreenPopup(
+    context: context,
+    child: const CalendarHelpPopup(),
+  );
+}
+
+// In progress_screen.dart AppBar
+appBar: AppBar(
+  title: const Text('Progress & Analytics'),
+  actions: hasCompletedOnboarding
+      ? [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => showCalendarHelpPopup(context),
+            tooltip: 'Calendar help',
+          ),
+        ]
+      : null,
+),
+```
+
+**Legend Content**:
+- **Complete** (Teal/AppColors.primary): "All scheduled treatments completed"
+- **Today** (Amber/Color(0xFFFFB300)): "Current day (until all treatments complete)"
+- **Missed** (Coral/AppColors.warning): "At least one treatment missed"
+- **No dot** (Gray text, no circle): "Future days or days with no schedules"
+
+**Key differences from original plan**:
+- Implemented as full-screen popup (not inline legend below calendar)
+- Accessible via help icon (?) in AppBar top-right
+- Uses existing OverlayService with blur background and slideUp animation
+- Includes close button (X) and dismissible by background tap
+- Expandable structure allows future help content additions
+- Each legend item shows description, not just label
+- Only visible when user has completed onboarding
+
+**Learning Goal**: Help popup pattern, OverlayService usage, expandable content structure
 
 ---
 
@@ -127,7 +182,7 @@ class _LegendItem extends StatelessWidget {
 ```dart
 // In progress_week_calendar.dart onDaySelected
 onDaySelected: (selected, focused) {
-  HapticFeedback.selectionClick(); // ê Add this line
+  HapticFeedback.selectionClick(); // ÔøΩ Add this line
   setState(() {
     _selectedDay = selected;
   });
@@ -246,7 +301,7 @@ body: hasCompletedOnboarding
 
 ---
 
-## =Ä PERFORMANCE OPTIMIZATIONS (Phase 2)
+## =ÔøΩ PERFORMANCE OPTIMIZATIONS (Phase 2)
 **Time Estimate**: 4-5 hours total
 **Impact**: Measurable performance improvements
 
@@ -259,13 +314,13 @@ body: hasCompletedOnboarding
 **Issue**: Sessions fetched on every popup open, no caching
 
 **Current Flow**:
-1. User taps day í popup opens
-2. FutureBuilder fires í Firestore read
+1. User taps day ÔøΩ popup opens
+2. FutureBuilder fires ÔøΩ Firestore read
 3. Data displays
 
 **Optimized Flow**:
-1. Week navigation í pre-fetch sessions for all 7 days
-2. User taps day í instant popup with cached data
+1. Week navigation ÔøΩ pre-fetch sessions for all 7 days
+2. User taps day ÔøΩ instant popup with cached data
 3. Background refresh if stale
 
 **Implementation**:
@@ -428,7 +483,7 @@ Map<DateTime, DayDotStatus> computeWeekStatusesMemoized({
 ```dart
 // In progress_provider.dart weekStatusProvider
 
-return computeWeekStatusesMemoized( // ê Changed from computeWeekStatuses
+return computeWeekStatusesMemoized( // ÔøΩ Changed from computeWeekStatuses
   weekStart: weekStart,
   medicationSchedules: medicationSchedules,
   fluidSchedule: fluid,
@@ -513,7 +568,7 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
 
 ---
 
-## <® UX ENHANCEMENTS (Phase 3)
+## <ÔøΩ UX ENHANCEMENTS (Phase 3)
 **Time Estimate**: 6-8 hours total
 **Impact**: Significantly improved user experience
 
@@ -543,13 +598,13 @@ final calendarFormatProvider = StateProvider<CalendarFormat>((ref) {
 final format = ref.watch(calendarFormatProvider);
 
 return TableCalendar<void>(
-  calendarFormat: format, // ê Changed from CalendarFormat.week
+  calendarFormat: format, // ÔøΩ Changed from CalendarFormat.week
   availableCalendarFormats: const {
     CalendarFormat.week: 'Week',
     CalendarFormat.month: 'Month',
   },
   headerStyle: HeaderStyle(
-    formatButtonVisible: true, // ê Changed from false
+    formatButtonVisible: true, // ÔøΩ Changed from false
     formatButtonDecoration: BoxDecoration(
       color: Theme.of(context).colorScheme.primaryContainer,
       borderRadius: BorderRadius.circular(8),
@@ -685,7 +740,7 @@ void showProgressDayDetailPopup(BuildContext context, DateTime date) {
 // In ProgressDayDetailPopup build method
 
 child: SingleChildScrollView(
-  controller: widget.scrollController, // ê Pass from DraggableScrollableSheet
+  controller: widget.scrollController, // ÔøΩ Pass from DraggableScrollableSheet
   child: Column(/* existing content */),
 ),
 ```
@@ -898,7 +953,7 @@ body: hasCompletedOnboarding
 
 ---
 
-## =  INDUSTRY-STANDARD FEATURES (Phase 4)
+## =ÔøΩ INDUSTRY-STANDARD FEATURES (Phase 4)
 **Time Estimate**: 8-10 hours total
 **Impact**: Professional-grade calendar feature set
 
@@ -1143,7 +1198,7 @@ class _StreakColumn extends StatelessWidget {
 
 Column(
   children: [
-    StreakDisplayCard(), // ê Add this
+    StreakDisplayCard(), // ÔøΩ Add this
     ProgressWeekCalendar(/* ... */),
     // ... rest of content
   ],
@@ -1460,55 +1515,7 @@ return weekStatusAsync.when(
 
 ---
 
-## =À IMPLEMENTATION CHECKLIST
-
-### Phase 1: Quick Wins (2-3 hours)
-- [ ] 1. Add "Today" button (15 min)
-- [ ] 2. Add status legend (20 min)
-- [ ] 3. Add haptic feedback (10 min)
-- [ ] 4. Visual highlight for today (15 min)
-- [ ] 5. Add loading skeleton (30 min)
-- [ ] 6. Add pull-to-refresh (20 min)
-
-**Success Metrics**: Users can navigate efficiently, understand visual indicators
-
----
-
-### Phase 2: Performance Optimizations (4-5 hours)
-- [ ] 7. Optimize FutureBuilder with pre-fetching (1 hour)
-- [ ] 8. Add memoization for status calculations (45 min)
-- [ ] 9. Lazy load popup content (1 hour)
-
-**Success Metrics**: Popup opens <200ms, no jank during calendar swiping
-
----
-
-### Phase 3: UX Enhancements (6-8 hours)
-- [ ] 10. Month view toggle (1.5 hours)
-- [ ] 11. Date picker navigation (45 min)
-- [ ] 12. Swipe-to-dismiss popup (2 hours)
-- [ ] 13. Week number display (30 min)
-- [ ] 14. Dot animation on status change (1 hour)
-- [ ] 15. Empty state messaging (45 min)
-
-**Success Metrics**: Users find calendar intuitive, minimal training needed
-
----
-
-### Phase 4: Industry-Standard Features (8-10 hours)
-- [ ] 16. Export calendar view (PDF) (3 hours)
-- [ ] 17. Streak visualization (2 hours)
-- [ ] 18. Notes/events on calendar (3 hours)
-- [ ] 19. Keyboard navigation (1.5 hours)
-- [ ] 20. Deep linking (1 hour)
-- [ ] 21. Reduce motion support (30 min)
-- [ ] 22. Error state with retry (30 min)
-
-**Success Metrics**: Professional-grade calendar suitable for vet consultations
-
----
-
-## <Ø RECOMMENDED IMPLEMENTATION ORDER
+## <ÔøΩ RECOMMENDED IMPLEMENTATION ORDER
 
 1. **Week 1**: Phase 1 (Quick Wins) - Immediate UX improvements
 2. **Week 2**: Items 16, 17 from Phase 4 - PRD critical features (PDF export, streaks)
@@ -1518,7 +1525,7 @@ return weekStatusAsync.when(
 
 ---
 
-## =  SUCCESS METRICS
+## =ÔøΩ SUCCESS METRICS
 
 **User Engagement**:
 - Time spent on Progress screen increases by 30%
@@ -1561,7 +1568,7 @@ return weekStatusAsync.when(
 
 ---
 
-## =› NOTES
+## =ÔøΩ NOTES
 
 - **Priority Changes**: If vet consultations are critical soon, do Phase 4 item #16 (PDF export) immediately
 - **Month View Performance**: May need to implement pagination if >31 days becomes slow
