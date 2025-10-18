@@ -646,26 +646,42 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         return 0;
       }
 
-      // STEP 2: Check if already logged today (from cache)
-      if (cache?.hasAnySessions ?? false) {
-        state = state.copyWith(
-          isLoading: false,
-          error: 'Already logged treatments today',
+      // STEP 2: Get today's schedules from ProfileProvider
+      final medicationSchedules = _ref.read(medicationSchedulesProvider) ?? [];
+      final fluidSchedule = _ref.read(fluidScheduleProvider);
+
+      // STEP 3: Check if there are remaining treatments to log (smart check)
+      if (cache != null) {
+        final hasRemainingMeds = _hasRemainingMedications(
+          cache,
+          medicationSchedules,
         );
+        final hasRemainingFluid = _hasRemainingFluid(cache, fluidSchedule);
+
+        if (!hasRemainingMeds && !hasRemainingFluid) {
+          state = state.copyWith(
+            isLoading: false,
+            error: 'All scheduled treatments logged today',
+          );
+
+          if (kDebugMode) {
+            debugPrint(
+              '[LoggingNotifier] Quick-log rejected: '
+              'all treatments already logged',
+            );
+          }
+
+          return 0;
+        }
 
         if (kDebugMode) {
           debugPrint(
-            '[LoggingNotifier] Quick-log rejected: '
-            'sessions already logged today',
+            '[LoggingNotifier] Partial completion detected - '
+            'hasRemainingMeds: $hasRemainingMeds, '
+            'hasRemainingFluid: $hasRemainingFluid',
           );
         }
-
-        return 0;
       }
-
-      // STEP 3: Get today's schedules from ProfileProvider
-      final medicationSchedules = _ref.read(medicationSchedulesProvider) ?? [];
-      final fluidSchedule = _ref.read(fluidScheduleProvider);
 
       if (kDebugMode) {
         debugPrint(
@@ -773,7 +789,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       }
 
       final quickLogStart = DateTime.now();
-      final sessionCount = await _loggingService.quickLogAllTreatments(
+      final result = await _loggingService.quickLogAllTreatments(
         userId: user.id,
         petId: pet.id,
         todaysSchedules: allSchedules,
@@ -782,75 +798,83 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       if (kDebugMode) {
         debugPrint(
           '[LoggingNotifier] LoggingService returned sessionCount: '
-          '$sessionCount',
+          '${result.sessionCount}',
         );
       }
 
-      // STEP 6: Update cache optimistically (0 Firestore reads)
-      // We know exactly what was logged from the batch write, so update
-      // cache directly without reading from Firestore for cost optimization
+      // STEP 6: Incrementally update cache with what was actually logged
+      // This avoids race condition with Firestore and uses known values
+      if (cache != null) {
+        // Merge new data with existing cache
+        final updatedMedicationNames = <String>{
+          ...cache.medicationNames,
+          ...result.medicationNames,
+        }.toList();
 
-      // Calculate totals from schedules
-      var totalMedicationSessions = 0;
-      var totalFluidSessions = 0;
-      double totalMedicationDoses = 0;
-      double totalFluidVolume = 0;
-      final medicationNames = <String>[];
+        final updatedMedicationRecentTimes = Map<String, List<String>>.from(
+          cache.medicationRecentTimes,
+        );
+        result.medicationRecentTimes.forEach((name, times) {
+          updatedMedicationRecentTimes
+              .putIfAbsent(name, () => [])
+              .addAll(times);
+        });
 
-      final today = DateTime.now();
-      final todayDate = DateTime(today.year, today.month, today.day);
+        final updatedCache = cache.copyWith(
+          medicationSessionCount:
+              cache.medicationSessionCount + result.medicationSessionCount,
+          fluidSessionCount:
+              cache.fluidSessionCount + result.fluidSessionCount,
+          medicationNames: updatedMedicationNames,
+          totalMedicationDosesGiven:
+              cache.totalMedicationDosesGiven + result.totalMedicationDoses,
+          totalFluidVolumeGiven:
+              cache.totalFluidVolumeGiven + result.totalFluidVolume,
+          medicationRecentTimes: updatedMedicationRecentTimes,
+        );
 
-      for (final schedule in allSchedules) {
-        // Count reminder times for today
-        final todaysReminderCount = schedule.reminderTimes.where((
-          reminderTime,
-        ) {
-          final reminderDate = DateTime(
-            reminderTime.year,
-            reminderTime.month,
-            reminderTime.day,
-          );
-          return reminderDate.isAtSameMomentAs(todayDate);
-        }).length;
+        // Save to SharedPreferences
+        final today = AppDateUtils.formatDateForSummary(DateTime.now());
+        final cacheKey = 'daily_summary_${user.id}_${pet.id}_$today';
+        final prefs = _ref.read(sharedPreferencesProvider);
+        await prefs.setString(cacheKey, jsonEncode(updatedCache.toJson()));
 
-        if (schedule.isMedication) {
-          totalMedicationSessions += todaysReminderCount;
-          totalMedicationDoses +=
-              (schedule.targetDosage ?? 0) * todaysReminderCount;
-          if (schedule.medicationName != null &&
-              !medicationNames.contains(schedule.medicationName)) {
-            medicationNames.add(schedule.medicationName!);
-          }
-        } else {
-          totalFluidSessions += todaysReminderCount;
-          totalFluidVolume +=
-              (schedule.targetVolume ?? 0) * todaysReminderCount;
-        }
+        // Update state
+        state = state.withCache(updatedCache);
+      } else {
+        // No existing cache - create new one from results
+        final today = AppDateUtils.formatDateForSummary(DateTime.now());
+        final newCache = DailySummaryCache(
+          date: today,
+          medicationSessionCount: result.medicationSessionCount,
+          fluidSessionCount: result.fluidSessionCount,
+          medicationNames: result.medicationNames,
+          totalMedicationDosesGiven: result.totalMedicationDoses,
+          totalFluidVolumeGiven: result.totalFluidVolume,
+          medicationRecentTimes: result.medicationRecentTimes,
+        );
+
+        // Save to SharedPreferences
+        final cacheKey = 'daily_summary_${user.id}_${pet.id}_$today';
+        final prefs = _ref.read(sharedPreferencesProvider);
+        await prefs.setString(cacheKey, jsonEncode(newCache.toJson()));
+
+        // Update state
+        state = state.withCache(newCache);
       }
 
-      // Update cache directly without Firestore read (cost optimization)
-      await _cacheService.updateCacheAfterQuickLog(
-        userId: user.id,
-        petId: pet.id,
-        medicationSessionCount: totalMedicationSessions,
-        fluidSessionCount: totalFluidSessions,
-        medicationNames: medicationNames,
-        totalMedicationDoses: totalMedicationDoses,
-        totalFluidVolume: totalFluidVolume,
-      );
-
-      // Reload from SharedPreferences to update state
-      await loadTodaysCache();
+      // Invalidate in-memory TTL cache to ensure calendar updates immediately
+      _ref.read(summaryServiceProvider).invalidateTodaysCache(user.id, pet.id);
 
       // STEP 7: Track analytics
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
 
       // Count medication vs fluid sessions
-      final medicationCount = allSchedules.where((s) => s.isMedication).length;
-      final fluidCount = allSchedules.where((s) => !s.isMedication).length;
+      final medicationCount = result.medicationSessionCount;
+      final fluidCount = result.fluidSessionCount;
 
       await analyticsService.trackQuickLogUsed(
-        sessionCount: sessionCount,
+        sessionCount: result.sessionCount,
         medicationCount: medicationCount,
         fluidCount: fluidCount,
         durationMs: DateTime.now().difference(quickLogStart).inMilliseconds,
@@ -859,12 +883,12 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       if (kDebugMode) {
         debugPrint(
           '[LoggingNotifier] Quick-log complete: '
-          '$sessionCount sessions logged',
+          '${result.sessionCount} sessions logged',
         );
       }
 
       state = state.copyWith(isLoading: false);
-      return sessionCount;
+      return result.sessionCount;
     } on Exception catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -1040,6 +1064,9 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
 
       // Reload cache to get fresh data
       await loadTodaysCache();
+
+      // Invalidate in-memory TTL cache to ensure calendar updates immediately
+      _ref.read(summaryServiceProvider).invalidateTodaysCache(user.id, pet.id);
 
       // STEP 6: Track analytics
       final medStart = DateTime.now();
@@ -1247,6 +1274,9 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       // Reload cache to get fresh data
       await loadTodaysCache();
 
+      // Invalidate in-memory TTL cache to ensure calendar updates immediately
+      _ref.read(summaryServiceProvider).invalidateTodaysCache(user.id, pet.id);
+
       // STEP 5: Track analytics
       final fluidStart = DateTime.now();
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
@@ -1330,6 +1360,74 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
     if (kDebugMode) {
       debugPrint('[LoggingNotifier] State reset (cache preserved)');
     }
+  }
+
+  // ============================================
+  // Quick-Log Helper Methods
+  // ============================================
+
+  /// Check if there are remaining medications to log
+  ///
+  /// Compares the cache with active medication schedules to determine
+  /// if any scheduled medications have not been logged yet today.
+  ///
+  /// Returns true if at least one medication schedule has not been logged.
+  bool _hasRemainingMedications(
+    DailySummaryCache cache,
+    List<Schedule> schedules,
+  ) {
+    final now = DateTime.now();
+    for (final schedule in schedules) {
+      if (!schedule.isActive) continue;
+      if (!schedule.hasReminderTimeToday(now)) continue;
+
+      final medicationName = schedule.medicationName;
+      if (medicationName == null) continue;
+
+      // If not logged yet, we have remaining work
+      if (!cache.hasMedicationLogged(medicationName)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Check if there is remaining fluid volume to log
+  ///
+  /// Compares the cache's logged fluid volume with the daily goal
+  /// from the active fluid schedule.
+  ///
+  /// Returns true if logged volume < daily goal.
+  bool _hasRemainingFluid(
+    DailySummaryCache cache,
+    Schedule? fluidSchedule,
+  ) {
+    if (fluidSchedule == null) return false;
+    if (!fluidSchedule.isActive) return false;
+
+    final now = DateTime.now();
+    if (!fluidSchedule.hasReminderTimeToday(now)) return false;
+
+    final dailyGoal = _calculateDailyFluidGoal(fluidSchedule, now);
+    if (dailyGoal == null) return false;
+
+    final alreadyLogged = cache.totalFluidVolumeGiven;
+    return alreadyLogged < dailyGoal;
+  }
+
+  /// Calculate daily fluid goal from schedule
+  ///
+  /// Formula: targetVolume × number of reminders on the given date
+  ///
+  /// Returns null if schedule has no target volume or no reminders for date.
+  double? _calculateDailyFluidGoal(Schedule schedule, DateTime date) {
+    final targetVolume = schedule.targetVolume;
+    if (targetVolume == null || targetVolume <= 0) return null;
+
+    final reminderCount = schedule.reminderTimesOnDate(date).length;
+    if (reminderCount == 0) return null;
+
+    return targetVolume * reminderCount;
   }
 
   /// Convert exceptions to user-friendly error messages

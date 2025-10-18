@@ -299,6 +299,7 @@ class SummaryCacheService {
     required List<String> medicationNames,
     required double totalMedicationDoses,
     required double totalFluidVolume,
+    required Map<String, List<String>> medicationRecentTimes,
   }) async {
     try {
       final today = AppDateUtils.formatDateForSummary(DateTime.now());
@@ -312,6 +313,7 @@ class SummaryCacheService {
         medicationNames: medicationNames,
         totalMedicationDosesGiven: totalMedicationDoses,
         totalFluidVolumeGiven: totalFluidVolume,
+        medicationRecentTimes: medicationRecentTimes,
       );
 
       // Write to SharedPreferences

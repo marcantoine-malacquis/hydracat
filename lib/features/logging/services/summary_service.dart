@@ -370,6 +370,75 @@ class SummaryService {
   }
 
   // ============================================
+  // PUBLIC API - Cache Management
+  // ============================================
+
+  /// Invalidate in-memory TTL cache for today's summary
+  ///
+  /// Call this after logging operations to ensure the progress calendar
+  /// displays up-to-date completion status immediately.
+  ///
+  /// This fixes the issue where the calendar dot stays orange after logging
+  /// all treatments because the 5-minute TTL cache contains stale data.
+  ///
+  /// Cost: 0 Firestore reads (only clears in-memory cache)
+  ///
+  /// Usage:
+  /// ```dart
+  /// // After logging a session
+  /// await loggingService.logMedicationSession(...);
+  /// summaryService.invalidateTodaysCache(userId, petId);
+  /// ```
+  void invalidateTodaysCache(String userId, String petId) {
+    final today = DateTime.now();
+    final key = _dailyKey(userId, petId, today);
+    _dailyMemCache.remove(key);
+
+    if (kDebugMode) {
+      debugPrint(
+        "[SummaryService] Invalidated today's cache for "
+        'user:$userId pet:$petId',
+      );
+    }
+  }
+
+  /// Invalidate in-memory TTL cache for a specific date
+  ///
+  /// Use this when updating historical data (e.g., editing past sessions).
+  ///
+  /// Cost: 0 Firestore reads (only clears in-memory cache)
+  void invalidateCacheForDate(String userId, String petId, DateTime date) {
+    final key = _dailyKey(userId, petId, date);
+    _dailyMemCache.remove(key);
+
+    if (kDebugMode) {
+      final dateStr = AppDateUtils.formatDateForSummary(date);
+      debugPrint(
+        '[SummaryService] Invalidated cache for $dateStr '
+        'user:$userId pet:$petId',
+      );
+    }
+  }
+
+  /// Clear all in-memory TTL caches
+  ///
+  /// Use this for:
+  /// - User logout
+  /// - Pet switching
+  /// - Testing/debugging
+  ///
+  /// Cost: 0 Firestore reads (only clears in-memory cache)
+  void clearAllCaches() {
+    _dailyMemCache.clear();
+    _weeklyMemCache.clear();
+    _monthlyMemCache.clear();
+
+    if (kDebugMode) {
+      debugPrint('[SummaryService] Cleared all in-memory caches');
+    }
+  }
+
+  // ============================================
   // PRIVATE HELPERS - Firestore Paths
   // ============================================
 

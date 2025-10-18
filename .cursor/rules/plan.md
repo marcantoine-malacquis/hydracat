@@ -10,10 +10,10 @@ After analysing the situation and looking at the relevant code, please ultrathin
 
 Please ultrathink to come up with the most appropriate plan to achieve this. After analysing the situation and looking at the relevant code, please ask me any question you would need to feel confident about solving the issues. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself.
 
-Please create a detailed plan of how you will achieve and implement this step.
+Please create a detailed plan of how you will achieve and implement this step. Don't hesitate to let me know if you think of any meaningful and realistic improvements I might have overlooked.
 Before you create the plan, please ask any and all questions you have in order to provide the most robust solution to handle edge cases and/or additional context that you might need to feel confident in proceeding with the implementation. When you do use clarifying questions, please do not use bullet points but rather letters within each numbered question if number requires bullet points. Before you ask me questions, please already have a look at all the existing files you would need, as well as previously implemented steps, to already have the context, use existing systems, ensure coherence and in case you already find the answer to your questions. Suggest for each question your recommended solution. Keep in mind that I want to have the best suited solution for my project while being in line with industry standards and app development best practices as much as possible. Please follow Firebase and Flutter best practices and use built-in solutions whenever possible instead of more complex custom/hacky workarounds. Also, keep in mind the CRUD rules file (.cursor/rules/firebase_CRUDrules.md) to make sure to keep firebase costs to a minimum. Regarding database, I don't need to worry about backward compatibility since I will regularily delete the database anyway for testing.
 
-Please let me know if this makes sense or contradict itself, the prd (prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them. I will test only once we fixed the linting issues.
+Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them. I will test only once we fixed the linting issues.
 
 Please update and add only the important informations to remember about what we implemented in this step for future reference in 
 
@@ -43,5 +43,20 @@ I already did something similar in @onboarding_code_review_report.md . I don't n
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
 
-
+1. a) only clear local cached data (in-memory providers, shared preferences cache).
+c) Yes, include a clear warning
+2. a) Yes, with a "Deselect All" toggle behavior for better UX.
+b) Yes, this helps users understand what they're clearing and provides transparency.
+c) Yes, with a skeleton loader or spinner for counts.
+3. a) Show an error message with retry option, log the failure to analytics, and indicate which items failed.
+b) Yes, use exponential backoff (3 retries max) for transient failures.
+c) Just require confirmation dialog.
+4. no deletion from firestore
+5. a) Auto-refresh immediately to avoid showing stale/empty state.
+b) Yes, call ref.invalidate() on affected providers after clearing.
+c) Yes, with message like "Cache cleared successfully"
+6. a) Yes for consistency, but use orange to indicate caution vs danger.
+b) Yes, something like "Clear local cached treatment data" 
+c) Create a "Data Management" section to keep it organized and allow for future additions (export data, etc.)
+Please let me know if this makes sense or contradict itself, the prd (reference/prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them. I will test only once we fixed the linting issues.
 

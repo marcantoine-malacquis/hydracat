@@ -71,35 +71,10 @@ class FluidDailySummaryCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             _ProgressBarWithTick(value: progress, color: statusColor),
-            const SizedBox(height: 6),
-            _helperText(remaining, reached, summary.isToday, missed),
           ],
         ),
       ),
     );
-  }
-
-  Widget _helperText(int remaining, bool reached, bool isToday, bool missed) {
-    if (summary.goalMl <= 0) {
-      return const Text('No goal set', style: AppTextStyles.caption);
-    }
-    if (reached) {
-      final over = -remaining;
-      return Text(
-        over > 0 ? '+${_formatMl(over)} over' : 'Goal reached',
-        style: AppTextStyles.caption,
-      );
-    }
-    if (isToday) {
-      return Text('${_formatMl(remaining)} left', style: AppTextStyles.caption);
-    }
-    if (missed) {
-      return Text(
-        'Missed by ${_formatMl(remaining)}',
-        style: AppTextStyles.caption.copyWith(color: AppColors.error),
-      );
-    }
-    return const SizedBox.shrink();
   }
 
   Widget _buildStatusChip(
@@ -111,29 +86,56 @@ class FluidDailySummaryCard extends StatelessWidget {
   ) {
     IconData icon;
     String label;
+    Color iconColor;
+    Color? backgroundColor;
+    Color borderColor;
+
     if (summary.goalMl <= 0) {
       icon = Icons.info_outline;
       label = 'No goal';
+      iconColor = color;
+      backgroundColor = Colors.transparent; // Outlined chip
+      borderColor = color;
     } else if (reached) {
       icon = Icons.check_circle;
       label = 'Goal reached';
+      iconColor = Colors.white;
+      backgroundColor = AppColors.primary; // Filled chip for completion
+      borderColor = AppColors.primary;
     } else if (isToday) {
       icon = Icons.schedule;
       label = '${_formatMl(remaining)} left';
+      iconColor = AppColors.successDark; // Darker amber for better contrast
+      backgroundColor = Colors.transparent; // Outlined chip for in-progress
+      borderColor = AppColors.successDark;
     } else if (missed) {
       icon = Icons.cancel;
       label = 'Missed';
+      iconColor = color;
+      backgroundColor = Colors.transparent; // Outlined chip
+      borderColor = color;
     } else {
       icon = Icons.info_outline;
       label = 'Pending';
+      iconColor = color;
+      backgroundColor = Colors.transparent; // Outlined chip
+      borderColor = color;
     }
 
     return Chip(
       padding: const EdgeInsets.symmetric(horizontal: 6),
       visualDensity: VisualDensity.compact,
-      avatar: Icon(icon, size: 18, color: color),
-      label: Text(label),
-      side: BorderSide(color: color.withValues(alpha: 0.25)),
+      backgroundColor: backgroundColor,
+      avatar: Icon(icon, size: 18, color: iconColor),
+      label: Text(
+        label,
+        style: TextStyle(
+          color: reached ? Colors.white : AppColors.textPrimary,
+        ),
+      ),
+      side: BorderSide(
+        color: reached ? borderColor : borderColor.withValues(alpha: 0.5),
+      ),
     );
   }
 

@@ -25,6 +25,7 @@ class FluidSession {
     this.scheduleId,
     this.scheduledTime,
     this.updatedAt,
+    this.dailyGoalMl,
   });
 
   /// Factory constructor to create a new fluid session
@@ -41,6 +42,7 @@ class FluidSession {
     String? notes,
     String? scheduleId,
     DateTime? scheduledTime,
+    double? dailyGoalMl,
   }) {
     const uuid = Uuid();
     return FluidSession(
@@ -55,6 +57,7 @@ class FluidSession {
       scheduleId: scheduleId,
       scheduledTime: scheduledTime,
       createdAt: DateTime.now(),
+      dailyGoalMl: dailyGoalMl,
     );
   }
 
@@ -72,6 +75,7 @@ class FluidSession {
     FluidLocation? actualInjectionSite,
     String? stressLevel,
     String? notes,
+    double? dailyGoalMl,
   }) {
     const uuid = Uuid();
     return FluidSession(
@@ -86,6 +90,7 @@ class FluidSession {
       scheduleId: schedule.id,
       scheduledTime: scheduledTime,
       createdAt: DateTime.now(),
+      dailyGoalMl: dailyGoalMl,
     );
   }
 
@@ -112,6 +117,9 @@ class FluidSession {
       createdAt: _parseDateTime(json['createdAt']),
       updatedAt: json['updatedAt'] != null
           ? _parseDateTime(json['updatedAt'])
+          : null,
+      dailyGoalMl: json['dailyGoalMl'] != null
+          ? (json['dailyGoalMl'] as num).toDouble()
           : null,
     );
   }
@@ -169,6 +177,12 @@ class FluidSession {
 
   /// Modification timestamp: when this session was last edited
   final DateTime? updatedAt;
+
+  /// Daily goal (in ml) that was active when this session was logged
+  ///
+  /// Stores the point-in-time daily fluid goal to ensure historical accuracy
+  /// when schedules change. Nullable for backward compatibility with old data.
+  final double? dailyGoalMl;
 
   // Sync helpers
 
@@ -232,6 +246,7 @@ class FluidSession {
       'scheduledTime': scheduledTime,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
+      'dailyGoalMl': dailyGoalMl,
     };
   }
 
@@ -249,6 +264,7 @@ class FluidSession {
     DateTime? scheduledTime,
     DateTime? createdAt,
     DateTime? updatedAt,
+    double? dailyGoalMl,
   }) {
     return FluidSession(
       id: id ?? this.id,
@@ -263,6 +279,7 @@ class FluidSession {
       scheduledTime: scheduledTime ?? this.scheduledTime,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      dailyGoalMl: dailyGoalMl ?? this.dailyGoalMl,
     );
   }
 
@@ -282,7 +299,8 @@ class FluidSession {
         other.scheduleId == scheduleId &&
         other.scheduledTime == scheduledTime &&
         other.createdAt == createdAt &&
-        other.updatedAt == updatedAt;
+        other.updatedAt == updatedAt &&
+        other.dailyGoalMl == dailyGoalMl;
   }
 
   @override
@@ -300,6 +318,7 @@ class FluidSession {
       scheduledTime,
       createdAt,
       updatedAt,
+      dailyGoalMl,
     );
   }
 
@@ -317,7 +336,8 @@ class FluidSession {
         'scheduleId: $scheduleId, '
         'scheduledTime: $scheduledTime, '
         'createdAt: $createdAt, '
-        'updatedAt: $updatedAt'
+        'updatedAt: $updatedAt, '
+        'dailyGoalMl: $dailyGoalMl'
         ')';
   }
 }

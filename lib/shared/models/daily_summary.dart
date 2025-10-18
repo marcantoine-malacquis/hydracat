@@ -27,6 +27,7 @@ class DailySummary extends TreatmentSummaryBase {
     required super.overallTreatmentDone,
     required super.createdAt,
     super.updatedAt,
+    this.fluidDailyGoalMl,
   });
 
   /// Factory constructor to create an empty daily summary
@@ -93,6 +94,7 @@ class DailySummary extends TreatmentSummaryBase {
           TreatmentSummaryBase.parseDateTimeNullable(json['createdAt']) ??
           DateTime.now(),
       updatedAt: TreatmentSummaryBase.parseDateTimeNullable(json['updatedAt']),
+      fluidDailyGoalMl: (json['fluidDailyGoalMl'] as num?)?.toInt(),
     );
   }
 
@@ -108,6 +110,12 @@ class DailySummary extends TreatmentSummaryBase {
   /// summary also had `overallTreatmentDone == true`.
   /// Reset to 0 when a day is missed.
   final int overallStreak;
+
+  /// Daily fluid goal (in ml) that was active on this date
+  ///
+  /// Stores the point-in-time daily fluid goal to ensure historical accuracy
+  /// when schedules change. Nullable for backward compatibility with old data.
+  final int? fluidDailyGoalMl;
 
   @override
   String get documentId => AppDateUtils.formatDateForSummary(date);
@@ -132,6 +140,7 @@ class DailySummary extends TreatmentSummaryBase {
       'overallTreatmentDone': overallTreatmentDone,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'fluidDailyGoalMl': fluidDailyGoalMl,
     };
   }
 
@@ -172,6 +181,7 @@ class DailySummary extends TreatmentSummaryBase {
     bool? overallTreatmentDone,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? fluidDailyGoalMl,
   }) {
     return DailySummary(
       date: date ?? this.date,
@@ -187,6 +197,7 @@ class DailySummary extends TreatmentSummaryBase {
       overallTreatmentDone: overallTreatmentDone ?? this.overallTreatmentDone,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      fluidDailyGoalMl: fluidDailyGoalMl ?? this.fluidDailyGoalMl,
     );
   }
 
@@ -197,6 +208,7 @@ class DailySummary extends TreatmentSummaryBase {
     return other is DailySummary &&
         other.date == date &&
         other.overallStreak == overallStreak &&
+        other.fluidDailyGoalMl == fluidDailyGoalMl &&
         super == other;
   }
 
@@ -206,6 +218,7 @@ class DailySummary extends TreatmentSummaryBase {
       super.hashCode,
       date,
       overallStreak,
+      fluidDailyGoalMl,
     );
   }
 
@@ -222,7 +235,8 @@ class DailySummary extends TreatmentSummaryBase {
         'fluidSessionCount: $fluidSessionCount, '
         'overallTreatmentDone: $overallTreatmentDone, '
         'createdAt: $createdAt, '
-        'updatedAt: $updatedAt'
+        'updatedAt: $updatedAt, '
+        'fluidDailyGoalMl: $fluidDailyGoalMl'
         ')';
   }
 }

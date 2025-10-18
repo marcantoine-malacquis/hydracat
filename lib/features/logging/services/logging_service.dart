@@ -458,11 +458,24 @@ class LoggingService {
         _validateFluidSession(session);
       }
 
-      // STEP 2: Schedule matching (time only)
+      // STEP 2: Calculate daily goal from active fluid schedule (if exists)
+      // Note: Goal calculation is independent of schedule matching
+      final fluidSchedule = todaysSchedules
+          .where((s) => s.treatmentType == TreatmentType.fluid)
+          .where((s) => s.isActive)
+          .firstOrNull;
+
+      final dailyGoal = fluidSchedule != null
+          ? _calculateDailyFluidGoal(fluidSchedule, session.dateTime)
+          : null;
+
+      // STEP 3: Schedule matching (time only, for linking purposes)
       final match = _matchFluidSchedule(session, todaysSchedules);
+
       final sessionWithSchedule = session.copyWith(
         scheduleId: match.scheduleId,
         scheduledTime: match.scheduledTime,
+        dailyGoalMl: dailyGoal,
       );
 
       if (kDebugMode) {
@@ -476,7 +489,7 @@ class LoggingService {
         }
       }
 
-      // STEP 3: Build 4-write batch
+      // STEP 4: Build 4-write batch
       final batch = _firestore.batch();
       _addFluidSessionToBatch(
         batch: batch,
@@ -485,7 +498,7 @@ class LoggingService {
         petId: petId,
       );
 
-      // STEP 4: Commit batch
+      // STEP 5: Commit batch
       await _executeBatchWrite(
         batch: batch,
         operation: 'logFluidSession',
@@ -710,7 +723,7 @@ class LoggingService {
   /// - `petId`: Target pet ID
   /// - `todaysSchedules`: All active schedules for today (from provider)
   ///
-  /// Returns: Total number of sessions logged
+  /// Returns: Record with detailed session information for cache update
   ///
   /// Throws:
   /// - [LoggingException]: Empty schedules or sessions already logged
@@ -720,14 +733,23 @@ class LoggingService {
   ///
   /// Example:
   /// ```dart
-  /// final count = await loggingService.quickLogAllTreatments(
+  /// final result = await loggingService.quickLogAllTreatments(
   ///   userId: user.id,
   ///   petId: pet.id,
   ///   todaysSchedules: schedules,
   /// );
-  /// // Returns: 5 (logged 3 med sessions + 2 fluid sessions)
+  /// // Returns: (sessionCount: 5, medicationNames: [...], ...)
   /// ```
-  Future<int> quickLogAllTreatments({
+  Future<
+      ({
+        int sessionCount,
+        int medicationSessionCount,
+        int fluidSessionCount,
+        List<String> medicationNames,
+        double totalMedicationDoses,
+        double totalFluidVolume,
+        Map<String, List<String>> medicationRecentTimes,
+      })> quickLogAllTreatments({
     required String userId,
     required String petId,
     required List<Schedule> todaysSchedules,
@@ -745,14 +767,9 @@ class LoggingService {
         throw const LoggingException('No active schedules found for today.');
       }
 
-      // STEP 2: Check cache for existing sessions (strict all-or-nothing)
+      // STEP 2: Get cache for smart session filtering
+      // (allow partial completion)
       final cache = await _getDailySummaryCache(userId, petId);
-      if (cache != null && cache.hasAnySessions) {
-        throw const LoggingException(
-          'Treatments already logged today. '
-          'Use individual logging to add more sessions.',
-        );
-      }
 
       // STEP 3: Filter to active schedules with today's reminders
       final now = DateTime.now();
@@ -774,17 +791,29 @@ class LoggingService {
         );
       }
 
-      // STEP 4: Generate all sessions from schedules
+      // STEP 4: Generate sessions ONLY for incomplete treatments
+      // (smart filtering)
       final medicationSessions = <MedicationSession>[];
       final fluidSessions = <FluidSession>[];
 
       for (final schedule in activeSchedules) {
-        // Get today's reminder times only (centralized helper)
-        final todaysReminders = schedule.todaysReminderTimes(now).toList();
+        if (schedule.treatmentType == TreatmentType.medication) {
+          // Skip if medication already logged today
+          final medicationName = schedule.medicationName;
+          if (medicationName == null) continue;
 
-        for (final reminderTime in todaysReminders) {
-          if (schedule.treatmentType == TreatmentType.medication) {
-            // Create medication session with scheduled time
+          if (cache != null && cache.hasMedicationLogged(medicationName)) {
+            if (kDebugMode) {
+              debugPrint(
+                '[LoggingService] Skipping $medicationName - already logged',
+              );
+            }
+            continue;
+          }
+
+          // Create sessions for this medication
+          final todaysReminders = schedule.todaysReminderTimes(now).toList();
+          for (final reminderTime in todaysReminders) {
             medicationSessions.add(
               MedicationSession.fromSchedule(
                 schedule: schedule,
@@ -795,18 +824,50 @@ class LoggingService {
                 wasCompleted: true, // All quick-logged meds marked complete
               ),
             );
-          } else if (schedule.treatmentType == TreatmentType.fluid) {
-            // Create fluid session with scheduled time
-            fluidSessions.add(
-              FluidSession.fromSchedule(
-                schedule: schedule,
-                scheduledTime: reminderTime,
-                petId: petId,
-                userId: userId,
-                actualDateTime: reminderTime, // Use scheduled time
-              ),
+          }
+        } else if (schedule.treatmentType == TreatmentType.fluid) {
+          // Calculate remaining fluid volume needed
+          final dailyGoal = _calculateDailyFluidGoal(schedule, now);
+          if (dailyGoal == null) continue;
+
+          final alreadyLogged = cache?.totalFluidVolumeGiven ?? 0.0;
+          final remaining = dailyGoal - alreadyLogged;
+
+          if (remaining <= 0) {
+            if (kDebugMode) {
+              debugPrint(
+                '[LoggingService] Skipping fluid - already complete '
+                '($alreadyLogged ml / $dailyGoal ml)',
+              );
+            }
+            continue;
+          }
+
+          // Create single catch-up session for remaining volume
+          final reminderTimes = schedule.todaysReminderTimes(now).toList();
+          final scheduledTime = reminderTimes.isNotEmpty
+              ? reminderTimes.first
+              : now;
+
+          if (kDebugMode) {
+            debugPrint(
+              '[LoggingService] Creating catch-up fluid session: '
+              '$remaining ml (goal: $dailyGoal ml, logged: $alreadyLogged ml)',
             );
           }
+
+          fluidSessions.add(
+            FluidSession.fromSchedule(
+              schedule: schedule,
+              scheduledTime: scheduledTime,
+              petId: petId,
+              userId: userId,
+              actualDateTime: now, // Use current time for catch-up
+              dailyGoalMl: dailyGoal,
+            ).copyWith(
+              volumeGiven: remaining, // Override with remaining volume
+            ),
+          );
         }
       }
 
@@ -814,7 +875,7 @@ class LoggingService {
 
       if (totalSessions == 0) {
         throw const LoggingException(
-          'No sessions to log. Please check schedule configuration.',
+          'All scheduled treatments already logged today.',
         );
       }
 
@@ -852,9 +913,17 @@ class LoggingService {
 
         // Add exactly 3 summary writes
         final dailyRef = _getDailySummaryRef(userId, petId, todayDate);
+        // Get daily goal from first fluid session if any exist
+        final dailyGoal = fluidSessions.isNotEmpty
+            ? fluidSessions.first.dailyGoalMl
+            : null;
         batch.set(
           dailyRef,
-          _buildDailySummaryWithIncrements(todayDate, aggregatedDto),
+          _buildDailySummaryWithIncrements(
+            todayDate,
+            aggregatedDto,
+            dailyGoalMl: dailyGoal,
+          ),
           SetOptions(merge: true),
         );
 
@@ -894,7 +963,40 @@ class LoggingService {
         );
       }
 
-      return totalSessions;
+      // STEP 7: Build detailed result for cache update
+      // Calculate actual logged values from generated sessions
+      final medicationNames = medicationSessions
+          .map((s) => s.medicationName)
+          .toSet()
+          .toList();
+
+      final medicationRecentTimes = <String, List<String>>{};
+      for (final session in medicationSessions) {
+        final time = session.scheduledTime ?? session.dateTime;
+        medicationRecentTimes
+            .putIfAbsent(session.medicationName, () => [])
+            .add(time.toIso8601String());
+      }
+
+      final totalMedicationDoses = medicationSessions.fold<double>(
+        0,
+        (total, s) => total + (s.dosageGiven),
+      );
+
+      final totalFluidVolume = fluidSessions.fold<double>(
+        0,
+        (total, s) => total + s.volumeGiven,
+      );
+
+      return (
+        sessionCount: totalSessions,
+        medicationSessionCount: medicationSessions.length,
+        fluidSessionCount: fluidSessions.length,
+        medicationNames: medicationNames,
+        totalMedicationDoses: totalMedicationDoses,
+        totalFluidVolume: totalFluidVolume,
+        medicationRecentTimes: medicationRecentTimes,
+      );
     } on LoggingException {
       rethrow; // UI handles these
     } on FirebaseException catch (e) {
@@ -1160,6 +1262,33 @@ class LoggingService {
   // Note: No duplicate detection for fluid sessions (per medical requirements)
 
   // ============================================
+  // PRIVATE HELPERS - Daily Goal Calculation
+  // ============================================
+
+  /// Calculates the daily fluid goal from a schedule for a given date
+  ///
+  /// Formula: targetVolume × number of reminders on that date
+  ///
+  /// Example:
+  /// - Schedule: 100ml per session, reminders at [9:00 AM, 3:00 PM, 9:00 PM]
+  /// - Daily goal: 100ml × 3 = 300ml
+  ///
+  /// Returns null if schedule has no target volume or no reminders for date.
+  double? _calculateDailyFluidGoal(Schedule schedule, DateTime date) {
+    final targetVolume = schedule.targetVolume;
+    if (targetVolume == null || targetVolume <= 0) {
+      return null;
+    }
+
+    final reminderCount = schedule.reminderTimesOnDate(date).length;
+    if (reminderCount == 0) {
+      return null;
+    }
+
+    return targetVolume * reminderCount;
+  }
+
+  // ============================================
   // PRIVATE HELPERS - Schedule Matching
   // ============================================
 
@@ -1358,7 +1487,11 @@ class LoggingService {
     final dailyRef = _getDailySummaryRef(userId, petId, date);
     batch.set(
       dailyRef,
-      _buildDailySummaryWithIncrements(date, dto),
+      _buildDailySummaryWithIncrements(
+        date,
+        dto,
+        dailyGoalMl: session.dailyGoalMl,
+      ),
       SetOptions(merge: true),
     );
 
@@ -1429,8 +1562,9 @@ class LoggingService {
   /// aggregated data that changes frequently).
   Map<String, dynamic> _buildDailySummaryWithIncrements(
     DateTime date,
-    SummaryUpdateDto dto,
-  ) {
+    SummaryUpdateDto dto, {
+    double? dailyGoalMl,
+  }) {
     final map =
         <String, dynamic>{
             'date': Timestamp.fromDate(date),
@@ -1440,6 +1574,11 @@ class LoggingService {
           }
           // Add DTO increments (will create or increment existing fields)
           ..addAll(dto.toFirestoreUpdate());
+
+    // Add daily goal if provided (only for fluid sessions)
+    if (dailyGoalMl != null) {
+      map['fluidDailyGoalMl'] = dailyGoalMl.round();
+    }
 
     return map;
   }
@@ -1569,9 +1708,17 @@ class LoggingService {
       // Include summaries only in first batch (3 ops)
       if (isFirstBatch) {
         final dailyRef = _getDailySummaryRef(userId, petId, todayDate);
+        // Get daily goal from first fluid session if any exist
+        final dailyGoal = fluidSessions.isNotEmpty
+            ? fluidSessions.first.dailyGoalMl
+            : null;
         batch.set(
           dailyRef,
-          _buildDailySummaryWithIncrements(todayDate, aggregatedDto),
+          _buildDailySummaryWithIncrements(
+            todayDate,
+            aggregatedDto,
+            dailyGoalMl: dailyGoal,
+          ),
           SetOptions(merge: true),
         );
         ops++;

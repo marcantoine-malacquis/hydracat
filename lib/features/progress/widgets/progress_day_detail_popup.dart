@@ -75,8 +75,6 @@ class ProgressDayDetailPopup extends ConsumerWidget {
                 children: [
                   _buildHeader(context),
                   const SizedBox(height: AppSpacing.md),
-                  _buildSummaryPills(context, ref),
-                  const SizedBox(height: AppSpacing.md),
                   Divider(
                     height: 1,
                     thickness: 1,
@@ -122,93 +120,30 @@ class ProgressDayDetailPopup extends ConsumerWidget {
     );
   }
 
-  /// Builds summary pills showing treatment completion status.
-  Widget _buildSummaryPills(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserProvider);
-    final pet = ref.watch(primaryPetProvider);
-
-    if (user == null || pet == null) return const SizedBox.shrink();
-
-    // Get schedules to compute expected counts
-    final medSchedules = ref.watch(medicationSchedulesProvider) ?? [];
-    final fluidSchedule = ref.watch(fluidScheduleProvider);
-
-    // Filter medication schedules only
-    final medicationSchedules = medSchedules
-        .where((s) => s.treatmentType == TreatmentType.medication)
-        .toList();
-
-    final scheduledMedCount = medicationSchedules.fold<int>(
-      0,
-      (sum, s) => sum + s.reminderTimesOnDate(date).length,
-    );
-    final scheduledFluidCount =
-        fluidSchedule?.reminderTimesOnDate(date).length ?? 0;
-
-    // Get summary for actual counts (past/today only)
-    final summaryAsync = ref.watch(
-      weekSummariesProvider(AppDateUtils.startOfWeekMonday(date)),
-    );
-
-    return summaryAsync.when(
-      data: (summaries) {
-        final summary = summaries[AppDateUtils.startOfDay(date)];
-        return _buildPills(
-          scheduledMedCount,
-          scheduledFluidCount,
-          summary?.medicationTotalDoses ?? 0,
-          summary?.fluidSessionCount ?? 0,
-        );
-      },
-      loading: () => const Center(
-        child: Padding(
-          padding: EdgeInsets.all(AppSpacing.sm),
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
+  /// Builds a section header with title and count badge.
+  Widget _buildSectionHeader(String title, String count) {
+    return Row(
+      children: [
+        Text(title, style: AppTextStyles.h3),
+        const SizedBox(width: AppSpacing.sm),
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xs,
+            vertical: 2,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.primaryLight.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            count,
+            style: AppTextStyles.caption.copyWith(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+            ),
           ),
         ),
-      ),
-      error: (_, _) => const SizedBox.shrink(),
-    );
-  }
-
-  /// Builds the pill widgets for summary display.
-  Widget _buildPills(
-    int scheduledMed,
-    int scheduledFluid,
-    int actualMed,
-    int actualFluid,
-  ) {
-    if (scheduledMed == 0 && scheduledFluid == 0) {
-      return const SizedBox.shrink();
-    }
-
-    return Wrap(
-      spacing: AppSpacing.sm,
-      runSpacing: AppSpacing.xs,
-      children: [
-        if (scheduledMed > 0)
-          _buildPill('Medication: $actualMed of $scheduledMed doses'),
-        if (scheduledFluid > 0)
-          _buildPill('Fluid: $actualFluid of $scheduledFluid sessions'),
       ],
-    );
-  }
-
-  /// Builds a single pill widget.
-  Widget _buildPill(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.primaryLight.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(text, style: AppTextStyles.caption),
     );
   }
 
@@ -256,11 +191,18 @@ class ProgressDayDetailPopup extends ConsumerWidget {
 
     final showFluidSection = fluidReminders.isNotEmpty;
 
+    // Calculate counts for headers (future dates have 0 actual, show as 0 of X)
+    final scheduledFluidCount = fluidReminders.length;
+    final scheduledMedCount = medReminders.length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (showFluidSection) ...[
-          const Text('Fluid therapy', style: AppTextStyles.h3),
+          _buildSectionHeader(
+            'Fluid therapy',
+            '0 of $scheduledFluidCount sessions',
+          ),
           const SizedBox(height: AppSpacing.xs),
           _maybeSummaryCard(context, ref),
           if (fluidReminders.isNotEmpty) ...[
@@ -273,7 +215,10 @@ class ProgressDayDetailPopup extends ConsumerWidget {
         ],
 
         if (medReminders.isNotEmpty) ...[
-          const Text('Medications', style: AppTextStyles.h3),
+          _buildSectionHeader(
+            'Medications',
+            '0 of $scheduledMedCount doses',
+          ),
           const SizedBox(height: AppSpacing.xs),
           ...medReminders.map((r) => _buildPlannedMedicationTile(r.$1, r.$2)),
         ],
@@ -356,39 +301,37 @@ class ProgressDayDetailPopup extends ConsumerWidget {
           sessions: medSessions,
         );
 
-        final totalFluidMl = fluidSessions.fold<double>(
-          0,
-          (sum, s) => sum + s.volumeGiven,
-        );
         final hasAnyFluid = fluidSessions.isNotEmpty;
 
         final showFluidSection = hasAnyFluid || fluidReminders.isNotEmpty;
+
+        // Calculate counts for headers
+        final scheduledFluidCount = fluidReminders.length;
+        // Count as 1 if any fluid given
+        final actualFluidCount = hasAnyFluid ? 1 : 0;
+        final scheduledMedCount = medReminders.length;
+        final actualMedCount = completedReminderTimes.length;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (showFluidSection) ...[
-              const Text('Fluid therapy', style: AppTextStyles.h3),
+              _buildSectionHeader(
+                'Fluid therapy',
+                '$actualFluidCount of $scheduledFluidCount sessions',
+              ),
               const SizedBox(height: AppSpacing.xs),
               _maybeSummaryCard(context, ref),
               const SizedBox(height: AppSpacing.sm),
               ..._buildFluidSessionsList(fluidSessions),
-              if (fluidReminders.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.xs),
-                ...fluidReminders.map(
-                  (time) => _buildPlannedFluidTile(
-                    fluidSchedule!,
-                    time,
-                    totalFluidMl: totalFluidMl,
-                    completed: hasAnyFluid,
-                  ),
-                ),
-              ],
               const SizedBox(height: AppSpacing.md),
             ],
 
             if (medReminders.isNotEmpty) ...[
-              const Text('Medications', style: AppTextStyles.h3),
+              _buildSectionHeader(
+                'Medications',
+                '$actualMedCount of $scheduledMedCount doses',
+              ),
               const SizedBox(height: AppSpacing.xs),
               ...medReminders.map(
                 (r) => _buildPlannedMedicationTile(

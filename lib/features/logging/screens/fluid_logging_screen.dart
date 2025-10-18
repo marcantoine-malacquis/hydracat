@@ -241,6 +241,7 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
           .read(loggingProvider.notifier)
           .logFluidSession(
             session: session,
+            fluidSchedule: fluidSchedule,
           );
 
       if (success) {

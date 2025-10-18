@@ -4,12 +4,98 @@ import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/settings/widgets/weight_unit_selector.dart';
 import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/providers/cache_management_provider.dart';
+import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/theme_provider.dart';
 
 /// A screen that displays app settings and preferences.
 class SettingsScreen extends ConsumerWidget {
   /// Creates a settings screen.
   const SettingsScreen({super.key});
+
+  /// Show confirmation dialog before clearing cache
+  Future<bool> _showClearCacheConfirmation(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear Cache?'),
+        content: const Text(
+          'This will clear locally cached summary data. '
+          'Data will be reloaded from the server.\n\n'
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.warning,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Clear Cache'),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
+  /// Clear cache and show feedback
+  Future<void> _clearCache(BuildContext context, WidgetRef ref) async {
+    // Show confirmation
+    final confirmed = await _showClearCacheConfirmation(context);
+    if (!confirmed || !context.mounted) return;
+
+    final user = ref.read(currentUserProvider);
+    final pet = ref.read(primaryPetProvider);
+
+    if (user == null || pet == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to clear cache: User or pet not found'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      final cacheService = ref.read(cacheManagementServiceProvider);
+
+      // Clear daily summaries from SharedPreferences
+      final clearedCount = await cacheService.clearDailySummaries(
+        user.id,
+        pet.id,
+      );
+
+      // Invalidate providers to trigger refresh
+      await cacheService.invalidateProviders(ref);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cache cleared successfully ($clearedCount items)'),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } on Exception catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to clear cache: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -104,6 +190,61 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     );
                   },
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: AppSpacing.xl),
+
+          // Data Management section
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Data Management', style: AppTextStyles.h3),
+                const SizedBox(height: AppSpacing.sm),
+                InkWell(
+                  onTap: () => _clearCache(context, ref),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.xs,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.cleaning_services,
+                          color: AppColors.warning,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Clear Cache',
+                                style: AppTextStyles.body,
+                              ),
+                              Text(
+                                'Clear local cached summary data',
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),

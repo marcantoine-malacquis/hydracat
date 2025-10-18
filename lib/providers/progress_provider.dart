@@ -142,10 +142,11 @@ fluidDailySummaryViewProvider = Provider.autoDispose
           final summary = map[normalized];
           final givenMl = (summary?.fluidTotalVolume ?? 0).round();
 
-          final goalPerSession = (schedule?.targetVolume ?? 0).round();
-          final sessionsCount =
-              schedule?.reminderTimesOnDate(normalized).length ?? 0;
-          final goalMl = goalPerSession * sessionsCount;
+          // Use stored historical goal if available, otherwise calculate from
+          // current schedule. This ensures historical data remains accurate
+          // when schedules change.
+          final goalMl = summary?.fluidDailyGoalMl ??
+              _calculateCurrentGoal(schedule, normalized);
 
           return FluidDailySummaryView(
             givenMl: givenMl,
@@ -156,3 +157,16 @@ fluidDailySummaryViewProvider = Provider.autoDispose
         orElse: () => null,
       );
     });
+
+/// Helper function to calculate the current fluid goal from active schedule
+///
+/// Returns the daily goal based on the current schedule's target volume
+/// and number of reminder times for the given date.
+/// Returns 0 if no schedule exists or schedule has no reminders for that date.
+int _calculateCurrentGoal(Schedule? schedule, DateTime date) {
+  if (schedule == null) return 0;
+
+  final goalPerSession = (schedule.targetVolume ?? 0).round();
+  final sessionsCount = schedule.reminderTimesOnDate(date).length;
+  return goalPerSession * sessionsCount;
+}
