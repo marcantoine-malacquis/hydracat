@@ -51,7 +51,15 @@ class HomeScreen extends ConsumerWidget {
         final hasFluid = profileState.hasFluidSchedule;
         final hasMedication = profileState.hasMedicationSchedules;
 
-        // Show empty state with setup options if no schedules
+        // Show loading skeleton if schedules haven't been loaded yet
+        // medicationSchedules is null until first load completes
+        if (profileState.medicationSchedules == null ||
+            profileState.isLoading ||
+            profileState.scheduleIsLoading) {
+          return _buildLoadingSkeleton(context);
+        }
+
+        // Show empty state with setup options if no schedules (after loading)
         if (!hasFluid && !hasMedication) {
           return _buildEmptyState(context);
         }
@@ -133,6 +141,11 @@ class HomeScreen extends ConsumerWidget {
       builder: (context, ref, child) {
         final dashboardState = ref.watch(dashboardProvider);
         final profileState = ref.watch(profileProvider);
+
+        // Show loading skeletons while data is loading
+        if (dashboardState.isLoading) {
+          return _buildLoadingSkeleton(context);
+        }
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(AppSpacing.lg),
@@ -264,6 +277,42 @@ class HomeScreen extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+
+  /// Builds loading skeleton layout with shimmer effects
+  Widget _buildLoadingSkeleton(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Real header
+          Text(
+            'Welcome Back',
+            style: AppTextStyles.h1.copyWith(
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+
+          // "Today's Treatments" skeleton header
+          Container(
+            width: 150,
+            height: 20,
+            decoration: BoxDecoration(
+              color: const Color(0xFFDDD6CE),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+
+          // Treatment skeletons (2 medication + 1 fluid)
+          const PendingTreatmentCardSkeleton(),
+          const PendingTreatmentCardSkeleton(),
+          const PendingFluidCardSkeleton(),
+        ],
+      ),
     );
   }
 

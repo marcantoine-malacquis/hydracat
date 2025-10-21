@@ -289,6 +289,9 @@ class TreatmentConfirmationPopup extends ConsumerWidget {
   /// Handle skip action (medications only)
   Future<void> _handleSkip(BuildContext context, WidgetRef ref) async {
     try {
+      // Capture host context before closing popup
+      final hostContext = OverlayService.hostContext ?? context;
+
       // Close confirmation popup first
       OverlayService.hide();
 
@@ -297,10 +300,10 @@ class TreatmentConfirmationPopup extends ConsumerWidget {
           .read(dashboardProvider.notifier)
           .skipMedicationTreatment(medication!);
 
-      // Show success feedback
-      if (context.mounted) {
+      // Show success feedback using host context
+      if (hostContext.mounted) {
         OverlayService.showFullScreenPopup(
-          context: OverlayService.hostContext ?? context,
+          context: hostContext,
           child: const DashboardSuccessPopup(
             message: 'Treatment skipped',
             isSkipped: true,
@@ -317,6 +320,9 @@ class TreatmentConfirmationPopup extends ConsumerWidget {
   /// Handle confirm action (both medications and fluids)
   Future<void> _handleConfirm(BuildContext context, WidgetRef ref) async {
     try {
+      // Capture host context before closing popup
+      final hostContext = OverlayService.hostContext ?? context;
+
       // Close confirmation popup first
       OverlayService.hide();
 
@@ -331,12 +337,12 @@ class TreatmentConfirmationPopup extends ConsumerWidget {
             .confirmFluidTreatment(fluid!);
       }
 
-      // Show success feedback
-      if (context.mounted) {
+      // Show success feedback using host context
+      if (hostContext.mounted) {
         OverlayService.showFullScreenPopup(
-          context: OverlayService.hostContext ?? context,
+          context: hostContext,
           child: const DashboardSuccessPopup(
-            message: 'Treatment confirmed',
+            message: 'Treatment logged',
           ),
           animationType: OverlayAnimationType.scaleIn,
         );

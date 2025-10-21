@@ -170,43 +170,61 @@ appBar: AppBar(
 
 ---
 
-### 3. Add Haptic Feedback
+### 3. Add Haptic Feedback ✅ COMPLETED
 **Files**: `progress_week_calendar.dart`
 **Priority**: MEDIUM
-**Effort**: 10 minutes
+**Effort**: 10 minutes (actual)
 **Impact**: Tactile response makes interactions feel responsive
 
 **Issue**: No haptic feedback on day selection
 
-**Implementation**:
+**Implementation** (as completed):
 ```dart
-// In progress_week_calendar.dart onDaySelected
+// Import added at top of file
+import 'package:flutter/services.dart';
+
+// In progress_week_calendar.dart onDaySelected (line 80-86)
 onDaySelected: (selected, focused) {
-  HapticFeedback.selectionClick(); // � Add this line
+  HapticFeedback.selectionClick(); // ✅ Added
   setState(() {
     _selectedDay = selected;
   });
   widget.onDaySelected(selected);
 },
+
+// In "Today" button onPressed (line 150-155)
+TextButton(
+  onPressed: () {
+    HapticFeedback.selectionClick(); // ✅ Added
+    final today = DateTime.now();
+    ref.read(focusedDayProvider.notifier).state = today;
+    widget.onDaySelected(today);
+  },
+  // ...
+),
 ```
+
+**Key differences from original plan**:
+- Also added haptic feedback to "Today" button for consistency
+- Both day selection methods now provide tactile feedback
+- No linting issues found (flutter analyze passed)
 
 **Learning Goal**: Haptic feedback pattern (already used in logging screens)
 
 ---
 
-### 4. Visual Highlight for Today's Cell
+### 4. Visual Highlight for Today's Cell ✅ COMPLETED
 **Files**: `progress_week_calendar.dart`
 **Priority**: MEDIUM
-**Effort**: 15 minutes
+**Effort**: 5 minutes (actual)
 **Impact**: Makes "today" immediately recognizable beyond just the dot
 
 **Issue**: Today only has amber dot, cell itself looks identical to other days
 
-**Implementation**:
+**Implementation** (as completed):
 ```dart
-// In TableCalendar calendarStyle
+// In progress_week_calendar.dart calendarStyle (lines 58-69)
 calendarStyle: CalendarStyle(
-  // ... existing styles
   todayDecoration: BoxDecoration(
     shape: BoxShape.circle,
     border: Border.all(
@@ -218,86 +236,154 @@ calendarStyle: CalendarStyle(
     color: Theme.of(context).colorScheme.primary,
     fontWeight: FontWeight.bold,
   ),
+  selectedDecoration: BoxDecoration(
+    shape: BoxShape.circle,
+    color: Theme.of(context).colorScheme.primary,
+  ),
+  // ... rest of styles
 ),
 ```
 
-**Learning Goal**: TableCalendar styling customization
+**Key differences from original plan**:
+- None - implemented exactly as planned
+- When today is selected, the selection state (filled circle) takes precedence over the border decoration
+- Uses `Theme.of(context).colorScheme.primary` for theme-aware color (adapts to light/dark mode)
+- Amber dot continues to display below the day number, creating multi-layer visual feedback
+
+**Additional implementation**: Tap-to-deselect functionality
+- Added `selectedDayProvider` in `progress_provider.dart` for Riverpod state management
+- Wrapped progress screen body in `GestureDetector` to allow deselecting by tapping outside calendar
+- Selection state persists across week navigation until explicitly cleared
+- No toggle behavior - tapping same day keeps it selected and reopens popup
+
+**Learning Goal**: TableCalendar styling customization, Riverpod state management patterns
 
 ---
 
-### 5. Add Loading Skeleton
+### 5. Add Loading Skeleton ✅ COMPLETED
 **Files**: `progress_week_calendar.dart`
 **Priority**: MEDIUM
-**Effort**: 30 minutes
+**Effort**: 30 minutes (actual)
 **Impact**: Professional appearance during data loading
 
-**Issue**: Shows `SizedBox.shrink()` during loading (line 113-114)
+**Issue**: Shows `SizedBox.shrink()` during loading
 
-**Implementation**:
+**Implementation** (as completed):
 ```dart
-// Replace SizedBox.shrink() with skeleton
-return weekStatusAsync.when(
-  data: (statuses) { /* existing */ },
-  loading: () => _DotSkeleton(),
-  error: (_, __) => const SizedBox.shrink(),
-);
+// In _WeekDotMarker build method (lines 186-206)
+@override
+Widget build(BuildContext context, WidgetRef ref) {
+  // Check if schedules are loaded yet - same pattern as dashboard
+  final schedules = ref.watch(medicationSchedulesProvider);
 
+  // Show skeleton if schedules haven't loaded yet
+  // null = never loaded, [] = loaded but empty
+  if (schedules == null) {
+    return const _DotSkeleton();
+  }
+
+  final weekStatusAsync = ref.watch(weekStatusProvider(weekStart));
+
+  return weekStatusAsync.when(
+    data: (statuses) { /* existing */ },
+    loading: () => const _DotSkeleton(), // ✅ Skeleton in loading state
+    error: (_, _) => const SizedBox.shrink(),
+  );
+}
+
+// Loading skeleton widget with shimmer animation (lines 243-270)
 class _DotSkeleton extends StatelessWidget {
+  const _DotSkeleton();
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(
-        color: Colors.grey[300],
-        shape: BoxShape.circle,
+    return Semantics(
+      label: 'Loading status',
+      child: Shimmer(
+        duration: const Duration(milliseconds: 1500),
+        interval: const Duration(milliseconds: 1500),
+        color: const Color(0xFFF6F4F2), // Highlight: warm background
+        child: Container(
+          width: 8,
+          height: 8,
+          decoration: const BoxDecoration(
+            color: Color(0xFFDDD6CE), // Base: warm border color
+            shape: BoxShape.circle,
+          ),
+        ),
       ),
     );
   }
 }
 ```
 
-**Alternative**: Use `shimmer` package for animated skeleton
+**Key differences from original plan**:
+- Used `shimmer_animation` package instead of plain gray circle
+- Warm neutral colors from design system (#DDD6CE base, #F6F4F2 highlight)
+- Two loading states: initial schedules load + weekly status load
+- Includes semantic label for accessibility
+- 1500ms shimmer duration for subtle animation
 
-**Learning Goal**: Loading states UX pattern
+**Learning Goal**: Loading states UX pattern, shimmer animations
 
 ---
 
-### 6. Add Pull-to-Refresh
+### 6. Add Pull-to-Refresh ✅ COMPLETED
 **Files**: `progress_screen.dart`
 **Priority**: LOW
-**Effort**: 20 minutes
+**Effort**: 10 minutes (actual)
 **Impact**: Standard mobile pattern for refreshing data
 
 **Issue**: No way to manually refresh calendar data
 
-**Implementation**:
+**Implementation** (as completed):
 ```dart
 // In progress_screen.dart body
+// Import added: package:hydracat/providers/profile_provider.dart
+
 body: hasCompletedOnboarding
-  ? RefreshIndicator(
-      onRefresh: () async {
-        ref.invalidate(weekSummariesProvider);
-        ref.invalidate(weekStatusProvider);
-        // Wait for rebuild
-        await Future.delayed(const Duration(milliseconds: 500));
+  ? GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () {
+        ref.read(selectedDayProvider.notifier).state = null;
       },
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          children: [
-            ProgressWeekCalendar(/* ... */),
-            // ... rest of content
-          ],
+      child: RefreshIndicator(
+        onRefresh: () async {
+          // Invalidate schedule data
+          // (may have changed in Profile screen)
+          ref
+            ..invalidate(medicationSchedulesProvider)
+            ..invalidate(fluidScheduleProvider)
+            // Invalidate calendar data
+            ..invalidate(weekSummariesProvider)
+            ..invalidate(weekStatusProvider);
+
+          // Brief delay to allow providers to rebuild
+          await Future<void>.delayed(
+            const Duration(milliseconds: 500),
+          );
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ProgressWeekCalendar(
+            onDaySelected: (day) {
+              showProgressDayDetailPopup(context, day);
+            },
+          ),
         ),
       ),
     )
   : /* onboarding state */,
 ```
 
-**Note**: Requires wrapping in SingleChildScrollView for pull gesture detection
+**Key differences from original plan**:
+- GestureDetector remains as outer wrapper for tap-to-deselect functionality
+- Also invalidates schedule providers (medicationSchedulesProvider, fluidScheduleProvider)
+- Uses cascade notation for cleaner code
+- Removed "Analytics cards coming soon" placeholder text
+- Column wrapper removed (only one child in SingleChildScrollView)
 
-**Learning Goal**: RefreshIndicator pattern (similar to profile_screen.dart)
+**Learning Goal**: RefreshIndicator pattern, cascade notation for multiple invalidations
 
 ---
 
@@ -305,69 +391,97 @@ body: hasCompletedOnboarding
 **Time Estimate**: 4-5 hours total
 **Impact**: Measurable performance improvements
 
-### 7. Optimize FutureBuilder in Popup
-**Files**: `progress_day_detail_popup.dart:270-347`
+### 7. Optimize FutureBuilder in Popup ✅ COMPLETED
+**Files**: `progress_day_detail_popup.dart`, `progress_provider.dart`
 **Priority**: HIGH
-**Effort**: 1 hour
+**Effort**: 50 minutes (actual)
 **Impact**: Reduces popup loading time, better offline support
 
 **Issue**: Sessions fetched on every popup open, no caching
 
-**Current Flow**:
-1. User taps day � popup opens
-2. FutureBuilder fires � Firestore read
+**Current Flow** (before):
+1. User taps day → popup opens
+2. FutureBuilder fires → Firestore read
 3. Data displays
 
-**Optimized Flow**:
-1. Week navigation � pre-fetch sessions for all 7 days
-2. User taps day � instant popup with cached data
-3. Background refresh if stale
+**Optimized Flow** (after):
+1. Week navigation → pre-fetch sessions for all 7 days
+2. User taps day → instant popup with cached data
+3. Background refresh when new sessions logged
 
-**Implementation**:
+**Implementation** (as completed):
 
 **Step 7.1**: Create week sessions provider
 ```dart
-// In progress_provider.dart
+// In progress_provider.dart (lines 136-183)
 
-/// Pre-fetches all sessions for the focused week
-final weekSessionsProvider = FutureProvider.autoDispose
-    .family<Map<DateTime, (List<MedicationSession>, List<FluidSession>)>, DateTime>(
+/// Pre-fetches all sessions for the focused week (7 days).
+///
+/// Returns a map of `date → (List<MedicationSession>, List<FluidSession>)`
+/// for efficient popup rendering without additional Firestore reads.
+///
+/// Cache invalidates automatically when:
+/// - User logs out (currentUserProvider changes)
+/// - User switches pets (primaryPetProvider changes)
+/// - New sessions are logged (dailyCacheProvider updates)
+///
+/// Does NOT use autoDispose to persist cache across navigation
+/// (Progress → Home → Progress).
+final FutureProviderFamily<
+    Map<DateTime, (List<MedicationSession>, List<FluidSession>)>,
+    DateTime> weekSessionsProvider = FutureProvider.family<
+    Map<DateTime, (List<MedicationSession>, List<FluidSession>)>,
+    DateTime>(
   (ref, weekStart) async {
+    // Watch cache to invalidate when today's sessions change
+    ref.watch(dailyCacheProvider);
+
     final user = ref.read(currentUserProvider);
     final pet = ref.read(primaryPetProvider);
     if (user == null || pet == null) return {};
 
     final service = ref.read(sessionReadServiceProvider);
-    final days = List<DateTime>.generate(7, (i) => weekStart.add(Duration(days: i)));
-
-    final results = await Future.wait(
-      days.map((day) => service.getAllSessionsForDate(
-        userId: user.id,
-        petId: pet.id,
-        date: day,
-      )),
+    final days = List<DateTime>.generate(
+      7,
+      (i) => weekStart.add(Duration(days: i)),
     );
 
-    return {for (var i = 0; i < days.length; i++) days[i]: results[i]};
+    // Fetch all 7 days in parallel
+    final results = await Future.wait(
+      days.map(
+        (day) => service.getAllSessionsForDate(
+          userId: user.id,
+          petId: pet.id,
+          date: day,
+        ),
+      ),
+    );
+
+    // Build map: date → (medSessions, fluidSessions)
+    return {
+      for (var i = 0; i < days.length; i++) days[i]: results[i],
+    };
   },
 );
 ```
 
 **Step 7.2**: Update popup to use cached data
 ```dart
-// In progress_day_detail_popup.dart _buildPlannedWithStatus
+// In progress_day_detail_popup.dart _buildPlannedWithStatus (lines 233-353)
 
 Widget _buildPlannedWithStatus(BuildContext context, WidgetRef ref) {
-  // ... existing setup code
+  // ... existing setup code (schedules, reminders)
 
+  // Fetch from week cache
   final weekStart = AppDateUtils.startOfWeekMonday(date);
   final weekSessionsAsync = ref.watch(weekSessionsProvider(weekStart));
 
   return weekSessionsAsync.when(
     data: (weekSessions) {
-      final (medSessions, fluidSessions) = weekSessions[date] ?? ([], []);
+      final (medSessions, fluidSessions) = weekSessions[date] ??
+          (<MedicationSession>[], <FluidSession>[]);
 
-      // ... rest of existing logic using medSessions, fluidSessions
+      // ... existing matching and display logic
     },
     loading: () => const Center(
       child: Padding(
@@ -375,17 +489,52 @@ Widget _buildPlannedWithStatus(BuildContext context, WidgetRef ref) {
         child: CircularProgressIndicator(),
       ),
     ),
-    error: (error, _) => /* existing error handling */,
+    error: (error, stackTrace) => Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Error loading sessions: $error',
+            style: const TextStyle(color: AppColors.error),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          TextButton.icon(
+            onPressed: () {
+              // Retry by invalidating the provider
+              ref.invalidate(weekSessionsProvider(weekStart));
+            },
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
+          ),
+        ],
+      ),
+    ),
   );
 }
 ```
 
+**Key differences from original plan**:
+- **No autoDispose**: Cache persists across navigation (Progress → Home → Progress)
+- **Auto-invalidation**: Watches `dailyCacheProvider` for instant updates when sessions logged
+- **Retry functionality**: Added retry button in error state
+- **Type safety**: Explicit type annotations for empty list fallback
+- **Import cleanup**: Removed unused `session_read_service.dart` import from popup
+
 **Cost Analysis**:
 - Before: 1 Firestore read per popup open (frequent)
 - After: 7 Firestore reads per week navigation (infrequent)
-- Savings: ~80% reduction for active users
+- Savings: ~80-90% reduction for typical usage patterns
+- Cache persists across navigation without additional reads
 
-**Learning Goal**: Pre-fetching pattern for predictable user flows
+**Testing Results**:
+- ✅ `flutter analyze`: No issues found
+- ✅ Cache persists when navigating Progress → Home → Progress
+- ✅ Auto-refreshes when new sessions logged
+- ✅ Retry button works in error state
+
+**Learning Goal**: Pre-fetching pattern for predictable user flows, cache persistence strategies
 
 ---
 

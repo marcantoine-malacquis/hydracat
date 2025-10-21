@@ -7,7 +7,6 @@ import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
-import 'package:hydracat/features/logging/services/session_read_service.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
@@ -228,9 +227,8 @@ class ProgressDayDetailPopup extends ConsumerWidget {
 
   /// Builds the planned view but enriched with completion state for past/today.
   ///
-  /// Fetches the day's sessions once (meds + fluids in parallel) and marks
-  /// planned reminders as completed when matching sessions exist. Also computes
-  /// the total fluid administered that day and shows it as the fluid title.
+  /// Uses cached week sessions from [weekSessionsProvider] for instant loading.
+  /// Falls back to on-demand fetch if cache unavailable.
   Widget _buildPlannedWithStatus(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final pet = ref.watch(primaryPetProvider);
@@ -265,35 +263,14 @@ class ProgressDayDetailPopup extends ConsumerWidget {
       );
     }
 
-    final service = ref.read(sessionReadServiceProvider);
+    // Fetch from week cache
+    final weekStart = AppDateUtils.startOfWeekMonday(date);
+    final weekSessionsAsync = ref.watch(weekSessionsProvider(weekStart));
 
-    return FutureBuilder(
-      future: service.getAllSessionsForDate(
-        userId: user.id,
-        petId: pet.id,
-        date: date,
-      ),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(AppSpacing.lg),
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
-        if (snapshot.hasError) {
-          return Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Text(
-              'Error loading sessions: ${snapshot.error}',
-              style: const TextStyle(color: AppColors.error),
-            ),
-          );
-        }
-
-        final (medSessions, fluidSessions) = snapshot.data!;
+    return weekSessionsAsync.when(
+      data: (weekSessions) {
+        final (medSessions, fluidSessions) = weekSessions[date] ??
+            (<MedicationSession>[], <FluidSession>[]);
 
         // Greedy match: scheduleId-first, then name-based within the day.
         final completedReminderTimes = _matchMedicationRemindersToSessions(
@@ -344,6 +321,34 @@ class ProgressDayDetailPopup extends ConsumerWidget {
           ],
         );
       },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.lg),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (error, stackTrace) => Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Error loading sessions: $error',
+              style: const TextStyle(color: AppColors.error),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            TextButton.icon(
+              onPressed: () {
+                // Retry by invalidating the provider
+                ref.invalidate(weekSessionsProvider(weekStart));
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

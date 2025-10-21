@@ -21,7 +21,7 @@ import 'package:hydracat/providers/profile_provider.dart';
 class DashboardNotifier extends StateNotifier<DashboardState> {
   /// Creates a [DashboardNotifier] with the provided ref
   DashboardNotifier(this._ref)
-    : super(const DashboardState(pendingMedications: [])) {
+    : super(const DashboardState(pendingMedications: [], isLoading: true)) {
     // Watch dependencies and rebuild state when they change
     _ref
       ..listen<ProfileState>(profileProvider, (_, _) => _rebuildState())
@@ -333,7 +333,6 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
       // Note: We need to rebuild entire state to set pendingFluid to null
       state = DashboardState(
         pendingMedications: state.pendingMedications,
-        isLoading: state.isLoading,
         errorMessage: state.errorMessage,
       );
 

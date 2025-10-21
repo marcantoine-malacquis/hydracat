@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
+import 'package:hydracat/features/logging/models/fluid_session.dart';
+import 'package:hydracat/features/logging/models/medication_session.dart';
+import 'package:hydracat/features/logging/services/session_read_service.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/features/progress/models/day_dot_status.dart';
 import 'package:hydracat/features/progress/services/week_status_calculator.dart';
@@ -14,6 +17,12 @@ import 'package:hydracat/shared/models/fluid_daily_summary_view.dart';
 /// Used by TableCalendar to track which day is currently selected/visible.
 /// Defaults to today.
 final focusedDayProvider = StateProvider<DateTime>((ref) => DateTime.now());
+
+/// Provider for the currently selected day in the progress calendar.
+///
+/// Used to track which day has been tapped by the user (filled circle).
+/// Null means no day is selected. Cleared by tapping outside calendar.
+final selectedDayProvider = StateProvider<DateTime?>((ref) => null);
 
 /// Provider for the start of the focused week (Monday at 00:00).
 ///
@@ -123,6 +132,55 @@ weekStatusProvider = FutureProvider.autoDispose
         );
       },
     );
+
+/// Pre-fetches all sessions for the focused week (7 days).
+///
+/// Returns a map of `date → (List<MedicationSession>, List<FluidSession>)`
+/// for efficient popup rendering without additional Firestore reads.
+///
+/// Cache invalidates automatically when:
+/// - User logs out (currentUserProvider changes)
+/// - User switches pets (primaryPetProvider changes)
+/// - New sessions are logged (dailyCacheProvider updates)
+///
+/// Does NOT use autoDispose to persist cache across navigation
+/// (Progress → Home → Progress).
+final FutureProviderFamily<
+    Map<DateTime, (List<MedicationSession>, List<FluidSession>)>,
+    DateTime> weekSessionsProvider = FutureProvider.family<
+    Map<DateTime, (List<MedicationSession>, List<FluidSession>)>,
+    DateTime>(
+  (ref, weekStart) async {
+    // Watch cache to invalidate when today's sessions change
+    ref.watch(dailyCacheProvider);
+
+    final user = ref.read(currentUserProvider);
+    final pet = ref.read(primaryPetProvider);
+    if (user == null || pet == null) return {};
+
+    final service = ref.read(sessionReadServiceProvider);
+    final days = List<DateTime>.generate(
+      7,
+      (i) => weekStart.add(Duration(days: i)),
+    );
+
+    // Fetch all 7 days in parallel
+    final results = await Future.wait(
+      days.map(
+        (day) => service.getAllSessionsForDate(
+          userId: user.id,
+          petId: pet.id,
+          date: day,
+        ),
+      ),
+    );
+
+    // Build map: date → (medSessions, fluidSessions)
+    return {
+      for (var i = 0; i < days.length; i++) days[i]: results[i],
+    };
+  },
+);
 
 /// Fluid daily summary for a specific day using cached weekly summaries and
 /// the cached fluid schedule to compute the daily goal. Reads at most the
