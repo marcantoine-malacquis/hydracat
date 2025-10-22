@@ -31,6 +31,7 @@ import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/connectivity_provider.dart';
 import 'package:hydracat/providers/logging_queue_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
+import 'package:hydracat/providers/progress_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
@@ -72,8 +73,7 @@ final summaryCacheServiceProvider = Provider<SummaryCacheService>((ref) {
 /// Provider for SummaryService instance
 final summaryServiceProvider = Provider<SummaryService>((ref) {
   final firestore = FirebaseFirestore.instance;
-  final cacheService = ref.read(summaryCacheServiceProvider);
-  return SummaryService(firestore, cacheService);
+  return SummaryService(firestore);
 });
 
 // ============================================
@@ -867,6 +867,23 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       // Invalidate in-memory TTL cache to ensure calendar updates immediately
       _ref.read(summaryServiceProvider).invalidateTodaysCache(user.id, pet.id);
 
+      // IMPORTANT FIX: Invalidate Riverpod providers to force UI rebuild
+      // This ensures the calendar dot and popup session counts update
+      // immediately after quick-logging
+      final todayDate = DateTime.now();
+      final weekStart = AppDateUtils.startOfWeekMonday(todayDate);
+      _ref
+        ..invalidate(weekSummariesProvider(weekStart))
+        ..invalidate(weekSessionsProvider(weekStart))
+        ..invalidate(dateRangeStatusProvider(weekStart));
+
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingNotifier] Invalidated week providers '
+          'for immediate UI update',
+        );
+      }
+
       // STEP 7: Track analytics
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
 
@@ -1068,6 +1085,23 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
 
       // Invalidate in-memory TTL cache to ensure calendar updates immediately
       _ref.read(summaryServiceProvider).invalidateTodaysCache(user.id, pet.id);
+
+      // IMPORTANT FIX: Invalidate Riverpod providers to force UI rebuild
+      // This ensures the calendar dot and popup session counts update
+      // immediately after logging
+      final today = DateTime.now();
+      final weekStart = AppDateUtils.startOfWeekMonday(today);
+      _ref
+        ..invalidate(weekSummariesProvider(weekStart))
+        ..invalidate(weekSessionsProvider(weekStart))
+        ..invalidate(dateRangeStatusProvider(weekStart));
+
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingNotifier] Invalidated week providers '
+          'for immediate UI update',
+        );
+      }
 
       // STEP 6: Track analytics
       final medStart = DateTime.now();
@@ -1277,6 +1311,23 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
 
       // Invalidate in-memory TTL cache to ensure calendar updates immediately
       _ref.read(summaryServiceProvider).invalidateTodaysCache(user.id, pet.id);
+
+      // IMPORTANT FIX: Invalidate Riverpod providers to force UI rebuild
+      // This ensures the calendar dot and popup session counts update
+      // immediately after logging
+      final today = DateTime.now();
+      final weekStart = AppDateUtils.startOfWeekMonday(today);
+      _ref
+        ..invalidate(weekSummariesProvider(weekStart))
+        ..invalidate(weekSessionsProvider(weekStart))
+        ..invalidate(dateRangeStatusProvider(weekStart));
+
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingNotifier] Invalidated week providers '
+          'for immediate UI update',
+        );
+      }
 
       // STEP 5: Track analytics
       final fluidStart = DateTime.now();

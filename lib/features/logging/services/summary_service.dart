@@ -4,7 +4,6 @@ library;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
-import 'package:hydracat/features/logging/services/summary_cache_service.dart';
 import 'package:hydracat/shared/models/daily_summary.dart';
 import 'package:hydracat/shared/models/monthly_summary.dart';
 import 'package:hydracat/shared/models/weekly_summary.dart';
@@ -47,13 +46,10 @@ import 'package:hydracat/shared/models/weekly_summary.dart';
 /// ```
 class SummaryService {
   /// Creates a [SummaryService] instance
-  SummaryService(this._firestore, this._cacheService);
+  SummaryService(this._firestore);
 
   /// Firestore instance
   final FirebaseFirestore _firestore;
-
-  /// Cache service for today's summary optimization
-  final SummaryCacheService _cacheService;
 
   // ============================================
   // In-memory TTL caches for analytics views
@@ -100,50 +96,36 @@ class SummaryService {
     bool lightweight = false,
   }) async {
     try {
-      // STEP 1: Check cache first (0 reads)
-      final cachedSummary = await _cacheService.getTodaySummary(
-        userId,
-        petId,
-      );
-
-      if (cachedSummary != null) {
-        if (kDebugMode) {
-          debugPrint("[SummaryService] Cache hit for today's summary");
-        }
-
-        if (lightweight) {
-          // Build a lightweight DailySummary from cache without Firestore read
-          final today = DateTime.now();
-          final summary = DailySummary(
-            date: DateTime(today.year, today.month, today.day),
-            overallStreak: 0, // not tracked in cache
-            medicationTotalDoses: cachedSummary.totalMedicationDosesGiven
-                .toInt(),
-            medicationScheduledDoses: cachedSummary.medicationSessionCount,
-            medicationMissedCount: 0, // not tracked in cache
-            fluidTotalVolume: cachedSummary.totalFluidVolumeGiven,
-            fluidTreatmentDone: cachedSummary.fluidSessionCount > 0,
-            fluidSessionCount: cachedSummary.fluidSessionCount,
-            overallTreatmentDone:
-                cachedSummary.medicationSessionCount > 0 ||
-                cachedSummary.fluidSessionCount > 0,
-            createdAt: DateTime.now(),
-          );
-          return summary;
-        }
-      }
-
-      // STEP 2: Cache miss or need full data - fetch from Firestore (1 read)
+      // IMPORTANT FIX: Always fetch from Firestore for today to ensure
+      // real-time accuracy. The lightweight cache can become stale after
+      // logging operations, causing the calendar dot and session counts
+      // to display incorrect data.
+      // Cost: 1 Firestore read per call, but ensures UI accuracy.
       if (kDebugMode) {
-        debugPrint("[SummaryService] Fetching today's summary from Firestore");
+        debugPrint(
+          "[SummaryService] Fetching today's summary from Firestore "
+          '(lightweight mode disabled for today)',
+        );
       }
 
       final today = DateTime.now();
-      return getDailySummary(
+      final summary = await getDailySummary(
         userId: userId,
         petId: petId,
         date: today,
       );
+
+      if (kDebugMode && summary != null) {
+        debugPrint(
+          "[SummaryService] Today's summary: "
+          'medDoses=${summary.medicationTotalDoses}, '
+          'medScheduled=${summary.medicationScheduledDoses}, '
+          'fluidSessions=${summary.fluidSessionCount}, '
+          'fluidVolume=${summary.fluidTotalVolume}',
+        );
+      }
+
+      return summary;
     } on Exception catch (e) {
       // Silent fallback - log error, return null
       if (kDebugMode) {

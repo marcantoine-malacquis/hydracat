@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/core/utils/memoization.dart';
@@ -75,11 +76,22 @@ weekSummariesProvider = FutureProvider.autoDispose
         final pet = ref.read(primaryPetProvider);
         if (user == null || pet == null) return {};
 
+        // IMPORTANT: Ensure weekStart is normalized to avoid key mismatches
+        final normalizedWeekStart = AppDateUtils.startOfDay(weekStart);
+
         final summaryService = ref.read(summaryServiceProvider);
         final days = List<DateTime>.generate(
           7,
-          (i) => weekStart.add(Duration(days: i)),
+          (i) => normalizedWeekStart.add(Duration(days: i)),
         );
+
+        if (kDebugMode) {
+          debugPrint(
+            '[weekSummariesProvider] Fetching summaries for week '
+            '${AppDateUtils.formatDateForSummary(normalizedWeekStart)}',
+          );
+        }
+
         final results = await Future.wait(
           days.map(
             (d) => summaryService.getDailySummary(
@@ -93,14 +105,22 @@ weekSummariesProvider = FutureProvider.autoDispose
         // Build initial map from Firestore results
         final map = {for (var i = 0; i < days.length; i++) days[i]: results[i]};
 
-        // Override today's entry with lightweight cache-based summary to avoid
-        // TTL delays and extra reads. This ensures immediate dot updates.
+        if (kDebugMode) {
+          debugPrint(
+            '[weekSummariesProvider] Fetched ${map.length} summaries, '
+            '${map.values.where((s) => s != null).length} non-null',
+          );
+        }
+
+        // Override today's entry with fresh Firestore data to ensure
+        // real-time accuracy. This ensures immediate dot updates after logging.
         final today = AppDateUtils.startOfDay(DateTime.now());
         if (map.containsKey(today)) {
           final todaySummary = await summaryService.getTodaySummary(
             userId: user.id,
             petId: pet.id,
-            lightweight: true,
+            // Note: lightweight parameter removed as getTodaySummary now always
+            // fetches fresh data for today
           );
           if (todaySummary != null) {
             map[today] = todaySummary;
@@ -237,11 +257,21 @@ weekSessionsProvider =
         final pet = ref.read(primaryPetProvider);
         if (user == null || pet == null) return {};
 
+        // IMPORTANT: Ensure weekStart is normalized to avoid key mismatches
+        final normalizedWeekStart = AppDateUtils.startOfDay(weekStart);
+
         final service = ref.read(sessionReadServiceProvider);
         final days = List<DateTime>.generate(
           7,
-          (i) => weekStart.add(Duration(days: i)),
+          (i) => normalizedWeekStart.add(Duration(days: i)),
         );
+
+        if (kDebugMode) {
+          debugPrint(
+            '[weekSessionsProvider] Fetching sessions for week '
+            '${AppDateUtils.formatDateForSummary(normalizedWeekStart)}',
+          );
+        }
 
         // Fetch all 7 days in parallel
         final results = await Future.wait(
@@ -255,9 +285,26 @@ weekSessionsProvider =
         );
 
         // Build map: date → (medSessions, fluidSessions)
-        return {
+        final map = {
           for (var i = 0; i < days.length; i++) days[i]: results[i],
         };
+
+        if (kDebugMode) {
+          final totalMed = map.values.fold<int>(
+            0,
+            (sum, tuple) => sum + tuple.$1.length,
+          );
+          final totalFluid = map.values.fold<int>(
+            0,
+            (sum, tuple) => sum + tuple.$2.length,
+          );
+          debugPrint(
+            '[weekSessionsProvider] Fetched $totalMed medication sessions, '
+            '$totalFluid fluid sessions',
+          );
+        }
+
+        return map;
       },
     );
 
