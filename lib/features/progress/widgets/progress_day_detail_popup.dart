@@ -37,15 +37,47 @@ class ProgressDayDetailPopup extends ConsumerStatefulWidget {
 }
 
 /// State for [ProgressDayDetailPopup] with lazy content loading.
-class _ProgressDayDetailPopupState
-    extends ConsumerState<ProgressDayDetailPopup> {
+class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
+    with SingleTickerProviderStateMixin {
   /// Whether to show the popup content.
   /// Starts false and becomes true after animation completes.
   bool _showContent = false;
 
+  // Drag tracking state
+  double _dragOffset = 0; // Current drag distance in pixels
+  late AnimationController _dragAnimationController;
+  late Animation<double> _dragAnimation;
+
+  // Constants
+  static const double _dismissThreshold = 150; // Minimum drag to dismiss
+  static const double _velocityThreshold = 300; // Minimum velocity to dismiss
+
   @override
   void initState() {
     super.initState();
+
+    // Setup drag animation controller for spring-back
+    _dragAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+
+    _dragAnimation =
+        Tween<double>(
+            begin: 0,
+            end: 0,
+          ).animate(
+            CurvedAnimation(
+              parent: _dragAnimationController,
+              curve: Curves.easeOutCubic,
+            ),
+          )
+          ..addListener(() {
+            setState(() {
+              _dragOffset = _dragAnimation.value;
+            });
+          });
+
     // Wait for animation to complete (200ms slideUp + 50ms buffer)
     Future.delayed(const Duration(milliseconds: 250), () {
       if (mounted) {
@@ -57,6 +89,81 @@ class _ProgressDayDetailPopupState
   }
 
   @override
+  void dispose() {
+    _dragAnimationController.dispose();
+    super.dispose();
+  }
+
+  void _handleVerticalDragUpdate(DragUpdateDetails details) {
+    setState(() {
+      // Only allow downward drag (positive delta)
+      final newOffset = _dragOffset + details.delta.dy;
+      _dragOffset = newOffset.clamp(0, double.infinity);
+    });
+  }
+
+  void _handleVerticalDragEnd(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0.0;
+
+    // Dismiss if: dragged past threshold OR high velocity downward
+    if (_dragOffset > _dismissThreshold || velocity > _velocityThreshold) {
+      _animateDismiss();
+    } else {
+      // Spring back to original position
+      _animateSpringBack();
+    }
+  }
+
+  Future<void> _animateDismiss() async {
+    // Animate remaining distance to full screen height
+    final screenHeight = MediaQuery.of(context).size.height;
+    _dragAnimation =
+        Tween<double>(
+            begin: _dragOffset,
+            end: screenHeight,
+          ).animate(
+            CurvedAnimation(
+              parent: _dragAnimationController,
+              curve: Curves.easeInCubic,
+            ),
+          )
+          ..addListener(() {
+            setState(() {
+              _dragOffset = _dragAnimation.value;
+            });
+          });
+
+    _dragAnimationController.reset();
+    await _dragAnimationController.forward();
+
+    if (mounted) {
+      OverlayService.hide();
+    }
+  }
+
+  void _animateSpringBack() {
+    _dragAnimation =
+        Tween<double>(
+            begin: _dragOffset,
+            end: 0,
+          ).animate(
+            CurvedAnimation(
+              parent: _dragAnimationController,
+              curve: Curves.easeOutCubic,
+            ),
+          )
+          ..addListener(() {
+            setState(() {
+              _dragOffset = _dragAnimation.value;
+            });
+          });
+
+    _dragAnimationController
+      ..reset()
+      ..forward();
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Compare by normalized day so "today" is not misclassified as future
     final day = AppDateUtils.startOfDay(widget.date);
@@ -64,63 +171,104 @@ class _ProgressDayDetailPopupState
     final isFuture = day.isAfter(today);
     final mediaQuery = MediaQuery.of(context);
 
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: Material(
-        type: MaterialType.transparency,
-        child: Semantics(
-          liveRegion: true,
-          label: _buildSemanticLabel(),
-          child: Container(
-            margin: EdgeInsets.only(
-              left: AppSpacing.md,
-              right: AppSpacing.md,
-              bottom: mediaQuery.padding.bottom + AppSpacing.sm,
-            ),
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            constraints: BoxConstraints(
-              maxHeight: mediaQuery.size.height * 0.75,
-            ),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, -4),
+    // Check reduce motion preference
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final effectiveDragOffset = reduceMotion ? 0.0 : _dragOffset;
+
+    return GestureDetector(
+      onVerticalDragUpdate: _handleVerticalDragUpdate,
+      onVerticalDragEnd: _handleVerticalDragEnd,
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Transform.translate(
+          offset: Offset(0, effectiveDragOffset), // Apply drag offset
+          child: Material(
+            type: MaterialType.transparency,
+            child: Semantics(
+              liveRegion: true,
+              label: _buildSemanticLabel(),
+              child: Container(
+                margin: EdgeInsets.only(
+                  left: AppSpacing.md,
+                  right: AppSpacing.md,
+                  bottom: mediaQuery.padding.bottom + AppSpacing.sm,
                 ),
-              ],
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(context),
-                  const SizedBox(height: AppSpacing.md),
-                  Divider(
-                    height: 1,
-                    thickness: 1,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.outlineVariant.withValues(alpha: 0.3),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  // Lazy load content after animation completes
-                  if (_showContent)
-                    _buildContent(context, ref, isFuture)
-                  else
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(AppSpacing.xl),
-                        child: CircularProgressIndicator(),
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                constraints: BoxConstraints(
+                  maxHeight: mediaQuery.size.height * 0.75,
+                ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Industry-standard drag handle indicator at very top
+                    _buildDragHandle(context),
+                    const SizedBox(height: AppSpacing.md),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildHeader(context),
+                            const SizedBox(height: AppSpacing.md),
+                            Divider(
+                              height: 1,
+                              thickness: 1,
+                              color:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.outlineVariant.withValues(
+                                    alpha: 0.3,
+                                  ),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            // Lazy load content after animation completes
+                            if (_showContent)
+                              _buildContent(context, ref, isFuture)
+                            else
+                              const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(AppSpacing.xl),
+                                  child: CircularProgressIndicator(),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Builds the industry-standard drag handle indicator.
+  Widget _buildDragHandle(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 40,
+        height: 4,
+        margin: const EdgeInsets.only(top: 4),
+        decoration: BoxDecoration(
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(2),
         ),
       ),
     );
@@ -305,7 +453,8 @@ class _ProgressDayDetailPopupState
       data: (weekSessions) {
         // Normalize date to match map keys (which are always start-of-day)
         final normalizedDate = AppDateUtils.startOfDay(widget.date);
-        final (medSessions, fluidSessions) = weekSessions[normalizedDate] ??
+        final (medSessions, fluidSessions) =
+            weekSessions[normalizedDate] ??
             (<MedicationSession>[], <FluidSession>[]);
 
         // Greedy match: scheduleId-first, then name-based within the day.

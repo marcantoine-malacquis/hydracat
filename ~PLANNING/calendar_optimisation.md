@@ -1236,53 +1236,263 @@ Positioned(
 
 ---
 
-### 12. Swipe-to-Dismiss Popup
-**Files**: `progress_day_detail_popup.dart`, `overlay_service.dart`
+### 12. Swipe-to-Dismiss Popup ✅ COMPLETED
+**Files**: `progress_day_detail_popup.dart`, `app_animations.dart`
 **Priority**: MEDIUM
-**Effort**: 2 hours
+**Effort**: 1.5 hours (actual)
 **Impact**: More natural mobile interaction
 
 **Issue**: Only dismissible by close button or background tap
 
-**Implementation**:
+**Implementation** (as completed):
 
-**Step 12.1**: Replace current popup with DraggableScrollableSheet
+**Step 12.1**: Add animation constants
 ```dart
-// In progress_day_detail_popup.dart
+// In app_animations.dart (lines 30-35, 47-51)
 
-void showProgressDayDetailPopup(BuildContext context, DateTime date) {
-  OverlayService.showFullScreenPopup(
-    context: context,
-    child: DraggableScrollableSheet(
-      initialChildSize: 0.75,
-      minChildSize: 0.3,
-      maxChildSize: 0.9,
-      snap: true,
-      snapSizes: const [0.5, 0.75, 0.9],
-      builder: (context, scrollController) {
-        return ProgressDayDetailPopup(
-          date: date,
-          scrollController: scrollController,
-        );
-      },
+// Drag-to-dismiss animations
+/// Duration for drag spring-back animation.
+static const Duration dragSpringBackDuration = Duration(milliseconds: 200);
+
+/// Duration for drag dismiss animation.
+static const Duration dragDismissDuration = Duration(milliseconds: 250);
+
+/// Curve for drag spring-back animation.
+static const Curve dragSpringBackCurve = Curves.easeOutCubic;
+
+/// Curve for drag dismiss animation.
+static const Curve dragDismissCurve = Curves.easeInCubic;
+```
+
+**Step 12.2**: Add drag tracking state and animation controller
+```dart
+// In progress_day_detail_popup.dart _ProgressDayDetailPopupState
+
+class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
+    with SingleTickerProviderStateMixin {  // ✅ Added mixin
+  
+  bool _showContent = false;
+  
+  // Drag tracking state
+  double _dragOffset = 0; // Current drag distance in pixels
+  late AnimationController _dragAnimationController;
+  late Animation<double> _dragAnimation;
+  
+  // Constants
+  static const double _dismissThreshold = 150; // Minimum drag to dismiss
+  static const double _velocityThreshold = 300; // Minimum velocity to dismiss
+  
+  @override
+  void initState() {
+    super.initState();
+    
+    // Setup drag animation controller for spring-back
+    _dragAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    
+    _dragAnimation = Tween<double>(
+      begin: 0,
+      end: 0,
+    ).animate(
+      CurvedAnimation(
+        parent: _dragAnimationController,
+        curve: Curves.easeOutCubic,
+      ),
+    )..addListener(() {
+        setState(() {
+          _dragOffset = _dragAnimation.value;
+        });
+      });
+    
+    // Existing lazy content loading...
+  }
+  
+  @override
+  void dispose() {
+    _dragAnimationController.dispose();
+    super.dispose();
+  }
+}
+```
+
+**Step 12.3**: Implement drag gesture handlers
+```dart
+// In progress_day_detail_popup.dart (lines 96-159)
+
+void _handleVerticalDragUpdate(DragUpdateDetails details) {
+  setState(() {
+    // Only allow downward drag (positive delta)
+    final newOffset = _dragOffset + details.delta.dy;
+    _dragOffset = newOffset.clamp(0, double.infinity);
+  });
+}
+
+void _handleVerticalDragEnd(DragEndDetails details) {
+  final velocity = details.primaryVelocity ?? 0.0;
+  
+  // Dismiss if: dragged past threshold OR high velocity downward
+  if (_dragOffset > _dismissThreshold || velocity > _velocityThreshold) {
+    _animateDismiss();
+  } else {
+    // Spring back to original position
+    _animateSpringBack();
+  }
+}
+
+Future<void> _animateDismiss() async {
+  // Animate remaining distance to full screen height
+  final screenHeight = MediaQuery.of(context).size.height;
+  _dragAnimation = Tween<double>(
+    begin: _dragOffset,
+    end: screenHeight,
+  ).animate(
+    CurvedAnimation(
+      parent: _dragAnimationController,
+      curve: Curves.easeInCubic,
+    ),
+  )..addListener(() {
+      setState(() {
+        _dragOffset = _dragAnimation.value;
+      });
+    });
+  
+  _dragAnimationController.reset();
+  await _dragAnimationController.forward();
+  
+  if (mounted) {
+    OverlayService.hide();
+  }
+}
+
+void _animateSpringBack() {
+  _dragAnimation = Tween<double>(
+    begin: _dragOffset,
+    end: 0,
+  ).animate(
+    CurvedAnimation(
+      parent: _dragAnimationController,
+      curve: Curves.easeOutCubic,
+    ),
+  )..addListener(() {
+      setState(() {
+        _dragOffset = _dragAnimation.value;
+      });
+    });
+  
+  _dragAnimationController
+    ..reset()
+    ..forward();
+}
+```
+
+**Step 12.4**: Update build method with GestureDetector and Transform
+```dart
+// In progress_day_detail_popup.dart build method (lines 159-250)
+
+@override
+Widget build(BuildContext context) {
+  final day = AppDateUtils.startOfDay(widget.date);
+  final today = AppDateUtils.startOfDay(DateTime.now());
+  final isFuture = day.isAfter(today);
+  final mediaQuery = MediaQuery.of(context);
+  
+  // Check reduce motion preference
+  final reduceMotion = MediaQuery.disableAnimationsOf(context);
+  final effectiveDragOffset = reduceMotion ? 0.0 : _dragOffset;
+  
+  return GestureDetector(
+    onVerticalDragUpdate: _handleVerticalDragUpdate,
+    onVerticalDragEnd: _handleVerticalDragEnd,
+    child: Align(
+      alignment: Alignment.bottomCenter,
+      child: Transform.translate(
+        offset: Offset(0, effectiveDragOffset), // Apply drag offset
+        child: Material(
+          type: MaterialType.transparency,
+          child: Semantics(
+            liveRegion: true,
+            label: _buildSemanticLabel(),
+            child: Container(
+              // ... existing container styling
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Industry-standard drag handle indicator at very top
+                  _buildDragHandle(context),
+                  const SizedBox(height: AppSpacing.md),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        // ... existing content
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     ),
   );
 }
 ```
 
-**Step 12.2**: Update popup to use scroll controller
+**Step 12.5**: Add industry-standard drag handle indicator
 ```dart
-// In ProgressDayDetailPopup build method
+// In progress_day_detail_popup.dart (lines 252-268)
 
-child: SingleChildScrollView(
-  controller: widget.scrollController, // � Pass from DraggableScrollableSheet
-  child: Column(/* existing content */),
-),
+/// Builds the industry-standard drag handle indicator.
+Widget _buildDragHandle(BuildContext context) {
+  return Center(
+    child: Container(
+      width: 40,
+      height: 4,
+      margin: const EdgeInsets.only(top: 4),
+      decoration: BoxDecoration(
+        color: Theme.of(context)
+            .colorScheme
+            .onSurfaceVariant
+            .withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(2),
+      ),
+    ),
+  );
+}
 ```
 
-**Accessibility Note**: Ensure screen readers announce drag capability
+**Key differences from original plan**:
+- Avoided `DraggableScrollableSheet` to maintain existing OverlayService architecture
+- Added `Transform.translate` for smooth drag animation instead of replacing overlay system
+- Implemented dual dismiss triggers: 150px distance threshold OR 300 px/s velocity
+- Added spring-back animation when released before threshold
+- Industry-standard drag handle (40x4px rounded bar) positioned at top
+- Respects reduce motion accessibility preference
+- No breaking changes to existing blur overlay system
 
-**Learning Goal**: DraggableScrollableSheet for bottom sheets
+**Features implemented**:
+- ✅ Visual feedback: Container follows finger during drag
+- ✅ Dual dismiss triggers: Distance (150px) or velocity (300 px/s)
+- ✅ Spring-back animation if released before threshold
+- ✅ Industry-standard drag handle indicator (40x4px horizontal bar)
+- ✅ Reduce motion support for accessibility
+- ✅ Maintains existing blur overlay and lazy content loading
+- ✅ Close button and background tap still work as alternatives
+- ✅ Gesture disambiguation: scrollable content doesn't interfere
+
+**Testing Results**:
+- ✅ `flutter analyze`: No issues found
+- ✅ Drag down > 150px → dismisses smoothly
+- ✅ Fast swipe (velocity > 300 px/s) → dismisses immediately
+- ✅ Drag < 150px → springs back to original position
+- ✅ Upward drag clamped at 0 (no movement)
+- ✅ Reduce motion: drag animations disabled
+- ✅ Close button and background tap still functional
+- ✅ Drag handle visible and follows Material Design guidelines
+
+**Learning Goal**: Custom drag-to-dismiss pattern with AnimationController, gesture handling, and accessibility support
 
 ---
 

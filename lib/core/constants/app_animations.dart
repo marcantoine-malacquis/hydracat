@@ -27,6 +27,13 @@ class AppAnimations {
   /// Duration for scale-in popup animation.
   static const Duration scaleInDuration = Duration(milliseconds: 300);
 
+  // Drag-to-dismiss animations
+  /// Duration for drag spring-back animation.
+  static const Duration dragSpringBackDuration = Duration(milliseconds: 200);
+
+  /// Duration for drag dismiss animation.
+  static const Duration dragDismissDuration = Duration(milliseconds: 250);
+
   // Common animation curves
   /// Default animation curve for general animations.
   static const Curve defaultCurve = Curves.easeInOut;
@@ -36,6 +43,12 @@ class AppAnimations {
 
   /// Animation curve for scale-in transitions.
   static const Curve scaleInCurve = Curves.easeOutBack;
+
+  /// Curve for drag spring-back animation.
+  static const Curve dragSpringBackCurve = Curves.easeOutCubic;
+
+  /// Curve for drag dismiss animation.
+  static const Curve dragDismissCurve = Curves.easeInCubic;
 
   // Opacity values
   /// Opacity of content when overlay is visible.
