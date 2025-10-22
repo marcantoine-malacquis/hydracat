@@ -9,6 +9,7 @@ import 'package:hydracat/shared/models/daily_summary.dart';
 /// returns a map of [DayDotStatus] for each of the 7 days (Mon-Sun).
 ///
 /// Status rules:
+/// - Days before tracking started: [DayDotStatus.none]
 /// - Future days: [DayDotStatus.none]
 /// - Past days with zero schedules: [DayDotStatus.none]
 /// - Today with zero schedules: [DayDotStatus.today]
@@ -24,6 +25,7 @@ Map<DateTime, DayDotStatus> computeWeekStatuses({
   required Schedule? fluidSchedule,
   required Map<DateTime, DailySummary?> summaries,
   required DateTime now,
+  DateTime? trackingStartDate,
 }) {
   final statuses = <DateTime, DayDotStatus>{};
   final today = AppDateUtils.startOfDay(now);
@@ -31,6 +33,12 @@ Map<DateTime, DayDotStatus> computeWeekStatuses({
   // Process each day of the week (Monday through Sunday)
   for (var i = 0; i < 7; i++) {
     final date = AppDateUtils.startOfDay(weekStart.add(Duration(days: i)));
+
+    // Rule 0: Days before tracking started show no status
+    if (trackingStartDate != null && date.isBefore(trackingStartDate)) {
+      statuses[date] = DayDotStatus.none;
+      continue;
+    }
 
     // Rule 1: Future days always show no status
     if (date.isAfter(today)) {

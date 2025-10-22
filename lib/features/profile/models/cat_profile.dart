@@ -18,6 +18,7 @@ class CatProfile {
     this.photoUrl,
     this.breed,
     this.gender,
+    this.trackingStartDate,
   });
 
   /// Creates a [CatProfile] from JSON data
@@ -38,6 +39,9 @@ class CatProfile {
       photoUrl: json['photoUrl'] as String?,
       breed: json['breed'] as String?,
       gender: json['gender'] as String?,
+      trackingStartDate: json['trackingStartDate'] != null
+          ? DateTime.parse(json['trackingStartDate'] as String)
+          : null,
     );
   }
 
@@ -74,6 +78,20 @@ class CatProfile {
   /// Pet's gender (optional)
   final String? gender;
 
+  /// Date when treatment tracking started for this pet
+  ///
+  /// Represents the earliest date of treatment data collection.
+  /// Used to determine which calendar dates should show status dots.
+  /// Dates before this will show no dots (tracking hadn't started yet).
+  ///
+  /// Set to:
+  /// - Pet profile creation date initially
+  /// - Earliest schedule creation date if schedules exist
+  /// - Earliest session date if backdated logs exist
+  ///
+  /// Immutable after initial setting (represents historical truth).
+  final DateTime? trackingStartDate;
+
   /// Pet's weight in pounds (converted from kg)
   double? get weightLbs => weightKg != null ? weightKg! * 2.20462 : null;
 
@@ -86,6 +104,21 @@ class CatProfile {
   /// Whether this profile is considered complete
   bool get isComplete =>
       hasEssentialInfo && medicalInfo.ckdDiagnosisDate != null;
+
+  /// Checks if tracking has started for a given date
+  ///
+  /// Returns true if:
+  /// - trackingStartDate is null (no tracking limit set)
+  /// - date is on or after trackingStartDate
+  ///
+  /// Returns false if date is before trackingStartDate.
+  ///
+  /// Used by calendar to determine if dots should be shown for a date.
+  bool hasTrackingStarted(DateTime date) {
+    if (trackingStartDate == null) return true;
+    return date.isAfter(trackingStartDate!) ||
+        date.isAtSameMomentAs(trackingStartDate!);
+  }
 
   /// Converts [CatProfile] to JSON data
   Map<String, dynamic> toJson() {
@@ -101,6 +134,7 @@ class CatProfile {
       'photoUrl': photoUrl,
       'breed': breed,
       'gender': gender,
+      'trackingStartDate': trackingStartDate?.toIso8601String(),
     };
   }
 
@@ -117,6 +151,7 @@ class CatProfile {
     String? photoUrl,
     String? breed,
     String? gender,
+    DateTime? trackingStartDate,
   }) {
     return CatProfile(
       id: id ?? this.id,
@@ -130,6 +165,7 @@ class CatProfile {
       photoUrl: photoUrl ?? this.photoUrl,
       breed: breed ?? this.breed,
       gender: gender ?? this.gender,
+      trackingStartDate: trackingStartDate ?? this.trackingStartDate,
     );
   }
 
@@ -193,6 +229,13 @@ class CatProfile {
       }
     }
 
+    // Tracking start date validation
+    if (trackingStartDate != null) {
+      if (trackingStartDate!.isAfter(DateTime.now())) {
+        errors.add('Tracking start date cannot be in the future');
+      }
+    }
+
     return errors;
   }
 
@@ -211,7 +254,8 @@ class CatProfile {
         other.updatedAt == updatedAt &&
         other.photoUrl == photoUrl &&
         other.breed == breed &&
-        other.gender == gender;
+        other.gender == gender &&
+        other.trackingStartDate == trackingStartDate;
   }
 
   @override
@@ -228,6 +272,7 @@ class CatProfile {
       photoUrl,
       breed,
       gender,
+      trackingStartDate,
     );
   }
 
@@ -244,7 +289,8 @@ class CatProfile {
         'updatedAt: $updatedAt, '
         'photoUrl: $photoUrl, '
         'breed: $breed, '
-        'gender: $gender'
+        'gender: $gender, '
+        'trackingStartDate: $trackingStartDate'
         ')';
   }
 }

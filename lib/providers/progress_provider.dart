@@ -139,6 +139,7 @@ weekStatusProvider = FutureProvider.autoDispose
         );
         final meds = ref.watch(medicationSchedulesProvider) ?? [];
         final fluid = ref.watch(fluidScheduleProvider);
+        final pet = ref.watch(primaryPetProvider);
         final now = DateTime.now();
 
         // Filter medication schedules only
@@ -152,6 +153,7 @@ weekStatusProvider = FutureProvider.autoDispose
           fluidSchedule: fluid,
           summaries: summaries,
           now: now,
+          trackingStartDate: pet?.trackingStartDate,
         );
       },
     );

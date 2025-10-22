@@ -11,6 +11,7 @@ import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/logging_validation_service.dart';
 import 'package:hydracat/features/logging/services/summary_cache_service.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
+import 'package:hydracat/features/profile/services/pet_service.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/shared/models/summary_update_dto.dart';
 
@@ -40,6 +41,7 @@ class LoggingService {
     this._cacheService, [
     this._analyticsService,
     this._validationService,
+    this._petService,
   ]);
 
   /// Cache service for 0-read duplicate detection
@@ -50,6 +52,9 @@ class LoggingService {
 
   /// Optional validation service for business logic validation
   final LoggingValidationService? _validationService;
+
+  /// Optional pet service for updating tracking start date
+  final PetService? _petService;
 
   /// Firestore instance
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
@@ -160,6 +165,13 @@ class LoggingService {
           );
         }
       }
+
+      // STEP 2.5: Update tracking start date if needed (for backdated sessions)
+      await _updateTrackingStartIfNeeded(
+        userId: userId,
+        petId: petId,
+        sessionDateTime: session.dateTime,
+      );
 
       // STEP 3: Schedule matching
       final match = _matchMedicationSchedule(session, todaysSchedules);
@@ -457,6 +469,13 @@ class LoggingService {
         // Fallback to existing method for backward compatibility
         _validateFluidSession(session);
       }
+
+      // STEP 1.5: Update tracking start date if needed (for backdated sessions)
+      await _updateTrackingStartIfNeeded(
+        userId: userId,
+        petId: petId,
+        sessionDateTime: session.dateTime,
+      );
 
       // STEP 2: Calculate daily goal from active fluid schedule (if exists)
       // Note: Goal calculation is independent of schedule matching
@@ -1260,6 +1279,76 @@ class LoggingService {
   }
 
   // Note: No duplicate detection for fluid sessions (per medical requirements)
+
+  // ============================================
+  // PRIVATE HELPERS - Tracking Date Management
+  // ============================================
+
+  /// Updates pet's tracking start date if session is logged before
+  /// current start.
+  ///
+  /// Handles backdated sessions by updating trackingStartDate to the
+  /// earliest logged session date. This ensures calendar dots display
+  /// correctly for historical data.
+  ///
+  /// Cost optimization:
+  /// - Only updates if session date is actually earlier (rare case)
+  /// - Uses cached pet data (0 reads in most cases)
+  /// - Single write operation when needed
+  ///
+  /// Parameters:
+  /// - `userId`: Current authenticated user ID
+  /// - `petId`: Target pet ID
+  /// - `sessionDateTime`: The datetime of the session being logged
+  Future<void> _updateTrackingStartIfNeeded({
+    required String userId,
+    required String petId,
+    required DateTime sessionDateTime,
+  }) async {
+    // Skip if pet service not provided
+    if (_petService == null) return;
+
+    try {
+      // Get pet profile (uses cached data, 0 reads in most cases)
+      final pet = await _petService.getPrimaryPet();
+      if (pet == null) return;
+
+      // Normalize session date to start of day for comparison
+      final sessionDate = AppDateUtils.startOfDay(sessionDateTime);
+      final currentStart = pet.trackingStartDate;
+
+      // Update only if session is before current tracking start
+      if (currentStart == null || sessionDate.isBefore(currentStart)) {
+        if (kDebugMode) {
+          debugPrint(
+            '[LoggingService] Updating tracking start date from '
+            '$currentStart to $sessionDate (backdated session)',
+          );
+        }
+
+        final result = await _petService.updatePet(
+          pet.copyWith(trackingStartDate: sessionDate),
+        );
+
+        if (result is PetFailure) {
+          // Log warning but don't fail the session logging
+          if (kDebugMode) {
+            debugPrint(
+              '[LoggingService] Warning: Failed to update tracking start date: '
+              '${result.message}',
+            );
+          }
+        }
+      }
+    } on Exception catch (e) {
+      // Log error but don't fail the session logging
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingService] Warning: Error updating tracking start date: $e',
+        );
+      }
+    }
+  }
 
   // ============================================
   // PRIVATE HELPERS - Daily Goal Calculation

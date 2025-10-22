@@ -58,7 +58,8 @@ final loggingServiceProvider = Provider<LoggingService>((ref) {
   final cacheService = ref.watch(summaryCacheServiceProvider);
   final analytics = ref.read(analyticsServiceDirectProvider);
   final validationService = ref.watch(loggingValidationServiceProvider);
-  return LoggingService(cacheService, analytics, validationService);
+  final petService = ref.watch(petServiceProvider);
+  return LoggingService(cacheService, analytics, validationService, petService);
 });
 
 /// Provider for SummaryCacheService instance

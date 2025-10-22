@@ -28,6 +28,7 @@ class _WeekStatusMemoKey {
     required this.fluidSchedule,
     required this.summaries,
     required this.now,
+    this.trackingStartDate,
   });
 
   final DateTime weekStart;
@@ -35,6 +36,7 @@ class _WeekStatusMemoKey {
   final Schedule? fluidSchedule;
   final Map<DateTime, DailySummary?> summaries;
   final DateTime now;
+  final DateTime? trackingStartDate;
 
   @override
   bool operator ==(Object other) {
@@ -44,7 +46,8 @@ class _WeekStatusMemoKey {
         _listEquals(medicationSchedules, other.medicationSchedules) &&
         fluidSchedule == other.fluidSchedule &&
         _mapEquals(summaries, other.summaries) &&
-        now.difference(other.now).inMinutes.abs() < 1; // 1-minute tolerance
+        now.difference(other.now).inMinutes.abs() < 1 &&
+        trackingStartDate == other.trackingStartDate;
   }
 
   @override
@@ -61,6 +64,7 @@ class _WeekStatusMemoKey {
       fluidSchedule,
       summariesHash,
       now.millisecondsSinceEpoch ~/ 60000, // Round to minute
+      trackingStartDate,
     );
   }
 }
@@ -105,6 +109,7 @@ void clearWeekStatusCache() {
 /// - [fluidSchedule]: Optional fluid schedule
 /// - [summaries]: Map of daily summaries
 /// - [now]: Current time (with 1-minute tolerance)
+/// - [trackingStartDate]: Pet's tracking start date (optional)
 ///
 /// Returns the same result as [computeWeekStatuses] but with caching.
 Map<DateTime, DayDotStatus> computeWeekStatusesMemoized({
@@ -113,6 +118,7 @@ Map<DateTime, DayDotStatus> computeWeekStatusesMemoized({
   required Schedule? fluidSchedule,
   required Map<DateTime, DailySummary?> summaries,
   required DateTime now,
+  DateTime? trackingStartDate,
 }) {
   final key = _WeekStatusMemoKey(
     weekStart: weekStart,
@@ -120,6 +126,7 @@ Map<DateTime, DayDotStatus> computeWeekStatusesMemoized({
     fluidSchedule: fluidSchedule,
     summaries: summaries,
     now: now,
+    trackingStartDate: trackingStartDate,
   );
 
   // Check cache
@@ -134,6 +141,7 @@ Map<DateTime, DayDotStatus> computeWeekStatusesMemoized({
     fluidSchedule: fluidSchedule,
     summaries: summaries,
     now: now,
+    trackingStartDate: trackingStartDate,
   );
 
   // Store in cache
