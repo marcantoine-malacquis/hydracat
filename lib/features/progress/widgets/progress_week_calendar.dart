@@ -34,7 +34,7 @@ class ProgressWeekCalendar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final focusedDay = ref.watch(focusedDayProvider);
-    final weekStart = ref.watch(focusedWeekStartProvider);
+    final rangeStart = ref.watch(focusedRangeStartProvider);
     final format = ref.watch(calendarFormatProvider);
 
     return Column(
@@ -98,7 +98,7 @@ class ProgressWeekCalendar extends ConsumerWidget {
             markerBuilder: (context, day, events) {
               return _WeekDotMarker(
                 day: day,
-                weekStart: weekStart,
+                rangeStart: rangeStart,
               );
             },
           ),
@@ -279,11 +279,11 @@ class ProgressWeekCalendar extends ConsumerWidget {
 class _WeekDotMarker extends ConsumerWidget {
   const _WeekDotMarker({
     required this.day,
-    required this.weekStart,
+    required this.rangeStart,
   });
 
   final DateTime day;
-  final DateTime weekStart;
+  final DateTime rangeStart;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -296,9 +296,9 @@ class _WeekDotMarker extends ConsumerWidget {
       return const _DotSkeleton();
     }
 
-    final weekStatusAsync = ref.watch(weekStatusProvider(weekStart));
+    final rangeStatusAsync = ref.watch(dateRangeStatusProvider(rangeStart));
 
-    return weekStatusAsync.when(
+    return rangeStatusAsync.when(
       data: (statuses) {
         final normalizedDay = AppDateUtils.startOfDay(day);
         final status = statuses[normalizedDay] ?? DayDotStatus.none;

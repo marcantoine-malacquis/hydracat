@@ -303,7 +303,9 @@ class _ProgressDayDetailPopupState
 
     return weekSessionsAsync.when(
       data: (weekSessions) {
-        final (medSessions, fluidSessions) = weekSessions[widget.date] ??
+        // Normalize date to match map keys (which are always start-of-day)
+        final normalizedDate = AppDateUtils.startOfDay(widget.date);
+        final (medSessions, fluidSessions) = weekSessions[normalizedDate] ??
             (<MedicationSession>[], <FluidSession>[]);
 
         // Greedy match: scheduleId-first, then name-based within the day.
