@@ -43,25 +43,23 @@ I already did something similar in @onboarding_code_review_report.md . I don't n
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
 
-1. Store it in CatProfile model because: (a) it's pet-specific data
-  that relates to when treatment tracking began for that pet, (b) it's already cached
-  aggressively (30-minute memory cache + persistent cache), resulting in zero
-  additional Firestore reads, (c) it keeps related data together and avoids creating
-  another collection, and (d) it's simpler to manage and update alongside other pet
-  profile fields.
-2. no need for backward compatibility i think, I am still in development so I delete the database frequently anyway. do you think this Lazy initialization should still be implemented anyway ?
-3. just show empty days (no dots). The visual
-  distinction (no dots before tracking started vs. red dots after) makes it clear when
-  tracking began.
-4. Yes, update firstDate to trackingStartDate ?? DateTime(2010) to
-  prevent users from picking dates before tracking started. This is more intuitive than
-   allowing them to pick a date that shows nothing, and aligns with the principle that
-  dates before tracking are not relevant.
-5. no need for backward compatibility i think.
-6. Use the earliest of: (a) first medication session timestamp, (b)
-  first fluid session timestamp, or (c) earliest active schedule createdAt. This makes
-  sense because the user might have set up schedules with the intent to track, even if
-  they logged later. The schedule creation represents "I'm starting to track treatment"
-   even if the actual first log came later.
-7. make it Immutable
-Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them. I will test only once we fixed the linting issues.
+1. Yes, implement 6px markers for
+  month view and keep 8px for week view.
+2. Start with a simple StateProvider
+  (no persistence)
+3. Yes, make it format-aware:
+  - Week mode: Hide when viewing current week
+  - Month mode: Hide when viewing current month
+4. I have not implemented the Date Picker yet. For now, Yes, keep lastDate: DateTime.now()
+   since the calendar shows treatment history and
+  current progress. Future dates have no data to
+  display.
+5. Let TableCalendar handle it
+  naturally (instant). Adding custom animation might
+  cause jank and complexity.
+6. Maintain the same day number when
+  possible. This feels more natural for navigation. If
+  the day doesn't exist in the new month (e.g., Jan 31
+  → Feb 31), fall back to the last valid day of that
+  month.
+Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications or more documentation about the calendar package to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them. I will test only once we fixed the linting issues.

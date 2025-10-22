@@ -34,7 +34,7 @@ class ProgressWeekCalendar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final focusedDay = ref.watch(focusedDayProvider);
-    final rangeStart = ref.watch(focusedRangeStartProvider);
+    final weekStart = ref.watch(focusedWeekStartProvider);
     final format = ref.watch(calendarFormatProvider);
 
     return Column(
@@ -98,7 +98,7 @@ class ProgressWeekCalendar extends ConsumerWidget {
             markerBuilder: (context, day, events) {
               return _WeekDotMarker(
                 day: day,
-                rangeStart: rangeStart,
+                weekStart: weekStart,
               );
             },
           ),
@@ -152,11 +152,10 @@ class ProgressWeekCalendar extends ConsumerWidget {
                 onPressed: () async {
                   final theme = Theme.of(context);
                   final focused = ref.read(focusedDayProvider);
-                  final pet = ref.read(primaryPetProvider);
                   final picked = await showDatePicker(
                     context: context,
                     initialDate: focused,
-                    firstDate: pet?.trackingStartDate ?? DateTime(2010),
+                    firstDate: DateTime(2010),
                     lastDate: DateTime.now(),
                     builder: (context, child) => Theme(
                       data: theme.copyWith(colorScheme: theme.colorScheme),
@@ -280,11 +279,11 @@ class ProgressWeekCalendar extends ConsumerWidget {
 class _WeekDotMarker extends ConsumerWidget {
   const _WeekDotMarker({
     required this.day,
-    required this.rangeStart,
+    required this.weekStart,
   });
 
   final DateTime day;
-  final DateTime rangeStart;
+  final DateTime weekStart;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -297,9 +296,9 @@ class _WeekDotMarker extends ConsumerWidget {
       return const _DotSkeleton();
     }
 
-    final rangeStatusAsync = ref.watch(dateRangeStatusProvider(rangeStart));
+    final weekStatusAsync = ref.watch(weekStatusProvider(weekStart));
 
-    return rangeStatusAsync.when(
+    return weekStatusAsync.when(
       data: (statuses) {
         final normalizedDay = AppDateUtils.startOfDay(day);
         final status = statuses[normalizedDay] ?? DayDotStatus.none;

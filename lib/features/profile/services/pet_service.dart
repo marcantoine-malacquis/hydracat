@@ -129,14 +129,13 @@ class PetService {
       // Generate unique ID with retry logic
       final petId = await _generateUniquePetId(userId);
 
-      // Create the final profile with timestamps and tracking start date
+      // Create the final profile with timestamps
       final now = DateTime.now();
       final finalProfile = profile.copyWith(
         id: petId,
         userId: userId,
         createdAt: now,
         updatedAt: now,
-        trackingStartDate: now,
       );
 
       // Save to Firestore
