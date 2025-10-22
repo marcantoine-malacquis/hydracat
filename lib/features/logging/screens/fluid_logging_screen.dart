@@ -262,6 +262,8 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
 
         if (mounted) {
           // Reset state and close popup
+          // Note: Reset happens after cache is updated to ensure
+          // consistent state
           ref.read(loggingProvider.notifier).reset();
           OverlayService.hide();
         }

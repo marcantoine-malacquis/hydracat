@@ -31,7 +31,8 @@ import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/connectivity_provider.dart';
 import 'package:hydracat/providers/logging_queue_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
-import 'package:hydracat/providers/progress_provider.dart';
+// progress_provider.dart intentionally not imported to avoid
+// manual invalidations
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
@@ -823,8 +824,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         final updatedCache = cache.copyWith(
           medicationSessionCount:
               cache.medicationSessionCount + result.medicationSessionCount,
-          fluidSessionCount:
-              cache.fluidSessionCount + result.fluidSessionCount,
+          fluidSessionCount: cache.fluidSessionCount + result.fluidSessionCount,
           medicationNames: updatedMedicationNames,
           totalMedicationDosesGiven:
               cache.totalMedicationDosesGiven + result.totalMedicationDoses,
@@ -866,15 +866,8 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       // Invalidate in-memory TTL cache to ensure calendar updates immediately
       _ref.read(summaryServiceProvider).invalidateTodaysCache(user.id, pet.id);
 
-      // IMPORTANT FIX: Invalidate Riverpod providers to force UI rebuild
-      // This ensures the calendar dot and popup session counts update
-      // immediately after quick-logging
-      final todayDate = DateTime.now();
-      final weekStart = AppDateUtils.startOfWeekMonday(todayDate);
-      _ref
-        ..invalidate(weekSummariesProvider(weekStart))
-        ..invalidate(weekSessionsProvider(weekStart))
-        ..invalidate(dateRangeStatusProvider(weekStart));
+      // No manual invalidation: progress providers rebuild
+      // via dailyCacheProvider
 
       if (kDebugMode) {
         debugPrint(
@@ -1085,15 +1078,8 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       // Invalidate in-memory TTL cache to ensure calendar updates immediately
       _ref.read(summaryServiceProvider).invalidateTodaysCache(user.id, pet.id);
 
-      // IMPORTANT FIX: Invalidate Riverpod providers to force UI rebuild
-      // This ensures the calendar dot and popup session counts update
-      // immediately after logging
-      final today = DateTime.now();
-      final weekStart = AppDateUtils.startOfWeekMonday(today);
-      _ref
-        ..invalidate(weekSummariesProvider(weekStart))
-        ..invalidate(weekSessionsProvider(weekStart))
-        ..invalidate(dateRangeStatusProvider(weekStart));
+      // No manual invalidation: progress providers rebuild
+      // via dailyCacheProvider
 
       if (kDebugMode) {
         debugPrint(
@@ -1298,7 +1284,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         recentSessions: [], // Fluids don't need duplicate detection
       );
 
-      // STEP 4: Update cache
+      // STEP 4: Update cache first (before invalidating providers)
       await _cacheService.updateCacheWithFluidSession(
         userId: user.id,
         petId: pet.id,
@@ -1311,15 +1297,8 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       // Invalidate in-memory TTL cache to ensure calendar updates immediately
       _ref.read(summaryServiceProvider).invalidateTodaysCache(user.id, pet.id);
 
-      // IMPORTANT FIX: Invalidate Riverpod providers to force UI rebuild
-      // This ensures the calendar dot and popup session counts update
-      // immediately after logging
-      final today = DateTime.now();
-      final weekStart = AppDateUtils.startOfWeekMonday(today);
-      _ref
-        ..invalidate(weekSummariesProvider(weekStart))
-        ..invalidate(weekSessionsProvider(weekStart))
-        ..invalidate(dateRangeStatusProvider(weekStart));
+      // No manual invalidation: progress providers rebuild
+      // via dailyCacheProvider
 
       if (kDebugMode) {
         debugPrint(

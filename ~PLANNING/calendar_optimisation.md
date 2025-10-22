@@ -790,44 +790,52 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
 **Time Estimate**: 6-8 hours total
 **Impact**: Significantly improved user experience
 
-### 10. Month View Toggle
+### 10. Month View Toggle ✅ COMPLETED
 **Files**: `progress_week_calendar.dart`, `progress_provider.dart`
 **Priority**: HIGH
-**Effort**: 1.5 hours
+**Effort**: 1.5 hours (actual)
 **Impact**: Industry-standard calendar feature, better overview
 
 **Issue**: Fixed to week view, can't see full month at once
 
 **UX Decision (approved)**:
 - **Single Progress screen** with a dedicated two-line header.
-  - **Row 1 (Scope bar)**: Week/Month segmented toggle (optional "Jump to date").
+  - **Row 1 (Scope bar)**: Week/Month segmented toggle + "Jump to date" button.
   - **Row 2 (Calendar header)**: Chevrons + "October 2025" + "Today" (unchanged pattern).
 - **Keep analytics below** the calendar. In Month mode, show a concise monthly summary card; deep-dive analytics can navigate to a dedicated "Monthly Insights" screen if needed (only if content diverges or requires full screen).
 - **Chevrons respect format**: Week = ±7 days, Month = ±1 month.
-- **Today button**: Visible only when the current period isn’t shown; recenters without forcing a format switch.
-- **Month grid**: Enforce 6 rows for stable height; use slightly smaller markers (e.g., 6px) to keep the grid clean.
+- **Today button**: Visible only when the current period isn't shown; recenters without forcing a format switch.
+- **Month grid**: Enforce 6 rows for stable height; use slightly smaller markers (6px for month, 8px for week).
 - **Gestures**: Horizontal swipes only to avoid nested scroll jank with `RefreshIndicator`.
 
 ---
 
-**Implementation**:
+**Implementation** (as completed):
 
 **Step 10.1**: Add format state and period start providers
 ```dart
-// In progress_provider.dart
+// In progress_provider.dart (lines 29-49)
 import 'package:table_calendar/table_calendar.dart';
 
-// Persist last choice later via SharedPreferences if desired
+/// Provider for the calendar format (week or month view).
+///
+/// Defaults to week view. User can toggle between formats.
+/// Can be persisted to SharedPreferences in future if desired.
 final calendarFormatProvider = StateProvider<CalendarFormat>((ref) {
   return CalendarFormat.week;
 });
 
-/// One source of truth for the start of the visible period
+/// Provider for the start of the visible period (week or month).
+///
+/// Returns the start of the week (Monday) in week format,
+/// or the first day of the month in month format.
+/// Automatically derives from [focusedDayProvider] and
+/// [calendarFormatProvider].
 final focusedRangeStartProvider = Provider<DateTime>((ref) {
   final format = ref.watch(calendarFormatProvider);
   final focusedDay = ref.watch(focusedDayProvider);
   return format == CalendarFormat.month
-      ? DateTime(focusedDay.year, focusedDay.month, 1)
+      ? DateTime(focusedDay.year, focusedDay.month)
       : AppDateUtils.startOfWeekMonday(focusedDay);
 });
 ```
@@ -836,176 +844,395 @@ final focusedRangeStartProvider = Provider<DateTime>((ref) {
 ```dart
 // In progress_week_calendar.dart
 
+// Format bar with centered toggle buttons and right-aligned jump button
+// (lines 111-175)
 Widget _buildFormatBar(BuildContext context, WidgetRef ref) {
   final format = ref.watch(calendarFormatProvider);
   final isMonth = format == CalendarFormat.month;
 
   return Padding(
-    padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+    child: SizedBox(
+      height: 32,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Week/Month toggle buttons - centered on screen
+          Center(
+            child: ToggleButtons(
+              isSelected: [!isMonth, isMonth],
+              onPressed: (index) {
+                ref.read(calendarFormatProvider.notifier).state =
+                    index == 0 ? CalendarFormat.week : CalendarFormat.month;
+              },
+              constraints: const BoxConstraints(minHeight: 32, minWidth: 48),
+              borderRadius: BorderRadius.circular(8),
+              children: const [
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: Text('Week'),
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: Text('Month'),
+                ),
+              ],
+            ),
+          ),
+          // Jump to date button - positioned on right with reduced padding
+          Positioned(
+            right: -8,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              tooltip: 'Jump to date',
+              icon: const Icon(Icons.calendar_month, size: 24),
+              onPressed: () async {
+                final theme = Theme.of(context);
+                final focused = ref.read(focusedDayProvider);
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: focused,
+                  firstDate: DateTime(2010),
+                  lastDate: DateTime.now(),
+                  builder: (context, child) => Theme(
+                    data: theme.copyWith(colorScheme: theme.colorScheme),
+                    child: child!,
+                  ),
+                );
+                if (picked != null) {
+                  ref.read(focusedDayProvider.notifier).state = picked;
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+// In build() (lines 40-107): place the new row ABOVE the existing header
+@override
+Widget build(BuildContext context, WidgetRef ref) {
+  final focusedDay = ref.watch(focusedDayProvider);
+  final weekStart = ref.watch(focusedWeekStartProvider);
+  final format = ref.watch(calendarFormatProvider);
+
+  return Column(
+    children: [
+      _buildFormatBar(context, ref),                    // New row (scope bar)
+      _buildCustomHeader(context, focusedDay, ref),     // Existing header
+      TableCalendar<void>(
+        firstDay: DateTime.utc(2010),
+        lastDay: DateTime.utc(2035, 12, 31),
+        focusedDay: focusedDay,
+        calendarFormat: format,
+        startingDayOfWeek: StartingDayOfWeek.monday,
+        headerVisible: false,
+        availableGestures: AvailableGestures.horizontalSwipe,
+        sixWeekMonthsEnforced: true,                    // Stable height in month
+        rowHeight: format == CalendarFormat.month ? 48 : 68,
+        // ...styles, builders, handlers
+      ),
+    ],
+  );
+}
+
+// In _buildCustomHeader() (lines 179-255): make chevrons jump by week/month
+Widget _buildCustomHeader(
+  BuildContext context,
+  DateTime day,
+  WidgetRef ref,
+) {
+  final focusedDay = ref.watch(focusedDayProvider);
+  final format = ref.watch(calendarFormatProvider);
+  final isMonth = format == CalendarFormat.month;
+  final monthYearFormat = DateFormat('MMMM yyyy');
+  final monthYearText = monthYearFormat.format(day);
+
+  // Determine if we're viewing the current period (week or month)
+  final now = DateTime.now();
+  final isOnCurrentPeriod = isMonth
+      ? focusedDay.year == now.year && focusedDay.month == now.month
+      : AppDateUtils.startOfWeekMonday(focusedDay) ==
+          AppDateUtils.startOfWeekMonday(now);
+
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
     child: Row(
       children: [
-        ToggleButtons(
-          isSelected: [!isMonth, isMonth],
-          onPressed: (i) {
-            ref.read(calendarFormatProvider.notifier).state =
-                i == 0 ? CalendarFormat.week : CalendarFormat.month;
+        // Left chevron - jumps by week or month based on format
+        IconButton(
+          icon: const Icon(Icons.chevron_left),
+          onPressed: () {
+            final previous = isMonth
+                ? _getPreviousMonth(focusedDay)
+                : focusedDay.subtract(const Duration(days: 7));
+            ref.read(focusedDayProvider.notifier).state = previous;
           },
-          constraints: const BoxConstraints(minHeight: 32, minWidth: 48),
-          borderRadius: BorderRadius.circular(8),
-          children: const [Text('Week'), Text('Month')],
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          tooltip: isMonth ? 'Previous month' : 'Previous week',
+        ),
+        const SizedBox(width: 8),
+        // Month and year
+        Text(monthYearText, style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(width: 8),
+        // Right chevron - jumps by week or month based on format
+        IconButton(
+          icon: const Icon(Icons.chevron_right),
+          onPressed: () {
+            final next = isMonth
+                ? _getNextMonth(focusedDay)
+                : focusedDay.add(const Duration(days: 7));
+            ref.read(focusedDayProvider.notifier).state = next;
+          },
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          tooltip: isMonth ? 'Next month' : 'Next week',
         ),
         const Spacer(),
-        IconButton(
-          tooltip: 'Jump to date',
-          icon: const Icon(Icons.calendar_month),
-          onPressed: () async {
-            final theme = Theme.of(context);
-            final focused = ref.read(focusedDayProvider);
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: focused,
-              firstDate: DateTime(2010),
-              lastDate: DateTime.now(),
-              builder: (context, child) => Theme(
-                data: theme.copyWith(colorScheme: theme.colorScheme),
-                child: child!,
+        // "Today" button - only show when not on current period
+        if (!isOnCurrentPeriod)
+          TextButton(
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              final today = DateTime.now();
+              ref.read(focusedDayProvider.notifier).state = today;
+              ref.read(selectedDayProvider.notifier).state = today;
+              onDaySelected(today);
+            },
+            child: Text(
+              'Today',
+              style: AppTextStyles.buttonSecondary.copyWith(
+                color: AppColors.primary,
               ),
-            );
-            if (picked != null) {
-              ref.read(focusedDayProvider.notifier).state = picked;
-            }
-          },
-        ),
+            ),
+          ),
       ],
     ),
   );
 }
 
-// In build(): place the new row ABOVE the existing header
-return Column(
-  children: [
-    _buildFormatBar(context, ref),                    // New row (scope bar)
-    _buildCustomHeader(context, focusedDay, ref),     // Existing header
-    TableCalendar<void>(
-      headerVisible: false,
-      calendarFormat: ref.watch(calendarFormatProvider),
-      startingDayOfWeek: StartingDayOfWeek.monday,
-      sixWeekMonthsEnforced: true,                    // Stable height in month
-      availableGestures: AvailableGestures.horizontalSwipe,
-      rowHeight: ref.watch(calendarFormatProvider) == CalendarFormat.month
-          ? 36
-          : 68,
-      // ...rest unchanged (styles, builders, handlers)
-    ),
-  ],
-);
-
-// In _buildCustomHeader(): make chevrons jump by week/month
-final isMonth = ref.watch(calendarFormatProvider) == CalendarFormat.month;
-void jumpPrev() {
-  final prev = isMonth
-      ? DateTime(focusedDay.year, focusedDay.month - 1, 1)
-      : focusedDay.subtract(const Duration(days: 7));
-  ref.read(focusedDayProvider.notifier).state = prev;
+// Helper functions for month navigation (lines 257-275)
+DateTime _getPreviousMonth(DateTime date) {
+  final targetMonth = DateTime(date.year, date.month - 1);
+  final lastDayOfTargetMonth =
+      DateTime(targetMonth.year, targetMonth.month + 1, 0).day;
+  final targetDay = min(date.day, lastDayOfTargetMonth);
+  return DateTime(targetMonth.year, targetMonth.month, targetDay);
 }
-void jumpNext() {
-  final next = isMonth
-      ? DateTime(focusedDay.year, focusedDay.month + 1, 1)
-      : focusedDay.add(const Duration(days: 7));
-  ref.read(focusedDayProvider.notifier).state = next;
+
+DateTime _getNextMonth(DateTime date) {
+  final targetMonth = DateTime(date.year, date.month + 1);
+  final lastDayOfTargetMonth =
+      DateTime(targetMonth.year, targetMonth.month + 1, 0).day;
+  final targetDay = min(date.day, lastDayOfTargetMonth);
+  return DateTime(targetMonth.year, targetMonth.month, targetDay);
 }
 ```
 
 **Step 10.3**: Range-aware statuses (reuse weekly provider, merge in Month mode)
 ```dart
-// In progress_provider.dart
+// In progress_provider.dart (lines 187-227)
 
-final dateRangeStatusProvider =
-    FutureProvider.autoDispose.family<Map<DateTime, DayDotStatus>, DateTime>(
-  (ref, rangeStart) async {
-    ref.watch(dailyCacheProvider); // instant updates on log
+/// Computes the status for a date range (week or month).
+///
+/// In week format: Delegates directly to [weekStatusProvider] for the range.
+/// In month format: Merges status from 5-6 week chunks covering the month,
+/// then filters to only include days within the target month.
+///
+/// Leverages existing memoized status calculation and Riverpod caching
+/// to avoid redundant Firestore reads.
+final AutoDisposeFutureProviderFamily<Map<DateTime, DayDotStatus>, DateTime>
+dateRangeStatusProvider = FutureProvider.autoDispose
+    .family<Map<DateTime, DayDotStatus>, DateTime>(
+      (ref, rangeStart) async {
+        // Watch cache to invalidate when today's data changes
+        ref.watch(dailyCacheProvider);
 
-    final format = ref.watch(calendarFormatProvider);
-    if (format == CalendarFormat.week) {
-      return ref.read(weekStatusProvider(rangeStart).future);
-    }
+        final format = ref.watch(calendarFormatProvider);
 
-    // Month: merge week chunks, then filter to month days
-    final first = DateTime(rangeStart.year, rangeStart.month, 1);
-    final last = DateTime(rangeStart.year, rangeStart.month + 1, 0);
+        // Week mode: delegate to existing week provider
+        if (format == CalendarFormat.week) {
+          return ref.watch(weekStatusProvider(rangeStart).future);
+        }
 
-    var cursor = AppDateUtils.startOfWeekMonday(first);
-    final merged = <DateTime, DayDotStatus>{};
-    while (!cursor.isAfter(last)) {
-      final week = await ref.read(weekStatusProvider(cursor).future);
-      merged.addAll(week);
-      cursor = cursor.add(const Duration(days: 7));
-    }
+        // Month mode: merge week chunks covering the entire month
+        final firstDayOfMonth = DateTime(rangeStart.year, rangeStart.month);
+        final lastDayOfMonth =
+            DateTime(rangeStart.year, rangeStart.month + 1, 0);
 
-    return {
-      for (final e in merged.entries)
-        if (e.key.year == first.year && e.key.month == first.month) e.key: e.value,
-    };
-  },
-);
+        // Start from the Monday of the week containing the first day
+        var cursor = AppDateUtils.startOfWeekMonday(firstDayOfMonth);
+        final merged = <DateTime, DayDotStatus>{};
+
+        // Fetch all weeks that overlap with this month
+        while (!cursor.isAfter(lastDayOfMonth)) {
+          final weekStatuses = await ref.watch(
+            weekStatusProvider(cursor).future,
+          );
+          merged.addAll(weekStatuses);
+          cursor = cursor.add(const Duration(days: 7));
+        }
+
+        // Filter to only include days within the target month
+        return {
+          for (final entry in merged.entries)
+            if (entry.key.year == firstDayOfMonth.year &&
+                entry.key.month == firstDayOfMonth.month)
+              entry.key: entry.value,
+        };
+      },
+    );
 ```
+
+**Step 10.4**: Format-aware dot sizing
+```dart
+// In progress_week_calendar.dart
+
+// In _buildStatusDot method (lines 312-348)
+Widget _buildStatusDot(DayDotStatus status, WidgetRef ref) {
+  final Color? color;
+  final String semanticLabel;
+
+  // Get format-aware dot size: 6px for month, 8px for week
+  final format = ref.watch(calendarFormatProvider);
+  final dotSize = format == CalendarFormat.month ? 6.0 : 8.0;
+
+  switch (status) {
+    case DayDotStatus.complete:
+      color = AppColors.primary;
+      semanticLabel = 'Completed day';
+    case DayDotStatus.missed:
+      color = AppColors.warning;
+      semanticLabel = 'Missed day';
+    case DayDotStatus.today:
+      color = Colors.amber[600];
+      semanticLabel = 'Today';
+    case DayDotStatus.none:
+      return const SizedBox.shrink();
+  }
+
+  return Semantics(
+    label: semanticLabel,
+    child: Container(
+      width: dotSize,
+      height: dotSize,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+      ),
+    ),
+  );
+}
+
+// Also applied to skeleton (lines 358-384)
+class _DotSkeleton extends ConsumerWidget {
+  const _DotSkeleton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Get format-aware dot size: 6px for month, 8px for week
+    final format = ref.watch(calendarFormatProvider);
+    final dotSize = format == CalendarFormat.month ? 6.0 : 8.0;
+
+    return Semantics(
+      label: 'Loading status',
+      child: Shimmer(
+        duration: const Duration(milliseconds: 1500),
+        interval: const Duration(milliseconds: 1500),
+        color: const Color(0xFFF6F4F2),
+        child: Container(
+          width: dotSize,
+          height: dotSize,
+          decoration: const BoxDecoration(
+            color: Color(0xFFDDD6CE),
+            shape: BoxShape.circle,
+          ),
+        ),
+      ),
+    );
+  }
+}
+```
+
+**Key differences from original plan**:
+- **Format bar layout**: Uses Stack with Center alignment for toggle buttons and Positioned for jump button (more elegant than Row with Spacer)
+- **Jump to date integrated**: Implemented as part of format bar (completing item #11 in the process)
+- **Month navigation helpers**: Added `_getPreviousMonth` and `_getNextMonth` functions to handle edge cases (e.g., Jan 31 → Feb 28)
+- **Dynamic row height**: 48px for month, 68px for week (not 36px as originally planned)
+- **Format-aware dot sizing**: 6px for month, 8px for week (applied to both status dots and skeleton)
+- **Format-aware styling**: Cell margins and today decoration border width adapt to format
 
 **Performance Notes**
 - Leverages existing weekly summaries and memoized status calculation; avoids duplicating logic.
 - Loads at most 5–6 week chunks per month; `Shimmer` skeleton already used for loading.
-- Enforce `sixWeekMonthsEnforced: true` for consistent layout and smoother scrolling.
+- Enforces `sixWeekMonthsEnforced: true` for consistent layout and smoother scrolling.
 
 **Accessibility & UX Notes**
-- Keep semantics on dots and controls; toggle is keyboard reachable and labeled.
-- Persist last chosen format (optional) so users return to their preferred view.
-- Maintain horizontal swipe only to avoid nested scroll conflicts.
+- Semantics on dots maintained; toggle is keyboard reachable and labeled.
+- Horizontal swipe only to avoid nested scroll conflicts with `RefreshIndicator`.
+- Today button logic works for both week and month formats.
+- Format persists within session; can add SharedPreferences persistence later.
 
-**When to add a separate “Monthly Insights” screen**
-- Only if monthly analytics significantly diverge (different KPIs/charts), need full-screen space, or require a shareable deep link. Otherwise, keep analytics inline below the calendar with a small “View monthly insights” CTA in Month mode.
+**Bonus**: Item #11 (Date Picker for Quick Navigation) was completed as part of this implementation.
 
 ---
 
-### 11. Date Picker for Quick Navigation
-**Files**: `progress_screen.dart`
+### 11. Date Picker for Quick Navigation ✅ COMPLETED (as part of #10)
+**Files**: `progress_week_calendar.dart` (not `progress_screen.dart` as originally planned)
 **Priority**: MEDIUM
-**Effort**: 45 minutes
+**Effort**: 0 minutes (integrated with #10)
 **Impact**: Allows jumping to specific date (e.g., vet appointment)
 
 **Issue**: No way to jump to specific date, must swipe repeatedly
 
-**Implementation**:
+**Implementation** (as completed):
 ```dart
-// In progress_screen.dart AppBar actions
+// In progress_week_calendar.dart, _buildFormatBar method (lines 145-169)
+// Integrated as part of the format bar (see item #10 above)
 
-IconButton(
-  icon: const Icon(Icons.calendar_month),
-  tooltip: 'Jump to date',
-  onPressed: () async {
-    final selectedDate = await showDatePicker(
-      context: context,
-      initialDate: ref.read(focusedDayProvider),
-      firstDate: DateTime(2010),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme,
-          ),
+// Jump to date button - positioned on right with reduced padding
+Positioned(
+  right: -8,
+  child: IconButton(
+    padding: EdgeInsets.zero,
+    constraints: const BoxConstraints(),
+    tooltip: 'Jump to date',
+    icon: const Icon(Icons.calendar_month, size: 24),
+    onPressed: () async {
+      final theme = Theme.of(context);
+      final focused = ref.read(focusedDayProvider);
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: focused,
+        firstDate: DateTime(2010),
+        lastDate: DateTime.now(),
+        builder: (context, child) => Theme(
+          data: theme.copyWith(colorScheme: theme.colorScheme),
           child: child!,
-        );
-      },
-    );
-
-    if (selectedDate != null) {
-      ref.read(focusedDayProvider.notifier).state = selectedDate;
-    }
-  },
+        ),
+      );
+      if (picked != null) {
+        ref.read(focusedDayProvider.notifier).state = picked;
+      }
+    },
+  ),
 ),
 ```
 
-**Location**: Add next to "Today" button in AppBar actions
+**Key differences from original plan**:
+- Implemented in format bar (Row 1) rather than AppBar
+- Uses Positioned within Stack for right alignment
+- Reduced padding (padding: EdgeInsets.zero, constraints: const BoxConstraints())
+- Icon size explicitly set to 24
+- Better UX as it's closer to the calendar and toggle controls
 
-**Learning Goal**: showDatePicker usage and theming
+**Location**: Part of format bar in `progress_week_calendar.dart`, positioned on the right
+
+**Learning Goal**: showDatePicker usage and theming, Stack positioning for complex layouts
 
 ---
 
