@@ -1,16 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
+import 'package:hydracat/core/utils/memoization.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/session_read_service.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/features/progress/models/day_dot_status.dart';
-import 'package:hydracat/features/progress/services/week_status_calculator.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/models/daily_summary.dart';
 import 'package:hydracat/shared/models/fluid_daily_summary_view.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 /// Provider for the currently focused day in the progress calendar.
 ///
@@ -23,6 +24,28 @@ final focusedDayProvider = StateProvider<DateTime>((ref) => DateTime.now());
 /// Used to track which day has been tapped by the user (filled circle).
 /// Null means no day is selected. Cleared by tapping outside calendar.
 final selectedDayProvider = StateProvider<DateTime?>((ref) => null);
+
+/// Provider for the calendar format (week or month view).
+///
+/// Defaults to week view. User can toggle between formats.
+/// Can be persisted to SharedPreferences in future if desired.
+final calendarFormatProvider = StateProvider<CalendarFormat>((ref) {
+  return CalendarFormat.week;
+});
+
+/// Provider for the start of the visible period (week or month).
+///
+/// Returns the start of the week (Monday) in week format,
+/// or the first day of the month in month format.
+/// Automatically derives from [focusedDayProvider] and
+/// [calendarFormatProvider].
+final focusedRangeStartProvider = Provider<DateTime>((ref) {
+  final format = ref.watch(calendarFormatProvider);
+  final focusedDay = ref.watch(focusedDayProvider);
+  return format == CalendarFormat.month
+      ? DateTime(focusedDay.year, focusedDay.month)
+      : AppDateUtils.startOfWeekMonday(focusedDay);
+});
 
 /// Provider for the start of the focused week (Monday at 00:00).
 ///
@@ -123,13 +146,63 @@ weekStatusProvider = FutureProvider.autoDispose
             .where((s) => s.treatmentType == TreatmentType.medication)
             .toList();
 
-        return computeWeekStatuses(
+        return computeWeekStatusesMemoized(
           weekStart: weekStart,
           medicationSchedules: medicationSchedules,
           fluidSchedule: fluid,
           summaries: summaries,
           now: now,
         );
+      },
+    );
+
+/// Computes the status for a date range (week or month).
+///
+/// In week format: Delegates directly to [weekStatusProvider] for the range.
+/// In month format: Merges status from 5-6 week chunks covering the month,
+/// then filters to only include days within the target month.
+///
+/// Leverages existing memoized status calculation and Riverpod caching
+/// to avoid redundant Firestore reads.
+final AutoDisposeFutureProviderFamily<Map<DateTime, DayDotStatus>, DateTime>
+dateRangeStatusProvider = FutureProvider.autoDispose
+    .family<Map<DateTime, DayDotStatus>, DateTime>(
+      (ref, rangeStart) async {
+        // Watch cache to invalidate when today's data changes
+        ref.watch(dailyCacheProvider);
+
+        final format = ref.watch(calendarFormatProvider);
+
+        // Week mode: delegate to existing week provider
+        if (format == CalendarFormat.week) {
+          return ref.watch(weekStatusProvider(rangeStart).future);
+        }
+
+        // Month mode: merge week chunks covering the entire month
+        final firstDayOfMonth = DateTime(rangeStart.year, rangeStart.month);
+        final lastDayOfMonth =
+            DateTime(rangeStart.year, rangeStart.month + 1, 0);
+
+        // Start from the Monday of the week containing the first day
+        var cursor = AppDateUtils.startOfWeekMonday(firstDayOfMonth);
+        final merged = <DateTime, DayDotStatus>{};
+
+        // Fetch all weeks that overlap with this month
+        while (!cursor.isAfter(lastDayOfMonth)) {
+          final weekStatuses = await ref.watch(
+            weekStatusProvider(cursor).future,
+          );
+          merged.addAll(weekStatuses);
+          cursor = cursor.add(const Duration(days: 7));
+        }
+
+        // Filter to only include days within the target month
+        return {
+          for (final entry in merged.entries)
+            if (entry.key.year == firstDayOfMonth.year &&
+                entry.key.month == firstDayOfMonth.month)
+              entry.key: entry.value,
+        };
       },
     );
 
@@ -146,41 +219,45 @@ weekStatusProvider = FutureProvider.autoDispose
 /// Does NOT use autoDispose to persist cache across navigation
 /// (Progress → Home → Progress).
 final FutureProviderFamily<
-    Map<DateTime, (List<MedicationSession>, List<FluidSession>)>,
-    DateTime> weekSessionsProvider = FutureProvider.family<
-    Map<DateTime, (List<MedicationSession>, List<FluidSession>)>,
-    DateTime>(
-  (ref, weekStart) async {
-    // Watch cache to invalidate when today's sessions change
-    ref.watch(dailyCacheProvider);
+  Map<DateTime, (List<MedicationSession>, List<FluidSession>)>,
+  DateTime
+>
+weekSessionsProvider =
+    FutureProvider.family<
+      Map<DateTime, (List<MedicationSession>, List<FluidSession>)>,
+      DateTime
+    >(
+      (ref, weekStart) async {
+        // Watch cache to invalidate when today's sessions change
+        ref.watch(dailyCacheProvider);
 
-    final user = ref.read(currentUserProvider);
-    final pet = ref.read(primaryPetProvider);
-    if (user == null || pet == null) return {};
+        final user = ref.read(currentUserProvider);
+        final pet = ref.read(primaryPetProvider);
+        if (user == null || pet == null) return {};
 
-    final service = ref.read(sessionReadServiceProvider);
-    final days = List<DateTime>.generate(
-      7,
-      (i) => weekStart.add(Duration(days: i)),
+        final service = ref.read(sessionReadServiceProvider);
+        final days = List<DateTime>.generate(
+          7,
+          (i) => weekStart.add(Duration(days: i)),
+        );
+
+        // Fetch all 7 days in parallel
+        final results = await Future.wait(
+          days.map(
+            (day) => service.getAllSessionsForDate(
+              userId: user.id,
+              petId: pet.id,
+              date: day,
+            ),
+          ),
+        );
+
+        // Build map: date → (medSessions, fluidSessions)
+        return {
+          for (var i = 0; i < days.length; i++) days[i]: results[i],
+        };
+      },
     );
-
-    // Fetch all 7 days in parallel
-    final results = await Future.wait(
-      days.map(
-        (day) => service.getAllSessionsForDate(
-          userId: user.id,
-          petId: pet.id,
-          date: day,
-        ),
-      ),
-    );
-
-    // Build map: date → (medSessions, fluidSessions)
-    return {
-      for (var i = 0; i < days.length; i++) days[i]: results[i],
-    };
-  },
-);
 
 /// Fluid daily summary for a specific day using cached weekly summaries and
 /// the cached fluid schedule to compute the daily goal. Reads at most the
@@ -203,7 +280,8 @@ fluidDailySummaryViewProvider = Provider.autoDispose
           // Use stored historical goal if available, otherwise calculate from
           // current schedule. This ensures historical data remains accurate
           // when schedules change.
-          final goalMl = summary?.fluidDailyGoalMl ??
+          final goalMl =
+              summary?.fluidDailyGoalMl ??
               _calculateCurrentGoal(schedule, normalized);
 
           return FluidDailySummaryView(

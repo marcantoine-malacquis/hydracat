@@ -43,21 +43,23 @@ I already did something similar in @onboarding_code_review_report.md . I don't n
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
 
-- Remove the Expanded widget and let the "Analytics cards coming
-  soon" section take only the space it needs. 
-  - onRefresh: () as
-ync {
-    // Invalidate schedule data (may have changed in Profile screen)
-    ref.invalidate(medicationSchedulesProvider);
-    ref.invalidate(fluidScheduleProvider);
-
-    // Invalidate calendar data
-    ref.invalidate(weekSummariesProvider);
-    ref.invalidate(weekStatusProvider);
-
-    // Brief delay to allow providers to rebuild
-    await Future.delayed(const Duration(milliseconds: 500));
-  }
-- (keep GestureDetector as outer wrapper) so tapping
-  anywhere (including empty scroll space) deselects the day.
-
+1. Yes, implement 6px markers for
+  month view and keep 8px for week view.
+2. Start with a simple StateProvider
+  (no persistence)
+3. Yes, make it format-aware:
+  - Week mode: Hide when viewing current week
+  - Month mode: Hide when viewing current month
+4. I have not implemented the Date Picker yet. For now, Yes, keep lastDate: DateTime.now()
+   since the calendar shows treatment history and
+  current progress. Future dates have no data to
+  display.
+5. Let TableCalendar handle it
+  naturally (instant). Adding custom animation might
+  cause jank and complexity.
+6. Maintain the same day number when
+  possible. This feels more natural for navigation. If
+  the day doesn't exist in the new month (e.g., Jan 31
+  → Feb 31), fall back to the last valid day of that
+  month.
+Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications or more documentation about the calendar package to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them. I will test only once we fixed the linting issues.

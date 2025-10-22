@@ -13,6 +13,7 @@ import 'package:hydracat/features/logging/widgets/quick_log_success_popup.dart';
 import 'package:hydracat/features/logging/widgets/treatment_choice_popup.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/providers/dashboard_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/logging_queue_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
@@ -111,6 +112,9 @@ class _AppShellState extends ConsumerState<AppShell>
 
       // Refresh schedule cache (NEW)
       ref.read(profileProvider.notifier).onAppResumed();
+
+      // Refresh dashboard cache (NEW)
+      ref.read(dashboardProvider.notifier).onAppResumed();
     }
   }
 

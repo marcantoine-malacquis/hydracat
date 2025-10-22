@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/home/models/dashboard_state.dart';
 import 'package:hydracat/features/home/models/pending_fluid_treatment.dart';
 import 'package:hydracat/features/home/models/pending_treatment.dart';
@@ -36,12 +37,31 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
 
   final Ref _ref;
 
+  /// Date for which dashboard was last computed (YYYY-MM-DD format)
+  String? _lastComputedDate;
+
+  /// Check if the current dashboard state is valid for today
+  ///
+  /// Returns true if dashboard was computed for today's date, false otherwise.
+  /// Used to detect when date has changed and dashboard needs rebuilding.
+  bool _isValidForToday() {
+    if (_lastComputedDate == null) return false;
+    final now = DateTime.now();
+    final todayStr = AppDateUtils.formatDateForSummary(now);
+    return _lastComputedDate == todayStr;
+  }
+
   /// Rebuild the dashboard state from current provider data
   void _rebuildState() {
+    // Proactively check if we need to recompute due to date change
+    if (_lastComputedDate != null && !_isValidForToday()) {
+      debugPrint('[DashboardNotifier] Stale date detected during rebuild');
+    }
     try {
       final profileState = _ref.read(profileProvider);
       final cache = _ref.read(dailyCacheProvider);
       final now = DateTime.now();
+      final todayStr = AppDateUtils.formatDateForSummary(now);
 
       // Collect all active schedules for today
       final activeSchedules = <Schedule>[];
@@ -104,6 +124,9 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
         pendingMedications: pendingMeds,
         pendingFluid: pendingFluid,
       );
+
+      // Track the date for which this dashboard was computed
+      _lastComputedDate = todayStr;
     } on Object catch (e, stackTrace) {
       // Log error and set error state
       debugPrint('Error rebuilding dashboard state: $e');
@@ -375,6 +398,17 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
   /// Can be called from UI to manually refresh after operations.
   void refresh() {
     _rebuildState();
+  }
+
+  /// Handle app resume from background
+  ///
+  /// Called by AppShell when app lifecycle changes to resumed.
+  /// Refreshes dashboard if date has changed since last computation.
+  void onAppResumed() {
+    if (!_isValidForToday()) {
+      debugPrint('[DashboardNotifier] Date changed - rebuilding dashboard');
+      _rebuildState();
+    }
   }
 }
 

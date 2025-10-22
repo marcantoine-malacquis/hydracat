@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,18 +35,22 @@ class ProgressWeekCalendar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final focusedDay = ref.watch(focusedDayProvider);
     final weekStart = ref.watch(focusedWeekStartProvider);
+    final format = ref.watch(calendarFormatProvider);
 
     return Column(
       children: [
+        _buildFormatBar(context, ref),
         _buildCustomHeader(context, focusedDay, ref),
         TableCalendar<void>(
           firstDay: DateTime.utc(2010),
           lastDay: DateTime.utc(2035, 12, 31),
           focusedDay: focusedDay,
-          calendarFormat: CalendarFormat.week,
+          calendarFormat: format,
           startingDayOfWeek: StartingDayOfWeek.monday,
           headerVisible: false,
           availableGestures: AvailableGestures.horizontalSwipe,
+          sixWeekMonthsEnforced: true,
+          rowHeight: format == CalendarFormat.month ? 48 : 68,
           daysOfWeekStyle: DaysOfWeekStyle(
             weekdayStyle: Theme.of(context).textTheme.labelMedium!,
             weekendStyle: Theme.of(context).textTheme.labelMedium!,
@@ -54,7 +60,7 @@ class ProgressWeekCalendar extends ConsumerWidget {
               shape: BoxShape.circle,
               border: Border.all(
                 color: Theme.of(context).colorScheme.primary,
-                width: 2,
+                width: format == CalendarFormat.month ? 1.5 : 2,
               ),
             ),
             todayTextStyle: Theme.of(context).textTheme.labelMedium!.copyWith(
@@ -70,7 +76,10 @@ class ProgressWeekCalendar extends ConsumerWidget {
               color: Theme.of(context).colorScheme.onPrimary,
             ),
             outsideDaysVisible: false,
-            cellMargin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+            cellMargin: EdgeInsets.symmetric(
+              vertical: format == CalendarFormat.month ? 8 : 10,
+              horizontal: 4,
+            ),
           ),
           onPageChanged: (newFocusedDay) {
             ref.read(focusedDayProvider.notifier).state = newFocusedDay;
@@ -98,36 +107,109 @@ class ProgressWeekCalendar extends ConsumerWidget {
     );
   }
 
+  /// Builds the format bar with Week/Month toggle and Jump to date button.
+  Widget _buildFormatBar(BuildContext context, WidgetRef ref) {
+    final format = ref.watch(calendarFormatProvider);
+    final isMonth = format == CalendarFormat.month;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: SizedBox(
+        height: 32,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Week/Month toggle buttons - centered on screen
+            Center(
+              child: ToggleButtons(
+                isSelected: [!isMonth, isMonth],
+                onPressed: (index) {
+                  ref.read(calendarFormatProvider.notifier).state =
+                      index == 0 ? CalendarFormat.week : CalendarFormat.month;
+                },
+                constraints: const BoxConstraints(minHeight: 32, minWidth: 48),
+                borderRadius: BorderRadius.circular(8),
+                children: const [
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Text('Week'),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Text('Month'),
+                  ),
+                ],
+              ),
+            ),
+            // Jump to date button - positioned on right with reduced padding
+            Positioned(
+              right: -8,
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: 'Jump to date',
+                icon: const Icon(Icons.calendar_month, size: 24),
+                onPressed: () async {
+                  final theme = Theme.of(context);
+                  final focused = ref.read(focusedDayProvider);
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: focused,
+                    firstDate: DateTime(2010),
+                    lastDate: DateTime.now(),
+                    builder: (context, child) => Theme(
+                      data: theme.copyWith(colorScheme: theme.colorScheme),
+                      child: child!,
+                    ),
+                  );
+                  if (picked != null) {
+                    ref.read(focusedDayProvider.notifier).state = picked;
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Builds a custom header with navigation chevrons close together and
-  /// a "Today" button on the right (when not viewing current week).
+  /// a "Today" button on the right (when not viewing current period).
   Widget _buildCustomHeader(
     BuildContext context,
     DateTime day,
     WidgetRef ref,
   ) {
     final focusedDay = ref.watch(focusedDayProvider);
+    final format = ref.watch(calendarFormatProvider);
+    final isMonth = format == CalendarFormat.month;
     final monthYearFormat = DateFormat('MMMM yyyy');
     final monthYearText = monthYearFormat.format(day);
 
-    // Determine if we're viewing the current week
-    final focusedWeekStart = AppDateUtils.startOfWeekMonday(focusedDay);
-    final currentWeekStart = AppDateUtils.startOfWeekMonday(DateTime.now());
-    final isOnCurrentWeek = focusedWeekStart == currentWeekStart;
+    // Determine if we're viewing the current period (week or month)
+    final now = DateTime.now();
+    final isOnCurrentPeriod = isMonth
+        ? focusedDay.year == now.year && focusedDay.month == now.month
+        : AppDateUtils.startOfWeekMonday(focusedDay) ==
+            AppDateUtils.startOfWeekMonday(now);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
       child: Row(
         children: [
-          // Left chevron
+          // Left chevron - jumps by week or month based on format
           IconButton(
             icon: const Icon(Icons.chevron_left),
             onPressed: () {
-              final previousWeek = focusedDay.subtract(const Duration(days: 7));
-              ref.read(focusedDayProvider.notifier).state = previousWeek;
+              final previous = isMonth
+                  ? _getPreviousMonth(focusedDay)
+                  : focusedDay.subtract(const Duration(days: 7));
+              ref.read(focusedDayProvider.notifier).state = previous;
             },
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
-            tooltip: 'Previous week',
+            tooltip: isMonth ? 'Previous month' : 'Previous week',
           ),
           const SizedBox(width: 8),
           // Month and year
@@ -136,20 +218,22 @@ class ProgressWeekCalendar extends ConsumerWidget {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(width: 8),
-          // Right chevron
+          // Right chevron - jumps by week or month based on format
           IconButton(
             icon: const Icon(Icons.chevron_right),
             onPressed: () {
-              final nextWeek = focusedDay.add(const Duration(days: 7));
-              ref.read(focusedDayProvider.notifier).state = nextWeek;
+              final next = isMonth
+                  ? _getNextMonth(focusedDay)
+                  : focusedDay.add(const Duration(days: 7));
+              ref.read(focusedDayProvider.notifier).state = next;
             },
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
-            tooltip: 'Next week',
+            tooltip: isMonth ? 'Next month' : 'Next week',
           ),
           const Spacer(),
-          // "Today" button - only show when not on current week
-          if (!isOnCurrentWeek)
+          // "Today" button - only show when not on current period
+          if (!isOnCurrentPeriod)
             TextButton(
               onPressed: () {
                 HapticFeedback.selectionClick();
@@ -168,6 +252,26 @@ class ProgressWeekCalendar extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Gets the previous month while maintaining the day number when possible.
+  /// Falls back to last valid day if the day doesn't exist in target month.
+  DateTime _getPreviousMonth(DateTime date) {
+    final targetMonth = DateTime(date.year, date.month - 1);
+    final lastDayOfTargetMonth =
+        DateTime(targetMonth.year, targetMonth.month + 1, 0).day;
+    final targetDay = min(date.day, lastDayOfTargetMonth);
+    return DateTime(targetMonth.year, targetMonth.month, targetDay);
+  }
+
+  /// Gets the next month while maintaining the day number when possible.
+  /// Falls back to last valid day if the day doesn't exist in target month.
+  DateTime _getNextMonth(DateTime date) {
+    final targetMonth = DateTime(date.year, date.month + 1);
+    final lastDayOfTargetMonth =
+        DateTime(targetMonth.year, targetMonth.month + 1, 0).day;
+    final targetDay = min(date.day, lastDayOfTargetMonth);
+    return DateTime(targetMonth.year, targetMonth.month, targetDay);
   }
 }
 
@@ -198,16 +302,20 @@ class _WeekDotMarker extends ConsumerWidget {
       data: (statuses) {
         final normalizedDay = AppDateUtils.startOfDay(day);
         final status = statuses[normalizedDay] ?? DayDotStatus.none;
-        return _buildStatusDot(status);
+        return _buildStatusDot(status, ref);
       },
       loading: () => const _DotSkeleton(),
       error: (_, _) => const SizedBox.shrink(),
     );
   }
 
-  Widget _buildStatusDot(DayDotStatus status) {
+  Widget _buildStatusDot(DayDotStatus status, WidgetRef ref) {
     final Color? color;
     final String semanticLabel;
+
+    // Get format-aware dot size: 6px for month, 8px for week
+    final format = ref.watch(calendarFormatProvider);
+    final dotSize = format == CalendarFormat.month ? 6.0 : 8.0;
 
     switch (status) {
       case DayDotStatus.complete:
@@ -229,8 +337,8 @@ class _WeekDotMarker extends ConsumerWidget {
     return Semantics(
       label: semanticLabel,
       child: Container(
-        width: 8,
-        height: 8,
+        width: dotSize,
+        height: dotSize,
         decoration: BoxDecoration(
           color: color,
           shape: BoxShape.circle,
@@ -245,11 +353,17 @@ class _WeekDotMarker extends ConsumerWidget {
 /// Uses warm neutral colors from the design system:
 /// - Base: #DDD6CE (border color - warm, soft)
 /// - Highlight: #F6F4F2 (background color - warm off-white)
-class _DotSkeleton extends StatelessWidget {
+///
+/// Size adapts based on calendar format: 6px for month, 8px for week.
+class _DotSkeleton extends ConsumerWidget {
   const _DotSkeleton();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Get format-aware dot size: 6px for month, 8px for week
+    final format = ref.watch(calendarFormatProvider);
+    final dotSize = format == CalendarFormat.month ? 6.0 : 8.0;
+
     return Semantics(
       label: 'Loading status',
       child: Shimmer(
@@ -257,8 +371,8 @@ class _DotSkeleton extends StatelessWidget {
         interval: const Duration(milliseconds: 1500),
         color: const Color(0xFFF6F4F2), // Highlight: warm background
         child: Container(
-          width: 8,
-          height: 8,
+          width: dotSize,
+          height: dotSize,
           decoration: const BoxDecoration(
             color: Color(0xFFDDD6CE), // Base: warm border color
             shape: BoxShape.circle,

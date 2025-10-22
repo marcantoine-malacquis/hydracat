@@ -21,7 +21,7 @@ import 'package:intl/intl.dart';
 /// - Planned schedules (future): expected treatments based on schedules
 ///
 /// Uses [OverlayService.showFullScreenPopup] with slideUp animation.
-class ProgressDayDetailPopup extends ConsumerWidget {
+class ProgressDayDetailPopup extends ConsumerStatefulWidget {
   /// Creates a progress day detail popup.
   const ProgressDayDetailPopup({
     required this.date,
@@ -32,9 +32,34 @@ class ProgressDayDetailPopup extends ConsumerWidget {
   final DateTime date;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProgressDayDetailPopup> createState() =>
+      _ProgressDayDetailPopupState();
+}
+
+/// State for [ProgressDayDetailPopup] with lazy content loading.
+class _ProgressDayDetailPopupState
+    extends ConsumerState<ProgressDayDetailPopup> {
+  /// Whether to show the popup content.
+  /// Starts false and becomes true after animation completes.
+  bool _showContent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Wait for animation to complete (200ms slideUp + 50ms buffer)
+    Future.delayed(const Duration(milliseconds: 250), () {
+      if (mounted) {
+        setState(() {
+          _showContent = true;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Compare by normalized day so "today" is not misclassified as future
-    final day = AppDateUtils.startOfDay(date);
+    final day = AppDateUtils.startOfDay(widget.date);
     final today = AppDateUtils.startOfDay(DateTime.now());
     final isFuture = day.isAfter(today);
     final mediaQuery = MediaQuery.of(context);
@@ -82,7 +107,16 @@ class ProgressDayDetailPopup extends ConsumerWidget {
                     ).colorScheme.outlineVariant.withValues(alpha: 0.3),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  _buildContent(context, ref, isFuture),
+                  // Lazy load content after animation completes
+                  if (_showContent)
+                    _buildContent(context, ref, isFuture)
+                  else
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(AppSpacing.xl),
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -94,7 +128,7 @@ class ProgressDayDetailPopup extends ConsumerWidget {
 
   /// Builds the header with date and close button.
   Widget _buildHeader(BuildContext context) {
-    final formattedDate = DateFormat('EEEE, MMMM d').format(date);
+    final formattedDate = DateFormat('EEEE, MMMM d').format(widget.date);
 
     return Row(
       children: [
@@ -172,13 +206,13 @@ class ProgressDayDetailPopup extends ConsumerWidget {
 
     final medReminders = <(Schedule, DateTime)>[];
     for (final schedule in medicationSchedules) {
-      for (final time in schedule.reminderTimesOnDate(date)) {
+      for (final time in schedule.reminderTimesOnDate(widget.date)) {
         medReminders.add((schedule, time));
       }
     }
 
     final fluidReminders = fluidSchedule != null
-        ? fluidSchedule.reminderTimesOnDate(date)
+        ? fluidSchedule.reminderTimesOnDate(widget.date)
         : <DateTime>[];
 
     if (medReminders.isEmpty && fluidReminders.isEmpty) {
@@ -247,13 +281,13 @@ class ProgressDayDetailPopup extends ConsumerWidget {
 
     final medReminders = <(Schedule, DateTime)>[];
     for (final schedule in medicationSchedules) {
-      for (final time in schedule.reminderTimesOnDate(date)) {
+      for (final time in schedule.reminderTimesOnDate(widget.date)) {
         medReminders.add((schedule, time));
       }
     }
 
     final fluidReminders = fluidSchedule != null
-        ? fluidSchedule.reminderTimesOnDate(date).toList()
+        ? fluidSchedule.reminderTimesOnDate(widget.date).toList()
         : <DateTime>[];
 
     if (medReminders.isEmpty && fluidReminders.isEmpty) {
@@ -264,12 +298,12 @@ class ProgressDayDetailPopup extends ConsumerWidget {
     }
 
     // Fetch from week cache
-    final weekStart = AppDateUtils.startOfWeekMonday(date);
+    final weekStart = AppDateUtils.startOfWeekMonday(widget.date);
     final weekSessionsAsync = ref.watch(weekSessionsProvider(weekStart));
 
     return weekSessionsAsync.when(
       data: (weekSessions) {
-        final (medSessions, fluidSessions) = weekSessions[date] ??
+        final (medSessions, fluidSessions) = weekSessions[widget.date] ??
             (<MedicationSession>[], <FluidSession>[]);
 
         // Greedy match: scheduleId-first, then name-based within the day.
@@ -363,8 +397,8 @@ class ProgressDayDetailPopup extends ConsumerWidget {
   }) {
     if (reminders.isEmpty || sessions.isEmpty) return <DateTime>{};
 
-    final day = AppDateUtils.startOfDay(date);
-    final nextDay = AppDateUtils.endOfDay(date);
+    final day = AppDateUtils.startOfDay(widget.date);
+    final nextDay = AppDateUtils.endOfDay(widget.date);
 
     // Split sessions by having scheduleId (preferred) vs not
     final byScheduleId = <String, List<MedicationSession>>{};
@@ -539,7 +573,7 @@ class ProgressDayDetailPopup extends ConsumerWidget {
   /// Builds the fluid summary card when data is available.
   Widget _maybeSummaryCard(BuildContext context, WidgetRef ref) {
     final view = ref.watch(
-      fluidDailySummaryViewProvider(AppDateUtils.startOfDay(date)),
+      fluidDailySummaryViewProvider(AppDateUtils.startOfDay(widget.date)),
     );
 
     if (view == null) return const SizedBox.shrink();
@@ -549,7 +583,7 @@ class ProgressDayDetailPopup extends ConsumerWidget {
 
   /// Builds the semantic label for accessibility.
   String _buildSemanticLabel() {
-    final formattedDate = DateFormat('EEEE, MMMM d').format(date);
+    final formattedDate = DateFormat('EEEE, MMMM d').format(widget.date);
     return 'Treatment details for $formattedDate';
   }
 }
