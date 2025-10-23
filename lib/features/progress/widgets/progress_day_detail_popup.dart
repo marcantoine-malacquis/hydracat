@@ -213,7 +213,7 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
                   children: [
                     // Industry-standard drag handle indicator at very top
                     _buildDragHandle(context),
-                    const SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: 2),
                     Expanded(
                       child: SingleChildScrollView(
                         child: Column(
@@ -263,7 +263,7 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
       child: Container(
         width: 40,
         height: 4,
-        margin: const EdgeInsets.only(top: 4),
+        margin: const EdgeInsets.only(top: 2),
         decoration: BoxDecoration(
           color: Theme.of(
             context,

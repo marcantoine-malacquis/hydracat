@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -113,23 +115,78 @@ class FirebaseService {
   /// Configure Firebase Cloud Messaging
   Future<void> _configureMessaging() async {
     try {
+      // Set foreground notification presentation options (iOS)
+      if (Platform.isIOS) {
+        await _messaging.setForegroundNotificationPresentationOptions(
+          alert: true,
+          sound: true,
+        );
+        _devLog('iOS foreground notification options configured');
+      }
+
       // Request permission for notifications
       final settings = await _messaging.requestPermission();
 
       if (settings.authorizationStatus == AuthorizationStatus.authorized) {
         _devLog('User granted notification permission');
+      } else if (settings.authorizationStatus ==
+          AuthorizationStatus.provisional) {
+        _devLog('User granted provisional notification permission');
       } else {
-        _devLog('User declined notification permission');
+        _devLog(
+          'User declined notification permission: '
+          '${settings.authorizationStatus}',
+        );
+      }
+
+      // Get APNs token (iOS only) - required for remote notifications
+      var hasApnsToken = false;
+      if (Platform.isIOS) {
+        try {
+          final apnsToken = await _messaging.getAPNSToken();
+          if (apnsToken != null) {
+            _devLog('APNs Token obtained: ${apnsToken.substring(0, 20)}...');
+            hasApnsToken = true;
+          } else {
+            _devLog(
+              'APNs Token: null - This is expected if:\n'
+              '  - Running on iOS Simulator (APNs not available)\n'
+              '  - No Apple Developer account configured\n'
+              '  - APNs certificates/keys not uploaded to Firebase\n'
+              'Local notifications will work, '
+              'but remote notifications require APNs configuration.',
+            );
+          }
+        } on Exception catch (e) {
+          _devLog('Error getting APNs token: $e');
+        }
       }
 
       // Get FCM token
-      final token = await _messaging.getToken();
-      if (token != null) {
-        _devLog('FCM Token: $token');
-        // Implement later: Send token to server
+      // Note: On iOS, FCM token requires APNs token to be available
+      try {
+        final token = await _messaging.getToken();
+        if (token != null) {
+          _devLog('FCM Token: ${token.substring(0, 20)}...');
+          // Implement later - Send token to Firestore devices (Step 0.4)
+        } else {
+          _devLog('FCM Token: null');
+        }
+      } on Exception catch (e) {
+        if (Platform.isIOS && !hasApnsToken) {
+          _devLog(
+            'FCM Token unavailable (APNs token required on iOS). '
+            'This is expected without Apple Developer account setup.',
+          );
+        } else {
+          _devLog('Error getting FCM token: $e');
+        }
       }
+
+      _devLog('Firebase Messaging configured successfully');
     } on Exception catch (e) {
       _devLog('Failed to configure messaging: $e');
+      // Don't rethrow - messaging failure shouldn't block app initialization
     }
   }
 

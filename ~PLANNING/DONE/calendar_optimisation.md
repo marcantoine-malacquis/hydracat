@@ -1496,7 +1496,7 @@ Widget _buildDragHandle(BuildContext context) {
 
 ---
 
-### 13. Week Number Display
+### 13. Week Number Display ⏸️ SKIPPED
 **Files**: `progress_week_calendar.dart`
 **Priority**: LOW
 **Effort**: 30 minutes
@@ -1553,7 +1553,7 @@ int _getISOWeekNumber(DateTime date) {
 
 ---
 
-### 14. Dot Animation on Status Change
+### 14. Dot Animation on Status Change ⏸️ SKIPPED
 **Files**: `progress_week_calendar.dart`
 **Priority**: LOW
 **Effort**: 1 hour
