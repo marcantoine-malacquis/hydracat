@@ -15,11 +15,20 @@ service cloud.firestore {
     // ─────────────────────────────
     // DEVICES COLLECTION
     // ─────────────────────────────
-    match /devices/{deviceId} {
-      // Only the owning user can access their device doc
-      allow read, write: if request.auth != null
-                         && request.auth.uid == resource.data.userId;
-    }
+   match /devices/{deviceId} {
+    // Users can create device documents with their userId
+    allow create: if request.auth != null
+                  && request.resource.data.userId == request.auth.uid;
+
+    // Users can read their own device documents
+    allow read: if request.auth != null
+                && resource.data.userId == request.auth.uid;
+
+    // Users can update their own device documents
+    // (including setting userId to null on sign-out)
+    allow update: if request.auth != null
+                  && resource.data.userId == request.auth.uid;
+  }
 
     // ─────────────────────────────
     // USERS COLLECTION

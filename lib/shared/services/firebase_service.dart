@@ -8,6 +8,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/core/config/flavor_config.dart';
+import 'package:hydracat/features/notifications/services/device_token_service.dart';
 import 'package:hydracat/firebase_options.dart';
 
 /// Service class for managing Firebase initialization and configuration.
@@ -168,9 +169,16 @@ class FirebaseService {
         final token = await _messaging.getToken();
         if (token != null) {
           _devLog('FCM Token: ${token.substring(0, 20)}...');
-          // Implement later - Send token to Firestore devices (Step 0.4)
+
+          // Initialize device token service and start token refresh listener
+          _devLog('Initializing device token service...');
+          DeviceTokenService().listenToTokenRefresh();
+          _devLog('Device token service initialized');
         } else {
           _devLog('FCM Token: null');
+          _devLog(
+            'Skipping device token service initialization (no FCM token)',
+          );
         }
       } on Exception catch (e) {
         if (Platform.isIOS && !hasApnsToken) {
@@ -181,6 +189,9 @@ class FirebaseService {
         } else {
           _devLog('Error getting FCM token: $e');
         }
+        _devLog(
+          'Skipping device token service initialization due to token error',
+        );
       }
 
       _devLog('Firebase Messaging configured successfully');

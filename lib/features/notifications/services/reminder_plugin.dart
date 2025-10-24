@@ -1,6 +1,9 @@
-import 'package:flutter/foundation.dart';
+import 'dart:io';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hydracat/core/config/flavor_config.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 /// Service class for managing local notifications using
@@ -39,8 +42,10 @@ class ReminderPlugin {
 
       _plugin = FlutterLocalNotificationsPlugin();
 
-      // Android initialization settings
-      const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+      // Android initialization settings with notification icon
+      const androidSettings = AndroidInitializationSettings(
+        '@drawable/ic_stat_notification',
+      );
 
       // iOS initialization settings
       // We'll request permissions explicitly in later steps
@@ -64,6 +69,9 @@ class ReminderPlugin {
       );
 
       _devLog('Plugin initialization returned: $initialized');
+
+      // Create notification channels for Android
+      await _createNotificationChannels();
 
       if (initialized ?? false) {
         _isInitialized = true;
@@ -99,6 +107,62 @@ class ReminderPlugin {
     // Full deep-linking implementation will be added in Phase 3
   }
 
+  /// Create Android notification channels.
+  ///
+  /// Channels are created once at initialization and define the behavior
+  /// (importance, sound, vibration) for different notification types.
+  /// Channels are immutable after creation (only name/description can update).
+  Future<void> _createNotificationChannels() async {
+    if (_plugin == null) return;
+
+    try {
+      // Channel for medication reminders - high priority
+      const medicationChannel = AndroidNotificationChannel(
+        'medication_reminders',
+        'Medication Reminders',
+        description: 'Notifications for medication treatment reminders',
+        importance: Importance.high,
+      );
+
+      // Channel for fluid therapy reminders - high priority
+      const fluidChannel = AndroidNotificationChannel(
+        'fluid_reminders',
+        'Fluid Therapy Reminders',
+        description: 'Notifications for fluid therapy reminders',
+        importance: Importance.high,
+      );
+
+      // Channel for weekly summaries - default priority
+      const summaryChannel = AndroidNotificationChannel(
+        'weekly_summaries',
+        'Weekly Summaries',
+        description: 'Weekly progress summary notifications',
+      );
+
+      // Create channels
+      await _plugin!
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(medicationChannel);
+
+      await _plugin!
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(fluidChannel);
+
+      await _plugin!
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(summaryChannel);
+
+      _devLog('Created Android notification channels successfully');
+    } on Exception catch (e, stackTrace) {
+      _devLog('Failed to create notification channels: $e');
+      _devLog('Stack trace: $stackTrace');
+      // Don't rethrow - channel creation failure shouldn't block init
+    }
+  }
+
   /// Schedule a notification at a specific time using timezone-aware
   /// datetime.
   ///
@@ -106,7 +170,11 @@ class ReminderPlugin {
   /// [title] - Notification title
   /// [body] - Notification body text
   /// [scheduledDate] - Timezone-aware datetime for notification delivery
+  /// [channelId] - Android notification channel ID (medication_reminders,
+  ///               fluid_reminders, or weekly_summaries)
   /// [payload] - Optional JSON payload for notification tap handling
+  /// [groupId] - Optional group identifier for notification grouping (Android)
+  /// [threadIdentifier] - Optional thread identifier for grouping (iOS)
   ///
   /// Throws [StateError] if plugin is not initialized.
   Future<void> showZoned({
@@ -114,7 +182,10 @@ class ReminderPlugin {
     required String title,
     required String body,
     required tz.TZDateTime scheduledDate,
+    String channelId = 'medication_reminders',
     String? payload,
+    String? groupId,
+    String? threadIdentifier,
   }) async {
     if (!_isInitialized || _plugin == null) {
       throw StateError(
@@ -123,25 +194,44 @@ class ReminderPlugin {
     }
 
     try {
+      // Determine channel name based on ID
+      String channelName;
+      switch (channelId) {
+        case 'medication_reminders':
+          channelName = 'Medication Reminders';
+        case 'fluid_reminders':
+          channelName = 'Fluid Therapy Reminders';
+        case 'weekly_summaries':
+          channelName = 'Weekly Summaries';
+        default:
+          channelName = 'Medication Reminders';
+      }
+
       await _plugin!.zonedSchedule(
         id,
         title,
         body,
         scheduledDate,
-        const NotificationDetails(
+        NotificationDetails(
           android: AndroidNotificationDetails(
-            'default_channel', // Proper channels in Step 0.3
-            'Default Notifications',
+            channelId,
+            channelName,
             importance: Importance.high,
             priority: Priority.high,
+            color: const Color(0xFF6BB8A8),
+            groupKey: groupId,
           ),
-          iOS: DarwinNotificationDetails(),
+          iOS: DarwinNotificationDetails(
+            threadIdentifier: threadIdentifier,
+          ),
         ),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         payload: payload,
       );
 
-      _devLog('Scheduled notification $id for $scheduledDate');
+      _devLog(
+        'Scheduled notification $id for $scheduledDate on channel $channelId',
+      );
     } catch (e, stackTrace) {
       _devLog('Failed to schedule notification $id: $e');
       _devLog('Stack trace: $stackTrace');
@@ -214,6 +304,163 @@ class ReminderPlugin {
       _devLog('Failed to cancel all notifications: $e');
       _devLog('Stack trace: $stackTrace');
       rethrow;
+    }
+  }
+
+  /// Show a group summary notification for a pet's reminders.
+  ///
+  /// On Android, this creates a group summary notification that collects
+  /// all individual notifications for a pet. On iOS, this appears as a
+  /// regular notification (iOS doesn't support Android-style group summaries).
+  ///
+  /// [petId] - Pet identifier for generating deterministic notification ID
+  /// [petName] - Pet name for display in summary
+  /// [medicationCount] - Number of pending medication reminders
+  /// [fluidCount] - Number of pending fluid therapy reminders
+  /// [groupId] - Group identifier (should match individual notifications)
+  /// [threadIdentifier] - Thread identifier for iOS grouping
+  ///
+  /// The summary notification uses a deterministic ID based on petId to
+  /// enable idempotent updates.
+  ///
+  /// Throws [StateError] if plugin is not initialized.
+  Future<void> showGroupSummary({
+    required String petId,
+    required String petName,
+    required int medicationCount,
+    required int fluidCount,
+    required String groupId,
+    String? threadIdentifier,
+  }) async {
+    if (!_isInitialized || _plugin == null) {
+      throw StateError(
+        'ReminderPlugin must be initialized before showing notifications',
+      );
+    }
+
+    try {
+      // Generate deterministic ID for summary (hash of "summary_{petId}")
+      final summaryId = 'summary_$petId'.hashCode.abs() & 0x7FFFFFFF;
+
+      // Build summary body
+      String body;
+      if (medicationCount > 0 && fluidCount == 0) {
+        final plural = medicationCount == 1 ? 'reminder' : 'reminders';
+        body = '$medicationCount medication $plural';
+      } else if (medicationCount == 0 && fluidCount > 0) {
+        final plural = fluidCount == 1 ? 'reminder' : 'reminders';
+        body = '$fluidCount fluid therapy $plural';
+      } else if (medicationCount > 0 && fluidCount > 0) {
+        final medPlural = medicationCount == 1 ? 'medication' : 'medications';
+        final fluidPlural =
+            fluidCount == 1 ? 'fluid therapy' : 'fluid therapies';
+        body = '$medicationCount $medPlural, $fluidCount $fluidPlural';
+      } else {
+        // No notifications, don't show summary
+        _devLog('No notifications for pet $petId, skipping group summary');
+        return;
+      }
+
+      // Show summary notification
+      await _plugin!.show(
+        summaryId,
+        "$petName's Reminders",
+        body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'medication_reminders',
+            'Medication Reminders',
+            importance: Importance.high,
+            priority: Priority.high,
+            color: const Color(0xFF6BB8A8),
+            groupKey: groupId,
+            setAsGroupSummary: true,
+          ),
+          iOS: DarwinNotificationDetails(
+            threadIdentifier: threadIdentifier,
+          ),
+        ),
+      );
+
+      _devLog(
+        'Created group summary notification $summaryId for $petName: $body',
+      );
+    } on Exception catch (e, stackTrace) {
+      _devLog('Failed to show group summary for pet $petId: $e');
+      _devLog('Stack trace: $stackTrace');
+      // Don't rethrow - summary failure shouldn't block main functionality
+    }
+  }
+
+  /// Cancel the group summary notification for a pet.
+  ///
+  /// Call this when all individual notifications for a pet have been canceled,
+  /// or when the pet is removed.
+  ///
+  /// [petId] - Pet identifier used to generate the summary notification ID
+  ///
+  /// Throws [StateError] if plugin is not initialized.
+  Future<void> cancelGroupSummary(String petId) async {
+    if (!_isInitialized || _plugin == null) {
+      throw StateError(
+        'ReminderPlugin must be initialized before canceling notifications',
+      );
+    }
+
+    try {
+      // Generate same deterministic ID used in showGroupSummary
+      final summaryId = 'summary_$petId'.hashCode.abs() & 0x7FFFFFFF;
+
+      await _plugin!.cancel(summaryId);
+      _devLog('Canceled group summary notification $summaryId for pet $petId');
+    } on Exception catch (e, stackTrace) {
+      _devLog('Failed to cancel group summary for pet $petId: $e');
+      _devLog('Stack trace: $stackTrace');
+      // Don't rethrow - summary cancellation failure is non-critical
+    }
+  }
+
+  /// Check if the app can schedule exact notifications (Android 12+).
+  ///
+  /// On Android 12+, the SCHEDULE_EXACT_ALARM permission is required for
+  /// medical-grade timing accuracy. This permission prevents notification
+  /// delays of 10-15 minutes that can occur with inexact alarms due to
+  /// battery optimization.
+  ///
+  /// Returns:
+  /// - `true` if exact alarms can be scheduled
+  /// - `false` if permission is denied (should fallback to inexact alarms)
+  /// - `true` on iOS (not applicable)
+  /// - `true` on Android <12 (permission auto-granted)
+  ///
+  /// If denied, app should:
+  /// 1. Use inexact alarms as fallback
+  /// 2. Show warning in notification settings UI
+  /// 3. Provide button to open system settings for permission grant
+  Future<bool> canScheduleExactNotifications() async {
+    // iOS always returns true (not applicable)
+    if (!Platform.isAndroid) {
+      return true;
+    }
+
+    try {
+      // Check SCHEDULE_EXACT_ALARM permission status
+      final status = await Permission.scheduleExactAlarm.status;
+
+      final canSchedule = status.isGranted;
+
+      _devLog(
+        'Exact alarm permission status: ${status.name}, '
+        'can schedule: $canSchedule',
+      );
+
+      return canSchedule;
+    } on Exception catch (e, stackTrace) {
+      _devLog('Failed to check exact alarm permission: $e');
+      _devLog('Stack trace: $stackTrace');
+      // Default to true to avoid blocking functionality
+      // Actual scheduling will fail gracefully if permission denied
+      return true;
     }
   }
 

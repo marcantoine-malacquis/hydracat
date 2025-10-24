@@ -43,4 +43,6 @@ I already did something similar in @onboarding_code_review_report.md . I don't n
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
 
-  
+7. I changed my mind regarding lock screen privacy implementation and I don't like the idea of having two different notification content depending on sensitive information or not. It should be the same kind of notification for all users. Let's go with the generic option then and leave out sensitive informations. Please update all relevant code to take this change of direction in consideration. Please tell me if this will simplify the notification system or not ?
+
+For every other questions, I agree with your recommendations

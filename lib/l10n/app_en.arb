@@ -497,5 +497,81 @@
         "type": "int"
       }
     }
+  },
+
+  "@_NOTIFICATIONS": {},
+  "notificationMedicationTitle": "Medication reminder",
+  "@notificationMedicationTitle": {
+    "description": "Title for medication reminder notifications"
+  },
+  "notificationMedicationBody": "Time for {petName}'s medication",
+  "@notificationMedicationBody": {
+    "description": "Body text for medication reminder notifications",
+    "placeholders": {
+      "petName": {
+        "type": "String",
+        "example": "Fluffy"
+      }
+    }
+  },
+  "notificationFluidTitle": "Fluid therapy reminder",
+  "@notificationFluidTitle": {
+    "description": "Title for fluid therapy reminder notifications"
+  },
+  "notificationFluidBody": "Time for {petName}'s fluid therapy",
+  "@notificationFluidBody": {
+    "description": "Body text for fluid therapy reminder notifications",
+    "placeholders": {
+      "petName": {
+        "type": "String",
+        "example": "Fluffy"
+      }
+    }
+  },
+  "notificationFollowupTitle": "Treatment reminder",
+  "@notificationFollowupTitle": {
+    "description": "Title for follow-up reminder notifications"
+  },
+  "notificationFollowupBody": "{petName} may still need their treatment",
+  "@notificationFollowupBody": {
+    "description": "Body text for follow-up reminder notifications",
+    "placeholders": {
+      "petName": {
+        "type": "String",
+        "example": "Fluffy"
+      }
+    }
+  },
+  "notificationSnoozeTitle": "Treatment reminder (snoozed)",
+  "@notificationSnoozeTitle": {
+    "description": "Title for snoozed reminder notifications"
+  },
+  "notificationSnoozeBody": "Time for {petName}'s treatment",
+  "@notificationSnoozeBody": {
+    "description": "Body text for snoozed reminder notifications",
+    "placeholders": {
+      "petName": {
+        "type": "String",
+        "example": "Fluffy"
+      }
+    }
+  },
+
+  "@_NOTIFICATION_GROUPS": {},
+  "notificationGroupSummaryTitle": "{petName}'s Reminders",
+  "@notificationGroupSummaryTitle": {
+    "description": "Title for notification group summary (Android/iOS grouping)"
+  },
+  "notificationGroupSummaryMedicationOnly": "{count, plural, =1{1 medication reminder} other{{count} medication reminders}}",
+  "@notificationGroupSummaryMedicationOnly": {
+    "description": "Group summary body when only medication reminders exist"
+  },
+  "notificationGroupSummaryFluidOnly": "{count, plural, =1{1 fluid therapy reminder} other{{count} fluid therapy reminders}}",
+  "@notificationGroupSummaryFluidOnly": {
+    "description": "Group summary body when only fluid therapy reminders exist"
+  },
+  "notificationGroupSummaryBoth": "{medCount, plural, =1{1 medication} other{{medCount} medications}}, {fluidCount, plural, =1{1 fluid therapy} other{{fluidCount} fluid therapies}}",
+  "@notificationGroupSummaryBoth": {
+    "description": "Group summary body when both medication and fluid reminders exist"
   }
 }

@@ -7,6 +7,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hydracat/features/auth/models/app_user.dart';
 import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/features/auth/services/auth_service.dart';
+import 'package:hydracat/features/notifications/services/device_token_service.dart';
+import 'package:hydracat/features/notifications/services/notification_settings_service.dart';
 import 'package:hydracat/features/onboarding/services/onboarding_service.dart';
 import 'package:hydracat/features/profile/services/pet_service.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
@@ -192,9 +194,29 @@ class AuthNotifier extends StateNotifier<AuthState> {
         try {
           final completeUser = await _loadCompleteUserData(user);
           state = AuthStateAuthenticated(user: completeUser);
+
+          // Register device token for authenticated user
+          // Handles both explicit sign-in and cached credential restoration
+          try {
+            await DeviceTokenService().registerDevice(completeUser.id);
+          } on Exception catch (e) {
+            // Log error but don't block authentication
+            if (kDebugMode) {
+              debugPrint('Failed to register device token: $e');
+            }
+          }
         } on Exception {
           // If Firestore fetch fails, use Firebase auth data only
           state = AuthStateAuthenticated(user: user);
+
+          // Still try to register device even with incomplete user data
+          try {
+            await DeviceTokenService().registerDevice(user.id);
+          } on Exception catch (e) {
+            if (kDebugMode) {
+              debugPrint('Failed to register device token: $e');
+            }
+          }
         }
       } else {
         // Only set to unauthenticated if we don't have a recent error
@@ -251,6 +273,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     );
 
     if (result is AuthSuccess) {
+      // Register device token (non-blocking)
+      if (result.user != null) {
+        try {
+          await DeviceTokenService().registerDevice(result.user!.id);
+        } on Exception catch (e) {
+          // Log error but don't block sign-in
+          if (kDebugMode) {
+            debugPrint('Failed to register device token: $e');
+          }
+        }
+      }
       // State will be updated automatically by _listenToAuthChanges
       // when Firebase auth state changes
     } else if (result is AuthFailure) {
@@ -276,6 +309,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Signs out the currently authenticated user and updates state.
   Future<void> signOut() async {
     state = const AuthStateLoading();
+
+    // Unregister device token (non-blocking)
+    try {
+      await DeviceTokenService().unregisterDevice();
+    } on Exception catch (e) {
+      // Log error but don't block sign-out
+      if (kDebugMode) {
+        debugPrint('Failed to unregister device token: $e');
+      }
+    }
 
     // Clear cache on sign out
     _clearCache();
@@ -326,6 +369,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final result = await _authService.signInWithGoogle();
 
     if (result is AuthSuccess) {
+      // Register device token (non-blocking)
+      if (result.user != null) {
+        try {
+          await DeviceTokenService().registerDevice(result.user!.id);
+        } on Exception catch (e) {
+          // Log error but don't block sign-in
+          if (kDebugMode) {
+            debugPrint('Failed to register device token: $e');
+          }
+        }
+      }
       // State will be updated automatically by _listenToAuthChanges
       // when Firebase auth state changes
     } else if (result is AuthFailure) {
@@ -348,6 +402,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final result = await _authService.signInWithApple();
 
     if (result is AuthSuccess) {
+      // Register device token (non-blocking)
+      if (result.user != null) {
+        try {
+          await DeviceTokenService().registerDevice(result.user!.id);
+        } on Exception catch (e) {
+          // Log error but don't block sign-in
+          if (kDebugMode) {
+            debugPrint('Failed to register device token: $e');
+          }
+        }
+      }
       // State will be updated automatically by _listenToAuthChanges
       // when Firebase auth state changes
     } else if (result is AuthFailure) {
@@ -745,6 +810,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
           );
         }
       }
+
+      // Clear notification settings from SharedPreferences
+      if (kDebugMode) {
+        debugPrint('Debug: Clearing notification settings for $userId');
+      }
+      await NotificationSettingsService.clearSettings(userId);
     } on Exception catch (e) {
       if (kDebugMode) {
         debugPrint('Debug: Error deleting user data from Firestore: $e');
