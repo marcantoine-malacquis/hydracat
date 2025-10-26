@@ -837,4 +837,79 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get notificationScheduleNotFound =>
       'Reminder was for a treatment that\'s no longer scheduled. You can still log other treatments.';
+
+  @override
+  String get notificationStatusEnabledTooltip => 'Notifications enabled';
+
+  @override
+  String get notificationStatusDisabledTooltip =>
+      'Notifications disabled - tap to enable';
+
+  @override
+  String get notificationStatusPermanentTooltip =>
+      'Notifications disabled - tap to open Settings';
+
+  @override
+  String get notificationPermissionDialogTitle => 'Enable Notifications';
+
+  @override
+  String notificationPermissionMessageNotDetermined(String petName) {
+    return 'Never miss critical treatment times for $petName. Enable notifications to receive timely reminders for medications and fluid therapy.';
+  }
+
+  @override
+  String notificationPermissionMessageDenied(String petName) {
+    return 'Notifications are currently disabled. Enable them to receive treatment reminders for $petName.';
+  }
+
+  @override
+  String notificationPermissionMessagePermanent(String petName) {
+    return 'To receive treatment reminders for $petName, you\'ll need to enable notifications in your device Settings.';
+  }
+
+  @override
+  String get notificationPermissionMessageGeneric =>
+      'Enable notifications to receive treatment reminders.';
+
+  @override
+  String get notificationPermissionAllowButton => 'Allow Notifications';
+
+  @override
+  String get notificationPermissionOpenSettingsButton => 'Open Settings';
+
+  @override
+  String get notificationPermissionMaybeLaterButton => 'Maybe Later';
+
+  @override
+  String get notificationPermissionGrantedSuccess =>
+      'Notifications enabled! You\'ll receive treatment reminders.';
+
+  @override
+  String get notificationPermissionDeniedFeedback =>
+      'Notifications remain disabled. You can enable them anytime in Settings.';
+
+  @override
+  String get notificationSettingsTitle => 'Notification Settings';
+
+  @override
+  String get notificationSettingsPermissionGranted =>
+      'Notification permission granted';
+
+  @override
+  String get notificationSettingsPermissionDenied =>
+      'Notification permission denied';
+
+  @override
+  String get notificationSettingsPermissionBannerMessage =>
+      'Notifications are disabled in your device settings. Enable them to receive treatment reminders.';
+
+  @override
+  String get notificationSettingsOpenSettingsButton => 'Open Settings';
+
+  @override
+  String get notificationSettingsEnableToggleLabel => 'Enable Notifications';
+
+  @override
+  String get notificationSettingsFuturePlaceholder =>
+      'More notification preferences (weekly summaries, snooze, end-of-day reminders) will be available in a future update.';
 }

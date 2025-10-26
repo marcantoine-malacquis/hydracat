@@ -116,6 +116,17 @@ class AnalyticsEvents {
   // Notification events
   /// Reminder tapped event name
   static const String reminderTapped = 'reminder_tapped';
+
+  /// Notification icon tapped event name
+  static const String notificationIconTapped = 'notification_icon_tapped';
+
+  /// Notification permission requested event name
+  static const String notificationPermissionRequested =
+      'notification_permission_requested';
+
+  /// Notification permission dialog shown event name
+  static const String notificationPermissionDialogShown =
+      'notification_permission_dialog_shown';
 }
 
 /// Analytics parameters
@@ -747,6 +758,87 @@ class AnalyticsService {
         'kind': kind,
         'schedule_id': scheduleId,
         'result': result,
+      },
+    );
+  }
+
+  /// Track notification icon tap in app bar.
+  ///
+  /// Tracks when user taps the bell icon in the home screen app bar.
+  /// Helps understand permission request funnel and settings navigation.
+  ///
+  /// Permission status values:
+  /// - 'enabled': Both permission granted and app setting enabled
+  /// - 'denied': Permission denied (can request again)
+  /// - 'permanentlyDenied': Permission permanently denied (Android only)
+  /// - 'notDetermined': Permission not yet requested
+  /// - 'setting_disabled': Permission granted but app setting disabled
+  ///
+  /// Action taken values:
+  /// - 'navigated_to_app_settings': Navigated to notification settings screen
+  /// - 'opened_permission_dialog': Showed permission request dialog
+  /// - 'dismissed': User dismissed without action (if applicable)
+  Future<void> trackNotificationIconTapped({
+    required String permissionStatus,
+    required String actionTaken,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.notificationIconTapped,
+      parameters: {
+        'permission_status': permissionStatus,
+        'action_taken': actionTaken,
+      },
+    );
+  }
+
+  /// Track notification permission request and result.
+  ///
+  /// Tracks when app requests notification permission from the system
+  /// and captures the user's response. Critical for understanding
+  /// permission grant/denial rates.
+  ///
+  /// Parameters:
+  /// - [previousStatus]: Permission status before request
+  /// - [newStatus]: Permission status after request
+  /// - [granted]: true if permission was granted, false otherwise
+  Future<void> trackNotificationPermissionRequested({
+    required String previousStatus,
+    required String newStatus,
+    required bool granted,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.notificationPermissionRequested,
+      parameters: {
+        'previous_status': previousStatus,
+        'new_status': newStatus,
+        'granted': granted,
+      },
+    );
+  }
+
+  /// Track notification permission dialog display.
+  ///
+  /// Tracks when the educational permission dialog is shown to the user.
+  /// Helps understand drop-off in permission request funnel.
+  ///
+  /// Parameters:
+  /// - [reason]: Why notifications are disabled (permission/setting/both)
+  /// - [permissionStatus]: Current platform permission status
+  Future<void> trackNotificationPermissionDialogShown({
+    required String reason,
+    required String permissionStatus,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.notificationPermissionDialogShown,
+      parameters: {
+        'reason': reason,
+        'permission_status': permissionStatus,
       },
     );
   }

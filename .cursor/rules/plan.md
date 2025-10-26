@@ -13,7 +13,7 @@ Please ultrathink to come up with the most appropriate plan, following app devel
 Please create a detailed plan of how you will achieve and implement this step. Don't hesitate to let me know if you think of any meaningful and realistic improvements I might have overlooked.
 Before you create the plan, please ask any and all questions you have in order to provide the most robust solution to handle edge cases and/or additional context that you might need to feel confident in proceeding with the implementation. When you do use clarifying questions, please do not use bullet points but rather letters within each numbered question if number requires bullet points. Before you ask me questions, please already have a look at all the existing files you would need, as well as previously implemented steps, to already have the context, use existing systems, ensure coherence and in case you already find the answer to your questions. Suggest for each question your recommended solution. Keep in mind that I want to have the best suited solution for my project while being in line with industry standards and app development best practices as much as possible. Please follow Firebase and Flutter best practices and use built-in solutions whenever possible instead of more complex custom/hacky workarounds. Also, keep in mind the CRUD rules file (.cursor/rules/firebase_CRUDrules.md) to make sure to keep firebase costs to a minimum. Regarding database, I don't need to worry about backward compatibility since I will regularily delete the database anyway for testing.
 
-Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them. I will test only once we fixed the linting issues.
+Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them (including the non critical ones). I will test only once we fixed the linting issues.
 
 Please update and add only the important informations to remember about what we implemented in this step for future reference in 
 
@@ -44,21 +44,37 @@ Please update logging_plan.md to take into consideration what we just implemente
 
 
 
-1. Option (a) - auto-select the treatment from the
-  notification payload.
-2. Option (a) - redirect to login with a contextual
-  message, but discard the payload.
-3. Option (b) - open the logging screen normally with a
-  brief, non-intrusive toast like "Reminder was for a treatment that's no longer
-   scheduled. You can still log other treatments."
-4. Option (a) - wait for both auth and onboarding to
-  complete. This ensures all necessary providers (profileProvider, schedules,
-  etc.) are loaded.
-5. Success vs failure outcomes (e.g., reminder_tap_success,
-  reminder_tap_schedule_not_found, reminder_tap_auth_required)
-6. Ignore petId validation entirely and just use the current primary pet. Just a quick question: why should I expect the need to refactor the deep-linking flow in the future ?
-7. Same behavior for foreground, background, and terminated states. Always
-  navigate to /home then show the overlay, regardless of current screen.
-8. Option (a) - full validation with graceful error
-  handling.
-Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them. I will test only once we fixed the linting issues.
+1. a) Option A - Show an empathetic dialog explaining the
+  medical importance ("Never miss critical treatment times for [PetName]"), with
+   a clear "Open Settings" button.
+b) Option B - Navigate to notification settings screen
+  (which you'll build in Phase 5, Step 5.3)
+2. Place it alongside the ConnectionStatusWidget.
+3. a) yes, sorry I meant a bell icon. Option A - Icons.notifications and
+  Icons.notifications_off. These are universally recognized, accessible, and
+  match platform conventions.
+b) Yes. Use green/primary color when granted, grey/warning
+  color when denied. 
+4. a) Show the icon in ALL states with different visuals:
+  - granted: Normal bell icon (green/primary color)
+  - denied/notDetermined: Barred bell icon (grey/warning color) - tappable to
+  request/explain
+  - permanentlyDenied (Android only): Barred bell with more urgent color
+  (orange) - tappable to open Settings
+b) Use isNotificationEnabledProvider (combined state). If
+  user has permission but disabled notifications in-app settings, show the
+  barred icon. This gives users one clear place to understand notification
+  status.
+5. a) Yes. Show context-appropriate messages:
+  - Permission denied → "Enable notifications in Settings to receive treatment
+  reminders"
+  - Setting disabled → "Notifications are disabled in app settings" with button
+  to settings screen
+  - Both → "Enable notifications in Settings, then turn them on in app settings"
+6. a) just create a placeholder/navigation for future
+   implementation
+7. Yes. Track notification_icon_tapped with parameters:
+  permission_status, action_taken (opened_settings,
+  navigated_to_settings_screen, dismissed). This helps understand friction in
+  permission flow.
+Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them (including the non critical ones). I will test only once we fixed the linting issues.

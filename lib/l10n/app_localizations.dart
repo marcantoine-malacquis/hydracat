@@ -1515,6 +1515,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reminder was for a treatment that\'s no longer scheduled. You can still log other treatments.'**
   String get notificationScheduleNotFound;
+
+  /// Tooltip for bell icon when notifications are enabled
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications enabled'**
+  String get notificationStatusEnabledTooltip;
+
+  /// Tooltip for bell icon when notifications are disabled (not permanent)
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications disabled - tap to enable'**
+  String get notificationStatusDisabledTooltip;
+
+  /// Tooltip for bell icon when notification permission is permanently denied
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications disabled - tap to open Settings'**
+  String get notificationStatusPermanentTooltip;
+
+  /// Title for notification permission dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Notifications'**
+  String get notificationPermissionDialogTitle;
+
+  /// Dialog message when permission has not been requested yet
+  ///
+  /// In en, this message translates to:
+  /// **'Never miss critical treatment times for {petName}. Enable notifications to receive timely reminders for medications and fluid therapy.'**
+  String notificationPermissionMessageNotDetermined(String petName);
+
+  /// Dialog message when permission was denied but can be requested again
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are currently disabled. Enable them to receive treatment reminders for {petName}.'**
+  String notificationPermissionMessageDenied(String petName);
+
+  /// Dialog message when permission is permanently denied (must use Settings)
+  ///
+  /// In en, this message translates to:
+  /// **'To receive treatment reminders for {petName}, you\'ll need to enable notifications in your device Settings.'**
+  String notificationPermissionMessagePermanent(String petName);
+
+  /// Fallback dialog message when pet name is not available
+  ///
+  /// In en, this message translates to:
+  /// **'Enable notifications to receive treatment reminders.'**
+  String get notificationPermissionMessageGeneric;
+
+  /// Button text to trigger system permission request
+  ///
+  /// In en, this message translates to:
+  /// **'Allow Notifications'**
+  String get notificationPermissionAllowButton;
+
+  /// Button text to open system Settings app
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get notificationPermissionOpenSettingsButton;
+
+  /// Button text to dismiss permission dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Maybe Later'**
+  String get notificationPermissionMaybeLaterButton;
+
+  /// Success message shown after user grants notification permission
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications enabled! You\'ll receive treatment reminders.'**
+  String get notificationPermissionGrantedSuccess;
+
+  /// Gentle feedback message when user denies notification permission
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications remain disabled. You can enable them anytime in Settings.'**
+  String get notificationPermissionDeniedFeedback;
+
+  /// Title for notification settings screen
+  ///
+  /// In en, this message translates to:
+  /// **'Notification Settings'**
+  String get notificationSettingsTitle;
+
+  /// Status card text when permission is granted
+  ///
+  /// In en, this message translates to:
+  /// **'Notification permission granted'**
+  String get notificationSettingsPermissionGranted;
+
+  /// Status card text when permission is denied
+  ///
+  /// In en, this message translates to:
+  /// **'Notification permission denied'**
+  String get notificationSettingsPermissionDenied;
+
+  /// Banner message explaining how to enable notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are disabled in your device settings. Enable them to receive treatment reminders.'**
+  String get notificationSettingsPermissionBannerMessage;
+
+  /// Button to open system settings from notification settings screen
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get notificationSettingsOpenSettingsButton;
+
+  /// Label for master notification enable toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Notifications'**
+  String get notificationSettingsEnableToggleLabel;
+
+  /// Placeholder text for future notification preference features
+  ///
+  /// In en, this message translates to:
+  /// **'More notification preferences (weekly summaries, snooze, end-of-day reminders) will be available in a future update.'**
+  String get notificationSettingsFuturePlaceholder;
 }
 
 class _AppLocalizationsDelegate

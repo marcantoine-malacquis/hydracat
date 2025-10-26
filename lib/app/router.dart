@@ -21,6 +21,7 @@ import 'package:hydracat/features/profile/screens/fluid_schedule_screen.dart';
 import 'package:hydracat/features/profile/screens/medication_schedule_screen.dart';
 import 'package:hydracat/features/profile/screens/profile_screen.dart';
 import 'package:hydracat/features/progress/screens/progress_screen.dart';
+import 'package:hydracat/features/settings/screens/notification_settings_screen.dart';
 import 'package:hydracat/features/settings/screens/settings_screen.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/shared/widgets/navigation/app_page_transitions.dart';
@@ -202,6 +203,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                       child: const SettingsScreen(),
                       key: state.pageKey,
                     ),
+                routes: [
+                  GoRoute(
+                    path: 'notifications',
+                    name: 'notification-settings',
+                    pageBuilder: (context, state) =>
+                        AppPageTransitions.bidirectionalSlide(
+                          child: const NotificationSettingsScreen(),
+                          key: state.pageKey,
+                        ),
+                  ),
+                ],
               ),
               GoRoute(
                 path: 'ckd',

@@ -583,5 +583,109 @@
   "notificationScheduleNotFound": "Reminder was for a treatment that's no longer scheduled. You can still log other treatments.",
   "@notificationScheduleNotFound": {
     "description": "Message shown when notification refers to a deleted schedule"
+  },
+
+  "@_NOTIFICATION_STATUS_WIDGET": {},
+  "notificationStatusEnabledTooltip": "Notifications enabled",
+  "@notificationStatusEnabledTooltip": {
+    "description": "Tooltip for bell icon when notifications are enabled"
+  },
+  "notificationStatusDisabledTooltip": "Notifications disabled - tap to enable",
+  "@notificationStatusDisabledTooltip": {
+    "description": "Tooltip for bell icon when notifications are disabled (not permanent)"
+  },
+  "notificationStatusPermanentTooltip": "Notifications disabled - tap to open Settings",
+  "@notificationStatusPermanentTooltip": {
+    "description": "Tooltip for bell icon when notification permission is permanently denied"
+  },
+
+  "@_NOTIFICATION_PERMISSION_DIALOG": {},
+  "notificationPermissionDialogTitle": "Enable Notifications",
+  "@notificationPermissionDialogTitle": {
+    "description": "Title for notification permission dialog"
+  },
+  "notificationPermissionMessageNotDetermined": "Never miss critical treatment times for {petName}. Enable notifications to receive timely reminders for medications and fluid therapy.",
+  "@notificationPermissionMessageNotDetermined": {
+    "description": "Dialog message when permission has not been requested yet",
+    "placeholders": {
+      "petName": {
+        "type": "String",
+        "example": "Fluffy"
+      }
+    }
+  },
+  "notificationPermissionMessageDenied": "Notifications are currently disabled. Enable them to receive treatment reminders for {petName}.",
+  "@notificationPermissionMessageDenied": {
+    "description": "Dialog message when permission was denied but can be requested again",
+    "placeholders": {
+      "petName": {
+        "type": "String",
+        "example": "Fluffy"
+      }
+    }
+  },
+  "notificationPermissionMessagePermanent": "To receive treatment reminders for {petName}, you'll need to enable notifications in your device Settings.",
+  "@notificationPermissionMessagePermanent": {
+    "description": "Dialog message when permission is permanently denied (must use Settings)",
+    "placeholders": {
+      "petName": {
+        "type": "String",
+        "example": "Fluffy"
+      }
+    }
+  },
+  "notificationPermissionMessageGeneric": "Enable notifications to receive treatment reminders.",
+  "@notificationPermissionMessageGeneric": {
+    "description": "Fallback dialog message when pet name is not available"
+  },
+  "notificationPermissionAllowButton": "Allow Notifications",
+  "@notificationPermissionAllowButton": {
+    "description": "Button text to trigger system permission request"
+  },
+  "notificationPermissionOpenSettingsButton": "Open Settings",
+  "@notificationPermissionOpenSettingsButton": {
+    "description": "Button text to open system Settings app"
+  },
+  "notificationPermissionMaybeLaterButton": "Maybe Later",
+  "@notificationPermissionMaybeLaterButton": {
+    "description": "Button text to dismiss permission dialog"
+  },
+  "notificationPermissionGrantedSuccess": "Notifications enabled! You'll receive treatment reminders.",
+  "@notificationPermissionGrantedSuccess": {
+    "description": "Success message shown after user grants notification permission"
+  },
+  "notificationPermissionDeniedFeedback": "Notifications remain disabled. You can enable them anytime in Settings.",
+  "@notificationPermissionDeniedFeedback": {
+    "description": "Gentle feedback message when user denies notification permission"
+  },
+
+  "@_NOTIFICATION_SETTINGS_SCREEN": {},
+  "notificationSettingsTitle": "Notification Settings",
+  "@notificationSettingsTitle": {
+    "description": "Title for notification settings screen"
+  },
+  "notificationSettingsPermissionGranted": "Notification permission granted",
+  "@notificationSettingsPermissionGranted": {
+    "description": "Status card text when permission is granted"
+  },
+  "notificationSettingsPermissionDenied": "Notification permission denied",
+  "@notificationSettingsPermissionDenied": {
+    "description": "Status card text when permission is denied"
+  },
+  "notificationSettingsPermissionBannerMessage": "Notifications are disabled in your device settings. Enable them to receive treatment reminders.",
+  "@notificationSettingsPermissionBannerMessage": {
+    "description": "Banner message explaining how to enable notifications"
+  },
+  "notificationSettingsOpenSettingsButton": "Open Settings",
+  "@notificationSettingsOpenSettingsButton": {
+    "description": "Button to open system settings from notification settings screen"
+  },
+  "notificationSettingsEnableToggleLabel": "Enable Notifications",
+  "@notificationSettingsEnableToggleLabel": {
+    "description": "Label for master notification enable toggle"
+  },
+  "notificationSettingsFuturePlaceholder": "More notification preferences (weekly summaries, snooze, end-of-day reminders) will be available in a future update.",
+  "@notificationSettingsFuturePlaceholder": {
+    "description": "Placeholder text for future notification preference features"
   }
 }

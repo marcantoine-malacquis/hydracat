@@ -6,6 +6,7 @@ import 'package:hydracat/features/home/models/pending_fluid_treatment.dart';
 import 'package:hydracat/features/home/models/pending_treatment.dart';
 import 'package:hydracat/features/home/widgets/widgets.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
+import 'package:hydracat/features/notifications/widgets/notification_status_widget.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/dashboard_provider.dart';
@@ -31,6 +32,8 @@ class HomeScreen extends ConsumerWidget {
           title: const Text('HydraCat'),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           actions: const [
+            NotificationStatusWidget(),
+            SizedBox(width: 4),
             ConnectionStatusWidget(),
           ],
         ),

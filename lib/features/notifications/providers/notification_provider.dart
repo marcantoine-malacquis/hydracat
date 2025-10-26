@@ -315,6 +315,69 @@ class NotificationPermissionNotifier
   Future<void> refresh() async {
     await checkPermissionStatus();
   }
+
+  /// Requests notification permission from the system.
+  ///
+  /// Shows platform-specific permission dialog:
+  /// - iOS: Firebase Messaging permission dialog with alert, sound, and badge
+  /// - Android 13+: System notification permission dialog
+  ///
+  /// Returns the new permission status after the request completes.
+  /// Updates the notifier state with the new status.
+  ///
+  /// Throws exceptions if the request fails. Caller should handle errors.
+  ///
+  /// Example usage:
+  /// ```dart
+  /// try {
+  ///   final status = await ref
+  ///       .read(notificationPermissionStatusProvider.notifier)
+  ///       .requestPermission();
+  ///   if (status == NotificationPermissionStatus.granted) {
+  ///     // Permission granted!
+  ///   }
+  /// } catch (e) {
+  ///   // Handle error
+  /// }
+  /// ```
+  Future<NotificationPermissionStatus> requestPermission() async {
+    try {
+      if (Platform.isIOS) {
+        // iOS: Request permission via Firebase Messaging
+        final settings = await FirebaseMessaging.instance.requestPermission();
+
+        final status = switch (settings.authorizationStatus) {
+          AuthorizationStatus.authorized ||
+          AuthorizationStatus.provisional =>
+            NotificationPermissionStatus.granted,
+          AuthorizationStatus.denied => NotificationPermissionStatus.denied,
+          _ => NotificationPermissionStatus.notDetermined,
+        };
+
+        state = AsyncValue.data(status);
+        return status;
+      } else {
+        // Android: Request permission via permission_handler
+        const permission = Permission.notification;
+        final result = await permission.request();
+
+        final status = switch (result) {
+          PermissionStatus.granted || PermissionStatus.limited =>
+            NotificationPermissionStatus.granted,
+          PermissionStatus.permanentlyDenied =>
+            NotificationPermissionStatus.permanentlyDenied,
+          PermissionStatus.denied => NotificationPermissionStatus.denied,
+          _ => NotificationPermissionStatus.notDetermined,
+        };
+
+        state = AsyncValue.data(status);
+        return status;
+      }
+    } on Exception catch (e, stackTrace) {
+      state = AsyncValue.error(e, stackTrace);
+      rethrow;
+    }
+  }
 }
 
 /// Provider for notification permission status.

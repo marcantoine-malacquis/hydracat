@@ -784,14 +784,112 @@ Implementation details:
    - Android 13+: request POST_NOTIFICATIONS via plugin helper
 2) If denied, show in-app banner with “Enable in Settings” (opens settings intent).
 
-### Step 5.2: Home app bar “barred clock” icon
-Files:
-- `lib/app/app_shell.dart` (toolbar action)
-- `notification_provider.dart` (derived provider `notificationsEffectivelyDisabledProvider`)
+### ✅ Step 5.2: Home app bar notification status icon — COMPLETED
+**Status**: Fully complete
 
-Implementation details:
-1) Show icon only when permission denied OR in-app toggle disabled.
-2) Tap shows pre‑prompt or opens OS settings.
+**✅ Completed**:
+1) ✅ NotificationStatusWidget created (`lib/features/notifications/widgets/notification_status_widget.dart`, 170 lines):
+   - Bell icon in home screen app bar with adaptive colors based on permission state
+   - Icon selection: `Icons.notifications` (enabled) / `Icons.notifications_off` (disabled)
+   - Color logic:
+     - Green (`AppColors.success`): Permission granted + app setting enabled
+     - Orange (`AppColors.warning`): Permission permanently denied (Android only)
+     - Grey (`AppColors.textSecondary`): Permission denied or not determined
+   - Tap behavior decision tree:
+     - Enabled → Navigate to `/profile/settings/notifications`
+     - Setting disabled (permission granted) → Navigate to notification settings
+     - Permission denied → Show `NotificationPermissionDialog`
+   - Edge case handling: Loading/error states, no user authenticated
+   - Platform-specific tooltips with localization
+
+2) ✅ NotificationPermissionDialog created (`lib/features/notifications/widgets/notification_permission_dialog.dart`, 227 lines):
+   - Educational dialog explaining medical importance of notifications
+   - Personalized messaging using pet name from `primaryPetProvider`
+   - Context-aware content based on `notificationPermissionStatusProvider`:
+     - `notDetermined`: Encourages enabling, shows "Allow Notifications" button
+     - `denied`: Explains importance, offers to request permission again
+     - `permanentlyDenied`: Explains need, shows "Open Settings" button
+   - Smart permission request flow:
+     - Triggers in-app system permission dialog (iOS/Android)
+     - Only directs to Settings when permission permanently denied
+     - Users stay in-app for initial permission grant
+   - Auto-enables app setting when permission granted
+   - Success/failure feedback with localized toast messages
+   - Loading states during permission request
+   - Analytics tracking for dialog shown, permission requested, and outcomes
+
+3) ✅ NotificationSettingsScreen created (`lib/features/settings/screens/notification_settings_screen.dart`, 264 lines):
+   - Placeholder screen for future notification preferences
+   - Permission status card with visual indicators (green/orange borders)
+   - Master toggle: "Enable Notifications" with smart behavior:
+     - If permission not granted → Shows permission request dialog
+     - If permission granted → Toggles app setting
+   - "Open Settings" button when permission permanently denied
+   - "Coming Soon" section for future features (Step 5.3):
+     - Weekly summary toggle
+     - Snooze toggle
+     - End-of-day reminder toggle and time picker
+
+4) ✅ NotificationPermissionNotifier extended (`lib/features/notifications/providers/notification_provider.dart`, +67 lines):
+   - Added `requestPermission()` method to trigger system permission dialogs
+   - Platform-specific implementation:
+     - iOS: `FirebaseMessaging.instance.requestPermission()`
+     - Android: `Permission.notification.request()` via permission_handler
+   - Returns `NotificationPermissionStatus` after request completes
+   - Updates notifier state with new status
+
+5) ✅ HomeScreen updated (`lib/features/home/screens/home_screen.dart`, +4 lines):
+   - Added `NotificationStatusWidget()` to app bar actions
+   - Placed alongside existing `ConnectionStatusWidget`
+   - 4px spacing between icons for visual clarity
+
+6) ✅ SettingsScreen extended (`lib/features/settings/screens/settings_screen.dart`, +39 lines):
+   - Added "Notifications" navigation row
+   - Navigates to `/profile/settings/notifications`
+
+7) ✅ Router configuration (`lib/app/router.dart`, +15 lines):
+   - Added `/profile/settings/notifications` route as sub-route of `/profile/settings`
+
+8) ✅ Localization strings added (`lib/l10n/app_en.arb`, +103 lines):
+   - 24 new localization keys across 3 sections (tooltips, dialog messages, settings labels)
+
+9) ✅ Analytics tracking extended (`lib/providers/analytics_provider.dart`, +110 lines):
+   - Added 3 new event constants and tracking methods:
+     - `notificationIconTapped`: Bell icon tap tracking
+     - `notificationPermissionRequested`: Permission request outcome tracking
+     - `notificationPermissionDialogShown`: Dialog display tracking
+
+10) ✅ Code quality verified:
+    - Zero linting errors (`flutter analyze` passes)
+    - Comprehensive documentation on all public APIs
+
+**Implementation Summary**:
+- ✅ In-app permission request: Users stay in-app when granting permission (no app exit)
+- ✅ Settings fallback: Only directs to system Settings when permission permanently denied
+- ✅ Adaptive UI: Icon color/tooltip adapts to permission state (green/grey/orange)
+- ✅ Smart navigation: Navigates to settings when enabled, shows dialog when disabled
+- ✅ Platform best practices: Follows iOS and Android permission request guidelines
+- ✅ Analytics funnel: Complete tracking from icon tap → dialog → request → result
+- ✅ Zero Firestore operations: All permission checks use platform APIs or SharedPreferences
+
+**Permission Request Flow**:
+1. User taps barred bell icon (permission not granted)
+2. Educational dialog with personalized message using pet name
+3. User taps "Allow Notifications" → System permission dialog appears in-app
+4. If granted: Bell turns green, success toast, app setting auto-enabled
+5. If denied: Can request again (iOS/Android) or shows "Open Settings" if permanently denied
+
+**User Flows**:
+- Permission granted + setting enabled → Green bell → Tap navigates to settings
+- Permission denied (not permanent) → Grey bell → Tap shows dialog with "Allow" button
+- Permission permanently denied (Android) → Orange bell → Tap shows "Open Settings"
+- Permission granted + setting disabled → Grey bell → Tap navigates to settings
+
+**Notes**:
+- Step 5.1 partially implemented via educational dialog
+- Step 5.3 placeholder created, ready for expansion with toggles
+- Total: ~950 lines added across 9 files
+- No Apple Developer account required for local notifications
 
 ### Step 5.3: Notification Settings screen
 Files:

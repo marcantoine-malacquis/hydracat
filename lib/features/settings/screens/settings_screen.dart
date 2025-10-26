@@ -120,6 +120,42 @@ class SettingsScreen extends ConsumerWidget {
 
           const SizedBox(height: AppSpacing.lg),
 
+          // Notifications section
+          InkWell(
+            onTap: () => context.push('/profile/settings/notifications'),
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.notifications,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  const Expanded(
+                    child: Text(
+                      'Notifications',
+                      style: AppTextStyles.body,
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.textSecondary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: AppSpacing.lg),
+
           // Theme toggle section
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
