@@ -614,18 +614,113 @@ Implemented throughout ReminderService:
 
 ## Phase 3: Delivery UX (Tap, Deep Link, Snooze)
 
-### Step 3.1: Tap handling and deep-link
-Files:
-- `lib/features/notifications/services/reminder_plugin.dart` (extend init callback)
-- `lib/app/app_shell.dart` (wire handler to OverlayService)
+### ✅ Step 3.1: Tap handling and deep-link — COMPLETED
+**Status**: Fully complete
 
-Implementation details:
-1) In plugin `onDidReceiveNotificationResponse`, parse payload → `NotificationTapData`.
-2) If app not running: use plugin’s launch details at startup to route.
-3) Handler behavior:
-   - Ensure user authenticated and pet loaded
-   - `context.go('/home')` then immediately open Overlay logging popup by treatment type using existing popups: MedicationLoggingScreen or FluidLoggingScreen.
-   - Pre-fill using `todaysMedicationSchedulesProvider`/`todaysFluidScheduleProvider` and `scheduleId`.
+**✅ Completed**:
+1) ✅ NotificationTapHandler service created (`lib/features/notifications/services/notification_tap_handler.dart`, 57 lines):
+   - Static `ValueNotifier<String?>` for pending notification tap payloads
+   - `handleNotificationTap(String payload)` method to trigger handler
+   - `clearPendingTap()` method to clear payload after processing
+   - Simple static service pattern (similar to OverlayService)
+2) ✅ ReminderPlugin updated (`lib/features/notifications/services/reminder_plugin.dart`):
+   - Modified `_onDidReceiveNotificationResponse` to parse payload JSON (+52 lines)
+   - Validates all required fields (userId, petId, scheduleId, timeSlot, kind, treatmentType)
+   - Triggers `NotificationTapHandler.handleNotificationTap(payload)`
+   - Added `getNotificationAppLaunchDetails()` method for cold start handling (+29 lines)
+   - Comprehensive error handling with dev logging
+3) ✅ Logging screens extended with auto-selection:
+   - **MedicationLoggingScreen** (`lib/features/logging/screens/medication_logging_screen.dart`, +44 lines):
+     - Added optional `initialScheduleId` parameter
+     - Implements `_autoSelectMedication()` method with post-frame callback
+     - Validates schedule exists before selecting (graceful if not found)
+   - **FluidLoggingScreen** (`lib/features/logging/screens/fluid_logging_screen.dart`, +44 lines):
+     - Added optional `initialScheduleId` parameter
+     - Implements `_validateNotificationSchedule()` method for validation/logging
+     - Silent validation (no user-facing error)
+4) ✅ AppShell wired with notification handler (`lib/app/app_shell.dart`, +187 lines):
+   - Added `_notificationTapListener` field and listener setup in initState/dispose
+   - Implemented `_handleNotificationTap()` to process payload with post-frame callback
+   - Implemented `_processNotificationPayload()` with full validation:
+     - Parse JSON and extract all fields
+     - Validate all required fields present
+     - Check authentication (redirect to login with contextual message if not)
+     - Check onboarding completed (redirect to onboarding if not)
+     - Check pet loaded (early return if not)
+     - Validate schedule exists (medication or fluid)
+     - Navigate to `/home` → show overlay with post-frame callback
+     - Show appropriate logging screen with auto-selection
+     - Show toast if schedule not found
+   - Implemented `_trackNotificationTapSuccess()` and `_trackNotificationTapFailure()`
+   - Comprehensive error handling with Crashlytics logging in production
+5) ✅ Cold start handling added (`lib/main.dart`, +41 lines):
+   - Implemented `_checkNotificationLaunchDetails()` after app initialization
+   - Checks if app launched by tapping notification
+   - Triggers `NotificationTapHandler` if payload exists
+   - Non-blocking with `unawaited()` wrapper
+   - Handler processes once auth/onboarding complete
+6) ✅ Analytics provider extended (`lib/providers/analytics_provider.dart`, +47 lines):
+   - Added `reminderTapped` event constant to `AnalyticsEvents`
+   - Implemented `trackReminderTapped()` method with parameters:
+     - `treatmentType` (medication/fluid)
+     - `kind` (initial/followup/snooze)
+     - `scheduleId`
+     - `result` (success or failure reason)
+   - Comprehensive documentation of result values
+7) ✅ Localization strings added (`lib/l10n/app_en.arb`, +10 lines):
+   - `notificationAuthRequired`: "Please log in to record this treatment"
+   - `notificationScheduleNotFound`: "Reminder was for a treatment that's no longer scheduled. You can still log other treatments."
+   - Generated localizations updated automatically
+8) ✅ Code quality verified:
+   - Zero linting errors (`flutter analyze` passes)
+   - 1 info-level suggestion (acceptable style preference)
+   - Comprehensive documentation on all public APIs
+   - Follows project patterns (ValueNotifier, Riverpod providers, post-frame callbacks)
+
+**Implementation Summary**:
+- ✅ Auto-selection: Medications pre-selected from notification payload
+- ✅ Full validation: Auth, onboarding, pet loaded, schedule exists
+- ✅ Graceful error handling: Contextual messages for all failure scenarios
+- ✅ Cold start support: Handles app launched by notification tap
+- ✅ Analytics tracking: Success/failure outcomes with detailed result values
+- ✅ Localization: All user-facing messages in l10n
+- ✅ Zero Firestore reads: All data from cached providers
+- ✅ Consistent UX: Same behavior for foreground, background, terminated states
+- ✅ Navigate-then-show pattern: Ensures stable navigation context before overlay
+- ✅ Post-frame callbacks: Prevents "context not mounted" errors
+
+**Analytics Event Results** (tracked in `reminder_tapped` event):
+- `success` - Notification tapped, schedule found, logging screen shown
+- `schedule_not_found` - Schedule deleted/changed since notification scheduled
+- `user_not_authenticated` - User logged out or session expired
+- `onboarding_not_completed` - User hasn't finished onboarding
+- `pet_not_loaded` - Pet profile not loaded
+- `invalid_payload` - Malformed notification payload
+- `invalid_treatment_type` - Unknown treatment type in payload
+- `processing_error` - Exception during payload processing
+
+**Edge Cases Handled**:
+- Schedule deleted between notification and tap → Show logging screen normally with toast
+- User logged out → Redirect to login with contextual message, discard payload
+- Onboarding incomplete → Redirect to onboarding
+- Pet not loaded → Silent failure with analytics tracking
+- Malformed payload → Graceful error handling, Crashlytics logging in production
+- Multiple rapid taps → Payload cleared immediately to prevent re-triggering
+- Context not mounted → Post-frame callbacks ensure stable navigation
+
+**Pattern Benefits**:
+- **Navigate-Then-Show**: Ensures stable navigation context before showing overlay
+- **Post-frame callback**: Prevents "context not mounted" errors on cold start
+- **ValueNotifier**: Simple, reactive communication between notification layer and UI layer
+- **Graceful degradation**: Works if scheduleId invalid, user not authenticated, or app state inconsistent
+- **Separation of concerns**: Handler validates, analytics tracks, UI displays
+
+**Notes**:
+- Steps 3.2 (notification actions) and 3.3 (snooze) are deferred to future phases
+- Deep-linking works for all app states: foreground, background, terminated (cold start)
+- Notification payload validation is comprehensive but non-blocking (graceful fallbacks)
+- Multi-pet support deferred to V2 (petId validation intentionally skipped)
+- All operations use cached providers (zero Firestore reads)
 
 ### Step 3.2: Single action – “Log now”
 Files:

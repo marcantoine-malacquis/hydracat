@@ -112,6 +112,10 @@ class AnalyticsEvents {
 
   /// Duplicate prevented event name
   static const String duplicatePrevented = 'duplicate_prevented';
+
+  // Notification events
+  /// Reminder tapped event name
+  static const String reminderTapped = 'reminder_tapped';
 }
 
 /// Analytics parameters
@@ -709,6 +713,40 @@ class AnalyticsService {
       name: AnalyticsEvents.treatmentChoiceSelected,
       parameters: {
         AnalyticsParams.choice: choice,
+      },
+    );
+  }
+
+  /// Track notification tap with result outcome.
+  ///
+  /// Tracks when a user taps a notification reminder to deep-link to
+  /// the logging screen. The [result] parameter indicates whether the
+  /// tap was successful or why it failed.
+  ///
+  /// Result values:
+  /// - 'success': Notification tapped, schedule found, logging screen shown
+  /// - 'schedule_not_found': Schedule deleted since notification scheduled
+  /// - 'user_not_authenticated': User logged out or session expired
+  /// - 'onboarding_not_completed': User hasn't finished onboarding
+  /// - 'pet_not_loaded': Pet profile not loaded
+  /// - 'invalid_payload': Malformed notification payload
+  /// - 'invalid_treatment_type': Unknown treatment type in payload
+  /// - 'processing_error': Exception during payload processing
+  Future<void> trackReminderTapped({
+    required String treatmentType,
+    required String kind,
+    required String scheduleId,
+    required String result,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.reminderTapped,
+      parameters: {
+        AnalyticsParams.treatmentType: treatmentType,
+        'kind': kind,
+        'schedule_id': scheduleId,
+        'result': result,
       },
     );
   }

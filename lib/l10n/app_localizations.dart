@@ -1431,6 +1431,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Too many treatments waiting to sync ({count}). Please connect to internet to free up space.'**
   String errorQueueFull(int count);
+
+  /// Title for medication reminder notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Medication reminder'**
+  String get notificationMedicationTitle;
+
+  /// Body text for medication reminder notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Time for {petName}\'s medication'**
+  String notificationMedicationBody(String petName);
+
+  /// Title for fluid therapy reminder notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Fluid therapy reminder'**
+  String get notificationFluidTitle;
+
+  /// Body text for fluid therapy reminder notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Time for {petName}\'s fluid therapy'**
+  String notificationFluidBody(String petName);
+
+  /// Title for follow-up reminder notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Treatment reminder'**
+  String get notificationFollowupTitle;
+
+  /// Body text for follow-up reminder notifications
+  ///
+  /// In en, this message translates to:
+  /// **'{petName} may still need their treatment'**
+  String notificationFollowupBody(String petName);
+
+  /// Title for snoozed reminder notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Treatment reminder (snoozed)'**
+  String get notificationSnoozeTitle;
+
+  /// Body text for snoozed reminder notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Time for {petName}\'s treatment'**
+  String notificationSnoozeBody(String petName);
+
+  /// Title for notification group summary (Android/iOS grouping)
+  ///
+  /// In en, this message translates to:
+  /// **'{petName}\'s Reminders'**
+  String notificationGroupSummaryTitle(Object petName);
+
+  /// Group summary body when only medication reminders exist
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 medication reminder} other{{count} medication reminders}}'**
+  String notificationGroupSummaryMedicationOnly(num count);
+
+  /// Group summary body when only fluid therapy reminders exist
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 fluid therapy reminder} other{{count} fluid therapy reminders}}'**
+  String notificationGroupSummaryFluidOnly(num count);
+
+  /// Group summary body when both medication and fluid reminders exist
+  ///
+  /// In en, this message translates to:
+  /// **'{medCount, plural, =1{1 medication} other{{medCount} medications}}, {fluidCount, plural, =1{1 fluid therapy} other{{fluidCount} fluid therapies}}'**
+  String notificationGroupSummaryBoth(num fluidCount, num medCount);
+
+  /// Message shown when user taps notification but is not authenticated
+  ///
+  /// In en, this message translates to:
+  /// **'Please log in to record this treatment'**
+  String get notificationAuthRequired;
+
+  /// Message shown when notification refers to a deleted schedule
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder was for a treatment that\'s no longer scheduled. You can still log other treatments.'**
+  String get notificationScheduleNotFound;
 }
 
 class _AppLocalizationsDelegate

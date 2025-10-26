@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/features/logging/exceptions/logging_error_handler.dart';
 import 'package:hydracat/features/logging/screens/fluid_logging_screen.dart';
@@ -11,12 +13,15 @@ import 'package:hydracat/features/logging/screens/medication_logging_screen.dart
 import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/logging/widgets/quick_log_success_popup.dart';
 import 'package:hydracat/features/logging/widgets/treatment_choice_popup.dart';
+import 'package:hydracat/features/notifications/services/notification_tap_handler.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/dashboard_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/logging_queue_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
+import 'package:hydracat/shared/services/firebase_service.dart';
 import 'package:hydracat/shared/widgets/dialogs/no_schedules_dialog.dart';
 import 'package:hydracat/shared/widgets/navigation/hydra_navigation_bar.dart';
 
@@ -38,6 +43,7 @@ class AppShell extends ConsumerStatefulWidget {
 class _AppShellState extends ConsumerState<AppShell>
     with WidgetsBindingObserver {
   late final VoidCallback _overlayListener;
+  late final VoidCallback _notificationTapListener;
   final List<HydraNavigationItem> _navigationItems = const [
     HydraNavigationItem(icon: AppIcons.home, label: 'Home', route: '/'),
     HydraNavigationItem(
@@ -91,12 +97,21 @@ class _AppShellState extends ConsumerState<AppShell>
     WidgetsBinding.instance.addObserver(this);
     _overlayListener = () => setState(() {});
     OverlayService.isShowingNotifier.addListener(_overlayListener);
+
+    // Listen for notification taps
+    _notificationTapListener = _handleNotificationTap;
+    NotificationTapHandler.pendingTapPayload.addListener(
+      _notificationTapListener,
+    );
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     OverlayService.isShowingNotifier.removeListener(_overlayListener);
+    NotificationTapHandler.pendingTapPayload.removeListener(
+      _notificationTapListener,
+    );
     super.dispose();
   }
 
@@ -268,6 +283,217 @@ class _AppShellState extends ConsumerState<AppShell>
       if (error != null) {
         LoggingErrorHandler.showLoggingError(context, error);
       }
+    }
+  }
+
+  /// Handle notification tap from NotificationTapHandler.
+  ///
+  /// This is triggered when the user taps a notification. The payload is
+  /// validated and processed to deep-link to the appropriate logging screen.
+  void _handleNotificationTap() {
+    final payload = NotificationTapHandler.pendingTapPayload.value;
+
+    // Ignore if no payload
+    if (payload == null || payload.isEmpty) return;
+
+    // Clear immediately to avoid re-triggering
+    NotificationTapHandler.clearPendingTap();
+
+    // Schedule handling after current frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _processNotificationPayload(payload);
+    });
+  }
+
+  /// Process and validate notification payload for deep-linking.
+  ///
+  /// Validates all required fields, checks authentication and onboarding
+  /// state, and navigates to the appropriate logging screen with auto-
+  /// selection of the treatment from the notification.
+  Future<void> _processNotificationPayload(String payload) async {
+    try {
+      // Parse JSON payload
+      final payloadMap = json.decode(payload) as Map<String, dynamic>;
+
+      // Extract and validate required fields
+      final userId = payloadMap['userId'] as String?;
+      final petId = payloadMap['petId'] as String?;
+      final scheduleId = payloadMap['scheduleId'] as String?;
+      final timeSlot = payloadMap['timeSlot'] as String?;
+      final kind = payloadMap['kind'] as String?;
+      final treatmentType = payloadMap['treatmentType'] as String?;
+
+      // Validate all required fields present
+      if (userId == null ||
+          petId == null ||
+          scheduleId == null ||
+          timeSlot == null ||
+          kind == null ||
+          treatmentType == null) {
+        _devLog('⚠️ Invalid notification payload: missing required fields');
+        _trackNotificationTapFailure('invalid_payload');
+        return;
+      }
+
+      // Validate treatmentType
+      if (treatmentType != 'medication' && treatmentType != 'fluid') {
+        _devLog('⚠️ Invalid treatmentType in payload: $treatmentType');
+        _trackNotificationTapFailure('invalid_treatment_type');
+        return;
+      }
+
+      // Check authentication
+      final isAuthenticated = ref.read(isAuthenticatedProvider);
+      if (!isAuthenticated) {
+        _devLog('User not authenticated, redirecting to login');
+        _trackNotificationTapFailure('user_not_authenticated');
+
+        if (mounted) {
+          context.go('/login');
+          // Show contextual message after navigation
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              final l10n = AppLocalizations.of(context);
+              if (l10n != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(l10n.notificationAuthRequired),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
+            }
+          });
+        }
+        return;
+      }
+
+      // Check onboarding completed
+      final hasCompletedOnboarding = ref.read(hasCompletedOnboardingProvider);
+      if (!hasCompletedOnboarding) {
+        _devLog('Onboarding not completed, redirecting to onboarding');
+        _trackNotificationTapFailure('onboarding_not_completed');
+
+        if (mounted) {
+          context.go('/onboarding/welcome');
+        }
+        return;
+      }
+
+      // Check pet loaded
+      final primaryPet = ref.read(primaryPetProvider);
+      if (primaryPet == null) {
+        _devLog('Primary pet not loaded, cannot show logging screen');
+        _trackNotificationTapFailure('pet_not_loaded');
+        return;
+      }
+
+      // Validate schedule exists
+      var scheduleExists = false;
+      if (treatmentType == 'medication') {
+        final medicationSchedules = ref.read(todaysMedicationSchedulesProvider);
+        scheduleExists = medicationSchedules.any((s) => s.id == scheduleId);
+      } else {
+        final fluidSchedule = ref.read(fluidScheduleProvider);
+        scheduleExists = fluidSchedule?.id == scheduleId;
+      }
+
+      // Track analytics
+      if (scheduleExists) {
+        _trackNotificationTapSuccess(treatmentType, kind, scheduleId);
+      } else {
+        _devLog('⚠️ Schedule $scheduleId not found');
+        _trackNotificationTapFailure('schedule_not_found');
+      }
+
+      // Always navigate to /home, then show overlay
+      if (!mounted) return;
+
+      // Navigate to home first
+      context.go('/home');
+
+      // Show logging screen overlay after navigation completes
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+
+        // Show appropriate logging screen with auto-selection
+        if (treatmentType == 'medication') {
+          OverlayService.showFullScreenPopup(
+            context: context,
+            child: MedicationLoggingScreen(
+              initialScheduleId: scheduleExists ? scheduleId : null,
+            ),
+          );
+        } else {
+          OverlayService.showFullScreenPopup(
+            context: context,
+            child: FluidLoggingScreen(
+              initialScheduleId: scheduleExists ? scheduleId : null,
+            ),
+          );
+        }
+
+        // Show toast if schedule not found
+        if (!scheduleExists) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              final l10n = AppLocalizations.of(context);
+              if (l10n != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(l10n.notificationScheduleNotFound),
+                  ),
+                );
+              }
+            }
+          });
+        }
+      });
+    } on Exception catch (e, stackTrace) {
+      _devLog('ERROR processing notification payload: $e');
+      _devLog('Stack trace: $stackTrace');
+      _trackNotificationTapFailure('processing_error');
+
+      // Log to Crashlytics in production
+      if (!FlavorConfig.isDevelopment) {
+        unawaited(
+          FirebaseService().crashlytics.recordError(
+            Exception('Notification tap processing failed: $e'),
+            stackTrace,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Track successful notification tap with analytics.
+  void _trackNotificationTapSuccess(
+    String treatmentType,
+    String kind,
+    String scheduleId,
+  ) {
+    ref.read(analyticsServiceDirectProvider).trackReminderTapped(
+          treatmentType: treatmentType,
+          kind: kind,
+          scheduleId: scheduleId,
+          result: 'success',
+        );
+  }
+
+  /// Track failed notification tap with analytics.
+  void _trackNotificationTapFailure(String reason) {
+    ref.read(analyticsServiceDirectProvider).trackReminderTapped(
+          treatmentType: 'unknown',
+          kind: 'unknown',
+          scheduleId: 'unknown',
+          result: reason,
+        );
+  }
+
+  /// Log messages only in development flavor.
+  void _devLog(String message) {
+    if (FlavorConfig.isDevelopment) {
+      debugPrint('[AppShell Notifications] $message');
     }
   }
 

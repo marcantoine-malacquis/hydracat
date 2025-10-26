@@ -31,9 +31,26 @@ import 'package:hydracat/shared/widgets/loading/loading_overlay.dart';
 /// - Loading overlay during batch write
 /// - Success animation with haptic feedback
 /// - No duplicate detection (partial sessions are valid)
+/// - Schedule validation from notification (via initialScheduleId)
 class FluidLoggingScreen extends ConsumerStatefulWidget {
   /// Creates a [FluidLoggingScreen].
-  const FluidLoggingScreen({super.key});
+  ///
+  /// If [initialScheduleId] is provided, the schedule will be validated
+  /// against the current fluid schedule. This is used for notification
+  /// deep-linking. Validation is silent - no user-facing error is shown
+  /// if the schedule doesn't match.
+  const FluidLoggingScreen({
+    this.initialScheduleId,
+    super.key,
+  });
+
+  /// Optional schedule ID for validation from notification deep-link.
+  ///
+  /// Since fluid has only a single schedule, this is used for validation
+  /// rather than pre-selection. If the schedule ID doesn't match the
+  /// current fluid schedule, a warning is logged but the screen opens
+  /// normally.
+  final String? initialScheduleId;
 
   @override
   ConsumerState<FluidLoggingScreen> createState() => _FluidLoggingScreenState();
@@ -69,6 +86,13 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
       _prefillFromSchedule();
     });
 
+    // Validate schedule from notification (if provided)
+    if (widget.initialScheduleId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _validateNotificationSchedule(widget.initialScheduleId!);
+      });
+    }
+
     // Ensure schedule is loaded if not present yet (robustness on hot restart)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final hasSchedule = ref.read(fluidScheduleProvider) != null;
@@ -103,6 +127,30 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
         }
       },
     );
+  }
+
+  /// Validate fluid schedule from notification deep-link.
+  ///
+  /// Checks if the schedule ID from the notification matches the current
+  /// fluid schedule. Since fluid has only a single schedule, this is used
+  /// for validation/logging rather than pre-selection.
+  ///
+  /// No user-facing error is shown - validation failure is only logged.
+  void _validateNotificationSchedule(String scheduleId) {
+    final schedule = ref.read(fluidScheduleProvider);
+
+    if (schedule == null || schedule.id != scheduleId) {
+      debugPrint(
+        '[FluidLoggingScreen] ⚠️ Fluid schedule $scheduleId from '
+        'notification not found or changed',
+      );
+      // No user-facing error - fluid screen works normally
+    } else {
+      debugPrint(
+        '[FluidLoggingScreen] Fluid schedule from notification validated: '
+        '$scheduleId',
+      );
+    }
   }
 
   @override

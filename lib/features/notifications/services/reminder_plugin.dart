@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hydracat/core/config/flavor_config.dart';
+import 'package:hydracat/features/notifications/services/notification_tap_handler.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
 
@@ -94,17 +96,60 @@ class ReminderPlugin {
     }
   }
 
-  /// Placeholder callback for notification taps (iOS/Android).
+  /// Callback for notification taps (iOS/Android).
   ///
-  /// Currently logs the notification response in development mode.
-  /// Full implementation with deep-linking will be added in
-  /// Phase 3 (Step 3.1).
+  /// Parses the notification payload and triggers the NotificationTapHandler
+  /// to initiate deep-linking to the appropriate logging screen.
+  ///
+  /// The payload should be a JSON string containing:
+  /// - userId: User ID who scheduled the notification
+  /// - petId: Pet ID for the treatment
+  /// - scheduleId: Schedule ID for the treatment
+  /// - timeSlot: Time slot in "HH:mm" format
+  /// - kind: Notification kind (initial/followup/snooze)
+  /// - treatmentType: Type of treatment (medication/fluid)
+  ///
+  /// If the payload is missing or invalid, the tap is logged and ignored.
   void _onDidReceiveNotificationResponse(NotificationResponse response) {
     _devLog(
       'Notification tapped: ${response.id}, '
       'payload: ${response.payload}',
     );
-    // Full deep-linking implementation will be added in Phase 3
+
+    // Validate payload exists
+    if (response.payload == null || response.payload!.isEmpty) {
+      _devLog('⚠️ Notification tap has no payload, ignoring');
+      return;
+    }
+
+    try {
+      // Parse payload to validate JSON structure
+      final payloadMap = json.decode(response.payload!) as Map<String, dynamic>;
+
+      // Validate required fields
+      final requiredFields = [
+        'userId',
+        'petId',
+        'scheduleId',
+        'timeSlot',
+        'kind',
+        'treatmentType',
+      ];
+      for (final field in requiredFields) {
+        if (!payloadMap.containsKey(field)) {
+          _devLog('⚠️ Notification payload missing required field: $field');
+          // Continue anyway - handler will validate and fall back gracefully
+        }
+      }
+
+      // Trigger notification tap handler
+      NotificationTapHandler.notificationTapPayload = response.payload!;
+      _devLog('Notification tap handler triggered');
+    } on Exception catch (e, stackTrace) {
+      _devLog('ERROR parsing notification payload: $e');
+      _devLog('Stack trace: $stackTrace');
+      // Don't rethrow - gracefully ignore invalid payloads
+    }
   }
 
   /// Create Android notification channels.
@@ -417,6 +462,40 @@ class ReminderPlugin {
       _devLog('Failed to cancel group summary for pet $petId: $e');
       _devLog('Stack trace: $stackTrace');
       // Don't rethrow - summary cancellation failure is non-critical
+    }
+  }
+
+  /// Get notification app launch details (for cold start handling).
+  ///
+  /// Returns details about whether the app was launched by tapping a
+  /// notification, and if so, what the notification response was.
+  ///
+  /// This is used for handling "cold start" scenarios where the app is
+  /// not running when the user taps a notification. The payload can then
+  /// be processed to deep-link to the appropriate screen.
+  ///
+  /// Returns null if:
+  /// - The plugin is not initialized
+  /// - The details cannot be retrieved
+  /// - An error occurs during retrieval
+  Future<NotificationAppLaunchDetails?>
+      getNotificationAppLaunchDetails() async {
+    if (!_isInitialized || _plugin == null) {
+      _devLog('Cannot get launch details: plugin not initialized');
+      return null;
+    }
+
+    try {
+      final details = await _plugin!.getNotificationAppLaunchDetails();
+      _devLog(
+        'Launch details: didLaunchApp=${details?.didNotificationLaunchApp}, '
+        'hasResponse=${details?.notificationResponse != null}',
+      );
+      return details;
+    } on Exception catch (e, stackTrace) {
+      _devLog('Failed to get notification launch details: $e');
+      _devLog('Stack trace: $stackTrace');
+      return null;
     }
   }
 

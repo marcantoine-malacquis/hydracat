@@ -43,6 +43,22 @@ I already did something similar in @onboarding_code_review_report.md . I don't n
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
 
-7. I changed my mind regarding lock screen privacy implementation and I don't like the idea of having two different notification content depending on sensitive information or not. It should be the same kind of notification for all users. Let's go with the generic option then and leave out sensitive informations. Please update all relevant code to take this change of direction in consideration. Please tell me if this will simplify the notification system or not ?
 
-For every other questions, I agree with your recommendations
+1. Option (a) - auto-select the treatment from the
+  notification payload.
+2. Option (a) - redirect to login with a contextual
+  message, but discard the payload.
+3. Option (b) - open the logging screen normally with a
+  brief, non-intrusive toast like "Reminder was for a treatment that's no longer
+   scheduled. You can still log other treatments."
+4. Option (a) - wait for both auth and onboarding to
+  complete. This ensures all necessary providers (profileProvider, schedules,
+  etc.) are loaded.
+5. Success vs failure outcomes (e.g., reminder_tap_success,
+  reminder_tap_schedule_not_found, reminder_tap_auth_required)
+6. Ignore petId validation entirely and just use the current primary pet. Just a quick question: why should I expect the need to refactor the deep-linking flow in the future ?
+7. Same behavior for foreground, background, and terminated states. Always
+  navigate to /home then show the overlay, regardless of current screen.
+8. Option (a) - full validation with graceful error
+  handling.
+Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them. I will test only once we fixed the linting issues.

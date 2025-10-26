@@ -753,4 +753,88 @@ class AppLocalizationsEn extends AppLocalizations {
   String errorQueueFull(int count) {
     return 'Too many treatments waiting to sync ($count). Please connect to internet to free up space.';
   }
+
+  @override
+  String get notificationMedicationTitle => 'Medication reminder';
+
+  @override
+  String notificationMedicationBody(String petName) {
+    return 'Time for $petName\'s medication';
+  }
+
+  @override
+  String get notificationFluidTitle => 'Fluid therapy reminder';
+
+  @override
+  String notificationFluidBody(String petName) {
+    return 'Time for $petName\'s fluid therapy';
+  }
+
+  @override
+  String get notificationFollowupTitle => 'Treatment reminder';
+
+  @override
+  String notificationFollowupBody(String petName) {
+    return '$petName may still need their treatment';
+  }
+
+  @override
+  String get notificationSnoozeTitle => 'Treatment reminder (snoozed)';
+
+  @override
+  String notificationSnoozeBody(String petName) {
+    return 'Time for $petName\'s treatment';
+  }
+
+  @override
+  String notificationGroupSummaryTitle(Object petName) {
+    return '$petName\'s Reminders';
+  }
+
+  @override
+  String notificationGroupSummaryMedicationOnly(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count medication reminders',
+      one: '1 medication reminder',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notificationGroupSummaryFluidOnly(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fluid therapy reminders',
+      one: '1 fluid therapy reminder',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String notificationGroupSummaryBoth(num fluidCount, num medCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      medCount,
+      locale: localeName,
+      other: '$medCount medications',
+      one: '1 medication',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      fluidCount,
+      locale: localeName,
+      other: '$fluidCount fluid therapies',
+      one: '1 fluid therapy',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String get notificationAuthRequired =>
+      'Please log in to record this treatment';
+
+  @override
+  String get notificationScheduleNotFound =>
+      'Reminder was for a treatment that\'s no longer scheduled. You can still log other treatments.';
 }

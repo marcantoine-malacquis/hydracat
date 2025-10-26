@@ -1,8 +1,12 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/app/app.dart';
 import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/features/notifications/providers/notification_provider.dart';
+import 'package:hydracat/features/notifications/services/notification_tap_handler.dart';
 import 'package:hydracat/features/notifications/services/reminder_plugin.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
@@ -34,6 +38,9 @@ Future<void> main() async {
       child: const HydraCatApp(),
     ),
   );
+
+  // Check if app was launched by tapping a notification (cold start)
+  unawaited(_checkNotificationLaunchDetails(reminderPlugin));
 }
 
 /// Initialize timezone database for scheduling notifications.
@@ -108,6 +115,44 @@ Future<void> _logToCrashlytics(
   } on Exception catch (e) {
     // Silently fail if Crashlytics not available
     debugPrint('[Main] Failed to log to Crashlytics: $e');
+  }
+}
+
+/// Check if app was launched by tapping a notification.
+///
+/// This handles the "cold start" case where the app is not running when
+/// the user taps a notification. The payload is processed after the app
+/// fully initializes (auth, onboarding, providers ready).
+Future<void> _checkNotificationLaunchDetails(ReminderPlugin plugin) async {
+  try {
+    _devLog('Checking notification launch details...');
+
+    final details = await plugin.getNotificationAppLaunchDetails();
+
+    if (details != null &&
+        details.didNotificationLaunchApp &&
+        details.notificationResponse != null) {
+      final payload = details.notificationResponse!.payload;
+
+      if (payload != null && payload.isNotEmpty) {
+        _devLog(
+          'App launched from notification, '
+          'payload: ${payload.substring(0, min(50, payload.length))}...',
+        );
+
+        // Trigger notification tap handler
+        // The AppShell listener will process it once the app is ready
+        NotificationTapHandler.notificationTapPayload = payload;
+      } else {
+        _devLog('App launched from notification but no payload');
+      }
+    } else {
+      _devLog('App not launched from notification');
+    }
+  } on Exception catch (e, stackTrace) {
+    _devLog('Error checking notification launch details: $e');
+    _devLog('Stack trace: $stackTrace');
+    // Don't rethrow - cold start should continue
   }
 }
 

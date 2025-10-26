@@ -573,5 +573,15 @@
   "notificationGroupSummaryBoth": "{medCount, plural, =1{1 medication} other{{medCount} medications}}, {fluidCount, plural, =1{1 fluid therapy} other{{fluidCount} fluid therapies}}",
   "@notificationGroupSummaryBoth": {
     "description": "Group summary body when both medication and fluid reminders exist"
+  },
+
+  "@_NOTIFICATION_DEEP_LINK": {},
+  "notificationAuthRequired": "Please log in to record this treatment",
+  "@notificationAuthRequired": {
+    "description": "Message shown when user taps notification but is not authenticated"
+  },
+  "notificationScheduleNotFound": "Reminder was for a treatment that's no longer scheduled. You can still log other treatments.",
+  "@notificationScheduleNotFound": {
+    "description": "Message shown when notification refers to a deleted schedule"
   }
 }

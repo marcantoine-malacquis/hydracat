@@ -31,9 +31,21 @@ import 'package:hydracat/shared/widgets/loading/loading_overlay.dart';
 /// - Loading overlay during batch write
 /// - Success animation with haptic feedback
 /// - Duplicate detection with dialog
+/// - Auto-selection from notification (via initialScheduleId)
 class MedicationLoggingScreen extends ConsumerStatefulWidget {
   /// Creates a [MedicationLoggingScreen].
-  const MedicationLoggingScreen({super.key});
+  ///
+  /// If [initialScheduleId] is provided, that medication will be
+  /// automatically selected when the screen opens (used for notification
+  /// deep-linking). If the schedule is not found, the screen opens normally
+  /// without any selection.
+  const MedicationLoggingScreen({
+    this.initialScheduleId,
+    super.key,
+  });
+
+  /// Optional schedule ID to pre-select from notification deep-link.
+  final String? initialScheduleId;
 
   @override
   ConsumerState<MedicationLoggingScreen> createState() =>
@@ -59,6 +71,38 @@ class _MedicationLoggingScreenState
     _notesFocusNode.addListener(() {
       setState(() {}); // Rebuild to update counter visibility
     });
+
+    // Auto-select medication from notification (if provided)
+    if (widget.initialScheduleId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _autoSelectMedication(widget.initialScheduleId!);
+      });
+    }
+  }
+
+  /// Auto-select medication from notification deep-link.
+  ///
+  /// Validates that the schedule exists in today's schedules before selecting.
+  /// If not found, logs a warning but does not show any user-facing error
+  /// (the screen opens normally and user can select manually).
+  void _autoSelectMedication(String scheduleId) {
+    final schedules = ref.read(todaysMedicationSchedulesProvider);
+    final scheduleExists = schedules.any((s) => s.id == scheduleId);
+
+    if (scheduleExists) {
+      setState(() {
+        _selectedMedicationIds.add(scheduleId);
+      });
+      debugPrint(
+        '[MedicationLoggingScreen] Auto-selected medication from '
+        'notification: $scheduleId',
+      );
+    } else {
+      debugPrint(
+        '[MedicationLoggingScreen] ⚠️ Schedule $scheduleId from notification '
+        'not found, skipping auto-select',
+      );
+    }
   }
 
   @override
