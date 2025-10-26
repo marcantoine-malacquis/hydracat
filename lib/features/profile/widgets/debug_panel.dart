@@ -4,12 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/features/notifications/providers/notification_provider.dart';
 import 'package:hydracat/features/notifications/services/reminder_plugin.dart';
 import 'package:hydracat/features/notifications/utils/notification_id.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 /// Debug panel for development testing - allows resetting user state
@@ -243,7 +243,7 @@ class DebugPanel extends ConsumerWidget {
 
     try {
       // Check notification permission
-      final hasPermission = await _checkNotificationPermission();
+      final hasPermission = _checkNotificationPermission(ref);
       if (!hasPermission) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -359,7 +359,7 @@ class DebugPanel extends ConsumerWidget {
 
     try {
       // Check notification permission
-      final hasPermission = await _checkNotificationPermission();
+      final hasPermission = _checkNotificationPermission(ref);
       if (!hasPermission) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -467,9 +467,10 @@ class DebugPanel extends ConsumerWidget {
   }
 
   /// Checks if notification permission is granted
-  Future<bool> _checkNotificationPermission() async {
-    final status = await Permission.notification.status;
-    return status.isGranted;
+  bool _checkNotificationPermission(WidgetRef ref) {
+    final permissionStatus =
+        ref.read(notificationPermissionStatusProvider).value;
+    return permissionStatus == NotificationPermissionStatus.granted;
   }
 
   /// Returns the scheduled time for test notifications (now + 5 seconds)
