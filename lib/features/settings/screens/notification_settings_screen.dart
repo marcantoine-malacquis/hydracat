@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/notifications/providers/notification_provider.dart';
+import 'package:hydracat/features/notifications/services/notification_cleanup_service.dart';
 import 'package:hydracat/features/notifications/widgets/permission_preprompt.dart';
+import 'package:hydracat/features/notifications/widgets/privacy_details_bottom_sheet.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
@@ -206,6 +208,124 @@ class _NotificationSettingsScreenState
               ref,
               value,
               currentUser.id,
+            ),
+          ),
+
+          const SizedBox(height: AppSpacing.xl),
+
+          // Privacy Policy section
+          InkWell(
+            onTap: () => _handlePrivacyPolicyTap(context, ref),
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.privacy_tip_outlined,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.notificationSettingsPrivacyPolicyLabel,
+                          style: AppTextStyles.body,
+                        ),
+                        Text(
+                          l10n.notificationSettingsPrivacyPolicyDescription,
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.textSecondary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: AppSpacing.xl),
+
+          // Data Management section
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.notificationSettingsDataManagementTitle,
+                  style: AppTextStyles.h3,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                InkWell(
+                  onTap: noPetProfile
+                      ? null
+                      : () => _handleClearData(
+                            context,
+                            ref,
+                            currentUser.id,
+                            petId,
+                          ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.xs,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.delete_outline,
+                          color: noPetProfile
+                              ? AppColors.textSecondary
+                              : AppColors.warning,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                l10n.notificationSettingsClearDataButton,
+                                style: AppTextStyles.body.copyWith(
+                                  color: noPetProfile
+                                      ? AppColors.textSecondary
+                                      : AppColors.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                l10n.notificationSettingsClearDataDescription,
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -561,6 +681,131 @@ class _NotificationSettingsScreenState
     await ref
         .read(notificationSettingsProvider(userId).notifier)
         .setEnableNotifications(enabled: value);
+  }
+
+  /// Handles tapping on the Privacy Policy row
+  Future<void> _handlePrivacyPolicyTap(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    // Track analytics
+    await ref
+        .read(analyticsServiceDirectProvider)
+        .trackNotificationPrivacyLearnMore(source: 'settings');
+
+    if (!context.mounted) return;
+
+    // Show privacy details bottom sheet
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const PrivacyDetailsBottomSheet(),
+    );
+  }
+
+  /// Handles clearing notification data
+  Future<void> _handleClearData(
+    BuildContext context,
+    WidgetRef ref,
+    String userId,
+    String petId,
+  ) async {
+    // Capture context before async gaps
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final localizations = AppLocalizations.of(context)!;
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          localizations.notificationSettingsClearDataConfirmTitle,
+        ),
+        content: Text(
+          localizations.notificationSettingsClearDataConfirmMessage,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(localizations.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.warning,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(
+              localizations.notificationSettingsClearDataConfirmButton,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      // Clear all notification data
+      final cleanupService = ref.read(notificationCleanupServiceProvider);
+      final result = await cleanupService.clearAllNotificationData(
+        userId,
+        petId,
+        ref as Ref,
+      );
+
+      // Check result
+      if (result['success'] == true) {
+        final canceledCount = result['canceledCount'] as int;
+
+        if (!context.mounted) return;
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              localizations.notificationSettingsClearDataSuccess(
+                canceledCount,
+              ),
+            ),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+
+        // Track analytics
+        await ref
+            .read(analyticsServiceDirectProvider)
+            .trackNotificationDataCleared(
+              result: 'success',
+              canceledCount: canceledCount,
+            );
+      } else {
+        // Operation failed
+        throw Exception(result['error'] ?? 'Unknown error');
+      }
+    } on Exception catch (e) {
+      if (!context.mounted) return;
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            localizations.notificationSettingsClearDataError(
+              e.toString(),
+            ),
+          ),
+          backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+
+      // Track analytics
+      await ref
+          .read(analyticsServiceDirectProvider)
+          .trackNotificationDataCleared(
+            result: 'error',
+            canceledCount: 0,
+            errorMessage: e.toString(),
+          );
+    }
   }
 
   /// Convenience getter for localization

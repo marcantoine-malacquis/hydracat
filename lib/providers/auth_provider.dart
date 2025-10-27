@@ -8,6 +8,7 @@ import 'package:hydracat/features/auth/models/app_user.dart';
 import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/features/auth/services/auth_service.dart';
 import 'package:hydracat/features/notifications/services/device_token_service.dart';
+import 'package:hydracat/features/notifications/services/notification_cleanup_service.dart';
 import 'package:hydracat/features/notifications/services/notification_settings_service.dart';
 import 'package:hydracat/features/onboarding/services/onboarding_service.dart';
 import 'package:hydracat/features/profile/services/pet_service.dart';
@@ -317,6 +318,35 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // Log error but don't block sign-out
       if (kDebugMode) {
         debugPrint('Failed to unregister device token: $e');
+      }
+    }
+
+    // Clear notification data on logout (preserve settings)
+    // Note: This is a best-effort cleanup. If it fails, it won't block logout.
+    try {
+      // Get current user if authenticated
+      final authState = state;
+      if (authState is AuthStateAuthenticated) {
+        final currentUser = authState.user;
+
+        // Get primary pet ID for cleanup
+        final petService = PetService();
+        final primaryPet = await petService.getPrimaryPet();
+
+        if (primaryPet != null) {
+          await NotificationCleanupService().cleanupOnLogout(
+            currentUser.id,
+            primaryPet.id,
+          );
+          if (kDebugMode) {
+            debugPrint('Notification cleanup completed on logout');
+          }
+        }
+      }
+    } on Exception catch (e) {
+      // Log error but don't block sign-out
+      if (kDebugMode) {
+        debugPrint('Failed to cleanup notifications on logout: $e');
       }
     }
 

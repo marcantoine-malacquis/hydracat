@@ -1725,6 +1725,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please set up your pet profile first to use notification features'**
   String get notificationSettingsFeatureRequiresPetProfile;
+
+  /// Brief privacy notice shown in permission preprompt dialog
+  ///
+  /// In en, this message translates to:
+  /// **'We protect your privacy by using generic notification content with no medical details. All notification data is stored locally on your device only.'**
+  String get notificationPrivacyNoticeShort;
+
+  /// Button to open detailed privacy information
+  ///
+  /// In en, this message translates to:
+  /// **'Learn More'**
+  String get notificationPrivacyLearnMoreButton;
+
+  /// Title for privacy details bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Notification Privacy'**
+  String get notificationPrivacyBottomSheetTitle;
+
+  /// Error message when privacy policy markdown fails to load
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load privacy policy. Please try again.'**
+  String get notificationPrivacyLoadError;
+
+  /// Label for privacy policy navigation row in settings
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get notificationSettingsPrivacyPolicyLabel;
+
+  /// Description text for privacy policy row
+  ///
+  /// In en, this message translates to:
+  /// **'How we handle notification data'**
+  String get notificationSettingsPrivacyPolicyDescription;
+
+  /// Section title for data management options
+  ///
+  /// In en, this message translates to:
+  /// **'Data Management'**
+  String get notificationSettingsDataManagementTitle;
+
+  /// Button label to clear all notification data
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Notification Data'**
+  String get notificationSettingsClearDataButton;
+
+  /// Description text explaining what clear data does
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel all scheduled notifications and clear stored data'**
+  String get notificationSettingsClearDataDescription;
+
+  /// Title for clear data confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Notification Data?'**
+  String get notificationSettingsClearDataConfirmTitle;
+
+  /// Message explaining what will happen when clearing data
+  ///
+  /// In en, this message translates to:
+  /// **'This will cancel all scheduled notifications and clear stored notification data. Your notification settings will be preserved.\n\nThis action cannot be undone.'**
+  String get notificationSettingsClearDataConfirmMessage;
+
+  /// Confirmation button to proceed with clearing data
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Data'**
+  String get notificationSettingsClearDataConfirmButton;
+
+  /// Success message after clearing data
+  ///
+  /// In en, this message translates to:
+  /// **'Notification data cleared successfully ({count} notifications canceled)'**
+  String notificationSettingsClearDataSuccess(int count);
+
+  /// Error message when clearing data fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to clear notification data: {error}'**
+  String notificationSettingsClearDataError(String error);
 }
 
 class _AppLocalizationsDelegate

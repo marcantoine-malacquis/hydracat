@@ -966,4 +966,56 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get notificationSettingsFeatureRequiresPetProfile =>
       'Please set up your pet profile first to use notification features';
+
+  @override
+  String get notificationPrivacyNoticeShort =>
+      'We protect your privacy by using generic notification content with no medical details. All notification data is stored locally on your device only.';
+
+  @override
+  String get notificationPrivacyLearnMoreButton => 'Learn More';
+
+  @override
+  String get notificationPrivacyBottomSheetTitle => 'Notification Privacy';
+
+  @override
+  String get notificationPrivacyLoadError =>
+      'Unable to load privacy policy. Please try again.';
+
+  @override
+  String get notificationSettingsPrivacyPolicyLabel => 'Privacy Policy';
+
+  @override
+  String get notificationSettingsPrivacyPolicyDescription =>
+      'How we handle notification data';
+
+  @override
+  String get notificationSettingsDataManagementTitle => 'Data Management';
+
+  @override
+  String get notificationSettingsClearDataButton => 'Clear Notification Data';
+
+  @override
+  String get notificationSettingsClearDataDescription =>
+      'Cancel all scheduled notifications and clear stored data';
+
+  @override
+  String get notificationSettingsClearDataConfirmTitle =>
+      'Clear Notification Data?';
+
+  @override
+  String get notificationSettingsClearDataConfirmMessage =>
+      'This will cancel all scheduled notifications and clear stored notification data. Your notification settings will be preserved.\n\nThis action cannot be undone.';
+
+  @override
+  String get notificationSettingsClearDataConfirmButton => 'Clear Data';
+
+  @override
+  String notificationSettingsClearDataSuccess(int count) {
+    return 'Notification data cleared successfully ($count notifications canceled)';
+  }
+
+  @override
+  String notificationSettingsClearDataError(String error) {
+    return 'Failed to clear notification data: $error';
+  }
 }

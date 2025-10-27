@@ -749,5 +749,79 @@
   "notificationSettingsFeatureRequiresPetProfile": "Please set up your pet profile first to use notification features",
   "@notificationSettingsFeatureRequiresPetProfile": {
     "description": "Message shown when pet profile is not set up"
+  },
+
+  "@_NOTIFICATION_PRIVACY": {},
+  "notificationPrivacyNoticeShort": "We protect your privacy by using generic notification content with no medical details. All notification data is stored locally on your device only.",
+  "@notificationPrivacyNoticeShort": {
+    "description": "Brief privacy notice shown in permission preprompt dialog"
+  },
+  "notificationPrivacyLearnMoreButton": "Learn More",
+  "@notificationPrivacyLearnMoreButton": {
+    "description": "Button to open detailed privacy information"
+  },
+  "notificationPrivacyBottomSheetTitle": "Notification Privacy",
+  "@notificationPrivacyBottomSheetTitle": {
+    "description": "Title for privacy details bottom sheet"
+  },
+  "notificationPrivacyLoadError": "Unable to load privacy policy. Please try again.",
+  "@notificationPrivacyLoadError": {
+    "description": "Error message when privacy policy markdown fails to load"
+  },
+
+  "@_NOTIFICATION_SETTINGS_PRIVACY_SECTION": {},
+  "notificationSettingsPrivacyPolicyLabel": "Privacy Policy",
+  "@notificationSettingsPrivacyPolicyLabel": {
+    "description": "Label for privacy policy navigation row in settings"
+  },
+  "notificationSettingsPrivacyPolicyDescription": "How we handle notification data",
+  "@notificationSettingsPrivacyPolicyDescription": {
+    "description": "Description text for privacy policy row"
+  },
+
+  "@_NOTIFICATION_SETTINGS_DATA_MANAGEMENT": {},
+  "notificationSettingsDataManagementTitle": "Data Management",
+  "@notificationSettingsDataManagementTitle": {
+    "description": "Section title for data management options"
+  },
+  "notificationSettingsClearDataButton": "Clear Notification Data",
+  "@notificationSettingsClearDataButton": {
+    "description": "Button label to clear all notification data"
+  },
+  "notificationSettingsClearDataDescription": "Cancel all scheduled notifications and clear stored data",
+  "@notificationSettingsClearDataDescription": {
+    "description": "Description text explaining what clear data does"
+  },
+  "notificationSettingsClearDataConfirmTitle": "Clear Notification Data?",
+  "@notificationSettingsClearDataConfirmTitle": {
+    "description": "Title for clear data confirmation dialog"
+  },
+  "notificationSettingsClearDataConfirmMessage": "This will cancel all scheduled notifications and clear stored notification data. Your notification settings will be preserved.\n\nThis action cannot be undone.",
+  "@notificationSettingsClearDataConfirmMessage": {
+    "description": "Message explaining what will happen when clearing data"
+  },
+  "notificationSettingsClearDataConfirmButton": "Clear Data",
+  "@notificationSettingsClearDataConfirmButton": {
+    "description": "Confirmation button to proceed with clearing data"
+  },
+  "notificationSettingsClearDataSuccess": "Notification data cleared successfully ({count} notifications canceled)",
+  "@notificationSettingsClearDataSuccess": {
+    "description": "Success message after clearing data",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "Number of notifications that were canceled"
+      }
+    }
+  },
+  "notificationSettingsClearDataError": "Failed to clear notification data: {error}",
+  "@notificationSettingsClearDataError": {
+    "description": "Error message when clearing data fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error message details"
+      }
+    }
   }
 }

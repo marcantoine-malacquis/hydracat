@@ -136,6 +136,13 @@ class AnalyticsEvents {
 
   /// Snooze toggle event name
   static const String snoozeToggled = 'snooze_toggled';
+
+  /// Privacy learn more event name
+  static const String notificationPrivacyLearnMore =
+      'notification_privacy_learn_more';
+
+  /// Notification data cleared event name
+  static const String notificationDataCleared = 'notification_data_cleared';
 }
 
 /// Analytics parameters
@@ -937,6 +944,75 @@ class AnalyticsService {
       name: AnalyticsEvents.snoozeToggled,
       parameters: {
         'enabled': enabled,
+      },
+    );
+  }
+
+  /// Tracks when user taps "Learn More" to view notification privacy details.
+  ///
+  /// This helps understand user engagement with privacy information and
+  /// identify where users are most curious about data handling.
+  ///
+  /// Parameters:
+  /// - [source]: Where the tap occurred ('preprompt' or 'settings')
+  ///
+  /// Example usage:
+  /// ```dart
+  /// await analyticsService.trackNotificationPrivacyLearnMore(
+  ///   source: 'preprompt',
+  /// );
+  /// ```
+  Future<void> trackNotificationPrivacyLearnMore({
+    required String source,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.notificationPrivacyLearnMore,
+      parameters: {
+        'source': source, // 'preprompt' or 'settings'
+      },
+    );
+  }
+
+  /// Tracks when user clears notification data.
+  ///
+  /// This helps monitor how often users need to reset their notification
+  /// system and identify potential issues with notification reliability.
+  ///
+  /// Parameters:
+  /// - [result]: Operation result ('success' or 'error')
+  /// - [canceledCount]: Number of notifications canceled
+  /// - [errorMessage]: Error details if result='error' (optional)
+  ///
+  /// Example usage:
+  /// ```dart
+  /// // Success case
+  /// await analyticsService.trackNotificationDataCleared(
+  ///   result: 'success',
+  ///   canceledCount: 5,
+  /// );
+  ///
+  /// // Error case
+  /// await analyticsService.trackNotificationDataCleared(
+  ///   result: 'error',
+  ///   canceledCount: 0,
+  ///   errorMessage: 'Permission denied',
+  /// );
+  /// ```
+  Future<void> trackNotificationDataCleared({
+    required String result,
+    required int canceledCount,
+    String? errorMessage,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.notificationDataCleared,
+      parameters: {
+        'result': result, // 'success' or 'error'
+        'canceled_count': canceledCount,
+        if (errorMessage != null) 'error_message': errorMessage,
       },
     );
   }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/notifications/providers/notification_provider.dart';
+import 'package:hydracat/features/notifications/widgets/privacy_details_bottom_sheet.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
@@ -135,7 +136,36 @@ class _NotificationPermissionPrepromptState
                 fontStyle: FontStyle.italic,
               ),
             ),
+            const SizedBox(height: AppSpacing.md),
           ],
+
+          // Privacy notice
+          Text(
+            l10n.notificationPrivacyNoticeShort,
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+
+          // "Learn More" button
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () => _handleLearnMoreTap(context),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(0, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                l10n.notificationPrivacyLearnMoreButton,
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.primary,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
       actions: [
@@ -187,6 +217,25 @@ class _NotificationPermissionPrepromptState
           Text('Checking permission status...'),
         ],
       ),
+    );
+  }
+
+  /// Handles "Learn More" button tap to show privacy details
+  Future<void> _handleLearnMoreTap(BuildContext context) async {
+    // Track analytics
+    await ref
+        .read(analyticsProvider.notifier)
+        .service
+        .trackNotificationPrivacyLearnMore(source: 'preprompt');
+
+    if (!context.mounted) return;
+
+    // Show privacy details bottom sheet
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const PrivacyDetailsBottomSheet(),
     );
   }
 

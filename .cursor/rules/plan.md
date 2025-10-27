@@ -43,21 +43,35 @@ I already did something similar in @onboarding_code_review_report.md . I don't n
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
 
-1. Show a subtle loading indicator on the toggle itself during
-   the operation, display a success toast on completion, and revert the toggle
-  if the operation fails (keeping UI and actual state in sync).
-2. No, I decided to not implement the End-of-Day reminder feature for the V1. It might be implemented in a future version.
-3. Visually disable all sub-toggles when master is off, show a
-   subtle helper text ("Enable notifications above to use these features"), but
-  still allow users to change them so they're ready when notifications are
-  enabled.
-4. No End-of-Day reminder for now as I stated before.
-5. Defer this to a polish phase since it's Android-specific
-  and the canScheduleExactNotifications() method already exists in
-  ReminderPlugin. Focus on the core toggle functionality first.
-6. Yes to analytics tracking for both success and failure
-  cases. If petId is null, disable the toggles and show a message like "Please
-  set up your pet profile first to use notification features."
-7. Yes, Follow the existing notificationSettings* prefix pattern
-  for consistency.
+1. Create a focused "Notification Privacy & Data Handling"
+  section in assets/legal/notification_privacy.md that can be linked from the
+  permission pre-prompt dialog. This keeps it specific to Step 5.4's scope while
+   being easily expandable later. We can add a "Privacy Policy" link in the
+  notification settings screen.
+2. Keep the current approach of only maintaining today's index
+   and auto-cleaning yesterday's index at midnight rollover. This is more
+  privacy-focused (less data retained) and simpler. Notification settings should
+   persist indefinitely since they're user preferences, not sensitive data -
+  only clear them on explicit logout or "Clear notification data" action.
+3. The "Clear notification data" action should: (a) Cancel all
+   currently scheduled notifications, (b) Clear the notification index from
+  SharedPreferences, (c) Keep notification settings intact (they're user
+  preferences, not "data"), and (d) Keep system permission status intact. This
+  provides a "nuclear reset" for the notification system without forcing users
+  to reconfigure their preferences or permissions.
+4. On logout, cancel all scheduled notifications and clear the
+   index, but PRESERVE notification settings in SharedPreferences (keyed by
+  userId). This provides better UX - if the user logs back in, their preference
+  for enabling/disabling notifications is remembered. Users who want to fully
+  clear everything can explicitly use "Clear notification data" before logging
+  out.
+5. Add a concise privacy notice (2-3 sentences) directly in
+  the permission pre-prompt dialog below the existing educational content, with
+  a "Learn More" link that opens a bottom sheet or dialog with full privacy
+  details. Keep it brief but reassuring - mention generic content, local-only
+  storage, and no transmission of medical data.
+6. Unless you have specific regulatory requirements, keep it
+  simple for this medical pet app: clear privacy notices, reasonable defaults
+  (local-only, generic content, minimal retention), and user control options. No
+   complex consent flows or audit logging unless legally required.
 Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them (including the non critical ones). I will test only once we fixed the linting issues.
