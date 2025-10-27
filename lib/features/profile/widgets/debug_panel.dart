@@ -233,18 +233,94 @@ class DebugPanel extends ConsumerWidget {
         false;
   }
 
+  /// Handles test immediate notification button tap
+  Future<void> _handleTestImmediateNotification(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    debugPrint('');
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('🧪 DEBUG PANEL - Test IMMEDIATE Notification');
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('Timestamp: ${DateTime.now().toIso8601String()}');
+
+    try {
+      final plugin = ReminderPlugin();
+      final notificationId = DateTime.now().millisecondsSinceEpoch % 2147483647;
+
+      debugPrint('Showing IMMEDIATE notification...');
+      debugPrint('  Notification ID: $notificationId');
+
+      // Schedule for 1 second in the future (minimum required)
+      final scheduledTime = tz.TZDateTime.now(tz.local).add(
+        const Duration(seconds: 1),
+      );
+
+      debugPrint('Scheduling for: $scheduledTime');
+
+      await plugin.showZoned(
+        id: notificationId,
+        title: '🔔 IMMEDIATE TEST',
+        body: 'This notification should appear in 1 second!',
+        scheduledDate: scheduledTime,
+        payload: '{"test": "immediate"}',
+      );
+
+      debugPrint('✅ Immediate notification triggered!');
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('');
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Test notification scheduled - will appear in 1 second!',
+            ),
+            backgroundColor: Colors.green.shade600,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } on Exception catch (e) {
+      debugPrint('❌ ERROR: $e');
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('');
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed: $e'),
+            backgroundColor: Colors.red.shade600,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
   /// Handles test medication notification button tap
   Future<void> _handleTestMedicationNotification(
     BuildContext context,
     WidgetRef ref,
   ) async {
+    debugPrint('');
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('🧪 DEBUG PANEL - Test Medication Notification');
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('Timestamp: ${DateTime.now().toIso8601String()}');
+
     // Get localized strings before any async operations
     final l10n = AppLocalizations.of(context)!;
 
     try {
       // Check notification permission
+      debugPrint('Checking notification permission...');
       final hasPermission = _checkNotificationPermission(ref);
+      debugPrint('  hasPermission: $hasPermission');
+
       if (!hasPermission) {
+        debugPrint('❌ Permission denied, aborting');
+        debugPrint('═══════════════════════════════════════════════════════');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -259,10 +335,31 @@ class DebugPanel extends ConsumerWidget {
         return;
       }
 
+      // Check exact alarm permission (Android 12+)
+      debugPrint('Checking exact alarm permission (Android 12+)...');
+      final plugin = ReminderPlugin();
+      final canScheduleExact = await plugin.canScheduleExactNotifications();
+      debugPrint('  canScheduleExactNotifications: $canScheduleExact');
+
+      if (!canScheduleExact) {
+        debugPrint('⚠️  WARNING: Exact alarm permission not granted!');
+        debugPrint(
+          '  Notifications may be delayed or not appear on Android 12+',
+        );
+        debugPrint(
+          '  Go to: Settings > Apps > Hydracat Dev > '
+          'Alarms & reminders > Allow',
+        );
+      }
+
       // Get required data
+      debugPrint('Getting medication schedule...');
       final profileState = ref.read(profileProvider);
       final medicationSchedule = profileState.medicationSchedules?.first;
+
       if (medicationSchedule == null) {
+        debugPrint('❌ No medication schedule found');
+        debugPrint('═══════════════════════════════════════════════════════');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -274,10 +371,17 @@ class DebugPanel extends ConsumerWidget {
         }
         return;
       }
+      debugPrint('  Schedule ID: ${medicationSchedule.id}');
 
+      debugPrint('Getting user and pet data...');
       final currentUser = ref.read(currentUserProvider);
       final primaryPet = ref.read(primaryPetProvider);
+
       if (currentUser == null || primaryPet == null) {
+        debugPrint('❌ User or pet data not available');
+        debugPrint('  currentUser: $currentUser');
+        debugPrint('  primaryPet: $primaryPet');
+        debugPrint('═══════════════════════════════════════════════════════');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -289,8 +393,12 @@ class DebugPanel extends ConsumerWidget {
         }
         return;
       }
+      debugPrint('  User ID: ${currentUser.id}');
+      debugPrint('  Pet ID: ${primaryPet.id}');
+      debugPrint('  Pet Name: ${primaryPet.name}');
 
       // Generate notification parameters
+      debugPrint('Generating notification parameters...');
       final timeSlot = _getCurrentTimeSlot();
       final notificationId = generateNotificationId(
         userId: currentUser.id,
@@ -299,6 +407,8 @@ class DebugPanel extends ConsumerWidget {
         timeSlot: timeSlot,
         kind: 'initial',
       );
+      debugPrint('  Notification ID: $notificationId');
+      debugPrint('  Time Slot: $timeSlot');
 
       // Build payload
       final payload = {
@@ -309,20 +419,52 @@ class DebugPanel extends ConsumerWidget {
         'kind': 'initial',
         'treatmentType': 'medication',
       };
+      debugPrint('Payload: ${jsonEncode(payload)}');
 
       // Generate notification content
       final title = l10n.notificationMedicationTitle;
       final body = l10n.notificationMedicationBody(primaryPet.name);
+      debugPrint('  Title: $title');
+      debugPrint('  Body: $body');
 
       // Schedule notification
-      final plugin = ReminderPlugin();
+      final scheduledTime = _getTestScheduleTime();
+      debugPrint('Scheduling notification for: $scheduledTime');
+      debugPrint('  (in 5 seconds from now)');
+
       await plugin.showZoned(
         id: notificationId,
         title: title,
         body: body,
-        scheduledDate: _getTestScheduleTime(),
+        scheduledDate: scheduledTime,
         payload: jsonEncode(payload),
       );
+
+      debugPrint('✅ Notification scheduled successfully!');
+
+      // Verify the notification is actually pending
+      debugPrint('');
+      debugPrint('Verifying pending notifications...');
+      final pendingNotifications = await plugin.pendingNotificationRequests();
+      debugPrint(
+        '  Total pending notifications: ${pendingNotifications.length}',
+      );
+
+      final justScheduled = pendingNotifications
+          .where((n) => n.id == notificationId)
+          .toList();
+      if (justScheduled.isNotEmpty) {
+        debugPrint('  ✅ Found our notification in pending list!');
+        debugPrint('     ID: ${justScheduled.first.id}');
+        debugPrint('     Title: ${justScheduled.first.title}');
+        debugPrint('     Body: ${justScheduled.first.body}');
+      } else {
+        debugPrint('  ❌ WARNING: Notification NOT in pending list!');
+        debugPrint('     This means it was silently rejected by the system.');
+      }
+
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('');
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -337,6 +479,10 @@ class DebugPanel extends ConsumerWidget {
         );
       }
     } on Exception catch (e) {
+      debugPrint('❌ ERROR scheduling test notification: $e');
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('');
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -354,13 +500,24 @@ class DebugPanel extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) async {
+    debugPrint('');
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('🧪 DEBUG PANEL - Test Fluid Notification');
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('Timestamp: ${DateTime.now().toIso8601String()}');
+
     // Get localized strings before any async operations
     final l10n = AppLocalizations.of(context)!;
 
     try {
       // Check notification permission
+      debugPrint('Checking notification permission...');
       final hasPermission = _checkNotificationPermission(ref);
+      debugPrint('  hasPermission: $hasPermission');
+
       if (!hasPermission) {
+        debugPrint('❌ Permission denied, aborting');
+        debugPrint('═══════════════════════════════════════════════════════');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -375,10 +532,31 @@ class DebugPanel extends ConsumerWidget {
         return;
       }
 
+      // Check exact alarm permission (Android 12+)
+      debugPrint('Checking exact alarm permission (Android 12+)...');
+      final plugin = ReminderPlugin();
+      final canScheduleExact = await plugin.canScheduleExactNotifications();
+      debugPrint('  canScheduleExactNotifications: $canScheduleExact');
+
+      if (!canScheduleExact) {
+        debugPrint('⚠️  WARNING: Exact alarm permission not granted!');
+        debugPrint(
+          '  Notifications may be delayed or not appear on Android 12+',
+        );
+        debugPrint(
+          '  Go to: Settings > Apps > Hydracat Dev > '
+          'Alarms & reminders > Allow',
+        );
+      }
+
       // Get required data
+      debugPrint('Getting fluid schedule...');
       final profileState = ref.read(profileProvider);
       final fluidSchedule = profileState.fluidSchedule;
+
       if (fluidSchedule == null) {
+        debugPrint('❌ No fluid schedule found');
+        debugPrint('═══════════════════════════════════════════════════════');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -390,10 +568,17 @@ class DebugPanel extends ConsumerWidget {
         }
         return;
       }
+      debugPrint('  Schedule ID: ${fluidSchedule.id}');
 
+      debugPrint('Getting user and pet data...');
       final currentUser = ref.read(currentUserProvider);
       final primaryPet = ref.read(primaryPetProvider);
+
       if (currentUser == null || primaryPet == null) {
+        debugPrint('❌ User or pet data not available');
+        debugPrint('  currentUser: $currentUser');
+        debugPrint('  primaryPet: $primaryPet');
+        debugPrint('═══════════════════════════════════════════════════════');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -405,8 +590,12 @@ class DebugPanel extends ConsumerWidget {
         }
         return;
       }
+      debugPrint('  User ID: ${currentUser.id}');
+      debugPrint('  Pet ID: ${primaryPet.id}');
+      debugPrint('  Pet Name: ${primaryPet.name}');
 
       // Generate notification parameters
+      debugPrint('Generating notification parameters...');
       final timeSlot = _getCurrentTimeSlot();
       final notificationId = generateNotificationId(
         userId: currentUser.id,
@@ -415,6 +604,8 @@ class DebugPanel extends ConsumerWidget {
         timeSlot: timeSlot,
         kind: 'initial',
       );
+      debugPrint('  Notification ID: $notificationId');
+      debugPrint('  Time Slot: $timeSlot');
 
       // Build payload
       final payload = {
@@ -425,21 +616,31 @@ class DebugPanel extends ConsumerWidget {
         'kind': 'initial',
         'treatmentType': 'fluid',
       };
+      debugPrint('Payload: ${jsonEncode(payload)}');
 
       // Generate notification content
       final title = l10n.notificationFluidTitle;
       final body = l10n.notificationFluidBody(primaryPet.name);
+      debugPrint('  Title: $title');
+      debugPrint('  Body: $body');
 
       // Schedule notification
-      final plugin = ReminderPlugin();
+      final scheduledTime = _getTestScheduleTime();
+      debugPrint('Scheduling notification for: $scheduledTime');
+      debugPrint('  (in 5 seconds from now)');
+
       await plugin.showZoned(
         id: notificationId,
         title: title,
         body: body,
-        scheduledDate: _getTestScheduleTime(),
+        scheduledDate: scheduledTime,
         channelId: 'fluid_reminders',
         payload: jsonEncode(payload),
       );
+
+      debugPrint('✅ Notification scheduled successfully!');
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('');
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -454,6 +655,10 @@ class DebugPanel extends ConsumerWidget {
         );
       }
     } on Exception catch (e) {
+      debugPrint('❌ ERROR scheduling test notification: $e');
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('');
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -468,16 +673,16 @@ class DebugPanel extends ConsumerWidget {
 
   /// Checks if notification permission is granted
   bool _checkNotificationPermission(WidgetRef ref) {
-    final permissionStatus =
-        ref.read(notificationPermissionStatusProvider).value;
+    final permissionStatus = ref
+        .read(notificationPermissionStatusProvider)
+        .value;
     return permissionStatus == NotificationPermissionStatus.granted;
   }
 
   /// Returns the scheduled time for test notifications (now + 5 seconds)
   tz.TZDateTime _getTestScheduleTime() {
-    final now = DateTime.now();
-    final scheduledTime = now.add(const Duration(seconds: 5));
-    return tz.TZDateTime.from(scheduledTime, tz.local);
+    // Use tz.TZDateTime.now() directly to avoid timezone conversion issues
+    return tz.TZDateTime.now(tz.local).add(const Duration(seconds: 5));
   }
 
   /// Returns current time as "HH:mm" format
@@ -490,8 +695,7 @@ class DebugPanel extends ConsumerWidget {
   /// Builds the test notifications section with test buttons
   Widget _buildTestNotificationsSection(BuildContext context, WidgetRef ref) {
     final profileState = ref.watch(profileProvider);
-    final hasMedication =
-        profileState.medicationSchedules?.isNotEmpty ?? false;
+    final hasMedication = profileState.medicationSchedules?.isNotEmpty ?? false;
     final hasFluid = profileState.fluidSchedule != null;
 
     // If no schedules exist, show info message
@@ -536,6 +740,23 @@ class DebugPanel extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
+              onPressed: () => _handleTestImmediateNotification(context, ref),
+              icon: const Icon(Icons.notification_add, size: 16),
+              label: const Text('Test IMMEDIATE Notification'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.green.shade700,
+                side: BorderSide(color: Colors.green.shade300),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xs,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
               onPressed: () => _handleTestMedicationNotification(context, ref),
               icon: const Icon(Icons.medication, size: 16),
               label: const Text('Test Medication Reminder (5s)'),
@@ -570,7 +791,216 @@ class DebugPanel extends ConsumerWidget {
               ),
             ),
           ),
+
+        // Snooze test button (works with any schedule)
+        if (hasMedication || hasFluid) ...[
+          const SizedBox(height: AppSpacing.sm),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _handleTestSnoozeNotification(context, ref),
+              icon: const Icon(Icons.snooze, size: 16),
+              label: const Text('Test Snooze Action (5s)'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.purple.shade700,
+                side: BorderSide(color: Colors.purple.shade300),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xs,
+                ),
+              ),
+            ),
+          ),
+        ],
       ],
     );
+  }
+
+  /// Handles testing a snooze notification with both action buttons.
+  ///
+  /// Schedules a test notification 5 seconds in the future with both
+  /// "Log now" and "Snooze 15 min" action buttons. Uses first available
+  /// schedule (medication or fluid).
+  Future<void> _handleTestSnoozeNotification(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    debugPrint('');
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('🧪 DEBUG PANEL - Test Snooze Notification');
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('Timestamp: ${DateTime.now().toIso8601String()}');
+
+    // Get localized strings before any async operations
+    final l10n = AppLocalizations.of(context)!;
+
+    try {
+      // Check notification permission
+      debugPrint('Checking notification permission...');
+      final hasPermission = _checkNotificationPermission(ref);
+      debugPrint('  hasPermission: $hasPermission');
+
+      if (!hasPermission) {
+        debugPrint('❌ Permission denied, aborting');
+        debugPrint('═══════════════════════════════════════════════════════');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Please grant notification permissions in Settings',
+              ),
+              backgroundColor: Colors.red.shade600,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Get required data
+      debugPrint('Getting first available schedule...');
+      final profileState = ref.read(profileProvider);
+      final medicationSchedule = profileState.medicationSchedules?.first;
+      final fluidSchedule = profileState.fluidSchedule;
+
+      // Use medication schedule if available, otherwise fluid
+      String scheduleId;
+      String treatmentType;
+      if (medicationSchedule != null) {
+        scheduleId = medicationSchedule.id;
+        treatmentType = 'medication';
+        debugPrint('  Using medication schedule');
+      } else if (fluidSchedule != null) {
+        scheduleId = fluidSchedule.id;
+        treatmentType = 'fluid';
+        debugPrint('  Using fluid schedule');
+      } else {
+        debugPrint('❌ No schedule found');
+        debugPrint('═══════════════════════════════════════════════════════');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('No schedule found for testing'),
+              backgroundColor: Colors.red.shade600,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+      debugPrint('  Schedule ID: $scheduleId');
+      debugPrint('  Treatment type: $treatmentType');
+
+      debugPrint('Getting user and pet data...');
+      final currentUser = ref.read(currentUserProvider);
+      final primaryPet = ref.read(primaryPetProvider);
+
+      if (currentUser == null || primaryPet == null) {
+        debugPrint('❌ User or pet data not available');
+        debugPrint('═══════════════════════════════════════════════════════');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('User or pet data not available'),
+              backgroundColor: Colors.red.shade600,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+      debugPrint('  User ID: ${currentUser.id}');
+      debugPrint('  Pet ID: ${primaryPet.id}');
+      debugPrint('  Pet Name: ${primaryPet.name}');
+
+      // Generate notification parameters
+      debugPrint('Generating notification parameters...');
+      final timeSlot = _getCurrentTimeSlot();
+      debugPrint('  Time slot: $timeSlot');
+
+      final notificationId = generateNotificationId(
+        userId: currentUser.id,
+        petId: primaryPet.id,
+        scheduleId: scheduleId,
+        timeSlot: timeSlot,
+        kind: 'initial',
+      );
+      debugPrint('  Notification ID: $notificationId');
+
+      // Build payload
+      final payload = json.encode({
+        'userId': currentUser.id,
+        'petId': primaryPet.id,
+        'scheduleId': scheduleId,
+        'timeSlot': timeSlot,
+        'kind': 'initial',
+        'treatmentType': treatmentType,
+      });
+      debugPrint('  Payload: $payload');
+
+      // Schedule test notification for 5 seconds from now
+      debugPrint('Scheduling test notification...');
+      final scheduledTime = tz.TZDateTime.now(tz.local).add(
+        const Duration(seconds: 5),
+      );
+      debugPrint('  Scheduled time: $scheduledTime');
+
+      final plugin = ReminderPlugin();
+      await plugin.showZoned(
+        id: notificationId,
+        title: treatmentType == 'medication'
+            ? l10n.notificationMedicationTitle
+            : l10n.notificationFluidTitle,
+        body: treatmentType == 'medication'
+            ? l10n.notificationMedicationBody(primaryPet.name)
+            : l10n.notificationFluidBody(primaryPet.name),
+        scheduledDate: scheduledTime,
+        channelId: treatmentType == 'medication'
+            ? 'medication_reminders'
+            : 'fluid_reminders',
+        payload: payload,
+        groupId: 'pet_${primaryPet.id}',
+        threadIdentifier: 'pet_${primaryPet.id}',
+      );
+
+      debugPrint('✅ Test notification scheduled successfully!');
+      debugPrint('');
+      debugPrint('Expected behavior:');
+      debugPrint('  1. Notification appears in ~5 seconds');
+      debugPrint('  2. Shows "Log now" and "Snooze 15 min" buttons');
+      debugPrint('  3. Tapping "Snooze 15 min" should:');
+      debugPrint('     - Dismiss the notification');
+      debugPrint('     - Schedule a new notification for now+15min');
+      debugPrint('     - New notification only has "Log now" button');
+      debugPrint('  4. Tapping "Log now" or notification body should:');
+      debugPrint('     - Open logging screen with treatment pre-selected');
+      debugPrint('═══════════════════════════════════════════════════════');
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Snooze test notification scheduled for '
+              '${scheduledTime.toLocal()}',
+            ),
+            backgroundColor: Colors.green.shade600,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } on Exception catch (e, stackTrace) {
+      debugPrint('❌ ERROR: $e');
+      debugPrint('Stack trace: $stackTrace');
+      debugPrint('═══════════════════════════════════════════════════════');
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to schedule test notification: $e'),
+            backgroundColor: Colors.red.shade600,
+          ),
+        );
+      }
+    }
   }
 }

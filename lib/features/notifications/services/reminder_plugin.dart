@@ -28,6 +28,10 @@ class ReminderPlugin {
   /// Whether the plugin has been initialized
   bool _isInitialized = false;
 
+  /// iOS notification category identifier for treatment reminders
+  /// This category includes the "Log now" action button
+  static const String iosCategoryId = 'TREATMENT_REMINDER';
+
   /// Getter for initialization status
   bool get isInitialized => _isInitialized;
 
@@ -75,6 +79,9 @@ class ReminderPlugin {
       // Create notification channels for Android
       await _createNotificationChannels();
 
+      // Create notification categories for iOS
+      await _createNotificationCategoriesIOS();
+
       if (initialized ?? false) {
         _isInitialized = true;
         _devLog('ReminderPlugin initialized successfully');
@@ -111,20 +118,32 @@ class ReminderPlugin {
   ///
   /// If the payload is missing or invalid, the tap is logged and ignored.
   void _onDidReceiveNotificationResponse(NotificationResponse response) {
-    _devLog(
-      'Notification tapped: ${response.id}, '
-      'payload: ${response.payload}',
-    );
+    _devLog('');
+    _devLog('═══════════════════════════════════════════════════════');
+    _devLog('🔔 NOTIFICATION TAP DETECTED - ReminderPlugin Callback');
+    _devLog('═══════════════════════════════════════════════════════');
+    _devLog('Timestamp: ${DateTime.now().toIso8601String()}');
+    _devLog('Notification ID: ${response.id}');
+    _devLog('Action ID: ${response.actionId}');
+    _devLog('Input: ${response.input}');
+    _devLog('Notification Type: ${response.notificationResponseType}');
+    _devLog('Payload: ${response.payload}');
+    _devLog('');
 
     // Validate payload exists
     if (response.payload == null || response.payload!.isEmpty) {
-      _devLog('⚠️ Notification tap has no payload, ignoring');
+      _devLog('❌ CRITICAL: Notification tap has no payload, ignoring');
+      _devLog('═══════════════════════════════════════════════════════');
       return;
     }
+
+    _devLog('✅ Payload exists, proceeding to parse...');
 
     try {
       // Parse payload to validate JSON structure
       final payloadMap = json.decode(response.payload!) as Map<String, dynamic>;
+      _devLog('✅ Payload JSON parsed successfully');
+      _devLog('Payload contents: $payloadMap');
 
       // Validate required fields
       final requiredFields = [
@@ -135,19 +154,61 @@ class ReminderPlugin {
         'kind',
         'treatmentType',
       ];
+
+      var missingFields = 0;
       for (final field in requiredFields) {
         if (!payloadMap.containsKey(field)) {
           _devLog('⚠️ Notification payload missing required field: $field');
+          missingFields++;
           // Continue anyway - handler will validate and fall back gracefully
         }
       }
 
-      // Trigger notification tap handler
-      NotificationTapHandler.notificationTapPayload = response.payload!;
-      _devLog('Notification tap handler triggered');
+      if (missingFields == 0) {
+        _devLog('✅ All required fields present in payload');
+      } else {
+        _devLog('⚠️ Missing $missingFields required field(s)');
+      }
+
+      // Route to appropriate handler based on action ID
+      _devLog('');
+      _devLog('Step 3: Routing based on action ID...');
+      _devLog('Action ID: ${response.actionId}');
+
+      if (response.actionId == 'snooze') {
+        // User tapped "Snooze 15 min" action button
+        _devLog('');
+        _devLog(
+          '📤 SNOOZE ACTION: Calling NotificationTapHandler '
+          'notificationSnoozePayload setter...',
+        );
+        NotificationTapHandler.notificationSnoozePayload = response.payload!;
+        _devLog(
+          '✅ NotificationTapHandler '
+          'notificationSnoozePayload SET',
+        );
+        _devLog('This should trigger AppShell snooze listener...');
+      } else {
+        // User tapped notification body or "Log now" action button
+        _devLog('');
+        _devLog(
+          '📤 TAP/LOG NOW: Calling NotificationTapHandler '
+          'notificationTapPayload setter...',
+        );
+        NotificationTapHandler.notificationTapPayload = response.payload!;
+        _devLog(
+          '✅ NotificationTapHandler '
+          'notificationTapPayload SET',
+        );
+        _devLog('This should trigger AppShell tap listener...');
+      }
+
+      _devLog('═══════════════════════════════════════════════════════');
+      _devLog('');
     } on Exception catch (e, stackTrace) {
-      _devLog('ERROR parsing notification payload: $e');
+      _devLog('❌ ERROR parsing notification payload: $e');
       _devLog('Stack trace: $stackTrace');
+      _devLog('═══════════════════════════════════════════════════════');
       // Don't rethrow - gracefully ignore invalid payloads
     }
   }
@@ -187,17 +248,20 @@ class ReminderPlugin {
       // Create channels
       await _plugin!
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.createNotificationChannel(medicationChannel);
 
       await _plugin!
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.createNotificationChannel(fluidChannel);
 
       await _plugin!
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.createNotificationChannel(summaryChannel);
 
       _devLog('Created Android notification channels successfully');
@@ -205,6 +269,72 @@ class ReminderPlugin {
       _devLog('Failed to create notification channels: $e');
       _devLog('Stack trace: $stackTrace');
       // Don't rethrow - channel creation failure shouldn't block init
+    }
+  }
+
+  /// Create iOS notification categories.
+  ///
+  /// Categories define the actions available when a user swipes or long-presses
+  /// a notification on iOS. We create a single category for treatment reminders
+  /// with "Log now" and "Snooze 15 min" action buttons.
+  ///
+  /// This is called once during initialization and allows us to add action
+  /// buttons that appear on notifications.
+  Future<void> _createNotificationCategoriesIOS() async {
+    if (_plugin == null || !Platform.isIOS) return;
+
+    try {
+      // Create "Log now" action
+      // TODO(Phase6): Use localized string from AppLocalizations
+      final logNowAction = DarwinNotificationAction.plain(
+        'log_now',
+        'Log now',
+        options: <DarwinNotificationActionOption>{
+          // Brings app to foreground when tapped
+          DarwinNotificationActionOption.foreground,
+        },
+      );
+
+      // Create "Snooze 15 min" action
+      // TODO(Phase6): Use localized string from AppLocalizations
+      final snoozeAction = DarwinNotificationAction.plain(
+        'snooze',
+        'Snooze 15 min',
+        options: <DarwinNotificationActionOption>{
+          // Brings app to foreground when tapped
+          DarwinNotificationActionOption.foreground,
+        },
+      );
+
+      // Create notification category for treatment reminders
+      // iOS supports up to 4 actions per category
+      final treatmentCategory = DarwinNotificationCategory(
+        iosCategoryId,
+        actions: <DarwinNotificationAction>[logNowAction, snoozeAction],
+        options: <DarwinNotificationCategoryOption>{
+          // Allow custom dismiss action
+          DarwinNotificationCategoryOption.customDismissAction,
+        },
+      );
+
+      // Register category with plugin
+      await _plugin!
+          .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin>()
+          ?.initialize(
+            DarwinInitializationSettings(
+              requestAlertPermission: false,
+              requestBadgePermission: false,
+              requestSoundPermission: false,
+              notificationCategories: [treatmentCategory],
+            ),
+          );
+
+      _devLog('Created iOS notification category successfully');
+    } on Exception catch (e, stackTrace) {
+      _devLog('Failed to create iOS notification categories: $e');
+      _devLog('Stack trace: $stackTrace');
+      // Don't rethrow - category creation failure shouldn't block init
     }
   }
 
@@ -252,6 +382,21 @@ class ReminderPlugin {
           channelName = 'Medication Reminders';
       }
 
+      // Create Android notification actions
+      // TODO(Phase6): Use localized string from AppLocalizations
+      const androidActions = [
+        AndroidNotificationAction(
+          'log_now',
+          'Log now',
+          showsUserInterface: true, // Brings app to foreground
+        ),
+        AndroidNotificationAction(
+          'snooze',
+          'Snooze 15 min',
+          // showsUserInterface defaults to false (dismisses notification)
+        ),
+      ];
+
       await _plugin!.zonedSchedule(
         id,
         title,
@@ -265,9 +410,11 @@ class ReminderPlugin {
             priority: Priority.high,
             color: const Color(0xFF6BB8A8),
             groupKey: groupId,
+            actions: androidActions,
           ),
           iOS: DarwinNotificationDetails(
             threadIdentifier: threadIdentifier,
+            categoryIdentifier: iosCategoryId,
           ),
         ),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -397,8 +544,9 @@ class ReminderPlugin {
         body = '$fluidCount fluid therapy $plural';
       } else if (medicationCount > 0 && fluidCount > 0) {
         final medPlural = medicationCount == 1 ? 'medication' : 'medications';
-        final fluidPlural =
-            fluidCount == 1 ? 'fluid therapy' : 'fluid therapies';
+        final fluidPlural = fluidCount == 1
+            ? 'fluid therapy'
+            : 'fluid therapies';
         body = '$medicationCount $medPlural, $fluidCount $fluidPlural';
       } else {
         // No notifications, don't show summary
@@ -479,7 +627,7 @@ class ReminderPlugin {
   /// - The details cannot be retrieved
   /// - An error occurs during retrieval
   Future<NotificationAppLaunchDetails?>
-      getNotificationAppLaunchDetails() async {
+  getNotificationAppLaunchDetails() async {
     if (!_isInitialized || _plugin == null) {
       _devLog('Cannot get launch details: plugin not initialized');
       return null;

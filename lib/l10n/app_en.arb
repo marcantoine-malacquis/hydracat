@@ -575,6 +575,12 @@
     "description": "Group summary body when both medication and fluid reminders exist"
   },
 
+  "@_NOTIFICATION_ACTIONS": {},
+  "notificationActionLogNow": "Log now",
+  "@notificationActionLogNow": {
+    "description": "Text for notification action button to log treatment immediately"
+  },
+
   "@_NOTIFICATION_DEEP_LINK": {},
   "notificationAuthRequired": "Please log in to record this treatment",
   "@notificationAuthRequired": {

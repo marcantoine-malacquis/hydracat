@@ -117,6 +117,9 @@ class AnalyticsEvents {
   /// Reminder tapped event name
   static const String reminderTapped = 'reminder_tapped';
 
+  /// Reminder snoozed event name
+  static const String reminderSnoozed = 'reminder_snoozed';
+
   /// Notification icon tapped event name
   static const String notificationIconTapped = 'notification_icon_tapped';
 
@@ -757,6 +760,48 @@ class AnalyticsService {
         AnalyticsParams.treatmentType: treatmentType,
         'kind': kind,
         'schedule_id': scheduleId,
+        'result': result,
+      },
+    );
+  }
+
+  /// Track notification snooze action.
+  ///
+  /// Tracks when user taps "Snooze 15 min" action button on a notification.
+  /// Helps understand snooze feature usage and identify failure patterns.
+  ///
+  /// Parameters:
+  /// - [treatmentType]: Type of treatment ('medication' or 'fluid')
+  /// - [kind]: Original notification kind that was snoozed
+  ///   ('initial' or 'followup')
+  /// - [scheduleId]: Schedule ID for analytics correlation
+  /// - [timeSlot]: Original time slot in "HH:mm" format
+  /// - [result]: Outcome of snooze operation
+  ///
+  /// Result values:
+  /// - 'success': Snooze scheduled successfully
+  /// - 'snooze_disabled': User has snoozeEnabled=false in settings
+  /// - 'invalid_payload': Malformed notification payload
+  /// - 'invalid_kind': Attempted to snooze a 'snooze' notification
+  /// - 'settings_not_loaded': NotificationSettings provider unavailable
+  /// - 'scheduling_failed': Plugin.showZoned threw exception
+  /// - 'unknown_error': Unexpected error during snooze operation
+  Future<void> trackReminderSnoozed({
+    required String treatmentType,
+    required String kind,
+    required String scheduleId,
+    required String timeSlot,
+    required String result,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.reminderSnoozed,
+      parameters: {
+        AnalyticsParams.treatmentType: treatmentType,
+        'kind': kind,
+        'schedule_id': scheduleId,
+        'time_slot': timeSlot,
         'result': result,
       },
     );

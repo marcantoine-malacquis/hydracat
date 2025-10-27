@@ -46,16 +46,65 @@ Future<void> main() async {
 /// Initialize timezone database for scheduling notifications.
 ///
 /// This must be called before scheduling any timezone-aware notifications.
-/// Uses the device's local timezone automatically.
+/// Detects and uses the device's local timezone.
 Future<void> _initializeTimezone() async {
   try {
     _devLog('Initializing timezone database...');
     tz.initializeTimeZones();
-    tz.setLocalLocation(tz.local);
-    _devLog('Timezone initialized: ${tz.local.name}');
+
+    // Detect device timezone
+    // Get the device's UTC offset
+    final now = DateTime.now();
+    final offsetInHours = now.timeZoneOffset.inHours;
+    final offsetInMinutes = now.timeZoneOffset.inMinutes % 60;
+
+    _devLog(
+      'Device timezone offset: ${offsetInHours >= 0 ? "+" : ""}$offsetInHours:'
+      '${offsetInMinutes.abs().toString().padLeft(2, "0")}',
+    );
+
+    // Try to find a timezone that matches the device offset
+    // Common timezone mappings based on offset
+    final timezoneNames = {
+      -12: 'Etc/GMT+12',
+      -11: 'Pacific/Midway',
+      -10: 'Pacific/Honolulu',
+      -9: 'America/Anchorage',
+      -8: 'America/Los_Angeles',
+      -7: 'America/Denver',
+      -6: 'America/Chicago',
+      -5: 'America/New_York',
+      -4: 'America/Halifax',
+      -3: 'America/Sao_Paulo',
+      -2: 'Atlantic/South_Georgia',
+      -1: 'Atlantic/Azores',
+      0: 'Europe/London',
+      1: 'Europe/Paris',
+      2: 'Europe/Athens',
+      3: 'Europe/Moscow',
+      4: 'Asia/Dubai',
+      5: 'Asia/Karachi',
+      6: 'Asia/Dhaka',
+      7: 'Asia/Bangkok',
+      8: 'Asia/Singapore',
+      9: 'Asia/Tokyo',
+      10: 'Australia/Sydney',
+      11: 'Pacific/Guadalcanal',
+      12: 'Pacific/Fiji',
+    };
+
+    final locationName =
+        timezoneNames[offsetInHours] ?? 'Etc/GMT${-offsetInHours}';
+    final location = tz.getLocation(locationName);
+
+    tz.setLocalLocation(location);
+    _devLog('Timezone initialized: ${location.name} (offset: '
+        '${offsetInHours >= 0 ? "+" : ""}$offsetInHours hours)');
   } on Exception catch (e) {
     _devLog('Failed to initialize timezone: $e');
-    // Continue anyway - timezone will use UTC as fallback
+    _devLog('Falling back to UTC');
+    // Fallback to UTC
+    tz.setLocalLocation(tz.getLocation('UTC'));
   }
 }
 

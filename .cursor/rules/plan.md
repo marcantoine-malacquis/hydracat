@@ -44,37 +44,3 @@ Please update logging_plan.md to take into consideration what we just implemente
 
 
 
-1. a) Option A - Show an empathetic dialog explaining the
-  medical importance ("Never miss critical treatment times for [PetName]"), with
-   a clear "Open Settings" button.
-b) Option B - Navigate to notification settings screen
-  (which you'll build in Phase 5, Step 5.3)
-2. Place it alongside the ConnectionStatusWidget.
-3. a) yes, sorry I meant a bell icon. Option A - Icons.notifications and
-  Icons.notifications_off. These are universally recognized, accessible, and
-  match platform conventions.
-b) Yes. Use green/primary color when granted, grey/warning
-  color when denied. 
-4. a) Show the icon in ALL states with different visuals:
-  - granted: Normal bell icon (green/primary color)
-  - denied/notDetermined: Barred bell icon (grey/warning color) - tappable to
-  request/explain
-  - permanentlyDenied (Android only): Barred bell with more urgent color
-  (orange) - tappable to open Settings
-b) Use isNotificationEnabledProvider (combined state). If
-  user has permission but disabled notifications in-app settings, show the
-  barred icon. This gives users one clear place to understand notification
-  status.
-5. a) Yes. Show context-appropriate messages:
-  - Permission denied → "Enable notifications in Settings to receive treatment
-  reminders"
-  - Setting disabled → "Notifications are disabled in app settings" with button
-  to settings screen
-  - Both → "Enable notifications in Settings, then turn them on in app settings"
-6. a) just create a placeholder/navigation for future
-   implementation
-7. Yes. Track notification_icon_tapped with parameters:
-  permission_status, action_taken (opened_settings,
-  navigated_to_settings_screen, dismissed). This helps understand friction in
-  permission flow.
-Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them (including the non critical ones). I will test only once we fixed the linting issues.

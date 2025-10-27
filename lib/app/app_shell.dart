@@ -13,6 +13,7 @@ import 'package:hydracat/features/logging/screens/medication_logging_screen.dart
 import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/logging/widgets/quick_log_success_popup.dart';
 import 'package:hydracat/features/logging/widgets/treatment_choice_popup.dart';
+import 'package:hydracat/features/notifications/providers/notification_provider.dart';
 import 'package:hydracat/features/notifications/services/notification_tap_handler.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
@@ -44,6 +45,7 @@ class _AppShellState extends ConsumerState<AppShell>
     with WidgetsBindingObserver {
   late final VoidCallback _overlayListener;
   late final VoidCallback _notificationTapListener;
+  late final VoidCallback _notificationSnoozeListener;
   final List<HydraNavigationItem> _navigationItems = const [
     HydraNavigationItem(icon: AppIcons.home, label: 'Home', route: '/'),
     HydraNavigationItem(
@@ -103,6 +105,12 @@ class _AppShellState extends ConsumerState<AppShell>
     NotificationTapHandler.pendingTapPayload.addListener(
       _notificationTapListener,
     );
+
+    // Listen for notification snooze actions
+    _notificationSnoozeListener = _handleNotificationSnooze;
+    NotificationTapHandler.pendingSnoozePayload.addListener(
+      _notificationSnoozeListener,
+    );
   }
 
   @override
@@ -111,6 +119,9 @@ class _AppShellState extends ConsumerState<AppShell>
     OverlayService.isShowingNotifier.removeListener(_overlayListener);
     NotificationTapHandler.pendingTapPayload.removeListener(
       _notificationTapListener,
+    );
+    NotificationTapHandler.pendingSnoozePayload.removeListener(
+      _notificationSnoozeListener,
     );
     super.dispose();
   }
@@ -291,18 +302,36 @@ class _AppShellState extends ConsumerState<AppShell>
   /// This is triggered when the user taps a notification. The payload is
   /// validated and processed to deep-link to the appropriate logging screen.
   void _handleNotificationTap() {
+    _devLog('');
+    _devLog('═══════════════════════════════════════════════════════');
+    _devLog('👂 APPSHELL LISTENER TRIGGERED');
+    _devLog('═══════════════════════════════════════════════════════');
+    _devLog('Timestamp: ${DateTime.now().toIso8601String()}');
+
     final payload = NotificationTapHandler.pendingTapPayload.value;
 
+    _devLog('Payload from NotificationTapHandler: $payload');
+
     // Ignore if no payload
-    if (payload == null || payload.isEmpty) return;
+    if (payload == null || payload.isEmpty) {
+      _devLog('❌ Payload is null or empty, ignoring');
+      _devLog('═══════════════════════════════════════════════════════');
+      return;
+    }
+
+    _devLog('✅ Valid payload detected, clearing and scheduling processing');
 
     // Clear immediately to avoid re-triggering
     NotificationTapHandler.clearPendingTap();
 
     // Schedule handling after current frame
+    _devLog('📅 Scheduling _processNotificationPayload via '
+        'addPostFrameCallback');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _processNotificationPayload(payload);
     });
+    _devLog('═══════════════════════════════════════════════════════');
+    _devLog('');
   }
 
   /// Process and validate notification payload for deep-linking.
@@ -311,11 +340,24 @@ class _AppShellState extends ConsumerState<AppShell>
   /// state, and navigates to the appropriate logging screen with auto-
   /// selection of the treatment from the notification.
   Future<void> _processNotificationPayload(String payload) async {
+    _devLog('');
+    _devLog('═══════════════════════════════════════════════════════');
+    _devLog('🔍 PROCESSING NOTIFICATION PAYLOAD');
+    _devLog('═══════════════════════════════════════════════════════');
+    _devLog('Timestamp: ${DateTime.now().toIso8601String()}');
+    _devLog('Raw payload: $payload');
+    _devLog('');
+
     try {
       // Parse JSON payload
+      _devLog('Step 1: Parsing JSON payload...');
       final payloadMap = json.decode(payload) as Map<String, dynamic>;
+      _devLog('✅ JSON parsed successfully');
+      _devLog('Payload map: $payloadMap');
 
       // Extract and validate required fields
+      _devLog('');
+      _devLog('Step 2: Extracting required fields...');
       final userId = payloadMap['userId'] as String?;
       final petId = payloadMap['petId'] as String?;
       final scheduleId = payloadMap['scheduleId'] as String?;
@@ -323,29 +365,51 @@ class _AppShellState extends ConsumerState<AppShell>
       final kind = payloadMap['kind'] as String?;
       final treatmentType = payloadMap['treatmentType'] as String?;
 
+      _devLog('  userId: $userId');
+      _devLog('  petId: $petId');
+      _devLog('  scheduleId: $scheduleId');
+      _devLog('  timeSlot: $timeSlot');
+      _devLog('  kind: $kind');
+      _devLog('  treatmentType: $treatmentType');
+
       // Validate all required fields present
+      _devLog('');
+      _devLog('Step 3: Validating required fields...');
       if (userId == null ||
           petId == null ||
           scheduleId == null ||
           timeSlot == null ||
           kind == null ||
           treatmentType == null) {
-        _devLog('⚠️ Invalid notification payload: missing required fields');
+        _devLog(
+          '❌ FAILED: Invalid notification payload: missing required fields',
+        );
+        _devLog('═══════════════════════════════════════════════════════');
         _trackNotificationTapFailure('invalid_payload');
         return;
       }
+      _devLog('✅ All required fields present');
 
       // Validate treatmentType
+      _devLog('');
+      _devLog('Step 4: Validating treatmentType...');
       if (treatmentType != 'medication' && treatmentType != 'fluid') {
-        _devLog('⚠️ Invalid treatmentType in payload: $treatmentType');
+        _devLog('❌ FAILED: Invalid treatmentType in payload: $treatmentType');
+        _devLog('═══════════════════════════════════════════════════════');
         _trackNotificationTapFailure('invalid_treatment_type');
         return;
       }
+      _devLog('✅ Treatment type is valid: $treatmentType');
 
       // Check authentication
+      _devLog('');
+      _devLog('Step 5: Checking authentication...');
       final isAuthenticated = ref.read(isAuthenticatedProvider);
+      _devLog('  isAuthenticated: $isAuthenticated');
+
       if (!isAuthenticated) {
-        _devLog('User not authenticated, redirecting to login');
+        _devLog('❌ FAILED: User not authenticated, redirecting to login');
+        _devLog('═══════════════════════════════════════════════════════');
         _trackNotificationTapFailure('user_not_authenticated');
 
         if (mounted) {
@@ -367,11 +431,19 @@ class _AppShellState extends ConsumerState<AppShell>
         }
         return;
       }
+      _devLog('✅ User is authenticated');
 
       // Check onboarding completed
+      _devLog('');
+      _devLog('Step 6: Checking onboarding status...');
       final hasCompletedOnboarding = ref.read(hasCompletedOnboardingProvider);
+      _devLog('  hasCompletedOnboarding: $hasCompletedOnboarding');
+
       if (!hasCompletedOnboarding) {
-        _devLog('Onboarding not completed, redirecting to onboarding');
+        _devLog(
+          '❌ FAILED: Onboarding not completed, redirecting to onboarding',
+        );
+        _devLog('═══════════════════════════════════════════════════════');
         _trackNotificationTapFailure('onboarding_not_completed');
 
         if (mounted) {
@@ -379,45 +451,77 @@ class _AppShellState extends ConsumerState<AppShell>
         }
         return;
       }
+      _devLog('✅ Onboarding completed');
 
       // Check pet loaded
+      _devLog('');
+      _devLog('Step 7: Checking if primary pet is loaded...');
       final primaryPet = ref.read(primaryPetProvider);
+      _devLog('  primaryPet: ${primaryPet?.name ?? "null"}');
+
       if (primaryPet == null) {
-        _devLog('Primary pet not loaded, cannot show logging screen');
+        _devLog('❌ FAILED: Primary pet not loaded, cannot show logging screen');
+        _devLog('═══════════════════════════════════════════════════════');
         _trackNotificationTapFailure('pet_not_loaded');
         return;
       }
+      _devLog('✅ Primary pet loaded: ${primaryPet.name}');
 
       // Validate schedule exists
+      _devLog('');
+      _devLog('Step 8: Validating schedule exists...');
       var scheduleExists = false;
       if (treatmentType == 'medication') {
         final medicationSchedules = ref.read(todaysMedicationSchedulesProvider);
+        _devLog(
+          '  Medication schedules count: ${medicationSchedules.length}',
+        );
         scheduleExists = medicationSchedules.any((s) => s.id == scheduleId);
       } else {
         final fluidSchedule = ref.read(fluidScheduleProvider);
+        _devLog('  Fluid schedule: ${fluidSchedule?.id ?? "null"}');
         scheduleExists = fluidSchedule?.id == scheduleId;
       }
+      _devLog('  scheduleExists: $scheduleExists');
 
       // Track analytics
       if (scheduleExists) {
+        _devLog('✅ Schedule found, tracking success');
         _trackNotificationTapSuccess(treatmentType, kind, scheduleId);
       } else {
-        _devLog('⚠️ Schedule $scheduleId not found');
+        _devLog('⚠️ Schedule $scheduleId not found, tracking failure');
         _trackNotificationTapFailure('schedule_not_found');
       }
 
       // Always navigate to /home, then show overlay
-      if (!mounted) return;
+      _devLog('');
+      _devLog('Step 9: Navigation and overlay...');
+      if (!mounted) {
+        _devLog('❌ Widget not mounted, cannot navigate');
+        _devLog('═══════════════════════════════════════════════════════');
+        return;
+      }
 
       // Navigate to home first
+      _devLog('  Navigating to /home...');
       context.go('/home');
 
       // Show logging screen overlay after navigation completes
+      _devLog('  Scheduling overlay display via addPostFrameCallback...');
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
+        if (!mounted) {
+          _devLog('  ❌ Widget not mounted for overlay display');
+          return;
+        }
+
+        _devLog('  Showing overlay for $treatmentType...');
 
         // Show appropriate logging screen with auto-selection
         if (treatmentType == 'medication') {
+          _devLog(
+            '  Opening MedicationLoggingScreen with '
+            'initialScheduleId: ${scheduleExists ? scheduleId : "null"}',
+          );
           OverlayService.showFullScreenPopup(
             context: context,
             child: MedicationLoggingScreen(
@@ -425,6 +529,10 @@ class _AppShellState extends ConsumerState<AppShell>
             ),
           );
         } else {
+          _devLog(
+            '  Opening FluidLoggingScreen with '
+            'initialScheduleId: ${scheduleExists ? scheduleId : "null"}',
+          );
           OverlayService.showFullScreenPopup(
             context: context,
             child: FluidLoggingScreen(
@@ -432,6 +540,8 @@ class _AppShellState extends ConsumerState<AppShell>
             ),
           );
         }
+
+        _devLog('  ✅ Overlay displayed successfully');
 
         // Show toast if schedule not found
         if (!scheduleExists) {
@@ -449,9 +559,17 @@ class _AppShellState extends ConsumerState<AppShell>
           });
         }
       });
+
+      _devLog('');
+      _devLog('✅ NOTIFICATION PROCESSING COMPLETED SUCCESSFULLY');
+      _devLog('═══════════════════════════════════════════════════════');
+      _devLog('');
     } on Exception catch (e, stackTrace) {
-      _devLog('ERROR processing notification payload: $e');
+      _devLog('');
+      _devLog('❌ ERROR processing notification payload: $e');
       _devLog('Stack trace: $stackTrace');
+      _devLog('═══════════════════════════════════════════════════════');
+      _devLog('');
       _trackNotificationTapFailure('processing_error');
 
       // Log to Crashlytics in production
@@ -488,6 +606,105 @@ class _AppShellState extends ConsumerState<AppShell>
           scheduleId: 'unknown',
           result: reason,
         );
+  }
+
+  /// Handle notification snooze action from NotificationTapHandler.
+  ///
+  /// This is triggered when the user taps the "Snooze 15 min" action button
+  /// on a notification. The payload is processed and passed to
+  /// ReminderService.snoozeCurrent() to schedule a new notification 15 minutes
+  /// from now.
+  ///
+  /// The snooze operation is silent (no UI feedback) and non-blocking.
+  /// Failures are logged but don't interrupt the user experience.
+  void _handleNotificationSnooze() {
+    _devLog('');
+    _devLog('═══════════════════════════════════════════════════════');
+    _devLog('👂 APPSHELL SNOOZE LISTENER TRIGGERED');
+    _devLog('═══════════════════════════════════════════════════════');
+    _devLog('Timestamp: ${DateTime.now().toIso8601String()}');
+
+    final payload = NotificationTapHandler.pendingSnoozePayload.value;
+
+    _devLog('Payload from NotificationTapHandler: $payload');
+
+    // Ignore if no payload
+    if (payload == null || payload.isEmpty) {
+      _devLog('❌ Payload is null or empty, ignoring');
+      _devLog('═══════════════════════════════════════════════════════');
+      return;
+    }
+
+    _devLog('✅ Valid payload detected, clearing and scheduling processing');
+
+    // Clear immediately to avoid re-triggering
+    NotificationTapHandler.clearPendingSnooze();
+
+    // Schedule handling after current frame
+    _devLog('📅 Scheduling _processNotificationSnooze via '
+        'addPostFrameCallback');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _processNotificationSnooze(payload);
+    });
+    _devLog('═══════════════════════════════════════════════════════');
+    _devLog('');
+  }
+
+  /// Process notification snooze action.
+  ///
+  /// Calls ReminderService.snoozeCurrent() to handle the snooze operation.
+  /// This is a silent operation - no navigation or UI changes occur.
+  Future<void> _processNotificationSnooze(String payload) async {
+    _devLog('');
+    _devLog('═══════════════════════════════════════════════════════');
+    _devLog('⏰ PROCESSING NOTIFICATION SNOOZE');
+    _devLog('═══════════════════════════════════════════════════════');
+    _devLog('Timestamp: ${DateTime.now().toIso8601String()}');
+    _devLog('Raw payload: $payload');
+    _devLog('');
+
+    try {
+      final reminderService = ref.read(reminderServiceProvider);
+
+      _devLog('Calling ReminderService.snoozeCurrent()...');
+      final result = await reminderService.snoozeCurrent(
+        payload,
+        ref as Ref,
+      );
+
+      _devLog('');
+      _devLog('Snooze result: $result');
+
+      if (result['success'] == true) {
+        _devLog('✅ SNOOZE SUCCESSFUL');
+        _devLog('  Snoozed until: ${result['snoozedUntil']}');
+        _devLog('  Snooze notification ID: ${result['snoozeId']}');
+      } else {
+        _devLog('❌ SNOOZE FAILED');
+        _devLog('  Reason: ${result['reason']}');
+        // Silent failure - no user-facing error message
+        // User can always tap notification again or use "Log now" action
+      }
+
+      _devLog('═══════════════════════════════════════════════════════');
+      _devLog('');
+    } on Exception catch (e, stackTrace) {
+      _devLog('');
+      _devLog('❌ ERROR processing notification snooze: $e');
+      _devLog('Stack trace: $stackTrace');
+      _devLog('═══════════════════════════════════════════════════════');
+      _devLog('');
+
+      // Log to Crashlytics in production
+      if (!FlavorConfig.isDevelopment) {
+        unawaited(
+          FirebaseService().crashlytics.recordError(
+            Exception('Notification snooze processing failed: $e'),
+            stackTrace,
+          ),
+        );
+      }
+    }
   }
 
   /// Log messages only in development flavor.

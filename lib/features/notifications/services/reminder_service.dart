@@ -9,6 +9,7 @@ import 'package:hydracat/features/notifications/services/notification_index_stor
 import 'package:hydracat/features/notifications/utils/notification_id.dart';
 import 'package:hydracat/features/notifications/utils/scheduling_helpers.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
+import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:timezone/timezone.dart' as tz;
 
@@ -978,6 +979,303 @@ class ReminderService {
       _devLog('ERROR updating group summary for pet $petId: $e');
       _devLog('Stack trace: $stackTrace');
       // Don't rethrow - summary update failure shouldn't block main operations
+    }
+  }
+
+  /// Snooze the current notification by 15 minutes.
+  ///
+  /// This method is called when the user taps the "Snooze 15 min" action button
+  /// on a notification. It validates the snooze operation, cancels existing
+  /// notifications for the time slot, and schedules a new notification 15
+  /// minutes from now.
+  ///
+  /// Algorithm:
+  /// 1. Parse and validate payload (userId, petId, scheduleId, timeSlot, kind,
+  ///    treatmentType)
+  /// 2. Check if snoozeEnabled in user notification settings
+  /// 3. Validate notification kind (only 'initial' or 'followup' can be
+  ///    snoozed, not 'snooze')
+  /// 4. Cancel all notifications for this time slot (initial + followup) using
+  ///    cancelSlot
+  /// 5. Calculate snooze time (now + 15 minutes)
+  /// 6. Generate snooze notification content
+  /// 7. Schedule snooze notification via plugin with kind='snooze'
+  /// 8. Add snooze notification to index
+  /// 9. Track analytics event (reminder_snoozed)
+  /// 10. Return success/failure map
+  ///
+  /// Parameters:
+  /// - [payload]: JSON string from notification with userId, petId, scheduleId,
+  ///              timeSlot, kind, treatmentType
+  /// - [ref]: Riverpod ref for accessing providers and services
+  ///
+  /// Returns: Map with result:
+  ///   - 'success': true/false
+  ///   - 'reason': Failure reason if success=false
+  ///   - 'snoozedUntil': ISO8601 timestamp of snooze notification time (if
+  ///     success=true)
+  ///
+  /// Failure reasons:
+  /// - 'snooze_disabled': User has snoozeEnabled=false in settings
+  /// - 'invalid_payload': Payload missing required fields or malformed JSON
+  /// - 'invalid_kind': Notification kind is 'snooze' (can't snooze a snooze)
+  /// - 'settings_not_loaded': NotificationSettings provider unavailable
+  /// - 'scheduling_failed': Plugin.showZoned threw exception
+  ///
+  /// Example usage:
+  /// ```dart
+  /// final result = await service.snoozeCurrent(payload, ref);
+  /// if (result['success'] == true) {
+  ///   print('Snoozed until: ${result['snoozedUntil']}');
+  /// } else {
+  ///   print('Snooze failed: ${result['reason']}');
+  /// }
+  /// ```
+  ///
+  /// Note: This method fails silently (returns error map) rather than throwing
+  /// exceptions, as notification action button handlers should be non-blocking.
+  Future<Map<String, dynamic>> snoozeCurrent(
+    String payload,
+    Ref ref,
+  ) async {
+    _devLog('');
+    _devLog('═══════════════════════════════════════════════════════');
+    _devLog('⏰ SNOOZE CURRENT - snoozeCurrent() called');
+    _devLog('═══════════════════════════════════════════════════════');
+    _devLog('Timestamp: ${DateTime.now().toIso8601String()}');
+    _devLog('Payload: $payload');
+    _devLog('');
+
+    try {
+      // Step 1: Parse and validate payload
+      _devLog('Step 1: Parsing payload JSON...');
+      final payloadMap = json.decode(payload) as Map<String, dynamic>;
+      _devLog('✅ JSON parsed successfully');
+
+      final userId = payloadMap['userId'] as String?;
+      final petId = payloadMap['petId'] as String?;
+      final scheduleId = payloadMap['scheduleId'] as String?;
+      final timeSlot = payloadMap['timeSlot'] as String?;
+      final kind = payloadMap['kind'] as String?;
+      final treatmentType = payloadMap['treatmentType'] as String?;
+
+      _devLog('  userId: $userId');
+      _devLog('  petId: $petId');
+      _devLog('  scheduleId: $scheduleId');
+      _devLog('  timeSlot: $timeSlot');
+      _devLog('  kind: $kind');
+      _devLog('  treatmentType: $treatmentType');
+
+      // Validate all required fields
+      if (userId == null ||
+          petId == null ||
+          scheduleId == null ||
+          timeSlot == null ||
+          kind == null ||
+          treatmentType == null) {
+        _devLog('❌ FAILED: Invalid payload - missing required fields');
+        _devLog('═══════════════════════════════════════════════════════');
+        return {
+          'success': false,
+          'reason': 'invalid_payload',
+        };
+      }
+      _devLog('✅ All required fields present');
+
+      // Step 2: Check if snooze is enabled in user settings
+      _devLog('');
+      _devLog('Step 2: Checking snooze settings...');
+      try {
+        final settings = ref.read(
+          notificationSettingsProvider(userId),
+        );
+        _devLog('  snoozeEnabled: ${settings.snoozeEnabled}');
+
+        if (!settings.snoozeEnabled) {
+          _devLog('❌ FAILED: Snooze is disabled in user settings');
+          _devLog('═══════════════════════════════════════════════════════');
+          return {
+            'success': false,
+            'reason': 'snooze_disabled',
+          };
+        }
+        _devLog('✅ Snooze is enabled');
+      } on Exception catch (e) {
+        _devLog('❌ FAILED: Could not read notification settings: $e');
+        _devLog('═══════════════════════════════════════════════════════');
+        return {
+          'success': false,
+          'reason': 'settings_not_loaded',
+        };
+      }
+
+      // Step 3: Validate notification kind (only initial/followup can snooze)
+      _devLog('');
+      _devLog('Step 3: Validating notification kind...');
+      if (kind != 'initial' && kind != 'followup') {
+        _devLog(
+          "❌ FAILED: Invalid kind '$kind' - only 'initial' or 'followup' "
+          'can be snoozed',
+        );
+        _devLog('═══════════════════════════════════════════════════════');
+        return {
+          'success': false,
+          'reason': 'invalid_kind',
+        };
+      }
+      _devLog("✅ Kind '$kind' is valid for snoozing");
+
+      // Step 4: Cancel existing notifications for this time slot
+      _devLog('');
+      _devLog('Step 4: Canceling existing notifications for time slot...');
+      final canceledCount = await cancelSlot(
+        userId,
+        petId,
+        scheduleId,
+        timeSlot,
+        ref,
+      );
+      _devLog(
+        '✅ Canceled $canceledCount notification(s) '
+        '(initial + followup if present)',
+      );
+
+      // Step 5: Calculate snooze time
+      _devLog('');
+      _devLog('Step 5: Calculating snooze time...');
+      final now = DateTime.now();
+      final snoozeTime = now.add(const Duration(minutes: 15));
+      final snoozeTZ = tz.TZDateTime.from(snoozeTime, tz.local);
+      _devLog('  Current time: ${now.toIso8601String()}');
+      _devLog('  Snooze time: ${snoozeTime.toIso8601String()}');
+      _devLog('  Snooze TZ: $snoozeTZ');
+
+      // Step 6: Generate snooze notification content
+      _devLog('');
+      _devLog('Step 6: Generating snooze notification content...');
+      final profileState = ref.read(profileProvider);
+      final petName = profileState.primaryPet?.name ?? 'your pet';
+      _devLog('  Pet name: $petName');
+
+      final content = _generateNotificationContent(
+        treatmentType: treatmentType,
+        kind: 'snooze',
+        petName: petName,
+      );
+      _devLog('  Title: ${content['title']}');
+      _devLog('  Body: ${content['body']}');
+      _devLog('  Channel: ${content['channelId']}');
+
+      // Step 7: Generate snooze notification ID and payload
+      _devLog('');
+      _devLog('Step 7: Generating snooze notification ID...');
+      final snoozeId = generateNotificationId(
+        userId: userId,
+        petId: petId,
+        scheduleId: scheduleId,
+        timeSlot: timeSlot,
+        kind: 'snooze',
+      );
+      _devLog('  Snooze notification ID: $snoozeId');
+
+      final snoozePayload = _buildPayload(
+        userId: userId,
+        petId: petId,
+        scheduleId: scheduleId,
+        timeSlot: timeSlot,
+        kind: 'snooze',
+        treatmentType: treatmentType,
+      );
+
+      // Step 8: Schedule snooze notification
+      _devLog('');
+      _devLog('Step 8: Scheduling snooze notification...');
+      final plugin = ref.read(reminderPluginProvider);
+      final groupId = 'pet_$petId';
+      final threadIdentifier = 'pet_$petId';
+
+      try {
+        await plugin.showZoned(
+          id: snoozeId,
+          title: content['title']!,
+          body: content['body']!,
+          scheduledDate: snoozeTZ,
+          channelId: content['channelId']!,
+          payload: snoozePayload,
+          groupId: groupId,
+          threadIdentifier: threadIdentifier,
+        );
+        _devLog('✅ Snooze notification scheduled successfully');
+      } on Exception catch (e) {
+        _devLog('❌ FAILED: Could not schedule snooze notification: $e');
+        _devLog('═══════════════════════════════════════════════════════');
+        return {
+          'success': false,
+          'reason': 'scheduling_failed',
+        };
+      }
+
+      // Step 9: Add snooze notification to index
+      _devLog('');
+      _devLog('Step 9: Adding snooze notification to index...');
+      final indexStore = ref.read(notificationIndexStoreProvider);
+      await indexStore.putEntry(
+        userId,
+        petId,
+        ScheduledNotificationEntry(
+          notificationId: snoozeId,
+          scheduleId: scheduleId,
+          treatmentType: treatmentType,
+          timeSlotISO: timeSlot,
+          kind: 'snooze',
+        ),
+      );
+      _devLog('✅ Snooze notification added to index');
+
+      // Step 10: Track analytics event
+      _devLog('');
+      _devLog('Step 10: Tracking analytics event...');
+      try {
+        final analyticsService = ref.read(analyticsServiceDirectProvider);
+        await analyticsService.trackReminderSnoozed(
+          treatmentType: treatmentType,
+          kind: kind, // Original kind (initial/followup)
+          scheduleId: scheduleId,
+          timeSlot: timeSlot,
+          result: 'success',
+        );
+        _devLog('✅ Analytics event tracked successfully');
+      } on Exception catch (e) {
+        _devLog('⚠️ Failed to track analytics event: $e');
+        // Don't fail snooze operation if analytics fails
+      }
+
+      _devLog('');
+      _devLog('✅ SNOOZE COMPLETE - Notification will fire in 15 minutes');
+      _devLog('═══════════════════════════════════════════════════════');
+      _devLog('');
+
+      return {
+        'success': true,
+        'snoozedUntil': snoozeTime.toIso8601String(),
+        'snoozeId': snoozeId,
+      };
+    } on FormatException catch (e) {
+      _devLog('❌ ERROR: Invalid JSON in payload: $e');
+      _devLog('═══════════════════════════════════════════════════════');
+      return {
+        'success': false,
+        'reason': 'invalid_payload',
+      };
+    } on Exception catch (e, stackTrace) {
+      _devLog('❌ ERROR in snoozeCurrent: $e');
+      _devLog('Stack trace: $stackTrace');
+      _devLog('═══════════════════════════════════════════════════════');
+      return {
+        'success': false,
+        'reason': 'unknown_error',
+        'error': e.toString(),
+      };
     }
   }
 
