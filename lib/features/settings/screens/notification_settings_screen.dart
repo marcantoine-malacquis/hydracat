@@ -3,25 +3,37 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/notifications/providers/notification_provider.dart';
-import 'package:hydracat/features/notifications/widgets/notification_permission_dialog.dart';
+import 'package:hydracat/features/notifications/widgets/permission_preprompt.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
+import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/providers/profile_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// Screen for managing notification settings and preferences.
 ///
-/// Currently a placeholder with master toggle. Will be expanded in Phase 5
-/// to include:
-/// - Weekly summary toggle
-/// - Snooze toggle
-/// - End-of-day reminder toggle and time picker
-/// - Notification content privacy settings
-class NotificationSettingsScreen extends ConsumerWidget {
+/// Provides toggles for:
+/// - Master notification enable/disable
+/// - Weekly summary notifications
+/// - Snooze functionality for treatment reminders
+///
+/// Includes proper error handling, loading states, and analytics tracking.
+class NotificationSettingsScreen extends ConsumerStatefulWidget {
   /// Creates a notification settings screen.
   const NotificationSettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotificationSettingsScreen> createState() =>
+      _NotificationSettingsScreenState();
+}
+
+class _NotificationSettingsScreenState
+    extends ConsumerState<NotificationSettingsScreen> {
+  /// Loading state for weekly summary toggle
+  bool _isWeeklySummaryLoading = false;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final currentUser = ref.watch(currentUserProvider);
     final permissionStatusAsync =
@@ -49,6 +61,10 @@ class NotificationSettingsScreen extends ConsumerWidget {
     }
 
     final settings = ref.watch(notificationSettingsProvider(currentUser.id));
+    final profileState = ref.watch(profileProvider);
+    final petId = profileState.primaryPet?.id;
+    final noPetProfile = petId == null;
+    final canUseFeatures = settings.enableNotifications;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -122,49 +138,154 @@ class NotificationSettingsScreen extends ConsumerWidget {
 
           const SizedBox(height: AppSpacing.xl),
 
-          // Future features placeholder
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .surface
-                  .withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .outline
-                    .withValues(alpha: 0.5),
+          // Helper text when master toggle disabled or no pet profile
+          if (!canUseFeatures || noPetProfile) ...[
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
               ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 20,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Text(
-                      'Coming Soon',
-                      style: AppTextStyles.h3.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: AppColors.warning,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      noPetProfile
+                          ? l10n
+                              .notificationSettingsFeatureRequiresPetProfile
+                          : l10n
+                              .notificationSettingsFeatureRequiresMasterToggle,
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecondary,
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  l10n.notificationSettingsFuturePlaceholder,
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.textSecondary,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+
+          // Weekly Summary toggle section
+          _buildToggleSection(
+            context: context,
+            icon: Icons.summarize,
+            label: l10n.notificationSettingsWeeklySummaryLabel,
+            description: l10n.notificationSettingsWeeklySummaryDescription,
+            value: settings.weeklySummaryEnabled,
+            isLoading: _isWeeklySummaryLoading,
+            isEnabled: canUseFeatures && !noPetProfile,
+            onChanged: (value) => _handleToggleWeeklySummary(
+              context,
+              ref,
+              value,
+              currentUser.id,
+              petId,
+            ),
+          ),
+
+          const SizedBox(height: AppSpacing.md),
+
+          // Snooze toggle section
+          _buildToggleSection(
+            context: context,
+            icon: Icons.snooze,
+            label: l10n.notificationSettingsSnoozeLabel,
+            description: l10n.notificationSettingsSnoozeDescription,
+            value: settings.snoozeEnabled,
+            isLoading: false,
+            isEnabled: canUseFeatures,
+            onChanged: (value) => _handleToggleSnooze(
+              context,
+              ref,
+              value,
+              currentUser.id,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds a toggle section with icon, label, description, and switch
+  Widget _buildToggleSection({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required String description,
+    required bool value,
+    required bool isLoading,
+    required bool isEnabled,
+    // Matches Flutter's Switch.onChanged signature which uses positional bool
+    // ignore: avoid_positional_boolean_parameters
+    required Future<void> Function(bool) onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: isEnabled
+            ? Theme.of(context).colorScheme.surface
+            : Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isEnabled
+              ? Theme.of(context).colorScheme.outline
+              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                icon,
+                color: isEnabled
+                    ? Theme.of(context).colorScheme.primary
+                    : AppColors.textSecondary,
+                size: 24,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  label,
+                  style: AppTextStyles.body.copyWith(
+                    color: isEnabled
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
                   ),
                 ),
-              ],
+              ),
+              if (isLoading)
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                IgnorePointer(
+                  ignoring: !isEnabled,
+                  child: Switch(
+                    value: value,
+                    onChanged: onChanged,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Padding(
+            padding: const EdgeInsets.only(left: 32),
+            child: Text(
+              description,
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
         ],
@@ -249,6 +370,175 @@ class NotificationSettingsScreen extends ConsumerWidget {
     );
   }
 
+  /// Handles toggling the weekly summary notifications switch
+  Future<void> _handleToggleWeeklySummary(
+    BuildContext context,
+    WidgetRef ref,
+    bool value,
+    String userId,
+    String? petId,
+  ) async {
+    // Capture context before async gaps
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final localizations = AppLocalizations.of(context)!;
+
+    // Check if pet profile exists
+    if (petId == null) {
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              localizations.notificationSettingsFeatureRequiresPetProfile,
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Set loading state
+    setState(() {
+      _isWeeklySummaryLoading = true;
+    });
+
+    try {
+      // Update settings
+      await ref
+          .read(notificationSettingsProvider(userId).notifier)
+          .setWeeklySummaryEnabled(enabled: value);
+
+      // Schedule or cancel weekly summary notification
+      final reminderService = ref.read(reminderServiceProvider);
+      final result = value
+          ? await reminderService.scheduleWeeklySummary(
+              userId,
+              petId,
+              ref as Ref,
+            )
+          : await reminderService.cancelWeeklySummary(
+              userId,
+              petId,
+              ref as Ref,
+            );
+
+      // Cast to Map for type safety
+      final resultMap = result as Map<String, dynamic>;
+
+      // Check if operation was successful
+      if (resultMap['success'] != true && resultMap['success'] != false) {
+        // For scheduleWeeklySummary, check for specific failure reasons
+        if (resultMap['reason'] == 'disabled_in_settings' ||
+            resultMap['reason'] == 'already_scheduled') {
+          // These are acceptable - treat as success
+          if (!mounted) return;
+          final message = value
+              ? localizations.notificationSettingsWeeklySummarySuccess
+              : localizations.notificationSettingsWeeklySummaryDisabledSuccess;
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: AppColors.success,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          await ref
+              .read(analyticsServiceDirectProvider)
+              .trackWeeklySummaryToggled(enabled: value, result: 'success');
+        } else {
+          // Unexpected result format
+          throw Exception(resultMap['reason'] ?? 'Unknown error');
+        }
+      } else if (resultMap['success'] == false) {
+        // Explicit failure
+        throw Exception(resultMap['reason'] ?? 'Unknown error');
+      } else {
+        // Success
+        if (!mounted) return;
+        final message = value
+            ? localizations.notificationSettingsWeeklySummarySuccess
+            : localizations.notificationSettingsWeeklySummaryDisabledSuccess;
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        await ref
+            .read(analyticsServiceDirectProvider)
+            .trackWeeklySummaryToggled(enabled: value, result: 'success');
+      }
+    } on Exception catch (e) {
+      // Revert toggle on error
+      if (!mounted) return;
+
+      await ref
+          .read(notificationSettingsProvider(userId).notifier)
+          .setWeeklySummaryEnabled(enabled: !value);
+
+      if (!mounted) return;
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(localizations.notificationSettingsWeeklySummaryError),
+          backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+
+      await ref.read(analyticsServiceDirectProvider).trackWeeklySummaryToggled(
+            enabled: value,
+            result: 'error',
+            errorMessage: e.toString(),
+          );
+    } finally {
+      // Clear loading state
+      if (mounted) {
+        setState(() {
+          _isWeeklySummaryLoading = false;
+        });
+      }
+    }
+  }
+
+  /// Handles toggling the snooze functionality switch
+  Future<void> _handleToggleSnooze(
+    BuildContext context,
+    WidgetRef ref,
+    bool value,
+    String userId,
+  ) async {
+    // Capture context before async gap
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final localizations = AppLocalizations.of(context)!;
+
+    // Update settings (local only, no scheduling needed)
+    await ref
+        .read(notificationSettingsProvider(userId).notifier)
+        .setSnoozeEnabled(enabled: value);
+
+    // Show success feedback
+    if (!mounted) return;
+
+    final message = value
+        ? localizations.notificationSettingsSnoozeSuccess
+        : localizations.notificationSettingsSnoozeDisabledSuccess;
+
+    scaffoldMessenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.success,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+
+    // Track analytics
+    await ref
+        .read(analyticsServiceDirectProvider)
+        .trackSnoozeToggled(enabled: value);
+  }
+
   /// Handles toggling the enable notifications switch
   Future<void> _handleToggleNotifications(
     BuildContext context,
@@ -262,7 +552,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
         permissionStatus != NotificationPermissionStatus.granted) {
       await showDialog<void>(
         context: context,
-        builder: (context) => const NotificationPermissionDialog(),
+        builder: (context) => const NotificationPermissionPreprompt(),
       );
       return;
     }
@@ -272,4 +562,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
         .read(notificationSettingsProvider(userId).notifier)
         .setEnableNotifications(enabled: value);
   }
+
+  /// Convenience getter for localization
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
 }

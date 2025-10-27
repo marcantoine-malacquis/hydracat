@@ -130,6 +130,12 @@ class AnalyticsEvents {
   /// Notification permission dialog shown event name
   static const String notificationPermissionDialogShown =
       'notification_permission_dialog_shown';
+
+  /// Weekly summary toggle event name
+  static const String weeklySummaryToggled = 'weekly_summary_toggled';
+
+  /// Snooze toggle event name
+  static const String snoozeToggled = 'snooze_toggled';
 }
 
 /// Analytics parameters
@@ -884,6 +890,53 @@ class AnalyticsService {
       parameters: {
         'reason': reason,
         'permission_status': permissionStatus,
+      },
+    );
+  }
+
+  /// Track weekly summary notification toggle change.
+  ///
+  /// Tracks when user enables or disables weekly summary notifications
+  /// in the notification settings screen. Captures both success and
+  /// failure cases to monitor scheduling issues.
+  ///
+  /// Parameters:
+  /// - [enabled]: true if user enabled, false if disabled
+  /// - [result]: 'success' if operation completed, 'error' if failed
+  /// - [errorMessage]: Optional error message if result is 'error'
+  Future<void> trackWeeklySummaryToggled({
+    required bool enabled,
+    required String result,
+    String? errorMessage,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.weeklySummaryToggled,
+      parameters: {
+        'enabled': enabled,
+        'result': result,
+        if (errorMessage != null) 'error_message': errorMessage,
+      },
+    );
+  }
+
+  /// Track snooze functionality toggle change.
+  ///
+  /// Tracks when user enables or disables snooze functionality
+  /// in the notification settings screen.
+  ///
+  /// Parameters:
+  /// - [enabled]: true if user enabled, false if disabled
+  Future<void> trackSnoozeToggled({
+    required bool enabled,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.snoozeToggled,
+      parameters: {
+        'enabled': enabled,
       },
     );
   }

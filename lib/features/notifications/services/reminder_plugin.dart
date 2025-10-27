@@ -32,6 +32,18 @@ class ReminderPlugin {
   /// This category includes the "Log now" action button
   static const String iosCategoryId = 'TREATMENT_REMINDER';
 
+  /// Android notification channel ID for medication reminders
+  /// (high priority)
+  static const String channelIdMedicationReminders = 'medication_reminders';
+
+  /// Android notification channel ID for fluid therapy reminders
+  /// (high priority)
+  static const String channelIdFluidReminders = 'fluid_reminders';
+
+  /// Android notification channel ID for weekly summaries
+  /// (default priority)
+  static const String channelIdWeeklySummaries = 'weekly_summaries';
+
   /// Getter for initialization status
   bool get isInitialized => _isInitialized;
 

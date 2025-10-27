@@ -1480,6 +1480,18 @@ abstract class AppLocalizations {
   /// **'Time for {petName}\'s treatment'**
   String notificationSnoozeBody(String petName);
 
+  /// Title for weekly treatment summary notification (Monday 09:00)
+  ///
+  /// In en, this message translates to:
+  /// **'Your weekly summary is ready!'**
+  String get notificationWeeklySummaryTitle;
+
+  /// Body text for weekly treatment summary notification
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to see your progress and treatment adherence.'**
+  String get notificationWeeklySummaryBody;
+
   /// Title for notification group summary (Android/iOS grouping)
   ///
   /// In en, this message translates to:
@@ -1503,6 +1515,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{medCount, plural, =1{1 medication} other{{medCount} medications}}, {fluidCount, plural, =1{1 fluid therapy} other{{fluidCount} fluid therapies}}'**
   String notificationGroupSummaryBoth(num fluidCount, num medCount);
+
+  /// Text for notification action button to log treatment immediately
+  ///
+  /// In en, this message translates to:
+  /// **'Log now'**
+  String get notificationActionLogNow;
 
   /// Message shown when user taps notification but is not authenticated
   ///
@@ -1537,25 +1555,25 @@ abstract class AppLocalizations {
   /// Title for notification permission dialog
   ///
   /// In en, this message translates to:
-  /// **'Enable Notifications'**
+  /// **'Never Miss a Treatment'**
   String get notificationPermissionDialogTitle;
 
   /// Dialog message when permission has not been requested yet
   ///
   /// In en, this message translates to:
-  /// **'Never miss critical treatment times for {petName}. Enable notifications to receive timely reminders for medications and fluid therapy.'**
+  /// **'Enable notifications to receive timely reminders for {petName}\'s medications and fluid therapy. You\'re doing an amazing job caring for your cat - let us help you stay on track.'**
   String notificationPermissionMessageNotDetermined(String petName);
 
   /// Dialog message when permission was denied but can be requested again
   ///
   /// In en, this message translates to:
-  /// **'Notifications are currently disabled. Enable them to receive treatment reminders for {petName}.'**
+  /// **'Treatment reminders help you provide the best care for {petName}. Enable notifications to receive gentle reminders at the right times.'**
   String notificationPermissionMessageDenied(String petName);
 
   /// Dialog message when permission is permanently denied (must use Settings)
   ///
   /// In en, this message translates to:
-  /// **'To receive treatment reminders for {petName}, you\'ll need to enable notifications in your device Settings.'**
+  /// **'To receive treatment reminders for {petName}, please enable notifications in your device Settings. This ensures you never miss important medication or fluid therapy times.'**
   String notificationPermissionMessagePermanent(String petName);
 
   /// Fallback dialog message when pet name is not available
@@ -1563,6 +1581,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enable notifications to receive treatment reminders.'**
   String get notificationPermissionMessageGeneric;
+
+  /// Platform-specific hint for iOS users (reassurance)
+  ///
+  /// In en, this message translates to:
+  /// **'You can always change this later in your device Settings.'**
+  String get notificationPermissionIosHint;
+
+  /// Platform-specific hint for Android users (emphasizes one-time ask)
+  ///
+  /// In en, this message translates to:
+  /// **'This is the only time we\'ll ask - you can enable later in Settings if needed.'**
+  String get notificationPermissionAndroidHint;
 
   /// Button text to trigger system permission request
   ///
@@ -1630,11 +1660,71 @@ abstract class AppLocalizations {
   /// **'Enable Notifications'**
   String get notificationSettingsEnableToggleLabel;
 
-  /// Placeholder text for future notification preference features
+  /// Label for weekly summary notification toggle
   ///
   /// In en, this message translates to:
-  /// **'More notification preferences (weekly summaries, snooze, end-of-day reminders) will be available in a future update.'**
-  String get notificationSettingsFuturePlaceholder;
+  /// **'Weekly Summary'**
+  String get notificationSettingsWeeklySummaryLabel;
+
+  /// Description text explaining weekly summary notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Get a summary of your treatment adherence every Monday morning'**
+  String get notificationSettingsWeeklySummaryDescription;
+
+  /// Success message when weekly summary is enabled
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly summary enabled'**
+  String get notificationSettingsWeeklySummarySuccess;
+
+  /// Success message when weekly summary is disabled
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly summary disabled'**
+  String get notificationSettingsWeeklySummaryDisabledSuccess;
+
+  /// Error message when weekly summary toggle fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update weekly summary setting. Please try again.'**
+  String get notificationSettingsWeeklySummaryError;
+
+  /// Label for snooze functionality toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze Reminders'**
+  String get notificationSettingsSnoozeLabel;
+
+  /// Description text explaining snooze functionality
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze reminders for 15 minutes'**
+  String get notificationSettingsSnoozeDescription;
+
+  /// Success message when snooze is enabled
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze enabled'**
+  String get notificationSettingsSnoozeSuccess;
+
+  /// Success message when snooze is disabled
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze disabled'**
+  String get notificationSettingsSnoozeDisabledSuccess;
+
+  /// Helper text shown when master toggle is disabled
+  ///
+  /// In en, this message translates to:
+  /// **'Enable notifications above to use these features'**
+  String get notificationSettingsFeatureRequiresMasterToggle;
+
+  /// Message shown when pet profile is not set up
+  ///
+  /// In en, this message translates to:
+  /// **'Please set up your pet profile first to use notification features'**
+  String get notificationSettingsFeatureRequiresPetProfile;
 }
 
 class _AppLocalizationsDelegate

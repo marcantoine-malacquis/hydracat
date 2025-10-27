@@ -556,6 +556,14 @@
       }
     }
   },
+  "notificationWeeklySummaryTitle": "Your weekly summary is ready!",
+  "@notificationWeeklySummaryTitle": {
+    "description": "Title for weekly treatment summary notification (Monday 09:00)"
+  },
+  "notificationWeeklySummaryBody": "Tap to see your progress and treatment adherence.",
+  "@notificationWeeklySummaryBody": {
+    "description": "Body text for weekly treatment summary notification"
+  },
 
   "@_NOTIFICATION_GROUPS": {},
   "notificationGroupSummaryTitle": "{petName}'s Reminders",
@@ -606,11 +614,11 @@
   },
 
   "@_NOTIFICATION_PERMISSION_DIALOG": {},
-  "notificationPermissionDialogTitle": "Enable Notifications",
+  "notificationPermissionDialogTitle": "Never Miss a Treatment",
   "@notificationPermissionDialogTitle": {
     "description": "Title for notification permission dialog"
   },
-  "notificationPermissionMessageNotDetermined": "Never miss critical treatment times for {petName}. Enable notifications to receive timely reminders for medications and fluid therapy.",
+  "notificationPermissionMessageNotDetermined": "Enable notifications to receive timely reminders for {petName}'s medications and fluid therapy. You're doing an amazing job caring for your cat - let us help you stay on track.",
   "@notificationPermissionMessageNotDetermined": {
     "description": "Dialog message when permission has not been requested yet",
     "placeholders": {
@@ -620,7 +628,7 @@
       }
     }
   },
-  "notificationPermissionMessageDenied": "Notifications are currently disabled. Enable them to receive treatment reminders for {petName}.",
+  "notificationPermissionMessageDenied": "Treatment reminders help you provide the best care for {petName}. Enable notifications to receive gentle reminders at the right times.",
   "@notificationPermissionMessageDenied": {
     "description": "Dialog message when permission was denied but can be requested again",
     "placeholders": {
@@ -630,7 +638,7 @@
       }
     }
   },
-  "notificationPermissionMessagePermanent": "To receive treatment reminders for {petName}, you'll need to enable notifications in your device Settings.",
+  "notificationPermissionMessagePermanent": "To receive treatment reminders for {petName}, please enable notifications in your device Settings. This ensures you never miss important medication or fluid therapy times.",
   "@notificationPermissionMessagePermanent": {
     "description": "Dialog message when permission is permanently denied (must use Settings)",
     "placeholders": {
@@ -643,6 +651,14 @@
   "notificationPermissionMessageGeneric": "Enable notifications to receive treatment reminders.",
   "@notificationPermissionMessageGeneric": {
     "description": "Fallback dialog message when pet name is not available"
+  },
+  "notificationPermissionIosHint": "You can always change this later in your device Settings.",
+  "@notificationPermissionIosHint": {
+    "description": "Platform-specific hint for iOS users (reassurance)"
+  },
+  "notificationPermissionAndroidHint": "This is the only time we'll ask - you can enable later in Settings if needed.",
+  "@notificationPermissionAndroidHint": {
+    "description": "Platform-specific hint for Android users (emphasizes one-time ask)"
   },
   "notificationPermissionAllowButton": "Allow Notifications",
   "@notificationPermissionAllowButton": {
@@ -690,8 +706,48 @@
   "@notificationSettingsEnableToggleLabel": {
     "description": "Label for master notification enable toggle"
   },
-  "notificationSettingsFuturePlaceholder": "More notification preferences (weekly summaries, snooze, end-of-day reminders) will be available in a future update.",
-  "@notificationSettingsFuturePlaceholder": {
-    "description": "Placeholder text for future notification preference features"
+  "notificationSettingsWeeklySummaryLabel": "Weekly Summary",
+  "@notificationSettingsWeeklySummaryLabel": {
+    "description": "Label for weekly summary notification toggle"
+  },
+  "notificationSettingsWeeklySummaryDescription": "Get a summary of your treatment adherence every Monday morning",
+  "@notificationSettingsWeeklySummaryDescription": {
+    "description": "Description text explaining weekly summary notifications"
+  },
+  "notificationSettingsWeeklySummarySuccess": "Weekly summary enabled",
+  "@notificationSettingsWeeklySummarySuccess": {
+    "description": "Success message when weekly summary is enabled"
+  },
+  "notificationSettingsWeeklySummaryDisabledSuccess": "Weekly summary disabled",
+  "@notificationSettingsWeeklySummaryDisabledSuccess": {
+    "description": "Success message when weekly summary is disabled"
+  },
+  "notificationSettingsWeeklySummaryError": "Failed to update weekly summary setting. Please try again.",
+  "@notificationSettingsWeeklySummaryError": {
+    "description": "Error message when weekly summary toggle fails"
+  },
+  "notificationSettingsSnoozeLabel": "Snooze Reminders",
+  "@notificationSettingsSnoozeLabel": {
+    "description": "Label for snooze functionality toggle"
+  },
+  "notificationSettingsSnoozeDescription": "Snooze reminders for 15 minutes",
+  "@notificationSettingsSnoozeDescription": {
+    "description": "Description text explaining snooze functionality"
+  },
+  "notificationSettingsSnoozeSuccess": "Snooze enabled",
+  "@notificationSettingsSnoozeSuccess": {
+    "description": "Success message when snooze is enabled"
+  },
+  "notificationSettingsSnoozeDisabledSuccess": "Snooze disabled",
+  "@notificationSettingsSnoozeDisabledSuccess": {
+    "description": "Success message when snooze is disabled"
+  },
+  "notificationSettingsFeatureRequiresMasterToggle": "Enable notifications above to use these features",
+  "@notificationSettingsFeatureRequiresMasterToggle": {
+    "description": "Helper text shown when master toggle is disabled"
+  },
+  "notificationSettingsFeatureRequiresPetProfile": "Please set up your pet profile first to use notification features",
+  "@notificationSettingsFeatureRequiresPetProfile": {
+    "description": "Message shown when pet profile is not set up"
   }
 }

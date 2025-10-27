@@ -60,6 +60,7 @@ class AppTheme {
       bottomNavigationBarTheme: _buildBottomNavigationBarTheme(),
       inputDecorationTheme: _buildInputDecorationTheme(),
       chipTheme: _buildChipTheme(),
+      switchTheme: _buildSwitchTheme(),
 
       // Layout
       visualDensity: VisualDensity.standard,
@@ -123,6 +124,7 @@ class AppTheme {
       bottomNavigationBarTheme: _buildBottomNavigationBarTheme(),
       inputDecorationTheme: _buildInputDecorationTheme(),
       chipTheme: _buildChipTheme(),
+      switchTheme: _buildSwitchTheme(),
 
       // Layout
       visualDensity: VisualDensity.standard,
@@ -304,6 +306,38 @@ class AppTheme {
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.sm,
+      ),
+    );
+  }
+
+  static SwitchThemeData _buildSwitchTheme() {
+    return SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith<Color>(
+        (Set<WidgetState> states) {
+          if (states.contains(WidgetState.disabled)) {
+            return AppColors.textTertiary;
+          }
+          return AppColors.onPrimary;
+        },
+      ),
+      trackColor: WidgetStateProperty.resolveWith<Color>(
+        (Set<WidgetState> states) {
+          if (states.contains(WidgetState.disabled)) {
+            return AppColors.disabled;
+          }
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.primary;
+          }
+          return AppColors.border;
+        },
+      ),
+      trackOutlineColor: WidgetStateProperty.resolveWith<Color>(
+        (Set<WidgetState> states) {
+          if (states.contains(WidgetState.disabled)) {
+            return AppColors.textTertiary.withValues(alpha: 0.2);
+          }
+          return Colors.transparent;
+        },
       ),
     );
   }

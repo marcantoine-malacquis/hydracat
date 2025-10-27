@@ -43,4 +43,21 @@ I already did something similar in @onboarding_code_review_report.md . I don't n
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
 
-
+1. Show a subtle loading indicator on the toggle itself during
+   the operation, display a success toast on completion, and revert the toggle
+  if the operation fails (keeping UI and actual state in sync).
+2. No, I decided to not implement the End-of-Day reminder feature for the V1. It might be implemented in a future version.
+3. Visually disable all sub-toggles when master is off, show a
+   subtle helper text ("Enable notifications above to use these features"), but
+  still allow users to change them so they're ready when notifications are
+  enabled.
+4. No End-of-Day reminder for now as I stated before.
+5. Defer this to a polish phase since it's Android-specific
+  and the canScheduleExactNotifications() method already exists in
+  ReminderPlugin. Focus on the core toggle functionality first.
+6. Yes to analytics tracking for both success and failure
+  cases. If petId is null, disable the toggles and show a message like "Please
+  set up your pet profile first to use notification features."
+7. Yes, Follow the existing notificationSettings* prefix pattern
+  for consistency.
+Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them (including the non critical ones). I will test only once we fixed the linting issues.

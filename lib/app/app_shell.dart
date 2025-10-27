@@ -15,6 +15,8 @@ import 'package:hydracat/features/logging/widgets/quick_log_success_popup.dart';
 import 'package:hydracat/features/logging/widgets/treatment_choice_popup.dart';
 import 'package:hydracat/features/notifications/providers/notification_provider.dart';
 import 'package:hydracat/features/notifications/services/notification_tap_handler.dart';
+import 'package:hydracat/features/notifications/services/permission_prompt_service.dart';
+import 'package:hydracat/features/notifications/widgets/permission_preprompt.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
@@ -355,7 +357,19 @@ class _AppShellState extends ConsumerState<AppShell>
       _devLog('✅ JSON parsed successfully');
       _devLog('Payload map: $payloadMap');
 
-      // Extract and validate required fields
+      // Step 0: Check notification type
+      _devLog('');
+      _devLog('Step 0: Detecting notification type...');
+      final type = payloadMap['type'] as String?;
+
+      if (type == 'weekly_summary') {
+        _devLog('✅ Detected weekly summary notification');
+        await _processWeeklySummaryTap(payloadMap);
+        return;
+      }
+      _devLog('✅ Detected treatment reminder notification (legacy path)');
+
+      // Extract and validate required fields for treatment reminders
       _devLog('');
       _devLog('Step 2: Extracting required fields...');
       final userId = payloadMap['userId'] as String?;
@@ -707,6 +721,174 @@ class _AppShellState extends ConsumerState<AppShell>
     }
   }
 
+  /// Process weekly summary notification tap.
+  ///
+  /// Validates authentication/onboarding state and navigates to /progress.
+  ///
+  /// Algorithm:
+  /// 1. Check authentication (redirect to /login if not authenticated)
+  /// 2. Check onboarding completion (redirect to onboarding if incomplete)
+  /// 3. Navigate to /progress using context.push('/progress')
+  /// 4. Track analytics event (notification_tap with type: weekly_summary)
+  /// 5. Log success
+  Future<void> _processWeeklySummaryTap(Map<String, dynamic> payloadMap) async {
+    _devLog('');
+    _devLog('═══════════════════════════════════════════════════════');
+    _devLog('📊 PROCESSING WEEKLY SUMMARY TAP');
+    _devLog('═══════════════════════════════════════════════════════');
+    _devLog('Timestamp: ${DateTime.now().toIso8601String()}');
+    _devLog('Payload: $payloadMap');
+    _devLog('');
+
+    try {
+      // Step 1: Check authentication
+      _devLog('Step 1: Checking authentication...');
+      final isAuthenticated = ref.read(isAuthenticatedProvider);
+      _devLog('  isAuthenticated: $isAuthenticated');
+
+      if (!isAuthenticated) {
+        _devLog('❌ FAILED: User not authenticated, redirecting to login');
+        _devLog('═══════════════════════════════════════════════════════');
+
+        if (mounted) {
+          context.go('/login');
+          // Show contextual message after navigation
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              final l10n = AppLocalizations.of(context);
+              if (l10n != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Please log in to view your weekly summary',
+                    ),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            }
+          });
+        }
+        return;
+      }
+      _devLog('✅ User authenticated');
+
+      // Step 2: Check onboarding completion
+      _devLog('');
+      _devLog('Step 2: Checking onboarding completion...');
+      final hasCompletedOnboarding = ref.read(hasCompletedOnboardingProvider);
+      _devLog('  hasCompletedOnboarding: $hasCompletedOnboarding');
+
+      if (!hasCompletedOnboarding) {
+        _devLog(
+          '❌ FAILED: Onboarding not completed, redirecting to onboarding',
+        );
+        _devLog('═══════════════════════════════════════════════════════');
+
+        if (mounted) {
+          context.go('/onboarding/pet');
+          // Show contextual message after navigation
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              final l10n = AppLocalizations.of(context);
+              if (l10n != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Please complete onboarding to view your weekly summary',
+                    ),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            }
+          });
+        }
+        return;
+      }
+      _devLog('✅ Onboarding completed');
+
+      // Step 3: Navigate to /progress
+      _devLog('');
+      _devLog('Step 3: Navigating to /progress...');
+
+      if (mounted) {
+        unawaited(context.push('/progress'));
+        _devLog('✅ Navigation initiated to /progress');
+      } else {
+        _devLog('❌ Context not mounted, navigation skipped');
+      }
+
+      // Step 4: Track analytics event
+      _devLog('');
+      _devLog('Step 4: Tracking analytics event...');
+      try {
+        final analyticsService = ref.read(analyticsServiceDirectProvider);
+        // Track using existing method with special values for weekly summary
+        await analyticsService.trackReminderTapped(
+          treatmentType: 'weekly_summary',
+          kind: 'notification',
+          scheduleId: 'weekly',
+          result: 'navigated_to_progress',
+        );
+        _devLog('✅ Analytics event tracked successfully');
+      } on Exception catch (e) {
+        _devLog('⚠️ Failed to track analytics event: $e');
+        // Don't fail navigation if analytics fails
+      }
+
+      _devLog('');
+      _devLog('✅ WEEKLY SUMMARY TAP PROCESSING COMPLETE');
+      _devLog('═══════════════════════════════════════════════════════');
+      _devLog('');
+    } on Exception catch (e, stackTrace) {
+      _devLog('');
+      _devLog('❌ ERROR processing weekly summary tap: $e');
+      _devLog('Stack trace: $stackTrace');
+      _devLog('═══════════════════════════════════════════════════════');
+      _devLog('');
+
+      // Log to Crashlytics in production
+      if (!FlavorConfig.isDevelopment) {
+        unawaited(
+          FirebaseService().crashlytics.recordError(
+            Exception('Weekly summary tap processing failed: $e'),
+            stackTrace,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Shows the permission pre-prompt dialog proactively after onboarding.
+  ///
+  /// This is called once per user installation after onboarding completion.
+  /// The dialog educates users about notification benefits before requesting
+  /// system permission, which significantly increases acceptance rates.
+  ///
+  /// Marks the prompt as shown immediately (before displaying) to prevent
+  /// duplicate displays if the user closes the app or navigates away during
+  /// the prompt.
+  Future<void> _showPermissionPreprompt() async {
+    final currentUser = ref.read(currentUserProvider);
+    if (currentUser == null) return;
+
+    debugPrint(
+      '[AppShell] Showing permission pre-prompt for user ${currentUser.id}',
+    );
+
+    // Mark as shown immediately to prevent duplicate displays
+    await PermissionPromptService.markPromptAsShown(currentUser.id);
+
+    // Show dialog
+    if (mounted) {
+      await showDialog<void>(
+        context: context,
+        builder: (context) => const NotificationPermissionPreprompt(),
+      );
+    }
+  }
+
   /// Log messages only in development flavor.
   void _devLog(String message) {
     if (FlavorConfig.isDevelopment) {
@@ -744,6 +926,41 @@ class _AppShellState extends ConsumerState<AppShell>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         debugPrint('[AppShell] Auto-loading pet profile');
         ref.read(profileProvider.notifier).loadPrimaryPet();
+      });
+    }
+
+    // Schedule weekly summary notification on app startup if enabled
+    if (hasCompletedOnboarding &&
+        isAuthenticated &&
+        currentUser != null &&
+        primaryPet != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        debugPrint('[AppShell] Scheduling weekly summary notification');
+        final reminderService = ref.read(reminderServiceProvider);
+        await reminderService.scheduleWeeklySummary(
+          currentUser.id,
+          primaryPet.id,
+          ref as Ref,
+        );
+      });
+    }
+
+    // Show permission pre-prompt proactively after onboarding completion
+    if (hasCompletedOnboarding &&
+        isAuthenticated &&
+        currentUser != null) {
+      // Use AsyncValue.whenData to safely extract the boolean
+      ref
+          .watch(shouldShowPermissionPromptProvider(currentUser.id))
+          .whenData((shouldShow) {
+        if (shouldShow) {
+          // Post-frame callback to ensure stable context
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _showPermissionPreprompt();
+            }
+          });
+        }
       });
     }
 

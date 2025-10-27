@@ -7,6 +7,7 @@ import 'package:hydracat/features/notifications/models/notification_settings.dar
 import 'package:hydracat/features/notifications/services/device_token_service.dart';
 import 'package:hydracat/features/notifications/services/notification_index_store.dart';
 import 'package:hydracat/features/notifications/services/notification_settings_service.dart';
+import 'package:hydracat/features/notifications/services/permission_prompt_service.dart';
 import 'package:hydracat/features/notifications/services/reminder_plugin.dart';
 import 'package:hydracat/features/notifications/services/reminder_service.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -520,5 +521,64 @@ final Provider<NotificationDisabledReason> Function(String)
       },
       orElse: () => NotificationDisabledReason.permissionDenied,
     );
+  },
+);
+
+// ============================================================================
+// PERMISSION PROMPT CONTROL
+// ============================================================================
+
+/// Provider that determines whether the permission pre-prompt should be shown.
+///
+/// This provider combines multiple conditions to determine if the proactive
+/// permission pre-prompt should be displayed to the user:
+///
+/// Conditions checked:
+/// 1. Permission is not granted (permission denied or not determined)
+/// 2. Prompt has not been shown before (tracked in SharedPreferences)
+/// 3. User has completed onboarding (implicit - caller checks this)
+///
+/// The prompt is shown proactively only once after onboarding completion.
+/// If the user dismisses it with "Maybe Later", it won't be shown again
+/// proactively, though they can still access it via:
+/// - Tapping the notification bell icon when permission denied
+/// - Navigating to notification settings
+///
+/// Returns `false` if permission is already granted or if prompt has been
+/// shown before. Returns `true` if the prompt should be displayed.
+///
+/// Example usage:
+/// ```dart
+/// // In AppShell after onboarding completed
+/// final shouldShow = await ref.read(
+///   shouldShowPermissionPromptProvider(currentUser.id).future
+/// );
+///
+/// if (shouldShow) {
+///   await showDialog(
+///     context: context,
+///     builder: (context) => const NotificationPermissionPreprompt(),
+///   );
+/// }
+/// ```
+///
+/// Cost: 0 Firestore reads (checks SharedPreferences + in-memory state only)
+final FutureProvider<bool> Function(String) shouldShowPermissionPromptProvider =
+    FutureProvider.family<bool, String>(
+  (ref, userId) async {
+    // Check if permission is already granted
+    final permissionAsync = ref.watch(notificationPermissionStatusProvider);
+
+    final permissionStatus = permissionAsync.value;
+    if (permissionStatus == NotificationPermissionStatus.granted) {
+      // Permission already granted, no need to show prompt
+      return false;
+    }
+
+    // Check if prompt has been shown before
+    final hasShown = await PermissionPromptService.hasShownPrompt(userId);
+
+    // Show prompt only if not shown before and permission not granted
+    return !hasShown;
   },
 );

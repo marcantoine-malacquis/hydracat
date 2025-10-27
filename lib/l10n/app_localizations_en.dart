@@ -787,6 +787,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get notificationWeeklySummaryTitle => 'Your weekly summary is ready!';
+
+  @override
+  String get notificationWeeklySummaryBody =>
+      'Tap to see your progress and treatment adherence.';
+
+  @override
   String notificationGroupSummaryTitle(Object petName) {
     return '$petName\'s Reminders';
   }
@@ -831,6 +838,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get notificationActionLogNow => 'Log now';
+
+  @override
   String get notificationAuthRequired =>
       'Please log in to record this treatment';
 
@@ -850,26 +860,34 @@ class AppLocalizationsEn extends AppLocalizations {
       'Notifications disabled - tap to open Settings';
 
   @override
-  String get notificationPermissionDialogTitle => 'Enable Notifications';
+  String get notificationPermissionDialogTitle => 'Never Miss a Treatment';
 
   @override
   String notificationPermissionMessageNotDetermined(String petName) {
-    return 'Never miss critical treatment times for $petName. Enable notifications to receive timely reminders for medications and fluid therapy.';
+    return 'Enable notifications to receive timely reminders for $petName\'s medications and fluid therapy. You\'re doing an amazing job caring for your cat - let us help you stay on track.';
   }
 
   @override
   String notificationPermissionMessageDenied(String petName) {
-    return 'Notifications are currently disabled. Enable them to receive treatment reminders for $petName.';
+    return 'Treatment reminders help you provide the best care for $petName. Enable notifications to receive gentle reminders at the right times.';
   }
 
   @override
   String notificationPermissionMessagePermanent(String petName) {
-    return 'To receive treatment reminders for $petName, you\'ll need to enable notifications in your device Settings.';
+    return 'To receive treatment reminders for $petName, please enable notifications in your device Settings. This ensures you never miss important medication or fluid therapy times.';
   }
 
   @override
   String get notificationPermissionMessageGeneric =>
       'Enable notifications to receive treatment reminders.';
+
+  @override
+  String get notificationPermissionIosHint =>
+      'You can always change this later in your device Settings.';
+
+  @override
+  String get notificationPermissionAndroidHint =>
+      'This is the only time we\'ll ask - you can enable later in Settings if needed.';
 
   @override
   String get notificationPermissionAllowButton => 'Allow Notifications';
@@ -910,6 +928,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationSettingsEnableToggleLabel => 'Enable Notifications';
 
   @override
-  String get notificationSettingsFuturePlaceholder =>
-      'More notification preferences (weekly summaries, snooze, end-of-day reminders) will be available in a future update.';
+  String get notificationSettingsWeeklySummaryLabel => 'Weekly Summary';
+
+  @override
+  String get notificationSettingsWeeklySummaryDescription =>
+      'Get a summary of your treatment adherence every Monday morning';
+
+  @override
+  String get notificationSettingsWeeklySummarySuccess =>
+      'Weekly summary enabled';
+
+  @override
+  String get notificationSettingsWeeklySummaryDisabledSuccess =>
+      'Weekly summary disabled';
+
+  @override
+  String get notificationSettingsWeeklySummaryError =>
+      'Failed to update weekly summary setting. Please try again.';
+
+  @override
+  String get notificationSettingsSnoozeLabel => 'Snooze Reminders';
+
+  @override
+  String get notificationSettingsSnoozeDescription =>
+      'Snooze reminders for 15 minutes';
+
+  @override
+  String get notificationSettingsSnoozeSuccess => 'Snooze enabled';
+
+  @override
+  String get notificationSettingsSnoozeDisabledSuccess => 'Snooze disabled';
+
+  @override
+  String get notificationSettingsFeatureRequiresMasterToggle =>
+      'Enable notifications above to use these features';
+
+  @override
+  String get notificationSettingsFeatureRequiresPetProfile =>
+      'Please set up your pet profile first to use notification features';
 }

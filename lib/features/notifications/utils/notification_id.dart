@@ -150,6 +150,95 @@ int generateNotificationId({
   return notificationId;
 }
 
+/// Generates a deterministic notification ID for weekly summary notifications.
+///
+/// Creates a stable 31-bit positive integer by hashing the concatenation of
+/// userId, petId, and week start date (Monday) using FNV-1a algorithm.
+///
+/// **Use case**: Weekly summary notifications that fire every Monday at 09:00.
+/// Each notification needs a unique, deterministic ID based on which week it
+/// represents to enable idempotent scheduling and cancellation.
+///
+/// **Parameters**:
+/// - [userId]: User ID (must be non-empty)
+/// - [petId]: Pet ID (must be non-empty)
+/// - [weekStartDate]: Date representing the week (will be normalized to Monday)
+///
+/// **Returns**: 31-bit positive integer suitable for Android/iOS notifications
+///
+/// **Throws**:
+/// - [ArgumentError] if userId or petId is empty
+///
+/// **Deterministic behavior**: Calling this function multiple times with the
+/// same parameters will always produce the same ID. This is critical for
+/// idempotent scheduling operations.
+///
+/// **Week normalization**: The function automatically normalizes the input date
+/// to the Monday of that week, so any date within the same week produces the
+/// same ID.
+///
+/// Example:
+/// ```dart
+/// // Same week produces same ID
+/// final id1 = generateWeeklySummaryNotificationId(
+///   userId: 'user1',
+///   petId: 'pet1',
+///   weekStartDate: DateTime(2025, 10, 27), // Monday
+/// );
+/// final id2 = generateWeeklySummaryNotificationId(
+///   userId: 'user1',
+///   petId: 'pet1',
+///   weekStartDate: DateTime(2025, 10, 28), // Tuesday (same week)
+/// );
+/// assert(id1 == id2); // Always true - same week
+///
+/// // Different weeks produce different IDs
+/// final id3 = generateWeeklySummaryNotificationId(
+///   userId: 'user1',
+///   petId: 'pet1',
+///   weekStartDate: DateTime(2025, 11, 3), // Next Monday
+/// );
+/// assert(id1 != id3); // Almost always true (collision probability ~1 in 2B)
+/// ```
+int generateWeeklySummaryNotificationId({
+  required String userId,
+  required String petId,
+  required DateTime weekStartDate,
+}) {
+  // Validate non-empty parameters
+  if (userId.isEmpty) {
+    throw ArgumentError('userId must not be empty');
+  }
+  if (petId.isEmpty) {
+    throw ArgumentError('petId must not be empty');
+  }
+
+  // Normalize to Monday of the week
+  // weekday: 1 = Monday, 7 = Sunday
+  final weekday = weekStartDate.weekday;
+  final monday = weekStartDate.subtract(Duration(days: weekday - 1));
+
+  // Format as YYYY-MM-DD (only date, no time component)
+  final year = monday.year.toString().padLeft(4, '0');
+  final month = monday.month.toString().padLeft(2, '0');
+  final day = monday.day.toString().padLeft(2, '0');
+  final mondayStr = '$year-$month-$day';
+
+  // Create composite string using pipe delimiter
+  // Format: "weekly_summary|userId|petId|YYYY-MM-DD"
+  final composite = 'weekly_summary|$userId|$petId|$mondayStr';
+
+  // Compute FNV-1a hash
+  final hash = _fnv1aHash32(composite);
+
+  // Mask to 31 bits to ensure positive integer
+  // Android notification IDs must be in range: 0 to 2,147,483,647
+  // 0x7FFFFFFF = 0111 1111 1111 1111 1111 1111 1111 1111 (31 bits set)
+  final notificationId = hash & 0x7FFFFFFF;
+
+  return notificationId;
+}
+
 /// Computes FNV-1a hash (32-bit) for a given string.
 ///
 /// FNV-1a (Fowler-Noll-Vo hash, variant 1a) is a simple, fast,

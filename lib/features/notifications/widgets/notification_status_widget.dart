@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/notifications/providers/notification_provider.dart';
-import 'package:hydracat/features/notifications/widgets/notification_permission_dialog.dart';
+import 'package:hydracat/features/notifications/widgets/permission_preprompt.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
@@ -165,7 +165,7 @@ class NotificationStatusWidget extends ConsumerWidget {
       if (context.mounted) {
         await showDialog<void>(
           context: context,
-          builder: (context) => const NotificationPermissionDialog(),
+          builder: (context) => const NotificationPermissionPreprompt(),
         );
       }
     }

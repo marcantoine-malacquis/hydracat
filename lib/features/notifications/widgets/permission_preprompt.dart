@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/theme/theme.dart';
@@ -8,24 +10,37 @@ import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-/// Dialog that educates users about notification importance and
-/// requests permission or directs to Settings based on current state.
+/// Educational pre-prompt dialog that requests notification permission
+/// or directs to Settings based on current permission state.
+///
+/// This dialog serves as a "pre-prompt" that explains the benefits of
+/// notifications before triggering the system permission dialog. Research
+/// shows this approach significantly increases permission acceptance rates
+/// (60-80% vs 20-40% for cold system prompts).
 ///
 /// Shows context-appropriate messages based on permission status:
-/// - notDetermined: Encourages enabling, offers "Allow Notifications" button
-/// - denied: Explains importance, offers "Allow Notifications" to try again
-/// - permanentlyDenied: Explains need, offers "Open Settings" button
-class NotificationPermissionDialog extends ConsumerStatefulWidget {
-  /// Creates a notification permission dialog.
-  const NotificationPermissionDialog({super.key});
+/// - notDetermined: Educational content + "Allow Notifications" button
+/// - denied: Encourages enabling + "Allow Notifications" to retry
+/// - permanentlyDenied: Explains need + "Open Settings" button (Android)
+///
+/// Features:
+/// - Personalized with pet name for emotional connection
+/// - Platform-specific messaging (iOS lighter, Android more emphatic)
+/// - Benefit-focused language emphasizing treatment adherence
+/// - In-app permission request (no app exit required)
+/// - Auto-enables app setting when permission granted
+/// - Complete analytics tracking for optimization
+class NotificationPermissionPreprompt extends ConsumerStatefulWidget {
+  /// Creates a notification permission pre-prompt dialog.
+  const NotificationPermissionPreprompt({super.key});
 
   @override
-  ConsumerState<NotificationPermissionDialog> createState() =>
-      _NotificationPermissionDialogState();
+  ConsumerState<NotificationPermissionPreprompt> createState() =>
+      _NotificationPermissionPrepromptState();
 }
 
-class _NotificationPermissionDialogState
-    extends ConsumerState<NotificationPermissionDialog> {
+class _NotificationPermissionPrepromptState
+    extends ConsumerState<NotificationPermissionPreprompt> {
   bool _isRequesting = false;
 
   @override
@@ -95,9 +110,34 @@ class _NotificationPermissionDialogState
       message = l10n.notificationPermissionMessageGeneric;
     }
 
+    // Platform-specific hint for context
+    final platformHint = Platform.isIOS
+        ? l10n.notificationPermissionIosHint
+        : l10n.notificationPermissionAndroidHint;
+
     return AlertDialog(
       title: Text(l10n.notificationPermissionDialogTitle),
-      content: Text(message),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Main educational message
+          Text(message),
+
+          const SizedBox(height: AppSpacing.md),
+
+          // Platform-specific hint
+          if (!isPermanentlyDenied) ...[
+            Text(
+              platformHint,
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textSecondary,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ],
+      ),
       actions: [
         // Secondary button: Maybe Later
         TextButton(

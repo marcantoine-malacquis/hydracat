@@ -6,6 +6,7 @@ import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/features/notifications/models/scheduled_notification_entry.dart';
 import 'package:hydracat/features/notifications/providers/notification_provider.dart';
 import 'package:hydracat/features/notifications/services/notification_index_store.dart';
+import 'package:hydracat/features/notifications/services/reminder_plugin.dart';
 import 'package:hydracat/features/notifications/utils/notification_id.dart';
 import 'package:hydracat/features/notifications/utils/scheduling_helpers.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
@@ -455,18 +456,25 @@ class ReminderService {
       // Clear today's index to start fresh
       await indexStore.clearForDate(userId, petId, DateTime.now());
 
-      // Reschedule all from cached schedules
+      // Reschedule all treatment reminders from cached schedules
       final scheduleResult = await scheduleAllForToday(userId, petId, ref);
+
+      // Cancel and reschedule weekly summary notification
+      await cancelWeeklySummary(userId, petId, ref);
+      final weeklySummaryResult =
+          await scheduleWeeklySummary(userId, petId, ref);
 
       _devLog(
         'Reconciliation complete: $orphansCanceled orphans canceled, '
-        'rescheduled all from cache',
+        'rescheduled all from cache, weekly summary: '
+        '${weeklySummaryResult['success']}',
       );
 
       return {
         'orphansCanceled': orphansCanceled,
         'missingCount': missingIds.length,
         'scheduleResult': scheduleResult,
+        'weeklySummaryResult': weeklySummaryResult,
       };
     } on Exception catch (e, stackTrace) {
       _devLog('ERROR in rescheduleAll: $e');
@@ -1369,6 +1377,243 @@ class ReminderService {
     }
 
     return score;
+  }
+
+  /// Schedule next Monday's weekly summary notification.
+  ///
+  /// Call this:
+  /// - On app startup (if enableNotifications && weeklySummaryEnabled)
+  /// - When user enables weeklySummaryEnabled in settings
+  /// - After onboarding completion
+  ///
+  /// Algorithm:
+  /// 1. Check if weeklySummaryEnabled in user settings
+  /// 2. If disabled, return early (don't schedule)
+  /// 3. Calculate next Monday 09:00 (tz-aware)
+  /// 4. Generate deterministic notification ID
+  /// 5. Check if notification already scheduled (idempotent check)
+  /// 6. If already scheduled, return early (avoid duplicate)
+  /// 7. Build generic notification content
+  /// 8. Schedule notification via plugin.showZoned()
+  /// 9. Log success/failure in dev mode
+  ///
+  /// Parameters:
+  /// - [userId]: Current user ID
+  /// - [petId]: Primary pet ID
+  /// - [ref]: Riverpod ref for accessing providers
+  ///
+  /// Returns: Map with result:
+  ///   - 'success': bool (true if scheduled, false if already scheduled or
+  ///     disabled)
+  ///   - 'scheduledFor': ISO8601 timestamp of scheduled time (if success=true)
+  ///   - 'notificationId': int (if success=true)
+  ///   - 'reason': String (if success=false, e.g., 'already_scheduled',
+  ///     'disabled_in_settings')
+  ///
+  /// Cost: 0 Firestore reads (reads from cached notificationSettingsProvider)
+  Future<Map<String, dynamic>> scheduleWeeklySummary(
+    String userId,
+    String petId,
+    Ref ref,
+  ) async {
+    _devLog('scheduleWeeklySummary called for userId=$userId, petId=$petId');
+
+    try {
+      // Step 1: Check if weekly summary is enabled in user settings
+      _devLog('Step 1: Checking notification settings...');
+      final settings = ref.read(notificationSettingsProvider(userId));
+      _devLog(
+        '  enableNotifications: ${settings.enableNotifications}',
+      );
+      _devLog('  weeklySummaryEnabled: ${settings.weeklySummaryEnabled}');
+
+      if (!settings.enableNotifications || !settings.weeklySummaryEnabled) {
+        _devLog('❌ Weekly summary disabled in settings');
+        return {
+          'success': false,
+          'reason': 'disabled_in_settings',
+        };
+      }
+      _devLog('✅ Weekly summary enabled in settings');
+
+      // Step 2: Calculate next Monday 09:00
+      _devLog('');
+      _devLog('Step 2: Calculating next Monday 09:00...');
+      final nextMonday = _calculateNextMonday09();
+      _devLog('  Next Monday 09:00: $nextMonday');
+
+      // Step 3: Generate deterministic notification ID
+      _devLog('');
+      _devLog('Step 3: Generating notification ID...');
+      final notificationId = generateWeeklySummaryNotificationId(
+        userId: userId,
+        petId: petId,
+        weekStartDate: nextMonday,
+      );
+      _devLog('  Notification ID: $notificationId');
+
+      // Step 4: Check if notification already scheduled (idempotent check)
+      _devLog('');
+      _devLog('Step 4: Checking if already scheduled...');
+      final plugin = ref.read(reminderPluginProvider);
+      final pendingNotifications = await plugin.pendingNotificationRequests();
+      final alreadyScheduled =
+          pendingNotifications.any((n) => n.id == notificationId);
+
+      if (alreadyScheduled) {
+        _devLog('ℹ️ Weekly summary already scheduled (idempotent)');
+        return {
+          'success': false,
+          'reason': 'already_scheduled',
+          'scheduledFor': nextMonday.toIso8601String(),
+          'notificationId': notificationId,
+        };
+      }
+      _devLog('✅ No duplicate found, proceeding with scheduling');
+
+      // Step 5: Build generic notification content
+      _devLog('');
+      _devLog('Step 5: Building notification content...');
+      // TODO(Phase6): Use localized strings from AppLocalizations
+      const title = 'Your weekly summary is ready!';
+      const body = 'Tap to see your progress and treatment adherence.';
+      final payload = json.encode({
+        'type': 'weekly_summary',
+        'route': '/progress',
+      });
+      _devLog('  Title: $title');
+      _devLog('  Body: $body');
+      _devLog('  Payload: $payload');
+
+      // Step 6: Schedule notification
+      _devLog('');
+      _devLog('Step 6: Scheduling notification...');
+      await plugin.showZoned(
+        id: notificationId,
+        title: title,
+        body: body,
+        scheduledDate: nextMonday,
+        channelId: ReminderPlugin.channelIdWeeklySummaries,
+        payload: payload,
+        // No grouping - standalone notification (defaults to null)
+      );
+
+      _devLog('✅ Weekly summary scheduled successfully');
+      _devLog('');
+
+      return {
+        'success': true,
+        'scheduledFor': nextMonday.toIso8601String(),
+        'notificationId': notificationId,
+      };
+    } on Exception catch (e, stackTrace) {
+      _devLog('❌ ERROR in scheduleWeeklySummary: $e');
+      _devLog('Stack trace: $stackTrace');
+      return {
+        'success': false,
+        'reason': 'error',
+        'error': e.toString(),
+      };
+    }
+  }
+
+  /// Cancel weekly summary notification.
+  ///
+  /// Call this:
+  /// - When user disables weeklySummaryEnabled in settings
+  /// - When user disables enableNotifications (master toggle)
+  /// - On user logout
+  /// - During rescheduleAll() cleanup
+  ///
+  /// Parameters:
+  /// - [userId]: Current user ID
+  /// - [petId]: Primary pet ID
+  /// - [ref]: Riverpod ref for accessing providers
+  ///
+  /// Returns: bool (true if canceled, false if not found)
+  Future<bool> cancelWeeklySummary(
+    String userId,
+    String petId,
+    Ref ref,
+  ) async {
+    _devLog('cancelWeeklySummary called for userId=$userId, petId=$petId');
+
+    try {
+      final plugin = ref.read(reminderPluginProvider);
+      var canceledCount = 0;
+
+      // Check next Monday and up to 4 weeks in advance
+      // (to catch any scheduled future notifications)
+      for (var i = 0; i < 4; i++) {
+        final monday = _calculateNextMonday09().add(Duration(days: 7 * i));
+        final notificationId = generateWeeklySummaryNotificationId(
+          userId: userId,
+          petId: petId,
+          weekStartDate: monday,
+        );
+
+        try {
+          await plugin.cancel(notificationId);
+          canceledCount++;
+          _devLog('Canceled weekly summary notification $notificationId');
+        } on Exception catch (e) {
+          _devLog('No notification found for ID $notificationId: $e');
+          // Continue checking other weeks
+        }
+      }
+
+      if (canceledCount > 0) {
+        _devLog('✅ Canceled $canceledCount weekly summary notification(s)');
+        return true;
+      } else {
+        _devLog('ℹ️ No weekly summary notifications found to cancel');
+        return false;
+      }
+    } on Exception catch (e, stackTrace) {
+      _devLog('❌ ERROR in cancelWeeklySummary: $e');
+      _devLog('Stack trace: $stackTrace');
+      return false;
+    }
+  }
+
+  /// Calculate next Monday at 09:00 (timezone-aware).
+  ///
+  /// Returns: TZDateTime for next Monday at 09:00 local time
+  ///
+  /// Algorithm:
+  /// 1. Get current date/time
+  /// 2. If today is Monday and current time < 09:00, use today
+  /// 3. Otherwise, find next Monday
+  /// 4. Set time to 09:00:00
+  /// 5. Convert to TZDateTime using tz.local
+  tz.TZDateTime _calculateNextMonday09() {
+    final now = DateTime.now();
+
+    // weekday: 1 = Monday, 7 = Sunday
+    final currentWeekday = now.weekday;
+
+    DateTime mondayDate;
+
+    if (currentWeekday == DateTime.monday && now.hour < 9) {
+      // Today is Monday and it's before 09:00, use today
+      mondayDate = now;
+    } else {
+      // Find next Monday
+      final daysUntilMonday = (DateTime.monday - currentWeekday + 7) % 7;
+      final daysToAdd = daysUntilMonday == 0 ? 7 : daysUntilMonday;
+      mondayDate = now.add(Duration(days: daysToAdd));
+    }
+
+    // Create TZDateTime for Monday at 09:00
+    final monday09 = tz.TZDateTime(
+      tz.local,
+      mondayDate.year,
+      mondayDate.month,
+      mondayDate.day,
+      9, // hour
+    );
+
+    return monday09;
   }
 
   /// Log messages only in development flavor
