@@ -146,6 +146,31 @@ class AnalyticsEvents {
 
   /// Reminder canceled on log event name
   static const String reminderCanceledOnLog = 'reminder_canceled_on_log';
+
+  // TODO(Phase7): Implement schedule CRUD notification analytics
+  // The following events track notification scheduling/cancellation when
+  // users create/update/delete treatment schedules:
+  //
+  // - schedule_created_reminders_scheduled
+  //   Params: treatmentType, scheduleId, reminderCount, result (success/error)
+  //   Tracks notification scheduling after schedule creation
+  //
+  // - schedule_updated_reminders_rescheduled
+  //   Params: treatmentType, scheduleId, reminderCount, result (success/error)
+  //   Tracks notification rescheduling after schedule update
+  //
+  // - schedule_deleted_reminders_canceled
+  //   Params: treatmentType, scheduleId, canceledCount, result (success/error)
+  //   Tracks notification cancellation after schedule deletion
+  //
+  // - schedule_deactivated_reminders_canceled
+  //   Params: treatmentType, scheduleId, canceledCount, result (success/error)
+  //   Tracks notification cancellation when schedule set to isActive=false
+  //
+  // These analytics help monitor:
+  // - Notification system reliability during schedule operations
+  // - Failure rates for notification scheduling/cancellation
+  // - User behavior patterns (how often schedules are modified)
 }
 
 /// Analytics parameters

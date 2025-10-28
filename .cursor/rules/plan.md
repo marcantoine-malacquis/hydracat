@@ -43,35 +43,22 @@ I already did something similar in @onboarding_code_review_report.md . I don't n
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
 
-1. Create a focused "Notification Privacy & Data Handling"
-  section in assets/legal/notification_privacy.md that can be linked from the
-  permission pre-prompt dialog. This keeps it specific to Step 5.4's scope while
-   being easily expandable later. We can add a "Privacy Policy" link in the
-  notification settings screen.
-2. Keep the current approach of only maintaining today's index
-   and auto-cleaning yesterday's index at midnight rollover. This is more
-  privacy-focused (less data retained) and simpler. Notification settings should
-   persist indefinitely since they're user preferences, not sensitive data -
-  only clear them on explicit logout or "Clear notification data" action.
-3. The "Clear notification data" action should: (a) Cancel all
-   currently scheduled notifications, (b) Clear the notification index from
-  SharedPreferences, (c) Keep notification settings intact (they're user
-  preferences, not "data"), and (d) Keep system permission status intact. This
-  provides a "nuclear reset" for the notification system without forcing users
-  to reconfigure their preferences or permissions.
-4. On logout, cancel all scheduled notifications and clear the
-   index, but PRESERVE notification settings in SharedPreferences (keyed by
-  userId). This provides better UX - if the user logs back in, their preference
-  for enabling/disabling notifications is remembered. Users who want to fully
-  clear everything can explicitly use "Clear notification data" before logging
-  out.
-5. Add a concise privacy notice (2-3 sentences) directly in
-  the permission pre-prompt dialog below the existing educational content, with
-  a "Learn More" link that opens a bottom sheet or dialog with full privacy
-  details. Keep it brief but reassuring - mention generic content, local-only
-  storage, and no transmission of medical data.
-6. Unless you have specific regulatory requirements, keep it
-  simple for this medical pet app: clear privacy notices, reasonable defaults
-  (local-only, generic content, minimal retention), and user control options. No
-   complex consent flows or audit logging unless legally required.
+1. skip cancellation for manual logs since
+  there's no associated schedule/reminder to cancel.
+2. iterate through the logged sessions and cancel
+   only those with valid scheduleId and scheduledTime. This is more precise and
+  handles partial failures gracefully.
+3. silent error logging with analytics tracking.
+  The treatment logging is the critical operation; notification cancellation is
+  a nice-to-have enhancement. We should never block a successful log due to
+  notification cancellation failures.
+4. skip cancellation for offline logs. When the
+  app comes back online and calls rescheduleAll(), it will reconcile the
+  notification state anyway. This keeps offline logic simple and avoids complex
+  state management.
+5. create a small utility function
+  formatTimeSlotFromDateTime(DateTime dt) that returns "HH:mm" format. This
+  ensures consistency across the codebase and is easily testable.
+6. track successful cancellations. This gives
+  valuable insights into reminder effectiveness and user behavior patterns.
 Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development best practices are extremely important. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them (including the non critical ones). I will test only once we fixed the linting issues.

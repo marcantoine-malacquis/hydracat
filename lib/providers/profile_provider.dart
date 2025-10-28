@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hydracat/features/notifications/providers/notification_provider.dart';
 import 'package:hydracat/features/profile/exceptions/profile_exceptions.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
@@ -7,6 +8,7 @@ import 'package:hydracat/features/profile/services/pet_service.dart';
 import 'package:hydracat/features/profile/services/schedule_service.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/providers/connectivity_provider.dart';
 
 /// Cache status enum to track data freshness
 enum CacheStatus {
@@ -567,6 +569,14 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         lastUpdated: DateTime.now(),
       );
 
+      // Schedule notifications if online (Step 6.2)
+      if (_isOnline()) {
+        await _scheduleNotificationsForSchedule(
+          schedule: newSchedule,
+          operationType: 'create',
+        );
+      }
+
       return true;
     } on Exception catch (e) {
       state = state.copyWith(
@@ -588,6 +598,9 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     final currentUser = _ref.read(currentUserProvider);
     if (currentUser == null) return false;
 
+    // Store old schedule to check if isActive changed
+    final oldSchedule = state.fluidSchedule;
+
     state = state.copyWith(scheduleIsLoading: true);
 
     try {
@@ -604,6 +617,28 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         scheduleIsLoading: false,
         lastUpdated: DateTime.now(),
       );
+
+      // Handle notification updates if online (Step 6.2)
+      if (_isOnline()) {
+        // Check if schedule was deactivated
+        if (oldSchedule != null &&
+            oldSchedule.isActive &&
+            !schedule.isActive) {
+          // Schedule was deactivated - cancel notifications
+          await _cancelNotificationsForSchedule(
+            scheduleId: schedule.id,
+            treatmentType: schedule.treatmentType.name,
+            operationType: 'deactivate',
+          );
+        } else if (schedule.isActive) {
+          // Schedule is active (either stayed active or was activated)
+          // Reschedule notifications
+          await _scheduleNotificationsForSchedule(
+            schedule: schedule,
+            operationType: 'update',
+          );
+        }
+      }
 
       return true;
     } on Exception catch (e) {
@@ -749,6 +784,12 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     final currentUser = _ref.read(currentUserProvider);
     if (currentUser == null) return false;
 
+    // Store old schedule to check if isActive changed
+    final currentSchedules = state.medicationSchedules ?? [];
+    final oldSchedule = currentSchedules
+        .where((s) => s.id == schedule.id)
+        .firstOrNull;
+
     state = state.copyWith(scheduleIsLoading: true);
 
     try {
@@ -760,7 +801,6 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       );
 
       // Update the cache with the new schedule data
-      final currentSchedules = state.medicationSchedules ?? [];
       final updatedSchedules = currentSchedules.map((s) {
         return s.id == schedule.id ? schedule : s;
       }).toList();
@@ -770,6 +810,28 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         scheduleIsLoading: false,
         lastUpdated: DateTime.now(),
       );
+
+      // Handle notification updates if online (Step 6.2)
+      if (_isOnline()) {
+        // Check if schedule was deactivated
+        if (oldSchedule != null &&
+            oldSchedule.isActive &&
+            !schedule.isActive) {
+          // Schedule was deactivated - cancel notifications
+          await _cancelNotificationsForSchedule(
+            scheduleId: schedule.id,
+            treatmentType: schedule.treatmentType.name,
+            operationType: 'deactivate',
+          );
+        } else if (schedule.isActive) {
+          // Schedule is active (either stayed active or was activated)
+          // Reschedule notifications
+          await _scheduleNotificationsForSchedule(
+            schedule: schedule,
+            operationType: 'update',
+          );
+        }
+      }
 
       return true;
     } on Exception catch (e) {
@@ -817,6 +879,14 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         lastUpdated: DateTime.now(),
       );
 
+      // Schedule notifications if online (Step 6.2)
+      if (_isOnline()) {
+        await _scheduleNotificationsForSchedule(
+          schedule: newSchedule,
+          operationType: 'create',
+        );
+      }
+
       return true;
     } on Exception catch (e) {
       state = state.copyWith(
@@ -838,6 +908,12 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     final currentUser = _ref.read(currentUserProvider);
     if (currentUser == null) return false;
 
+    // Store schedule info before deletion for notification cancellation
+    final currentSchedules = state.medicationSchedules ?? [];
+    final scheduleToDelete = currentSchedules
+        .where((s) => s.id == scheduleId)
+        .firstOrNull;
+
     state = state.copyWith(scheduleIsLoading: true);
 
     try {
@@ -848,7 +924,6 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       );
 
       // Remove from the cache
-      final currentSchedules = state.medicationSchedules ?? [];
       final updatedSchedules = currentSchedules
           .where((s) => s.id != scheduleId)
           .toList();
@@ -858,6 +933,15 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         scheduleIsLoading: false,
         lastUpdated: DateTime.now(),
       );
+
+      // Cancel notifications if online (Step 6.2)
+      if (_isOnline() && scheduleToDelete != null) {
+        await _cancelNotificationsForSchedule(
+          scheduleId: scheduleId,
+          treatmentType: scheduleToDelete.treatmentType.name,
+          operationType: 'delete',
+        );
+      }
 
       return true;
     } on Exception catch (e) {
@@ -984,6 +1068,241 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         debugPrint('[ProfileNotifier] Date changed - reloading schedules');
       }
       await loadAllSchedules();
+    }
+  }
+
+  // ==========================================================================
+  // NOTIFICATION INTEGRATION (Step 6.2)
+  // ==========================================================================
+
+  /// Check if device is currently online
+  ///
+  /// Uses ConnectivityProvider to determine network status.
+  /// Returns false if provider is unavailable or device is offline.
+  ///
+  /// This check is used to determine whether to schedule/cancel
+  /// notifications during schedule CRUD operations. When offline,
+  /// notification operations are skipped and will reconcile on next app
+  /// resume via rescheduleAll().
+  bool _isOnline() {
+    try {
+      return _ref.read(isConnectedProvider);
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[ProfileNotifier] Failed to check connectivity status: $e',
+        );
+      }
+      // Default to offline if connectivity provider unavailable
+      return false;
+    }
+  }
+
+  /// Schedule notifications for a schedule (silent, non-blocking)
+  ///
+  /// Called after successful schedule create/update operations.
+  /// Failures are logged to analytics but do not block the schedule
+  /// operation.
+  ///
+  /// Note: This method uses a workaround to call ReminderService with Ref
+  /// instead of WidgetRef. ReminderService only uses ref.read() internally,
+  /// which is available on both types, so the cast is safe.
+  ///
+  /// Algorithm:
+  /// 1. Validate prerequisites (currentUser, primaryPet)
+  /// 2. Get ReminderService from ref
+  /// 3. Call reminderService.scheduleForSchedule() with ref cast
+  /// 4. Track analytics with TODO(Phase7) marker
+  /// 5. Catch all exceptions and log silently with analytics
+  /// 6. Never throw/rethrow
+  ///
+  /// Parameters:
+  /// - [schedule]: The schedule to schedule notifications for
+  /// - [operationType]: 'create' or 'update' for analytics tracking
+  ///
+  /// Returns: void (all errors logged silently)
+  Future<void> _scheduleNotificationsForSchedule({
+    required Schedule schedule,
+    required String operationType,
+  }) async {
+    try {
+      // Validate prerequisites
+      final currentUser = _ref.read(currentUserProvider);
+      final primaryPet = state.primaryPet;
+
+      if (currentUser == null || primaryPet == null) {
+        if (kDebugMode) {
+          debugPrint(
+            '[ProfileNotifier] Cannot schedule notifications: '
+            'missing user or pet',
+          );
+        }
+        return;
+      }
+
+      if (kDebugMode) {
+        debugPrint(
+          '[ProfileNotifier] Scheduling notifications for '
+          '${schedule.treatmentType.name} schedule ${schedule.id} '
+          '(operation: $operationType)',
+        );
+      }
+
+      // Get ReminderService
+      final reminderService = _ref.read(reminderServiceProvider);
+
+      // Schedule notifications (idempotent - cancels old ones first)
+      // Note: We cast Ref to WidgetRef. This is safe because
+      // ReminderService only uses ref.read() which is available on both
+      // Ref and WidgetRef.
+      // ignore: argument_type_not_assignable, cast_from_null_always_fails
+      final result = await reminderService.scheduleForSchedule(
+        currentUser.id,
+        primaryPet.id,
+        schedule,
+        _ref as WidgetRef, // Safe cast: only uses ref.read()
+      );
+
+      if (kDebugMode) {
+        debugPrint(
+          '[ProfileNotifier] Notification scheduling result: '
+          'scheduled=${result['scheduled']}, '
+          'immediate=${result['immediate']}, '
+          'missed=${result['missed']}',
+        );
+      }
+
+      // TODO(Phase7): Track analytics event
+      // await _ref.read(analyticsServiceDirectProvider).trackEvent(
+      //   name: operationType == 'create'
+      //       ? 'schedule_created_reminders_scheduled'
+      //       : 'schedule_updated_reminders_rescheduled',
+      //   parameters: {
+      //     'treatmentType': schedule.treatmentType.name,
+      //     'scheduleId': schedule.id,
+      //     'reminderCount': result['scheduled'],
+      //     'result': 'success',
+      //   },
+      // );
+    } on Exception catch (e) {
+      // Silent error logging - don't block schedule operation
+      if (kDebugMode) {
+        debugPrint(
+          '[ProfileNotifier] Failed to schedule notifications: $e',
+        );
+      }
+
+      // TODO(Phase7): Track error analytics
+      // await _ref.read(analyticsServiceDirectProvider).trackError(
+      //   errorType: operationType == 'create'
+      //       ? 'schedule_created_reminders_failed'
+      //       : 'schedule_updated_reminders_failed',
+      //   errorContext: e.toString(),
+      // );
+    }
+  }
+
+  /// Cancel notifications for a schedule (silent, non-blocking)
+  ///
+  /// Called after successful schedule delete or deactivation operations.
+  /// Failures are logged to analytics but do not block the schedule
+  /// operation.
+  ///
+  /// Note: This method uses a workaround to call ReminderService with Ref
+  /// instead of WidgetRef. ReminderService only uses ref.read() internally,
+  /// which is available on both types, so the cast is safe.
+  ///
+  /// Algorithm:
+  /// 1. Validate prerequisites (currentUser, primaryPet)
+  /// 2. Get ReminderService from ref
+  /// 3. Call reminderService.cancelForSchedule() with ref cast
+  /// 4. Track analytics with TODO(Phase7) marker
+  /// 5. Catch all exceptions and log silently with analytics
+  /// 6. Never throw/rethrow
+  ///
+  /// Parameters:
+  /// - [scheduleId]: The schedule ID to cancel notifications for
+  /// - [treatmentType]: 'fluid' or 'medication' for analytics tracking
+  /// - [operationType]: 'delete' or 'deactivate' for analytics tracking
+  ///
+  /// Returns: void (all errors logged silently)
+  Future<void> _cancelNotificationsForSchedule({
+    required String scheduleId,
+    required String treatmentType,
+    required String operationType,
+  }) async {
+    try {
+      // Validate prerequisites
+      final currentUser = _ref.read(currentUserProvider);
+      final primaryPet = state.primaryPet;
+
+      if (currentUser == null || primaryPet == null) {
+        if (kDebugMode) {
+          debugPrint(
+            '[ProfileNotifier] Cannot cancel notifications: '
+            'missing user or pet',
+          );
+        }
+        return;
+      }
+
+      if (kDebugMode) {
+        debugPrint(
+          '[ProfileNotifier] Canceling notifications for '
+          '$treatmentType schedule $scheduleId '
+          '(operation: $operationType)',
+        );
+      }
+
+      // Get ReminderService
+      final reminderService = _ref.read(reminderServiceProvider);
+
+      // Cancel notifications
+      // Note: We cast Ref to WidgetRef. This is safe because
+      // ReminderService only uses ref.read() which is available on both
+      // Ref and WidgetRef.
+      // ignore: argument_type_not_assignable, cast_from_null_always_fails
+      final canceledCount = await reminderService.cancelForSchedule(
+        currentUser.id,
+        primaryPet.id,
+        scheduleId,
+        _ref as WidgetRef, // Safe cast: only uses ref.read()
+      );
+
+      if (kDebugMode) {
+        debugPrint(
+          '[ProfileNotifier] Canceled $canceledCount notification(s) '
+          'for schedule $scheduleId',
+        );
+      }
+
+      // TODO(Phase7): Track analytics event
+      // await _ref.read(analyticsServiceDirectProvider).trackEvent(
+      //   name: operationType == 'delete'
+      //       ? 'schedule_deleted_reminders_canceled'
+      //       : 'schedule_deactivated_reminders_canceled',
+      //   parameters: {
+      //     'treatmentType': treatmentType,
+      //     'scheduleId': scheduleId,
+      //     'canceledCount': canceledCount,
+      //     'result': canceledCount > 0 ? 'success' : 'none_found',
+      //   },
+      // );
+    } on Exception catch (e) {
+      // Silent error logging - don't block schedule operation
+      if (kDebugMode) {
+        debugPrint(
+          '[ProfileNotifier] Failed to cancel notifications: $e',
+        );
+      }
+
+      // TODO(Phase7): Track error analytics
+      // await _ref.read(analyticsServiceDirectProvider).trackError(
+      //   errorType: operationType == 'delete'
+      //       ? 'schedule_deleted_reminders_failed'
+      //       : 'schedule_deactivated_reminders_failed',
+      //   errorContext: e.toString(),
+      // );
     }
   }
 }

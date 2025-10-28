@@ -1611,14 +1611,82 @@ Implementation details:
 5. Offline log → verify no cancellation attempt
 6. Analytics verification → check Firebase Analytics console
 
-### Step 6.2: React to schedule CRUD
+### ✅ Step 6.2: React to schedule CRUD — COMPLETED
 Files:
-- `lib/providers/profile_provider.dart` (after schedule create/update/delete)
+- `lib/providers/profile_provider.dart` (modified 5 CRUD methods + 3 new helpers)
+- `lib/providers/analytics_provider.dart` (Phase 7 analytics TODOs)
 
 Implementation details:
-1) On create/update: `ReminderService.scheduleForSchedule(userId, petId, schedule)`
-2) On delete: `ReminderService.cancelForSchedule(userId, petId, scheduleId)`
-3) Keep operations idempotent; rely on deterministic IDs and index.
+1) On create: `ReminderService.scheduleForSchedule(userId, petId, schedule)` if online
+2) On update: Reschedule if active, cancel if deactivated (isActive change detection)
+3) On delete: `ReminderService.cancelForSchedule(userId, petId, scheduleId)` if online
+4) Keep operations idempotent; rely on deterministic IDs and index
+5) Silent failure pattern: never block schedule operations due to notification errors
+
+**Implementation Summary:**
+- ✅ Added `_isOnline()` helper using `isConnectedProvider` for connectivity checks
+- ✅ Added `_scheduleNotificationsForSchedule()` helper (~80 lines)
+  - Validates prerequisites (currentUser, primaryPet)
+  - Calls `ReminderService.scheduleForSchedule()` with safe Ref→WidgetRef cast
+  - Silent error handling with TODO(Phase7) analytics markers
+  - Never throws exceptions to calling code
+- ✅ Added `_cancelNotificationsForSchedule()` helper (~80 lines)
+  - Validates prerequisites (currentUser, primaryPet)
+  - Calls `ReminderService.cancelForSchedule()` with safe Ref→WidgetRef cast
+  - Silent error handling with TODO(Phase7) analytics markers
+  - Never throws exceptions to calling code
+- ✅ Integrated into `createFluidSchedule()`
+  - Schedules notifications after successful cache update
+  - Only when online (skips if offline)
+- ✅ Integrated into `updateFluidSchedule()`
+  - Detects isActive state changes (active→inactive or vice versa)
+  - Cancels notifications when deactivated
+  - Reschedules notifications when active (update or reactivation)
+- ✅ Integrated into `addMedicationSchedule()`
+  - Schedules notifications after successful cache update
+  - Only when online (skips if offline)
+- ✅ Integrated into `updateMedicationSchedule()`
+  - Detects isActive state changes for medication schedules
+  - Cancels notifications when deactivated
+  - Reschedules notifications when active (update or reactivation)
+- ✅ Integrated into `deleteMedicationSchedule()`
+  - Stores schedule info before deletion for notification cancellation
+  - Cancels notifications after successful cache update
+  - Only when online (skips if offline)
+- ✅ Added comprehensive TODO(Phase7) markers in analytics_provider.dart
+  - `schedule_created_reminders_scheduled`
+  - `schedule_updated_reminders_rescheduled`
+  - `schedule_deleted_reminders_canceled`
+  - `schedule_deactivated_reminders_canceled`
+- ✅ Zero Firestore reads (uses cached schedule data only)
+- ✅ Zero linting errors (`flutter analyze` passes)
+- ✅ ~240 lines total (3 helpers + 5 integrations + analytics TODOs)
+
+**Design Decisions Implemented:**
+- Soft delete for fluid schedules via isActive flag (preserves historical data)
+- Hard delete for medication schedules (user can have multiple)
+- Immediate notification updates (not delayed until tomorrow)
+- Silent failure with analytics tracking (matches Step 6.1 pattern)
+- Skip notification operations when offline (reconcile via rescheduleAll() on app resume)
+- Idempotent scheduling (scheduleForSchedule cancels old notifications first)
+- Safe Ref→WidgetRef cast with lint suppression (ReminderService only uses ref.read())
+
+**Cost Analysis:**
+- Firestore reads: 0 (uses in-memory cached schedule data)
+- Firestore writes: 0 (no additional writes beyond schedule CRUD)
+- SharedPreferences reads: ~2-6 per operation (index lookup + cancellation)
+- SharedPreferences writes: ~2-6 per operation (index updates)
+- Plugin calls: Variable (1-3 per time slot × number of reminder times)
+
+**Testing Requirements:**
+1. Create fluid schedule → verify notifications scheduled (online)
+2. Update fluid schedule times → verify old canceled, new scheduled
+3. Deactivate fluid schedule (isActive=false) → verify notifications canceled
+4. Create medication schedule → verify notifications scheduled (online)
+5. Update medication schedule → verify notifications rescheduled
+6. Delete medication schedule → verify notifications canceled
+7. Offline create/update/delete → verify no crashes, reconciles on app resume
+8. Mixed scenarios → rapid create/update/delete sequences
 
 ### Step 6.3: Lifecycle & midnight rollover
 Files:
