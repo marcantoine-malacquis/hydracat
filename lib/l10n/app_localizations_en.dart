@@ -841,6 +841,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationActionLogNow => 'Log now';
 
   @override
+  String get notificationActionSnooze => 'Snooze 15 min';
+
+  @override
   String get notificationAuthRequired =>
       'Please log in to record this treatment';
 

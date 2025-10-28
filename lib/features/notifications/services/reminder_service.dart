@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +11,7 @@ import 'package:hydracat/features/notifications/services/reminder_plugin.dart';
 import 'package:hydracat/features/notifications/utils/notification_id.dart';
 import 'package:hydracat/features/notifications/utils/scheduling_helpers.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -868,28 +870,27 @@ class ReminderService {
     required String kind,
     required String petName,
   }) {
-    // Note: In production, we should use l10n (AppLocalizations)
-    // For now, using hardcoded English strings that match l10n keys
+    final l10n = _getLocalizations();
 
     if (kind == 'initial') {
       if (treatmentType == 'medication') {
         return {
-          'title': 'Medication reminder',
-          'body': "Time for $petName's medication",
+          'title': l10n.notificationMedicationTitle,
+          'body': l10n.notificationMedicationBody(petName),
           'channelId': 'medication_reminders',
         };
       } else {
         // fluid
         return {
-          'title': 'Fluid therapy reminder',
-          'body': "Time for $petName's fluid therapy",
+          'title': l10n.notificationFluidTitle,
+          'body': l10n.notificationFluidBody(petName),
           'channelId': 'fluid_reminders',
         };
       }
     } else if (kind == 'followup') {
       return {
-        'title': 'Treatment reminder',
-        'body': '$petName may still need their treatment',
+        'title': l10n.notificationFollowupTitle,
+        'body': l10n.notificationFollowupBody(petName),
         'channelId': treatmentType == 'medication'
             ? 'medication_reminders'
             : 'fluid_reminders',
@@ -897,8 +898,8 @@ class ReminderService {
     } else {
       // snooze
       return {
-        'title': 'Treatment reminder (snoozed)',
-        'body': "Time for $petName's treatment",
+        'title': l10n.notificationSnoozeTitle,
+        'body': l10n.notificationSnoozeBody(petName),
         'channelId': treatmentType == 'medication'
             ? 'medication_reminders'
             : 'fluid_reminders',
@@ -1474,9 +1475,9 @@ class ReminderService {
       // Step 5: Build generic notification content
       _devLog('');
       _devLog('Step 5: Building notification content...');
-      // TODO(Phase6): Use localized strings from AppLocalizations
-      const title = 'Your weekly summary is ready!';
-      const body = 'Tap to see your progress and treatment adherence.';
+      final l10n = _getLocalizations();
+      final title = l10n.notificationWeeklySummaryTitle;
+      final body = l10n.notificationWeeklySummaryBody;
       final payload = json.encode({
         'type': 'weekly_summary',
         'route': '/progress',
@@ -1614,6 +1615,22 @@ class ReminderService {
     );
 
     return monday09;
+  }
+
+  /// Get localized strings without BuildContext.
+  ///
+  /// This helper method provides access to localization strings for
+  /// notification content that's scheduled from background services
+  /// without access to BuildContext.
+  ///
+  /// V1: Returns English localizations only. When adding more languages,
+  /// detect the system locale using:
+  /// ```dart
+  /// final locale = WidgetsBinding.instance.platformDispatcher.locale;
+  /// return lookupAppLocalizations(locale);
+  /// ```
+  AppLocalizations _getLocalizations() {
+    return lookupAppLocalizations(const Locale('en'));
   }
 
   /// Log messages only in development flavor

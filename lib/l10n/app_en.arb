@@ -588,6 +588,10 @@
   "@notificationActionLogNow": {
     "description": "Text for notification action button to log treatment immediately"
   },
+  "notificationActionSnooze": "Snooze 15 min",
+  "@notificationActionSnooze": {
+    "description": "Text for notification action button to snooze reminder for 15 minutes"
+  },
 
   "@_NOTIFICATION_DEEP_LINK": {},
   "notificationAuthRequired": "Please log in to record this treatment",

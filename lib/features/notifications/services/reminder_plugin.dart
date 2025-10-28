@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/features/notifications/services/notification_tap_handler.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
 
@@ -296,11 +297,13 @@ class ReminderPlugin {
     if (_plugin == null || !Platform.isIOS) return;
 
     try {
+      // Get localized strings
+      final l10n = _getLocalizations();
+
       // Create "Log now" action
-      // TODO(Phase6): Use localized string from AppLocalizations
       final logNowAction = DarwinNotificationAction.plain(
         'log_now',
-        'Log now',
+        l10n.notificationActionLogNow,
         options: <DarwinNotificationActionOption>{
           // Brings app to foreground when tapped
           DarwinNotificationActionOption.foreground,
@@ -308,10 +311,9 @@ class ReminderPlugin {
       );
 
       // Create "Snooze 15 min" action
-      // TODO(Phase6): Use localized string from AppLocalizations
       final snoozeAction = DarwinNotificationAction.plain(
         'snooze',
-        'Snooze 15 min',
+        l10n.notificationActionSnooze,
         options: <DarwinNotificationActionOption>{
           // Brings app to foreground when tapped
           DarwinNotificationActionOption.foreground,
@@ -394,17 +396,19 @@ class ReminderPlugin {
           channelName = 'Medication Reminders';
       }
 
+      // Get localized strings
+      final l10n = _getLocalizations();
+
       // Create Android notification actions
-      // TODO(Phase6): Use localized string from AppLocalizations
-      const androidActions = [
+      final androidActions = [
         AndroidNotificationAction(
           'log_now',
-          'Log now',
+          l10n.notificationActionLogNow,
           showsUserInterface: true, // Brings app to foreground
         ),
         AndroidNotificationAction(
           'snooze',
-          'Snooze 15 min',
+          l10n.notificationActionSnooze,
           // showsUserInterface defaults to false (dismisses notification)
         ),
       ];
@@ -701,6 +705,22 @@ class ReminderPlugin {
       // Actual scheduling will fail gracefully if permission denied
       return true;
     }
+  }
+
+  /// Get localized strings without BuildContext.
+  ///
+  /// This helper method provides access to localization strings for
+  /// notification content that's scheduled before the app has a BuildContext
+  /// (e.g., during plugin initialization or from background services).
+  ///
+  /// V1: Returns English localizations only. When adding more languages,
+  /// detect the system locale using:
+  /// ```dart
+  /// final locale = WidgetsBinding.instance.platformDispatcher.locale;
+  /// return lookupAppLocalizations(locale);
+  /// ```
+  AppLocalizations _getLocalizations() {
+    return lookupAppLocalizations(const Locale('en'));
   }
 
   /// Log messages only in development flavor

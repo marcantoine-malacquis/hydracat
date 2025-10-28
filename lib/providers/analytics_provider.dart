@@ -143,6 +143,9 @@ class AnalyticsEvents {
 
   /// Notification data cleared event name
   static const String notificationDataCleared = 'notification_data_cleared';
+
+  /// Reminder canceled on log event name
+  static const String reminderCanceledOnLog = 'reminder_canceled_on_log';
 }
 
 /// Analytics parameters
@@ -815,6 +818,59 @@ class AnalyticsService {
         'kind': kind,
         'schedule_id': scheduleId,
         'time_slot': timeSlot,
+        'result': result,
+      },
+    );
+  }
+
+  /// Track reminder cancellation after successful treatment logging.
+  ///
+  /// Tracks when notifications (initial, follow-up, snooze) are canceled
+  /// after a user logs a treatment. Helps monitor notification cleanup
+  /// effectiveness and identify issues with cancellation logic.
+  ///
+  /// This event is fired ONLY when a logged session matches a schedule
+  /// (has both scheduleId and scheduledTime) and we attempt to cancel
+  /// pending notifications for that time slot.
+  ///
+  /// Parameters:
+  /// - [treatmentType]: Type of treatment ('medication' or 'fluid')
+  /// - [scheduleId]: Schedule ID that the logged session matched to
+  /// - [timeSlot]: Time slot in "HH:mm" format that was canceled
+  /// - [canceledCount]: Number of notifications successfully canceled
+  /// - [result]: Outcome of cancellation operation
+  ///
+  /// Result values:
+  /// - 'success': At least one notification canceled successfully
+  /// - 'none_found': No notifications were scheduled for this slot
+  /// - 'error': Exception occurred during cancellation (check logs)
+  ///
+  /// Example usage:
+  /// ```dart
+  /// await analyticsService.trackReminderCanceledOnLog(
+  ///   treatmentType: 'medication',
+  ///   scheduleId: 'schedule_123',
+  ///   timeSlot: '09:30',
+  ///   canceledCount: 2, // initial + followup
+  ///   result: 'success',
+  /// );
+  /// ```
+  Future<void> trackReminderCanceledOnLog({
+    required String treatmentType,
+    required String scheduleId,
+    required String timeSlot,
+    required int canceledCount,
+    required String result,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.reminderCanceledOnLog,
+      parameters: {
+        AnalyticsParams.treatmentType: treatmentType,
+        'schedule_id': scheduleId,
+        'time_slot': timeSlot,
+        'canceled_count': canceledCount,
         'result': result,
       },
     );

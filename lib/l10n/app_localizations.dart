@@ -1522,6 +1522,12 @@ abstract class AppLocalizations {
   /// **'Log now'**
   String get notificationActionLogNow;
 
+  /// Text for notification action button to snooze reminder for 15 minutes
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze 15 min'**
+  String get notificationActionSnooze;
+
   /// Message shown when user taps notification but is not authenticated
   ///
   /// In en, this message translates to:

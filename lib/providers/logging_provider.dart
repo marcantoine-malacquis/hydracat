@@ -25,6 +25,8 @@ import 'package:hydracat/features/logging/services/logging_service.dart';
 import 'package:hydracat/features/logging/services/logging_validation_service.dart';
 import 'package:hydracat/features/logging/services/summary_cache_service.dart';
 import 'package:hydracat/features/logging/services/summary_service.dart';
+import 'package:hydracat/features/notifications/providers/notification_provider.dart';
+import 'package:hydracat/features/notifications/utils/time_slot_formatter.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
@@ -876,6 +878,142 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         );
       }
 
+      // STEP 6.5: Cancel notifications for logged sessions (non-blocking)
+      // Use medicationRecentTimes map to iterate through logged medications
+      // and cancel their notifications
+      var totalCanceled = 0;
+      var cancelErrors = 0;
+
+      // Cancel medication notifications
+      for (final entry in result.medicationRecentTimes.entries) {
+        final medicationName = entry.key;
+        final times = entry.value; // List<String> in ISO8601 format
+
+        // Find matching schedule for this medication
+        final matchingSchedule = allSchedules.firstWhere(
+          (s) =>
+              s.treatmentType == TreatmentType.medication &&
+              s.medicationName == medicationName,
+          orElse: () => allSchedules.first, // Placeholder, won't be used
+        );
+
+        // Skip if no matching schedule found
+        if (matchingSchedule.treatmentType != TreatmentType.medication ||
+            matchingSchedule.medicationName != medicationName) {
+          continue;
+        }
+
+        // Cancel notifications for each logged time
+        for (final timeStr in times) {
+          try {
+            final loggedTime = DateTime.parse(timeStr);
+            final timeSlot = formatTimeSlotFromDateTime(loggedTime);
+
+            // Access providers directly
+            final plugin = _ref.read(reminderPluginProvider);
+            final indexStore = _ref.read(notificationIndexStoreProvider);
+
+            // Get entries for this slot
+            final entries = await indexStore.getForToday(user.id, pet.id);
+            final slotEntries = entries.where((e) {
+              return e.scheduleId == matchingSchedule.id &&
+                  e.timeSlotISO == timeSlot;
+            }).toList();
+
+            // Cancel each notification
+            for (final entry in slotEntries) {
+              try {
+                await plugin.cancel(entry.notificationId);
+                await indexStore.removeEntryBy(
+                  user.id,
+                  pet.id,
+                  matchingSchedule.id,
+                  timeSlot,
+                  entry.kind,
+                );
+                totalCanceled++;
+              } on Exception {
+                // Continue with other notifications
+              }
+            }
+          } on Exception {
+            cancelErrors++;
+            // Continue with other times
+          }
+        }
+      }
+
+      // Cancel fluid notifications if any were logged
+      if (result.fluidSessionCount > 0) {
+        final fluidSchedule = allSchedules.firstWhere(
+          (s) => s.treatmentType == TreatmentType.fluid,
+          orElse: () => allSchedules.first, // Placeholder
+        );
+
+        if (fluidSchedule.treatmentType == TreatmentType.fluid) {
+          // Use the todaysReminderTimes to cancel all fluid reminders
+          // (quick-log logs one catch-up session, but we cancel all reminders)
+          final today = DateTime.now();
+          for (final reminderTime in fluidSchedule.todaysReminderTimes(today)) {
+            try {
+              final timeSlot =
+                  '${reminderTime.hour.toString().padLeft(2, '0')}:'
+                  '${reminderTime.minute.toString().padLeft(2, '0')}';
+
+              final plugin = _ref.read(reminderPluginProvider);
+              final indexStore = _ref.read(notificationIndexStoreProvider);
+
+              final entries = await indexStore.getForToday(user.id, pet.id);
+              final slotEntries = entries.where((e) {
+                return e.scheduleId == fluidSchedule.id &&
+                    e.timeSlotISO == timeSlot;
+              }).toList();
+
+              for (final entry in slotEntries) {
+                try {
+                  await plugin.cancel(entry.notificationId);
+                  await indexStore.removeEntryBy(
+                    user.id,
+                    pet.id,
+                    fluidSchedule.id,
+                    timeSlot,
+                    entry.kind,
+                  );
+                  totalCanceled++;
+                } on Exception {
+                  // Continue
+                }
+              }
+            } on Exception {
+              cancelErrors++;
+            }
+          }
+        }
+      }
+
+      // Track aggregated analytics for quick-log cancellations
+      if (totalCanceled > 0 || cancelErrors > 0) {
+        try {
+          final analyticsService = _ref.read(analyticsServiceDirectProvider);
+          await analyticsService.trackReminderCanceledOnLog(
+            treatmentType: 'quick_log', // Special type for batch cancellation
+            scheduleId: 'multiple', // Multiple schedules
+            timeSlot: 'multiple', // Multiple time slots
+            canceledCount: totalCanceled,
+            result: cancelErrors > 0 ? 'partial_success' : 'success',
+          );
+        } on Exception {
+          // Silent failure on analytics
+        }
+      }
+
+      if (kDebugMode && totalCanceled > 0) {
+        debugPrint(
+          '[LoggingNotifier] Quick-log: Canceled $totalCanceled '
+          'notification(s) with $cancelErrors error(s)',
+        );
+      }
+
       // STEP 7: Track analytics
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
 
@@ -1053,7 +1191,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         );
       }
 
-      // STEP 4: Call LoggingService
+      // STEP 4: Call LoggingService (handles schedule matching)
       final sessionId = await _loggingService.logMedicationSession(
         userId: user.id,
         petId: pet.id,
@@ -1086,6 +1224,60 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
           '[LoggingNotifier] Invalidated week providers '
           'for immediate UI update',
         );
+      }
+
+      // STEP 5.5: Cancel notifications for matched schedule (non-blocking)
+      // Note: LoggingService performs schedule matching internally and writes
+      // the matched scheduleId/scheduledTime to Firestore, but doesn't return
+      // them. We need to match the schedule again here to get those values.
+      // This is acceptable since it's a simple in-memory operation.
+      if (todaysSchedules.isNotEmpty) {
+        // Find matching schedules by medication name
+        final matchingSchedules = todaysSchedules.where((s) {
+          return s.treatmentType == TreatmentType.medication &&
+              s.medicationName == session.medicationName;
+        }).toList();
+
+        if (matchingSchedules.isNotEmpty) {
+          // Find closest reminder time within ±2 hours (same logic as
+          // LoggingService)
+          DateTime? closestTime;
+          String? matchedScheduleId;
+          Duration? smallestDifference;
+
+          for (final schedule in matchingSchedules) {
+            for (final reminder in schedule.reminderTimes) {
+              final reminderDateTime = DateTime(
+                session.dateTime.year,
+                session.dateTime.month,
+                session.dateTime.day,
+                reminder.hour,
+                reminder.minute,
+              );
+              final difference =
+                  session.dateTime.difference(reminderDateTime).abs();
+
+              if (difference <= const Duration(hours: 2) &&
+                  (smallestDifference == null ||
+                      difference < smallestDifference)) {
+                smallestDifference = difference;
+                closestTime = reminderDateTime;
+                matchedScheduleId = schedule.id;
+              }
+            }
+          }
+
+          // If matched, cancel notifications (non-blocking)
+          if (matchedScheduleId != null && closestTime != null) {
+            await _cancelNotificationsForSession(
+              scheduleId: matchedScheduleId,
+              scheduledTime: closestTime,
+              treatmentType: 'medication',
+              userId: user.id,
+              petId: pet.id,
+            );
+          }
+        }
       }
 
       // STEP 6: Track analytics
@@ -1268,7 +1460,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         }
       }
 
-      // STEP 3: Online - Log directly
+      // STEP 3: Online - Log directly (handles schedule matching)
       if (kDebugMode) {
         debugPrint(
           '[LoggingNotifier] Logging fluid: '
@@ -1305,6 +1497,44 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
           '[LoggingNotifier] Invalidated week providers '
           'for immediate UI update',
         );
+      }
+
+      // STEP 4.5: Cancel notifications for matched schedule (non-blocking)
+      // Note: LoggingService performs schedule matching internally. For fluids,
+      // we match to any fluid schedule within ±2 hours.
+      if (fluidSchedule != null) {
+        // Find closest reminder time within ±2 hours
+        DateTime? closestTime;
+        Duration? smallestDifference;
+
+        for (final reminder in fluidSchedule.reminderTimes) {
+          final reminderDateTime = DateTime(
+            session.dateTime.year,
+            session.dateTime.month,
+            session.dateTime.day,
+            reminder.hour,
+            reminder.minute,
+          );
+          final difference =
+              session.dateTime.difference(reminderDateTime).abs();
+
+          if (difference <= const Duration(hours: 2) &&
+              (smallestDifference == null || difference < smallestDifference)) {
+            smallestDifference = difference;
+            closestTime = reminderDateTime;
+          }
+        }
+
+        // If matched, cancel notifications (non-blocking)
+        if (closestTime != null) {
+          await _cancelNotificationsForSession(
+            scheduleId: fluidSchedule.id,
+            scheduledTime: closestTime,
+            treatmentType: 'fluid',
+            userId: user.id,
+            petId: pet.id,
+          );
+        }
       }
 
       // STEP 5: Track analytics
@@ -1458,6 +1688,124 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
     if (reminderCount == 0) return null;
 
     return targetVolume * reminderCount;
+  }
+
+  /// Cancel notifications for a successfully logged session
+  ///
+  /// Called after a session is successfully logged to cancel any pending
+  /// notifications (initial, follow-up, snooze) for the matched time slot.
+  ///
+  /// This method:
+  /// 1. Validates that the session matched a schedule (has scheduleId and
+  ///    scheduledTime)
+  /// 2. Converts scheduledTime to "HH:mm" format
+  /// 3. Calls ReminderService.cancelSlot() to cancel notifications
+  /// 4. Tracks analytics (success or error)
+  /// 5. Logs errors silently without throwing (non-blocking)
+  ///
+  /// Error handling: All exceptions are caught and logged with analytics.
+  /// The method never throws, ensuring that successful logging operations
+  /// are not blocked by notification cancellation failures.
+  ///
+  /// Parameters:
+  /// - [scheduleId]: Schedule ID that the session matched to (from
+  ///   LoggingService)
+  /// - [scheduledTime]: Scheduled time that was matched (from LoggingService)
+  /// - [treatmentType]: Type of treatment ('medication' or 'fluid')
+  /// - [userId]: Current user ID
+  /// - [petId]: Current pet ID
+  ///
+  /// Returns: void (errors logged silently)
+  Future<void> _cancelNotificationsForSession({
+    required String scheduleId,
+    required DateTime scheduledTime,
+    required String treatmentType,
+    required String userId,
+    required String petId,
+  }) async {
+    try {
+      final timeSlot = formatTimeSlotFromDateTime(scheduledTime);
+
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingNotifier] Canceling notifications for '
+          '$treatmentType at $timeSlot (schedule: $scheduleId)',
+        );
+      }
+
+      // Access plugin and indexStore directly to avoid WidgetRef type issue
+      final plugin = _ref.read(reminderPluginProvider);
+      final indexStore = _ref.read(notificationIndexStoreProvider);
+
+      // Get all index entries for this schedule + timeSlot
+      final entries = await indexStore.getForToday(userId, petId);
+      final slotEntries = entries.where((e) {
+        return e.scheduleId == scheduleId && e.timeSlotISO == timeSlot;
+      }).toList();
+
+      var canceledCount = 0;
+
+      // Cancel all kinds (initial, followup, snooze)
+      for (final entry in slotEntries) {
+        try {
+          await plugin.cancel(entry.notificationId);
+          await indexStore.removeEntryBy(
+            userId,
+            petId,
+            scheduleId,
+            timeSlot,
+            entry.kind,
+          );
+          canceledCount++;
+        } on Exception catch (e) {
+          if (kDebugMode) {
+            debugPrint(
+              '[LoggingNotifier] Error canceling notification '
+              '${entry.notificationId}: $e',
+            );
+          }
+          // Continue canceling other notifications
+        }
+      }
+
+      // Track analytics
+      final analyticsService = _ref.read(analyticsServiceDirectProvider);
+      await analyticsService.trackReminderCanceledOnLog(
+        treatmentType: treatmentType,
+        scheduleId: scheduleId,
+        timeSlot: timeSlot,
+        canceledCount: canceledCount,
+        result: canceledCount > 0 ? 'success' : 'none_found',
+      );
+
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingNotifier] Canceled $canceledCount notification(s) '
+          'for $timeSlot',
+        );
+      }
+    } on Exception catch (e) {
+      // Silent error logging - don't block successful logging operation
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingNotifier] Error canceling notifications: $e',
+        );
+      }
+
+      // Track error in analytics
+      try {
+        final analyticsService = _ref.read(analyticsServiceDirectProvider);
+        await analyticsService.trackReminderCanceledOnLog(
+          treatmentType: treatmentType,
+          scheduleId: scheduleId,
+          timeSlot: formatTimeSlotFromDateTime(scheduledTime),
+          canceledCount: 0,
+          result: 'error',
+        );
+      } on Exception {
+        // Silent failure on analytics - don't compound errors
+      }
+    }
   }
 
   /// Convert exceptions to user-friendly error messages
