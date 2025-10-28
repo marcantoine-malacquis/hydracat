@@ -535,12 +535,12 @@ class _NotificationSettingsScreenState
           ? await reminderService.scheduleWeeklySummary(
               userId,
               petId,
-              ref as Ref,
+              ref,
             )
           : await reminderService.cancelWeeklySummary(
               userId,
               petId,
-              ref as Ref,
+              ref,
             );
 
       // Cast to Map for type safety

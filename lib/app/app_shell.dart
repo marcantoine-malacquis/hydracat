@@ -327,8 +327,10 @@ class _AppShellState extends ConsumerState<AppShell>
     NotificationTapHandler.clearPendingTap();
 
     // Schedule handling after current frame
-    _devLog('📅 Scheduling _processNotificationPayload via '
-        'addPostFrameCallback');
+    _devLog(
+      '📅 Scheduling _processNotificationPayload via '
+      'addPostFrameCallback',
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _processNotificationPayload(payload);
     });
@@ -604,7 +606,9 @@ class _AppShellState extends ConsumerState<AppShell>
     String kind,
     String scheduleId,
   ) {
-    ref.read(analyticsServiceDirectProvider).trackReminderTapped(
+    ref
+        .read(analyticsServiceDirectProvider)
+        .trackReminderTapped(
           treatmentType: treatmentType,
           kind: kind,
           scheduleId: scheduleId,
@@ -614,7 +618,9 @@ class _AppShellState extends ConsumerState<AppShell>
 
   /// Track failed notification tap with analytics.
   void _trackNotificationTapFailure(String reason) {
-    ref.read(analyticsServiceDirectProvider).trackReminderTapped(
+    ref
+        .read(analyticsServiceDirectProvider)
+        .trackReminderTapped(
           treatmentType: 'unknown',
           kind: 'unknown',
           scheduleId: 'unknown',
@@ -655,8 +661,10 @@ class _AppShellState extends ConsumerState<AppShell>
     NotificationTapHandler.clearPendingSnooze();
 
     // Schedule handling after current frame
-    _devLog('📅 Scheduling _processNotificationSnooze via '
-        'addPostFrameCallback');
+    _devLog(
+      '📅 Scheduling _processNotificationSnooze via '
+      'addPostFrameCallback',
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _processNotificationSnooze(payload);
     });
@@ -683,7 +691,7 @@ class _AppShellState extends ConsumerState<AppShell>
       _devLog('Calling ReminderService.snoozeCurrent()...');
       final result = await reminderService.snoozeCurrent(
         payload,
-        ref as Ref,
+        ref,
       );
 
       _devLog('');
@@ -940,19 +948,17 @@ class _AppShellState extends ConsumerState<AppShell>
         await reminderService.scheduleWeeklySummary(
           currentUser.id,
           primaryPet.id,
-          ref as Ref,
+          ref,
         );
       });
     }
 
     // Show permission pre-prompt proactively after onboarding completion
-    if (hasCompletedOnboarding &&
-        isAuthenticated &&
-        currentUser != null) {
+    if (hasCompletedOnboarding && isAuthenticated && currentUser != null) {
       // Use AsyncValue.whenData to safely extract the boolean
-      ref
-          .watch(shouldShowPermissionPromptProvider(currentUser.id))
-          .whenData((shouldShow) {
+      ref.watch(shouldShowPermissionPromptProvider(currentUser.id)).whenData((
+        shouldShow,
+      ) {
         if (shouldShow) {
           // Post-frame callback to ensure stable context
           WidgetsBinding.instance.addPostFrameCallback((_) {

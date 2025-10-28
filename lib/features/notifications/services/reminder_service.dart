@@ -72,7 +72,7 @@ class ReminderService {
   Future<Map<String, dynamic>> scheduleAllForToday(
     String userId,
     String petId,
-    Ref ref,
+    WidgetRef ref,
   ) async {
     _devLog('scheduleAllForToday called for userId=$userId, petId=$petId');
 
@@ -197,7 +197,7 @@ class ReminderService {
     String userId,
     String petId,
     Schedule schedule,
-    Ref ref,
+    WidgetRef ref,
   ) async {
     _devLog('scheduleForSchedule called for schedule ${schedule.id}');
 
@@ -262,7 +262,7 @@ class ReminderService {
     String userId,
     String petId,
     String scheduleId,
-    Ref ref,
+    WidgetRef ref,
   ) async {
     _devLog('cancelForSchedule called for schedule $scheduleId');
 
@@ -337,7 +337,7 @@ class ReminderService {
     String petId,
     String scheduleId,
     String timeSlot,
-    Ref ref,
+    WidgetRef ref,
   ) async {
     _devLog(
       'cancelSlot called for schedule $scheduleId, timeSlot $timeSlot',
@@ -411,7 +411,7 @@ class ReminderService {
   Future<Map<String, dynamic>> rescheduleAll(
     String userId,
     String petId,
-    Ref ref,
+    WidgetRef ref,
   ) async {
     _devLog('rescheduleAll called for userId=$userId, petId=$petId');
 
@@ -500,7 +500,7 @@ class ReminderService {
     required Schedule schedule,
     required String petName,
     required DateTime now,
-    required Ref ref,
+    required WidgetRef ref,
   }) async {
     final indexStore = ref.read(notificationIndexStoreProvider);
 
@@ -627,7 +627,7 @@ class ReminderService {
     required String timeSlot,
     required String petName,
     required DateTime now,
-    required Ref ref,
+    required WidgetRef ref,
   }) async {
     final plugin = ref.read(reminderPluginProvider);
     final indexStore = ref.read(notificationIndexStoreProvider);
@@ -769,7 +769,7 @@ class ReminderService {
     required String timeSlot,
     required tz.TZDateTime initialTime,
     required String petName,
-    required Ref ref,
+    required WidgetRef ref,
   }) async {
     final plugin = ref.read(reminderPluginProvider);
     final indexStore = ref.read(notificationIndexStoreProvider);
@@ -943,7 +943,7 @@ class ReminderService {
     required String userId,
     required String petId,
     required String petName,
-    required Ref ref,
+    required WidgetRef ref,
   }) async {
     try {
       final plugin = ref.read(reminderPluginProvider);
@@ -1044,7 +1044,7 @@ class ReminderService {
   /// exceptions, as notification action button handlers should be non-blocking.
   Future<Map<String, dynamic>> snoozeCurrent(
     String payload,
-    Ref ref,
+    WidgetRef ref,
   ) async {
     _devLog('');
     _devLog('═══════════════════════════════════════════════════════');
@@ -1414,7 +1414,7 @@ class ReminderService {
   Future<Map<String, dynamic>> scheduleWeeklySummary(
     String userId,
     String petId,
-    Ref ref,
+    WidgetRef ref,
   ) async {
     _devLog('scheduleWeeklySummary called for userId=$userId, petId=$petId');
 
@@ -1534,7 +1534,7 @@ class ReminderService {
   Future<bool> cancelWeeklySummary(
     String userId,
     String petId,
-    Ref ref,
+    WidgetRef ref,
   ) async {
     _devLog('cancelWeeklySummary called for userId=$userId, petId=$petId');
 
