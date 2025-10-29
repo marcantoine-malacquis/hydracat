@@ -1021,4 +1021,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String notificationSettingsClearDataError(String error) {
     return 'Failed to clear notification data: $error';
   }
+
+  @override
+  String get notificationPermissionRevokedTitle =>
+      'Notification Permission Revoked';
+
+  @override
+  String get notificationPermissionRevokedMessage =>
+      'We noticed that notification permission was disabled. To continue receiving treatment reminders, please re-enable notifications.';
+
+  @override
+  String get notificationPermissionRevokedAction => 'Open Settings';
+
+  @override
+  String get notificationInitializationFailedTitle =>
+      'Notification Setup Issue';
+
+  @override
+  String get notificationInitializationFailedMessage =>
+      'We\'re having trouble setting up reminders. You can still log treatments normally. Restart the app to try again.';
+
+  @override
+  String get notificationSchedulingFailedToast =>
+      'Unable to schedule reminder right now. Don\'t worry - you can still log treatments.';
+
+  @override
+  String get notificationReconciliationFailedToast =>
+      'Some reminders couldn\'t be restored. Check your notification settings.';
 }

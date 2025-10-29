@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/features/notifications/providers/notification_provider.dart';
+import 'package:hydracat/features/notifications/services/notification_error_handler.dart';
 import 'package:hydracat/features/profile/exceptions/profile_exceptions.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
@@ -621,9 +622,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       // Handle notification updates if online (Step 6.2)
       if (_isOnline()) {
         // Check if schedule was deactivated
-        if (oldSchedule != null &&
-            oldSchedule.isActive &&
-            !schedule.isActive) {
+        if (oldSchedule != null && oldSchedule.isActive && !schedule.isActive) {
           // Schedule was deactivated - cancel notifications
           await _cancelNotificationsForSchedule(
             scheduleId: schedule.id,
@@ -814,9 +813,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       // Handle notification updates if online (Step 6.2)
       if (_isOnline()) {
         // Check if schedule was deactivated
-        if (oldSchedule != null &&
-            oldSchedule.isActive &&
-            !schedule.isActive) {
+        if (oldSchedule != null && oldSchedule.isActive && !schedule.isActive) {
           // Schedule was deactivated - cancel notifications
           await _cancelNotificationsForSchedule(
             scheduleId: schedule.id,
@@ -1112,9 +1109,8 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
   /// 1. Validate prerequisites (currentUser, primaryPet)
   /// 2. Get ReminderService from ref
   /// 3. Call reminderService.scheduleForSchedule() with ref cast
-  /// 4. Track analytics with TODO(Phase7) marker
-  /// 5. Catch all exceptions and log silently with analytics
-  /// 6. Never throw/rethrow
+  /// 4. Catch all exceptions and log silently with analytics
+  /// 5. Never throw/rethrow
   ///
   /// Parameters:
   /// - [schedule]: The schedule to schedule notifications for
@@ -1172,18 +1168,29 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         );
       }
 
-      // TODO(Phase7): Track analytics event
-      // await _ref.read(analyticsServiceDirectProvider).trackEvent(
-      //   name: operationType == 'create'
-      //       ? 'schedule_created_reminders_scheduled'
-      //       : 'schedule_updated_reminders_rescheduled',
-      //   parameters: {
-      //     'treatmentType': schedule.treatmentType.name,
-      //     'scheduleId': schedule.id,
-      //     'reminderCount': result['scheduled'],
-      //     'result': 'success',
-      //   },
-      // );
+      // Track analytics event for schedule create/update notification scheduling
+      try {
+        final analyticsService = _ref.read(analyticsServiceDirectProvider);
+        if (operationType == 'create') {
+          await analyticsService.trackScheduleCreatedRemindersScheduled(
+            treatmentType: schedule.treatmentType.name,
+            scheduleId: schedule.id,
+            reminderCount: result['scheduled'] as int? ?? 0,
+            result: 'success',
+          );
+        } else {
+          await analyticsService.trackScheduleUpdatedRemindersRescheduled(
+            treatmentType: schedule.treatmentType.name,
+            scheduleId: schedule.id,
+            reminderCount: result['scheduled'] as int? ?? 0,
+            result: 'success',
+          );
+        }
+      } on Exception catch (e) {
+        if (kDebugMode) {
+          debugPrint('[ProfileNotifier] Analytics tracking failed: $e');
+        }
+      }
     } on Exception catch (e) {
       // Silent error logging - don't block schedule operation
       if (kDebugMode) {
@@ -1192,13 +1199,45 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         );
       }
 
-      // TODO(Phase7): Track error analytics
-      // await _ref.read(analyticsServiceDirectProvider).trackError(
-      //   errorType: operationType == 'create'
-      //       ? 'schedule_created_reminders_failed'
-      //       : 'schedule_updated_reminders_failed',
-      //   errorContext: e.toString(),
-      // );
+      // Report to Crashlytics
+      final currentUser = _ref.read(currentUserProvider);
+      final primaryPet = state.primaryPet;
+      if (currentUser != null && primaryPet != null) {
+        NotificationErrorHandler.handleSchedulingError(
+          context: null,
+          operation: 'schedule_for_schedule_$operationType',
+          error: e,
+          userId: currentUser.id,
+          petId: primaryPet.id,
+          scheduleId: schedule.id,
+        );
+      }
+
+      // Track error analytics for schedule create/update
+      try {
+        final analyticsService = _ref.read(analyticsServiceDirectProvider);
+        if (operationType == 'create') {
+          await analyticsService.trackScheduleCreatedRemindersScheduled(
+            treatmentType: schedule.treatmentType.name,
+            scheduleId: schedule.id,
+            reminderCount: 0,
+            result: 'error',
+          );
+        } else {
+          await analyticsService.trackScheduleUpdatedRemindersRescheduled(
+            treatmentType: schedule.treatmentType.name,
+            scheduleId: schedule.id,
+            reminderCount: 0,
+            result: 'error',
+          );
+        }
+      } on Exception catch (analyticsError) {
+        if (kDebugMode) {
+          debugPrint(
+            '[ProfileNotifier] Analytics tracking failed: $analyticsError',
+          );
+        }
+      }
     }
   }
 
@@ -1216,9 +1255,8 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
   /// 1. Validate prerequisites (currentUser, primaryPet)
   /// 2. Get ReminderService from ref
   /// 3. Call reminderService.cancelForSchedule() with ref cast
-  /// 4. Track analytics with TODO(Phase7) marker
-  /// 5. Catch all exceptions and log silently with analytics
-  /// 6. Never throw/rethrow
+  /// 4. Catch all exceptions and log silently with analytics
+  /// 5. Never throw/rethrow
   ///
   /// Parameters:
   /// - [scheduleId]: The schedule ID to cancel notifications for
@@ -1276,18 +1314,30 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         );
       }
 
-      // TODO(Phase7): Track analytics event
-      // await _ref.read(analyticsServiceDirectProvider).trackEvent(
-      //   name: operationType == 'delete'
-      //       ? 'schedule_deleted_reminders_canceled'
-      //       : 'schedule_deactivated_reminders_canceled',
-      //   parameters: {
-      //     'treatmentType': treatmentType,
-      //     'scheduleId': scheduleId,
-      //     'canceledCount': canceledCount,
-      //     'result': canceledCount > 0 ? 'success' : 'none_found',
-      //   },
-      // );
+      // Track analytics event for schedule delete/deactivate cancellation
+      try {
+        final analyticsService = _ref.read(analyticsServiceDirectProvider);
+        final resultStr = canceledCount > 0 ? 'success' : 'none_found';
+        if (operationType == 'delete') {
+          await analyticsService.trackScheduleDeletedRemindersCanceled(
+            treatmentType: treatmentType,
+            scheduleId: scheduleId,
+            canceledCount: canceledCount,
+            result: resultStr,
+          );
+        } else {
+          await analyticsService.trackScheduleDeactivatedRemindersCanceled(
+            treatmentType: treatmentType,
+            scheduleId: scheduleId,
+            canceledCount: canceledCount,
+            result: resultStr,
+          );
+        }
+      } on Exception catch (e) {
+        if (kDebugMode) {
+          debugPrint('[ProfileNotifier] Analytics tracking failed: $e');
+        }
+      }
     } on Exception catch (e) {
       // Silent error logging - don't block schedule operation
       if (kDebugMode) {
@@ -1296,13 +1346,45 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         );
       }
 
-      // TODO(Phase7): Track error analytics
-      // await _ref.read(analyticsServiceDirectProvider).trackError(
-      //   errorType: operationType == 'delete'
-      //       ? 'schedule_deleted_reminders_failed'
-      //       : 'schedule_deactivated_reminders_failed',
-      //   errorContext: e.toString(),
-      // );
+      // Report to Crashlytics
+      final currentUser = _ref.read(currentUserProvider);
+      final primaryPet = state.primaryPet;
+      if (currentUser != null && primaryPet != null) {
+        NotificationErrorHandler.handleSchedulingError(
+          context: null,
+          operation: 'cancel_for_schedule_$operationType',
+          error: e,
+          userId: currentUser.id,
+          petId: primaryPet.id,
+          scheduleId: scheduleId,
+        );
+      }
+
+      // Track error analytics for schedule delete/deactivate
+      try {
+        final analyticsService = _ref.read(analyticsServiceDirectProvider);
+        if (operationType == 'delete') {
+          await analyticsService.trackScheduleDeletedRemindersCanceled(
+            treatmentType: treatmentType,
+            scheduleId: scheduleId,
+            canceledCount: 0,
+            result: 'error',
+          );
+        } else {
+          await analyticsService.trackScheduleDeactivatedRemindersCanceled(
+            treatmentType: treatmentType,
+            scheduleId: scheduleId,
+            canceledCount: 0,
+            result: 'error',
+          );
+        }
+      } on Exception catch (analyticsError) {
+        if (kDebugMode) {
+          debugPrint(
+            '[ProfileNotifier] Analytics tracking failed: $analyticsError',
+          );
+        }
+      }
     }
   }
 }

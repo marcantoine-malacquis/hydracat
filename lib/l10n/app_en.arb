@@ -827,5 +827,33 @@
         "description": "Error message details"
       }
     }
+  },
+  "notificationPermissionRevokedTitle": "Notification Permission Revoked",
+  "@notificationPermissionRevokedTitle": {
+    "description": "Title for dialog shown when notification permission is revoked after being granted"
+  },
+  "notificationPermissionRevokedMessage": "We noticed that notification permission was disabled. To continue receiving treatment reminders, please re-enable notifications.",
+  "@notificationPermissionRevokedMessage": {
+    "description": "Message explaining that notification permission was revoked and needs to be re-enabled"
+  },
+  "notificationPermissionRevokedAction": "Open Settings",
+  "@notificationPermissionRevokedAction": {
+    "description": "Button text to open system notification settings"
+  },
+  "notificationInitializationFailedTitle": "Notification Setup Issue",
+  "@notificationInitializationFailedTitle": {
+    "description": "Title for dialog shown when notification plugin initialization fails (rare)"
+  },
+  "notificationInitializationFailedMessage": "We're having trouble setting up reminders. You can still log treatments normally. Restart the app to try again.",
+  "@notificationInitializationFailedMessage": {
+    "description": "Message explaining notification setup issue and that treatment logging still works"
+  },
+  "notificationSchedulingFailedToast": "Unable to schedule reminder right now. Don't worry - you can still log treatments.",
+  "@notificationSchedulingFailedToast": {
+    "description": "Toast message shown when scheduling fails (currently unused, reserved for future UI)"
+  },
+  "notificationReconciliationFailedToast": "Some reminders couldn't be restored. Check your notification settings.",
+  "@notificationReconciliationFailedToast": {
+    "description": "Toast message shown when reconciliation fails (currently unused, reserved for future UI)"
   }
 }

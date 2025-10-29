@@ -43,17 +43,17 @@ I already did something similar in @onboarding_code_review_report.md . I don't n
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
 
-1. a per-tab top line that fades/scales in on the selected item. 
-2. height 3 px, width 28 px, 12 px corner radius, color AppColors.primary (same teal), placed 6 px from the top edge of the navigation bar, centered horizontally over the item. Animate with 160 ms easeInOut on selection changes (opacity + scale from 0.9→1.0).
-3. keep labels as-is for accessibility and clarity; the indicator is additive.
-4. hide the indicator entirely when currentIndex < 0.
-5. keep using AppColors.primary (already accessible on both themes) and avoid shadows on the indicator; rely on color contrast only.
-6. use the ambient MediaQuery.maybeOf(context)?.disableAnimations (or your existing motion setting if present) to switch to 0 ms animations for the indicator when reduced motion is on.
-7. wrap each nav item in a Semantics(selected: isSelected, label: item.label, button: true); you already pass semanticLabel to icons, but the selected state improves VO/TalkBack.
-8. light haptic feedback on tab selection (HapticFeedback.selectionClick()) once per change; keep your current press-scale effect.
-9. keep sizes locally in HydraNavigationBar as constants to avoid ripple effects, but bind color to theme (AppColors.primary) as you already do.
-10. add a widget test that verifies:
-Indicator renders only for currentIndex item
-Hidden when currentIndex = -1
-Semantics selected=true for active tab
+1. Option B (critical failures only). Most notification scheduling failures should be silent since they auto-recover via reconciliation, but permission/battery issues need user action. This matches the medical app principle of "don't alarm unless actionable."
+2. One quick retry catches transient failures without blocking app start. If that fails, gracefully degrade and let user use app normally, retry on next launch. Medical apps shouldn't block critical features waiting for notifications.
+3. Option A (app resume only). Checking on every operation is expensive and unnecessary. The reconciliation logic on app resume will detect permission loss and clear stale notifications.
+4. Option B (moderate). Rebuilding from plugin state repairs most corruption cases.
+5. Option A (silent handling). The limit (50 notifications) should rarely be hit in normal use. If it is hit, it means user has very complex treatment schedules and the rolling window handles it gracefully. A message might cause unnecessary concern.
+6. Option B (standard). Include operational identifiers without sensitive data (medication names, dosages). This gives enough context to diagnose issues without logging medical information to third-party services.
+7. Option A (new service). It provides:
+Consistent error message formatting
+Centralized Crashlytics reporting with proper context
+Reusable retry logic
+Easier testing and maintenance
+This matches the project's pattern established by LoggingErrorHandler.
+8. Option A for V1 (No additional triggers - Current triggers (startup, resume, midnight) are sufficient)
 Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development/Flutter best practices are extremely important. Please confirm that this follow industry standards, and if not explain why. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them (including the non critical ones). I will test only once we fixed the linting issues.

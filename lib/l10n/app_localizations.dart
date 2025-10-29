@@ -1815,6 +1815,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to clear notification data: {error}'**
   String notificationSettingsClearDataError(String error);
+
+  /// Title for dialog shown when notification permission is revoked after being granted
+  ///
+  /// In en, this message translates to:
+  /// **'Notification Permission Revoked'**
+  String get notificationPermissionRevokedTitle;
+
+  /// Message explaining that notification permission was revoked and needs to be re-enabled
+  ///
+  /// In en, this message translates to:
+  /// **'We noticed that notification permission was disabled. To continue receiving treatment reminders, please re-enable notifications.'**
+  String get notificationPermissionRevokedMessage;
+
+  /// Button text to open system notification settings
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get notificationPermissionRevokedAction;
+
+  /// Title for dialog shown when notification plugin initialization fails (rare)
+  ///
+  /// In en, this message translates to:
+  /// **'Notification Setup Issue'**
+  String get notificationInitializationFailedTitle;
+
+  /// Message explaining notification setup issue and that treatment logging still works
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re having trouble setting up reminders. You can still log treatments normally. Restart the app to try again.'**
+  String get notificationInitializationFailedMessage;
+
+  /// Toast message shown when scheduling fails (currently unused, reserved for future UI)
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to schedule reminder right now. Don\'t worry - you can still log treatments.'**
+  String get notificationSchedulingFailedToast;
+
+  /// Toast message shown when reconciliation fails (currently unused, reserved for future UI)
+  ///
+  /// In en, this message translates to:
+  /// **'Some reminders couldn\'t be restored. Check your notification settings.'**
+  String get notificationReconciliationFailedToast;
 }
 
 class _AppLocalizationsDelegate

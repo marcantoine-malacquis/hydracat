@@ -6,10 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/app/app.dart';
 import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/features/notifications/providers/notification_provider.dart';
+import 'package:hydracat/features/notifications/services/notification_error_handler.dart';
 import 'package:hydracat/features/notifications/services/notification_tap_handler.dart';
 import 'package:hydracat/features/notifications/services/reminder_plugin.dart';
 import 'package:hydracat/providers/logging_provider.dart';
-import 'package:hydracat/shared/services/firebase_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -98,8 +98,10 @@ Future<void> _initializeTimezone() async {
     final location = tz.getLocation(locationName);
 
     tz.setLocalLocation(location);
-    _devLog('Timezone initialized: ${location.name} (offset: '
-        '${offsetInHours >= 0 ? "+" : ""}$offsetInHours hours)');
+    _devLog(
+      'Timezone initialized: ${location.name} (offset: '
+      '${offsetInHours >= 0 ? "+" : ""}$offsetInHours hours)',
+    );
   } on Exception catch (e) {
     _devLog('Failed to initialize timezone: $e');
     _devLog('Falling back to UTC');
@@ -108,63 +110,72 @@ Future<void> _initializeTimezone() async {
   }
 }
 
-/// Initialize the notification plugin.
+/// Initialize the notification plugin with retry logic.
 ///
-/// Returns the initialized ReminderPlugin instance. If initialization fails,
-/// returns an uninitialized instance (graceful degradation).
+/// Implements hybrid retry strategy:
+/// - First attempt: Immediate initialization
+/// - On failure: Wait 1 second, retry once
+/// - On second failure: Log to Crashlytics and gracefully degrade
+///
+/// Returns the initialized ReminderPlugin instance. If initialization fails
+/// after retry, returns an uninitialized instance (graceful degradation).
 Future<ReminderPlugin> _initializeNotifications() async {
   final plugin = ReminderPlugin();
+  var success = false;
+  Exception? lastError;
+  StackTrace? lastStackTrace;
 
+  // First attempt
   try {
     _devLog('Initializing notification plugin...');
-    final success = await plugin.initialize();
+    success = await plugin.initialize();
 
     if (success) {
       _devLog('Notification plugin initialized successfully');
+      return plugin;
     } else {
-      _devLog('Notification plugin initialization failed');
-      // Log to Crashlytics in production
-      if (!FlavorConfig.isDevelopment) {
-        await _logToCrashlytics(
-          'ReminderPlugin initialization returned false',
-        );
-      }
-    }
-  } on Exception catch (e, stackTrace) {
-    _devLog('Error initializing notification plugin: $e');
-    _devLog('Stack trace: $stackTrace');
-
-    // Log to Crashlytics in production
-    if (!FlavorConfig.isDevelopment) {
-      await _logToCrashlytics(
-        'ReminderPlugin initialization failed: $e',
-        stackTrace: stackTrace,
+      _devLog(
+        'Notification plugin initialization returned false, '
+        'retrying in 1s...',
       );
     }
+  } on Exception catch (e, stackTrace) {
+    lastError = e;
+    lastStackTrace = stackTrace;
+    _devLog('First initialization attempt failed: $e');
+    _devLog('Retrying in 1s...');
+  }
+
+  // Second attempt (one quick retry)
+  if (!success) {
+    try {
+      await Future<void>.delayed(const Duration(seconds: 1));
+      success = await plugin.initialize();
+
+      if (success) {
+        _devLog('Notification plugin initialized successfully on retry');
+        return plugin;
+      } else {
+        _devLog('Notification plugin initialization failed on retry');
+      }
+    } on Exception catch (e, stackTrace) {
+      lastError = e;
+      lastStackTrace = stackTrace;
+      _devLog('Second initialization attempt failed: $e');
+    }
+  }
+
+  // Both attempts failed - log to Crashlytics
+  if (!success && lastError != null) {
+    await NotificationErrorHandler.handlePluginInitializationError(
+      error: lastError,
+      stackTrace: lastStackTrace,
+      retryCount: 1,
+    );
   }
 
   // Always return the plugin (graceful degradation)
   return plugin;
-}
-
-/// Log errors to Crashlytics in production.
-Future<void> _logToCrashlytics(
-  String message, {
-  StackTrace? stackTrace,
-}) async {
-  try {
-    final crashlytics = FirebaseService().crashlytics;
-    await crashlytics.log(message);
-    if (stackTrace != null) {
-      await crashlytics.recordError(
-        Exception(message),
-        stackTrace,
-      );
-    }
-  } on Exception catch (e) {
-    // Silently fail if Crashlytics not available
-    debugPrint('[Main] Failed to log to Crashlytics: $e');
-  }
 }
 
 /// Check if app was launched by tapping a notification.

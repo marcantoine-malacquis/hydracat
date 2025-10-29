@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/features/notifications/models/scheduled_notification_entry.dart';
 import 'package:hydracat/features/notifications/providers/notification_provider.dart';
+import 'package:hydracat/features/notifications/services/notification_error_handler.dart';
 import 'package:hydracat/features/notifications/services/notification_index_store.dart';
 import 'package:hydracat/features/notifications/services/reminder_plugin.dart';
 import 'package:hydracat/features/notifications/utils/notification_id.dart';
@@ -318,6 +319,16 @@ class ReminderService {
     } on Exception catch (e, stackTrace) {
       _devLog('ERROR in cancelForSchedule: $e');
       _devLog('Stack trace: $stackTrace');
+
+      NotificationErrorHandler.handleSchedulingError(
+        context: null,
+        operation: 'cancel_for_schedule',
+        error: e,
+        userId: userId,
+        petId: petId,
+        scheduleId: scheduleId,
+      );
+
       return 0;
     }
   }
@@ -428,8 +439,15 @@ class ReminderService {
 
       _devLog('Found ${pendingNotifications.length} pending notifications');
 
-      // Get index entries for today
-      final indexEntries = await indexStore.getForToday(userId, petId);
+      // Get index entries for today (with plugin for automatic
+      // rebuild on corruption)
+      final analyticsService = ref.read(analyticsServiceDirectProvider);
+      final indexEntries = await indexStore.getForToday(
+        userId,
+        petId,
+        analyticsService: analyticsService,
+        plugin: plugin,
+      );
       final indexedIds = indexEntries.map((e) => e.notificationId).toSet();
 
       _devLog('Found ${indexEntries.length} indexed notifications');
@@ -485,6 +503,15 @@ class ReminderService {
     } on Exception catch (e, stackTrace) {
       _devLog('ERROR in rescheduleAll: $e');
       _devLog('Stack trace: $stackTrace');
+
+      NotificationErrorHandler.handleSchedulingError(
+        context: null,
+        operation: 'reschedule_all',
+        error: e,
+        userId: userId,
+        petId: petId,
+      );
+
       return {
         'orphansCanceled': 0,
         'missingCount': 0,
@@ -524,28 +551,32 @@ class ReminderService {
         '⚠️ LIMIT REACHED: Pet $petId has $currentCount/50 notifications. '
         'Applying rolling 24h window.',
       );
-      // TODO(Phase7): Track 'notification_limit_reached' analytics event
-      // await ref.read(analyticsProvider).logEvent(
-      //   name: 'notification_limit_reached',
-      //   parameters: {
-      //     'petId': petId,
-      //     'currentCount': currentCount,
-      //     'scheduleId': schedule.id,
-      //   },
-      // );
+      // Track 'notification_limit_reached' analytics event
+      try {
+        final analyticsService = ref.read(analyticsServiceDirectProvider);
+        await analyticsService.trackNotificationLimitReached(
+          petId: petId,
+          currentCount: currentCount,
+          scheduleId: schedule.id,
+        );
+      } on Exception catch (e) {
+        _devLog('Analytics tracking failed: $e');
+      }
     } else if (currentCount >= 40) {
       _devLog(
         '⚠️ LIMIT WARNING: Pet $petId has $currentCount/50 notifications '
         '(80% threshold reached).',
       );
-      // TODO(Phase7): Track 'notification_limit_warning' analytics event
-      // await ref.read(analyticsProvider).logEvent(
-      //   name: 'notification_limit_warning',
-      //   parameters: {
-      //     'petId': petId,
-      //     'currentCount': currentCount,
-      //   },
-      // );
+      // Track 'notification_limit_warning' analytics event
+      try {
+        final analyticsService = ref.read(analyticsServiceDirectProvider);
+        await analyticsService.trackNotificationLimitWarning(
+          petId: petId,
+          currentCount: currentCount,
+        );
+      } on Exception catch (e) {
+        _devLog('Analytics tracking failed: $e');
+      }
     }
 
     // Get today's reminder times for this schedule
@@ -689,35 +720,119 @@ class ReminderService {
       // Schedule or fire based on grace period decision
       if (decision == NotificationSchedulingDecision.scheduled) {
         // Schedule for future
-        await plugin.showZoned(
-          id: notificationId,
-          title: content['title']!,
-          body: content['body']!,
-          scheduledDate: scheduledTime,
-          channelId: content['channelId']!,
-          payload: payload,
-          groupId: groupId,
-          threadIdentifier: threadIdentifier,
-        );
-        scheduledCount++;
-        _devLog('Scheduled initial notification for $timeSlot');
+        try {
+          await plugin.showZoned(
+            id: notificationId,
+            title: content['title']!,
+            body: content['body']!,
+            scheduledDate: scheduledTime,
+            channelId: content['channelId']!,
+            payload: payload,
+            groupId: groupId,
+            threadIdentifier: threadIdentifier,
+          );
+          scheduledCount++;
+          _devLog('Scheduled initial notification for $timeSlot');
+
+          // Record in index only after successful scheduling
+          try {
+            await indexStore.putEntry(
+              userId,
+              petId,
+              ScheduledNotificationEntry(
+                notificationId: notificationId,
+                scheduleId: schedule.id,
+                treatmentType: treatmentType,
+                timeSlotISO: timeSlot,
+                kind: 'initial',
+              ),
+            );
+          } on Exception catch (e) {
+            NotificationErrorHandler.handleSchedulingError(
+              context: null,
+              operation: 'index_update_initial',
+              error: e,
+              userId: userId,
+              petId: petId,
+              scheduleId: schedule.id,
+            );
+          }
+        } on Exception catch (e) {
+          NotificationErrorHandler.handleSchedulingError(
+            context: null,
+            operation: 'schedule_initial_notification',
+            error: e,
+            userId: userId,
+            petId: petId,
+            scheduleId: schedule.id,
+          );
+          // Continue to next time slot - silent failure
+          return {
+            'scheduled': 0,
+            'immediate': 0,
+            'missed': 0,
+            'errors': ['Failed to schedule notification for $timeSlot'],
+          };
+        }
       } else if (decision == NotificationSchedulingDecision.immediate) {
         // Fire immediately (within grace period)
         // Note: For immediate notifications, we use a regular show() call
         // but since flutter_local_notifications doesn't have a non-scheduled
         // show method, we schedule it for "now"
-        await plugin.showZoned(
-          id: notificationId,
-          title: content['title']!,
-          body: content['body']!,
-          scheduledDate: tz.TZDateTime.now(tz.local),
-          channelId: content['channelId']!,
-          payload: payload,
-          groupId: groupId,
-          threadIdentifier: threadIdentifier,
-        );
-        immediateCount++;
-        _devLog('Fired immediate notification for $timeSlot (grace period)');
+        try {
+          await plugin.showZoned(
+            id: notificationId,
+            title: content['title']!,
+            body: content['body']!,
+            scheduledDate: tz.TZDateTime.now(tz.local),
+            channelId: content['channelId']!,
+            payload: payload,
+            groupId: groupId,
+            threadIdentifier: threadIdentifier,
+          );
+          immediateCount++;
+          _devLog('Fired immediate notification for $timeSlot (grace period)');
+
+          // Record in index only after successful scheduling
+          try {
+            await indexStore.putEntry(
+              userId,
+              petId,
+              ScheduledNotificationEntry(
+                notificationId: notificationId,
+                scheduleId: schedule.id,
+                treatmentType: treatmentType,
+                timeSlotISO: timeSlot,
+                kind: 'initial',
+              ),
+            );
+          } on Exception catch (e) {
+            NotificationErrorHandler.handleSchedulingError(
+              context: null,
+              operation: 'index_update_immediate',
+              error: e,
+              userId: userId,
+              petId: petId,
+              scheduleId: schedule.id,
+            );
+          }
+        } on Exception catch (e) {
+          NotificationErrorHandler.handleSchedulingError(
+            context: null,
+            operation: 'schedule_immediate_notification',
+            error: e,
+            userId: userId,
+            petId: petId,
+            scheduleId: schedule.id,
+          );
+          // Continue to next time slot - silent failure
+          return {
+            'scheduled': 0,
+            'immediate': 0,
+            'missed': 0,
+            'errors': ['Failed to fire immediate notification for $timeSlot'],
+          };
+        }
       } else {
         // Missed (past grace period)
         missedCount++;
@@ -729,19 +844,6 @@ class ReminderService {
           'missed': 1,
         };
       }
-
-      // Record in index (for both scheduled and immediate)
-      await indexStore.putEntry(
-        userId,
-        petId,
-        ScheduledNotificationEntry(
-          notificationId: notificationId,
-          scheduleId: schedule.id,
-          treatmentType: treatmentType,
-          timeSlotISO: timeSlot,
-          kind: 'initial',
-        ),
-      );
 
       // Schedule follow-up notification
       final followupResult = await _scheduleFollowupNotification(
@@ -764,7 +866,24 @@ class ReminderService {
     } on Exception catch (e, stackTrace) {
       _devLog('ERROR in _scheduleNotificationForSlot: $e');
       _devLog('Stack trace: $stackTrace');
-      rethrow;
+
+      // Report to Crashlytics but don't rethrow (silent failure)
+      NotificationErrorHandler.handleSchedulingError(
+        context: null,
+        operation: 'schedule_notification_for_slot',
+        error: e,
+        userId: userId,
+        petId: petId,
+        scheduleId: schedule.id,
+      );
+
+      // Return error result instead of rethrowing
+      return {
+        'scheduled': 0,
+        'immediate': 0,
+        'missed': 0,
+        'errors': [e.toString()],
+      };
     }
   }
 
@@ -821,42 +940,79 @@ class ReminderService {
       final threadIdentifier = 'pet_$petId';
 
       // Schedule follow-up
-      await plugin.showZoned(
-        id: followupId,
-        title: content['title']!,
-        body: content['body']!,
-        scheduledDate: followupTime,
-        channelId: content['channelId']!,
-        payload: payload,
-        groupId: groupId,
-        threadIdentifier: threadIdentifier,
-      );
+      try {
+        await plugin.showZoned(
+          id: followupId,
+          title: content['title']!,
+          body: content['body']!,
+          scheduledDate: followupTime,
+          channelId: content['channelId']!,
+          payload: payload,
+          groupId: groupId,
+          threadIdentifier: threadIdentifier,
+        );
 
-      // Record in index
-      await indexStore.putEntry(
-        userId,
-        petId,
-        ScheduledNotificationEntry(
-          notificationId: followupId,
+        // Record in index only after successful scheduling
+        try {
+          await indexStore.putEntry(
+            userId,
+            petId,
+            ScheduledNotificationEntry(
+              notificationId: followupId,
+              scheduleId: schedule.id,
+              treatmentType: treatmentType,
+              timeSlotISO: timeSlot,
+              kind: 'followup',
+            ),
+          );
+        } on Exception catch (e) {
+          NotificationErrorHandler.handleSchedulingError(
+            context: null,
+            operation: 'index_update_followup',
+            error: e,
+            userId: userId,
+            petId: petId,
+            scheduleId: schedule.id,
+          );
+        }
+
+        _devLog(
+          'Scheduled follow-up notification for $timeSlot at $followupTime',
+        );
+
+        return {
+          'scheduled': 1,
+          'immediate': 0,
+          'missed': 0,
+        };
+      } on Exception catch (e) {
+        NotificationErrorHandler.handleSchedulingError(
+          context: null,
+          operation: 'schedule_followup_notification',
+          error: e,
+          userId: userId,
+          petId: petId,
           scheduleId: schedule.id,
-          treatmentType: treatmentType,
-          timeSlotISO: timeSlot,
-          kind: 'followup',
-        ),
-      );
-
-      _devLog(
-        'Scheduled follow-up notification for $timeSlot at $followupTime',
-      );
-
-      return {
-        'scheduled': 1,
-        'immediate': 0,
-        'missed': 0,
-      };
+        );
+        return {
+          'scheduled': 0,
+          'immediate': 0,
+          'missed': 0,
+        };
+      }
     } on Exception catch (e, stackTrace) {
       _devLog('ERROR scheduling follow-up: $e');
       _devLog('Stack trace: $stackTrace');
+
+      NotificationErrorHandler.handleSchedulingError(
+        context: null,
+        operation: 'schedule_followup_notification',
+        error: e,
+        userId: userId,
+        petId: petId,
+        scheduleId: schedule.id,
+      );
+
       return {
         'scheduled': 0,
         'immediate': 0,
@@ -1516,6 +1672,15 @@ class ReminderService {
     } on Exception catch (e, stackTrace) {
       _devLog('❌ ERROR in scheduleWeeklySummary: $e');
       _devLog('Stack trace: $stackTrace');
+
+      NotificationErrorHandler.handleSchedulingError(
+        context: null,
+        operation: 'schedule_weekly_summary',
+        error: e,
+        userId: userId,
+        petId: petId,
+      );
+
       return {
         'success': false,
         'reason': 'error',
@@ -1579,6 +1744,15 @@ class ReminderService {
     } on Exception catch (e, stackTrace) {
       _devLog('❌ ERROR in cancelWeeklySummary: $e');
       _devLog('Stack trace: $stackTrace');
+
+      NotificationErrorHandler.handleSchedulingError(
+        context: null,
+        operation: 'cancel_weekly_summary',
+        error: e,
+        userId: userId,
+        petId: petId,
+      );
+
       return false;
     }
   }

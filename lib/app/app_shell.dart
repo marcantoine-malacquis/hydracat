@@ -14,6 +14,7 @@ import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/logging/widgets/quick_log_success_popup.dart';
 import 'package:hydracat/features/logging/widgets/treatment_choice_popup.dart';
 import 'package:hydracat/features/notifications/providers/notification_provider.dart';
+import 'package:hydracat/features/notifications/services/notification_error_handler.dart';
 import 'package:hydracat/features/notifications/services/notification_tap_handler.dart';
 import 'package:hydracat/features/notifications/services/permission_prompt_service.dart';
 import 'package:hydracat/features/notifications/widgets/permission_preprompt.dart';
@@ -925,6 +926,54 @@ class _AppShellState extends ConsumerState<AppShell>
     }
   }
 
+  /// Handles notification permission revocation cleanup.
+  ///
+  /// When permission is revoked after being granted:
+  /// - Cancels all pending notifications
+  /// - Clears today's notification index
+  /// - Tracks analytics event
+  /// - Shows user-facing dialog explaining the situation
+  Future<void> _handlePermissionRevocation(String userId, String petId) async {
+    _devLog('Notification permission revoked, clearing notifications');
+
+    try {
+      final plugin = ref.read(reminderPluginProvider);
+      final indexStore = ref.read(notificationIndexStoreProvider);
+
+      // Clear all pending notifications
+      await plugin.cancelAll();
+
+      // Clear today's index
+      await indexStore.clearForDate(userId, petId, DateTime.now());
+
+      // Track analytics
+      final analyticsService = ref.read(analyticsServiceDirectProvider);
+      await analyticsService.trackNotificationError(
+        errorType: AnalyticsEvents.notificationPermissionRevoked,
+        operation: 'permission_revoked_cleanup',
+        userId: userId,
+        petId: petId,
+      );
+
+      // Show dialog if mounted and in foreground
+      if (mounted &&
+          WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            NotificationErrorHandler.showPermissionRevokedDialog(context);
+          }
+        });
+      }
+    } on Exception catch (e) {
+      await NotificationErrorHandler.reportToCrashlytics(
+        operation: 'permission_revocation_cleanup',
+        error: e,
+        userId: userId,
+        petId: petId,
+      );
+    }
+  }
+
   // ===== Step 6.3: Lifecycle helpers =====
 
   Future<void> _initSchedulerLifecycle() async {
@@ -1033,6 +1082,20 @@ class _AppShellState extends ConsumerState<AppShell>
         hasCompletedOnboarding &&
         currentUser != null &&
         primaryPet != null) {
+      // Check permission revocation before rescheduling
+      final permissionStatusAsync = ref.read(
+        notificationPermissionStatusProvider,
+      );
+      final settings = ref.read(notificationSettingsProvider(currentUser.id));
+
+      permissionStatusAsync.whenData((permissionStatus) {
+        if (settings.enableNotifications &&
+            permissionStatus != NotificationPermissionStatus.granted) {
+          // Permission was revoked - handle cleanup
+          unawaited(_handlePermissionRevocation(currentUser.id, primaryPet.id));
+        }
+      });
+
       _debouncedReschedule(
         userId: currentUser.id,
         petId: primaryPet.id,

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/features/notifications/models/scheduled_notification_entry.dart';
 import 'package:hydracat/features/notifications/services/reminder_plugin.dart';
+import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Service for managing the local notification index in SharedPreferences.
@@ -107,8 +108,10 @@ class NotificationIndexStore {
 
       // Parse entries
       final entries = entriesJson
-          .map((e) => ScheduledNotificationEntry.fromJson(
-              e as Map<String, dynamic>))
+          .map(
+            (e) =>
+                ScheduledNotificationEntry.fromJson(e as Map<String, dynamic>),
+          )
           .toList();
 
       // Compute checksum and compare
@@ -126,15 +129,19 @@ class NotificationIndexStore {
   ///
   /// Returns empty list if:
   /// - No index exists for this key (new day)
-  /// - Stored data is corrupted (checksum mismatch)
+  /// - Stored data is corrupted (checksum mismatch) and rebuild fails
   /// - Parsing fails
   ///
-  /// Corrupted data triggers debug logging but doesn't throw.
+  /// Corrupted data triggers rebuild attempt from plugin state if plugin
+  /// is provided. If rebuild succeeds, saves new index and returns entries.
+  /// If rebuild fails, triggers analytics and returns empty list.
   Future<List<ScheduledNotificationEntry>> _loadIndex(
     String userId,
     String petId,
-    DateTime date,
-  ) async {
+    DateTime date, {
+    AnalyticsService? analyticsService,
+    ReminderPlugin? plugin,
+  }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final key = _buildKey(userId, petId, date);
@@ -158,18 +165,127 @@ class NotificationIndexStore {
         if (kDebugMode) {
           debugPrint(
             '[NotificationIndexStore] Checksum validation failed for '
-            'key: $key. Data may be corrupted. Returning empty list.',
+            'key: $key. Attempting rebuild from plugin state...',
           );
         }
-        // TODO(Phase7): Report to analytics: index_corruption_detected
-        return [];
+
+        // Attempt rebuild from plugin state
+        if (plugin != null) {
+          final rebuilt = await _rebuildFromPluginState(
+            userId: userId,
+            petId: petId,
+            date: date,
+            plugin: plugin,
+          );
+
+          if (rebuilt != null && rebuilt.isNotEmpty) {
+            // Rebuild succeeded - save new index
+            await _saveIndex(userId, petId, date, rebuilt);
+
+            if (kDebugMode) {
+              debugPrint(
+                '[NotificationIndexStore] Index rebuilt from plugin state: '
+                '${rebuilt.length} entries recovered',
+              );
+            }
+
+            // Track successful recovery
+            if (analyticsService != null) {
+              try {
+                await analyticsService.trackNotificationError(
+                  errorType: AnalyticsEvents.notificationIndexRebuildSuccess,
+                  operation: 'index_rebuild_from_plugin',
+                  userId: userId,
+                  petId: petId,
+                  additionalContext: {
+                    'date': _formatDate(date),
+                    'recovered_count': rebuilt.length,
+                  },
+                );
+              } on Exception catch (e) {
+                if (kDebugMode) {
+                  debugPrint(
+                    '[NotificationIndexStore] Analytics tracking failed: $e',
+                  );
+                }
+              }
+            }
+
+            return rebuilt;
+          } else {
+            // Rebuild failed or no matching notifications found
+            if (kDebugMode) {
+              debugPrint(
+                '[NotificationIndexStore] Index rebuild failed or no matching '
+                'notifications found. Returning empty list.',
+              );
+            }
+
+            // Track failed recovery
+            if (analyticsService != null) {
+              try {
+                await analyticsService.trackNotificationError(
+                  errorType: AnalyticsEvents.notificationIndexRebuildFailed,
+                  operation: 'index_rebuild_from_plugin',
+                  userId: userId,
+                  petId: petId,
+                  additionalContext: {
+                    'date': _formatDate(date),
+                  },
+                );
+                await analyticsService.trackIndexCorruptionDetected(
+                  userId: userId,
+                  petId: petId,
+                  date: _formatDate(date),
+                );
+              } on Exception catch (e) {
+                if (kDebugMode) {
+                  debugPrint(
+                    '[NotificationIndexStore] Analytics tracking failed: $e',
+                  );
+                }
+              }
+            }
+
+            return [];
+          }
+        } else {
+          // Plugin not available - report corruption
+          if (kDebugMode) {
+            debugPrint(
+              '[NotificationIndexStore] Checksum validation failed, but plugin '
+              'not available. Cannot rebuild. Returning empty list.',
+            );
+          }
+
+          // Report to analytics: index_corruption_detected
+          if (analyticsService != null) {
+            try {
+              await analyticsService.trackIndexCorruptionDetected(
+                userId: userId,
+                petId: petId,
+                date: _formatDate(date),
+              );
+            } on Exception catch (e) {
+              if (kDebugMode) {
+                debugPrint(
+                  '[NotificationIndexStore] Analytics tracking failed: $e',
+                );
+              }
+            }
+          }
+
+          return [];
+        }
       }
 
       // Parse entries
       final entriesJson = data['entries'] as List<dynamic>;
       final entries = entriesJson
-          .map((e) =>
-              ScheduledNotificationEntry.fromJson(e as Map<String, dynamic>))
+          .map(
+            (e) =>
+                ScheduledNotificationEntry.fromJson(e as Map<String, dynamic>),
+          )
           .toList();
 
       if (kDebugMode) {
@@ -189,6 +305,101 @@ class NotificationIndexStore {
         debugPrint('Stack trace: $stackTrace');
       }
       return [];
+    }
+  }
+
+  /// Attempts to rebuild index entries from plugin's pending notifications.
+  ///
+  /// Parses each pending notification's payload to extract scheduleId,
+  /// timeSlot, kind, and treatmentType. Only includes notifications that
+  /// belong to the specified userId and petId.
+  ///
+  /// Returns list of entries if rebuild succeeds and entries found,
+  /// null if rebuild fails or no matching notifications.
+  Future<List<ScheduledNotificationEntry>?> _rebuildFromPluginState({
+    required String userId,
+    required String petId,
+    required DateTime date,
+    required ReminderPlugin plugin,
+  }) async {
+    try {
+      final pending = await plugin.pendingNotificationRequests();
+      final entries = <ScheduledNotificationEntry>[];
+
+      for (final notification in pending) {
+        // Parse payload to extract scheduleId, timeSlot, kind, treatmentType
+        final payload = notification.payload;
+        if (payload == null) continue;
+
+        try {
+          final payloadMap = jsonDecode(payload) as Map<String, dynamic>;
+
+          // Validate this notification belongs to current user/pet
+          if (payloadMap['userId'] != userId || payloadMap['petId'] != petId) {
+            continue;
+          }
+
+          // Validate required fields present
+          final scheduleId = payloadMap['scheduleId'] as String?;
+          final timeSlot = payloadMap['timeSlot'] as String?;
+          final kind = payloadMap['kind'] as String?;
+          final treatmentType = payloadMap['treatmentType'] as String?;
+
+          if (scheduleId == null ||
+              timeSlot == null ||
+              kind == null ||
+              treatmentType == null) {
+            if (kDebugMode) {
+              debugPrint(
+                '[NotificationIndexStore] Skipping notification '
+                '${notification.id}: missing required fields in payload',
+              );
+            }
+            continue;
+          }
+
+          // Validate kind and treatmentType
+          if (!ScheduledNotificationEntry.isValidKind(kind) ||
+              !ScheduledNotificationEntry.isValidTreatmentType(treatmentType)) {
+            if (kDebugMode) {
+              debugPrint(
+                '[NotificationIndexStore] Skipping notification '
+                '${notification.id}: invalid kind or treatmentType',
+              );
+            }
+            continue;
+          }
+
+          // Create entry
+          final entry = ScheduledNotificationEntry(
+            notificationId: notification.id,
+            scheduleId: scheduleId,
+            treatmentType: treatmentType,
+            timeSlotISO: timeSlot,
+            kind: kind,
+          );
+
+          entries.add(entry);
+        } on Exception catch (e) {
+          if (kDebugMode) {
+            debugPrint(
+              '[NotificationIndexStore] Failed to parse notification '
+              '${notification.id} payload: $e',
+            );
+          }
+          continue;
+        }
+      }
+
+      return entries.isNotEmpty ? entries : null;
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[NotificationIndexStore] Failed to rebuild index from plugin '
+          'state: $e',
+        );
+      }
+      return null;
     }
   }
 
@@ -240,23 +451,43 @@ class NotificationIndexStore {
   /// Returns notification index entries for today.
   ///
   /// Returns empty list if no entries exist or data is corrupted.
+  ///
+  /// Optionally provides [plugin] for automatic rebuild on corruption.
   Future<List<ScheduledNotificationEntry>> getForToday(
     String userId,
-    String petId,
-  ) async {
+    String petId, {
+    AnalyticsService? analyticsService,
+    ReminderPlugin? plugin,
+  }) async {
     final today = DateTime.now();
-    return _loadIndex(userId, petId, today);
+    return _loadIndex(
+      userId,
+      petId,
+      today,
+      analyticsService: analyticsService,
+      plugin: plugin,
+    );
   }
 
   /// Returns notification index entries for a specific date.
   ///
   /// Returns empty list if no entries exist or data is corrupted.
+  ///
+  /// Optionally provides [plugin] for automatic rebuild on corruption.
   Future<List<ScheduledNotificationEntry>> getForDate(
     String userId,
     String petId,
-    DateTime date,
-  ) async {
-    return _loadIndex(userId, petId, date);
+    DateTime date, {
+    AnalyticsService? analyticsService,
+    ReminderPlugin? plugin,
+  }) async {
+    return _loadIndex(
+      userId,
+      petId,
+      date,
+      analyticsService: analyticsService,
+      plugin: plugin,
+    );
   }
 
   /// Adds a notification entry to today's index.
@@ -446,9 +677,12 @@ class NotificationIndexStore {
       final yesterdayStr = _formatDate(yesterday);
 
       // Find all keys for yesterday
-      final keys = prefs.getKeys().where(
-        (key) => key.startsWith(_keyPrefix) && key.endsWith(yesterdayStr),
-      ).toList();
+      final keys = prefs
+          .getKeys()
+          .where(
+            (key) => key.startsWith(_keyPrefix) && key.endsWith(yesterdayStr),
+          )
+          .toList();
 
       // Remove all matching keys
       for (final key in keys) {
@@ -500,8 +734,9 @@ class NotificationIndexStore {
   Future<Map<String, int>> reconcile(
     String userId,
     String petId,
-    ReminderPlugin plugin,
-  ) async {
+    ReminderPlugin plugin, {
+    AnalyticsService? analyticsService,
+  }) async {
     var added = 0;
     var removed = 0;
 
@@ -515,7 +750,12 @@ class NotificationIndexStore {
 
       // 1. Load current index
       final today = DateTime.now();
-      final indexEntries = await _loadIndex(userId, petId, today);
+      final indexEntries = await _loadIndex(
+        userId,
+        petId,
+        today,
+        analyticsService: analyticsService,
+      );
 
       // 2. Fetch pending notifications from plugin
       final pendingRequests = await plugin.pendingNotificationRequests();
@@ -558,8 +798,23 @@ class NotificationIndexStore {
         );
       }
 
-      // TODO(Phase7): Report to analytics: index_reconciliation_performed
-      // with params: { added, removed }
+      // Report analytics: index_reconciliation_performed
+      if (analyticsService != null) {
+        try {
+          await analyticsService.trackIndexReconciliationPerformed(
+            userId: userId,
+            petId: petId,
+            added: added,
+            removed: removed,
+          );
+        } on Exception catch (e) {
+          if (kDebugMode) {
+            debugPrint(
+              '[NotificationIndexStore] Analytics tracking failed: $e',
+            );
+          }
+        }
+      }
 
       return {'added': added, 'removed': removed};
     } on Exception catch (e, stackTrace) {

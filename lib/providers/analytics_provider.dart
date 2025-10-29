@@ -147,30 +147,65 @@ class AnalyticsEvents {
   /// Reminder canceled on log event name
   static const String reminderCanceledOnLog = 'reminder_canceled_on_log';
 
-  // TODO(Phase7): Implement schedule CRUD notification analytics
-  // The following events track notification scheduling/cancellation when
-  // users create/update/delete treatment schedules:
-  //
-  // - schedule_created_reminders_scheduled
-  //   Params: treatmentType, scheduleId, reminderCount, result (success/error)
-  //   Tracks notification scheduling after schedule creation
-  //
-  // - schedule_updated_reminders_rescheduled
-  //   Params: treatmentType, scheduleId, reminderCount, result (success/error)
-  //   Tracks notification rescheduling after schedule update
-  //
-  // - schedule_deleted_reminders_canceled
-  //   Params: treatmentType, scheduleId, canceledCount, result (success/error)
-  //   Tracks notification cancellation after schedule deletion
-  //
-  // - schedule_deactivated_reminders_canceled
-  //   Params: treatmentType, scheduleId, canceledCount, result (success/error)
-  //   Tracks notification cancellation when schedule set to isActive=false
-  //
-  // These analytics help monitor:
-  // - Notification system reliability during schedule operations
-  // - Failure rates for notification scheduling/cancellation
-  // - User behavior patterns (how often schedules are modified)
+  // Notification reliability events
+  /// Index corruption detected event name
+  static const String indexCorruptionDetected = 'index_corruption_detected';
+
+  /// Index reconciliation performed event name
+  static const String indexReconciliationPerformed =
+      'index_reconciliation_performed';
+
+  /// Notification limit reached event name
+  static const String notificationLimitReached = 'notification_limit_reached';
+
+  /// Notification limit warning event name
+  static const String notificationLimitWarning = 'notification_limit_warning';
+
+  // Schedule CRUD notification events
+  /// Schedule created with reminders scheduled event name
+  static const String scheduleCreatedRemindersScheduled =
+      'schedule_created_reminders_scheduled';
+
+  /// Schedule updated with reminders rescheduled event name
+  static const String scheduleUpdatedRemindersRescheduled =
+      'schedule_updated_reminders_rescheduled';
+
+  /// Schedule deleted with reminders canceled event name
+  static const String scheduleDeletedRemindersCanceled =
+      'schedule_deleted_reminders_canceled';
+
+  /// Schedule deactivated with reminders canceled event name
+  static const String scheduleDeactivatedRemindersCanceled =
+      'schedule_deactivated_reminders_canceled';
+
+  // Notification error events
+  /// Plugin initialization failed event name
+  static const String notificationPluginInitFailed =
+      'notification_plugin_init_failed';
+
+  /// Permission revoked event name
+  static const String notificationPermissionRevoked =
+      'notification_permission_revoked';
+
+  /// Scheduling failed event name
+  static const String notificationSchedulingFailed =
+      'notification_scheduling_failed';
+
+  /// Cancellation failed event name
+  static const String notificationCancellationFailed =
+      'notification_cancellation_failed';
+
+  /// Reconciliation failed event name
+  static const String notificationReconciliationFailed =
+      'notification_reconciliation_failed';
+
+  /// Index rebuild succeeded event name
+  static const String notificationIndexRebuildSuccess =
+      'notification_index_rebuild_success';
+
+  /// Index rebuild failed event name
+  static const String notificationIndexRebuildFailed =
+      'notification_index_rebuild_failed';
 }
 
 /// Analytics parameters
@@ -284,6 +319,28 @@ class AnalyticsParams {
 
   /// Duration in milliseconds for the operation
   static const String durationMs = 'duration_ms';
+
+  // Notification reliability params
+  /// Schedule ID parameter name
+  static const String scheduleId = 'schedule_id';
+
+  /// Reminder count parameter name
+  static const String reminderCount = 'reminder_count';
+
+  /// Canceled count parameter name
+  static const String canceledCount = 'canceled_count';
+
+  /// Added count parameter name
+  static const String addedCount = 'added_count';
+
+  /// Removed count parameter name
+  static const String removedCount = 'removed_count';
+
+  /// Current count parameter name
+  static const String currentCount = 'current_count';
+
+  /// Result parameter name
+  static const String result = 'result';
 }
 
 /// Standardized error type constants for analytics tracking
@@ -1115,6 +1172,216 @@ class AnalyticsService {
         AnalyticsParams.failureCount: failureCount,
         AnalyticsParams.syncDuration: syncDurationMs,
       },
+    );
+  }
+
+  /// Track index corruption detection.
+  ///
+  /// Fired when NotificationIndexStore detects checksum validation failure,
+  /// indicating data corruption in SharedPreferences.
+  Future<void> trackIndexCorruptionDetected({
+    required String userId,
+    required String petId,
+    required String date,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.indexCorruptionDetected,
+      parameters: {
+        'user_id': userId,
+        AnalyticsParams.petId: petId,
+        'date': date,
+      },
+    );
+  }
+
+  /// Track index reconciliation operation and discrepancy counts.
+  Future<void> trackIndexReconciliationPerformed({
+    required String userId,
+    required String petId,
+    required int added,
+    required int removed,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.indexReconciliationPerformed,
+      parameters: {
+        'user_id': userId,
+        AnalyticsParams.petId: petId,
+        AnalyticsParams.addedCount: added,
+        AnalyticsParams.removedCount: removed,
+      },
+    );
+  }
+
+  /// Track notification limit reached (50 per pet).
+  Future<void> trackNotificationLimitReached({
+    required String petId,
+    required int currentCount,
+    required String scheduleId,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.notificationLimitReached,
+      parameters: {
+        AnalyticsParams.petId: petId,
+        AnalyticsParams.currentCount: currentCount,
+        AnalyticsParams.scheduleId: scheduleId,
+      },
+    );
+  }
+
+  /// Track notification limit warning (80% threshold).
+  Future<void> trackNotificationLimitWarning({
+    required String petId,
+    required int currentCount,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.notificationLimitWarning,
+      parameters: {
+        AnalyticsParams.petId: petId,
+        AnalyticsParams.currentCount: currentCount,
+      },
+    );
+  }
+
+  /// Track notification scheduling after schedule creation.
+  Future<void> trackScheduleCreatedRemindersScheduled({
+    required String treatmentType,
+    required String scheduleId,
+    required int reminderCount,
+    required String result,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.scheduleCreatedRemindersScheduled,
+      parameters: {
+        AnalyticsParams.treatmentType: treatmentType,
+        AnalyticsParams.scheduleId: scheduleId,
+        AnalyticsParams.reminderCount: reminderCount,
+        AnalyticsParams.result: result,
+      },
+    );
+  }
+
+  /// Track notification rescheduling after schedule update.
+  Future<void> trackScheduleUpdatedRemindersRescheduled({
+    required String treatmentType,
+    required String scheduleId,
+    required int reminderCount,
+    required String result,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.scheduleUpdatedRemindersRescheduled,
+      parameters: {
+        AnalyticsParams.treatmentType: treatmentType,
+        AnalyticsParams.scheduleId: scheduleId,
+        AnalyticsParams.reminderCount: reminderCount,
+        AnalyticsParams.result: result,
+      },
+    );
+  }
+
+  /// Track notification cancellation after schedule deletion.
+  Future<void> trackScheduleDeletedRemindersCanceled({
+    required String treatmentType,
+    required String scheduleId,
+    required int canceledCount,
+    required String result,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.scheduleDeletedRemindersCanceled,
+      parameters: {
+        AnalyticsParams.treatmentType: treatmentType,
+        AnalyticsParams.scheduleId: scheduleId,
+        AnalyticsParams.canceledCount: canceledCount,
+        AnalyticsParams.result: result,
+      },
+    );
+  }
+
+  /// Track notification cancellation after schedule deactivation.
+  Future<void> trackScheduleDeactivatedRemindersCanceled({
+    required String treatmentType,
+    required String scheduleId,
+    required int canceledCount,
+    required String result,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.scheduleDeactivatedRemindersCanceled,
+      parameters: {
+        AnalyticsParams.treatmentType: treatmentType,
+        AnalyticsParams.scheduleId: scheduleId,
+        AnalyticsParams.canceledCount: canceledCount,
+        AnalyticsParams.result: result,
+      },
+    );
+  }
+
+  /// Track notification error events.
+  ///
+  /// Used by NotificationErrorHandler to track all error scenarios:
+  /// - Plugin initialization failures
+  /// - Scheduling/cancellation failures
+  /// - Permission revocation
+  /// - Index corruption and rebuild attempts
+  ///
+  /// Parameters:
+  /// - [errorType]: Type of error (e.g., 'notification_plugin_init_failed')
+  /// - [operation]: Operation that failed
+  /// (e.g., 'schedule_medication_reminder')
+  /// - [userId]: Current user ID (required)
+  /// - [petId]: Pet ID if applicable (optional)
+  /// - [scheduleId]: Schedule ID if applicable (optional)
+  /// - [errorMessage]: Human-readable error message (optional)
+  /// - [additionalContext]: Additional key-value pairs for debugging (optional)
+  Future<void> trackNotificationError({
+    required String errorType,
+    required String operation,
+    required String userId,
+    String? petId,
+    String? scheduleId,
+    String? errorMessage,
+    Map<String, dynamic>? additionalContext,
+  }) async {
+    if (!_isEnabled) return;
+
+    final parameters = <String, dynamic>{
+      'operation': operation,
+      'user_id': userId,
+    };
+
+    if (petId != null) {
+      parameters[AnalyticsParams.petId] = petId;
+    }
+
+    if (scheduleId != null) {
+      parameters[AnalyticsParams.scheduleId] = scheduleId;
+    }
+
+    if (errorMessage != null) {
+      parameters['error_message'] = errorMessage;
+    }
+
+    if (additionalContext != null) {
+      parameters.addAll(additionalContext);
+    }
+
+    await _analytics.logEvent(
+      name: errorType,
+      parameters: Map<String, Object>.from(parameters),
     );
   }
 }
