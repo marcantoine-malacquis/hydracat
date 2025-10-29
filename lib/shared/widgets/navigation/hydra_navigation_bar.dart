@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hydracat/core/constants/app_accessibility.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/constants/app_icons.dart';
@@ -8,6 +9,12 @@ import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/shared/widgets/accessibility/hydra_touch_target.dart';
 import 'package:hydracat/shared/widgets/buttons/hydra_fab.dart';
 import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
+
+// Indicator visual constants (kept local to avoid ripple across themes)
+const double _indicatorHeight = 3;
+const double _indicatorWidth = 48;
+const double _indicatorRadius = 12;
+const int _indicatorAnimMs = 160;
 
 /// Custom bottom navigation bar with accessibility support.
 class HydraNavigationBar extends StatefulWidget {
@@ -54,9 +61,29 @@ class HydraNavigationBar extends StatefulWidget {
 
 class _HydraNavigationBarState extends State<HydraNavigationBar> {
   int? _pressedIndex;
+  int? _lastAnnouncedIndex;
 
   void _setPressedIndex(int? index) {
     setState(() => _pressedIndex = index);
+  }
+
+  Duration _indicatorDuration(BuildContext context) {
+    final mq = MediaQuery.maybeOf(context);
+    final reducedMotion = mq?.disableAnimations ?? false;
+    return reducedMotion
+        ? Duration.zero
+        : const Duration(milliseconds: _indicatorAnimMs);
+  }
+
+  @override
+  void didUpdateWidget(covariant HydraNavigationBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final newIndex = widget.currentIndex;
+    if (newIndex >= 0 && newIndex != _lastAnnouncedIndex) {
+      // Light haptic feedback once per selection change
+      HapticFeedback.selectionClick();
+      _lastAnnouncedIndex = newIndex;
+    }
   }
 
   @override
@@ -78,53 +105,153 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.only(
-          bottom: 20, // Reduced bottom padding to move icons higher
-        ),
-        child: Row(
-          children: [
-            // Left side items (Home, Schedule)
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: widget.items.take(2).map((item) {
-                  final index = widget.items.indexOf(item);
-                  return Expanded(
-                    child: _buildNavigationItem(context, item, index),
-                  );
-                }).toList(),
-              ),
+      child: Stack(
+        children: [
+          // Main navigation content
+          Padding(
+            padding: const EdgeInsets.only(
+              top: _indicatorHeight,
+              bottom: 20,
             ),
+            child: Row(
+              children: [
+                // Left side items (Home, Schedule)
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: widget.items.take(2).map((item) {
+                      final index = widget.items.indexOf(item);
+                      return Expanded(
+                        child: _buildNavigationItem(context, item, index),
+                      );
+                    }).toList(),
+                  ),
+                ),
 
-            // Center FAB
-            const SizedBox(width: AppSpacing.md),
-            HydraTouchTarget(
-              minSize: AppAccessibility.fabTouchTarget,
-              child: HydraFab(
-                onPressed: widget.onFabPressed,
-                onLongPress: widget.onFabLongPress,
-                icon: _getIconData(AppIcons.logSession),
-                isLoading: widget.isFabLoading,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
+                // Center FAB
+                const SizedBox(width: AppSpacing.md),
+                HydraTouchTarget(
+                  minSize: AppAccessibility.fabTouchTarget,
+                  child: HydraFab(
+                    onPressed: widget.onFabPressed,
+                    onLongPress: widget.onFabLongPress,
+                    icon: _getIconData(AppIcons.logSession),
+                    isLoading: widget.isFabLoading,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
 
-            // Right side items (Progress, Profile)
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: widget.items.skip(2).map((item) {
-                  final index = widget.items.indexOf(item);
-                  return Expanded(
-                    child: _buildNavigationItem(context, item, index),
-                  );
-                }).toList(),
-              ),
+                // Right side items (Progress, Profile)
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: widget.items.skip(2).map((item) {
+                      final index = widget.items.indexOf(item);
+                      return Expanded(
+                        child: _buildNavigationItem(context, item, index),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+
+          // Top indicators layer
+          if (widget.currentIndex >= 0)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: _buildTopIndicators(context),
+            ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildTopIndicators(BuildContext context) {
+    return Row(
+      children: [
+        // Left side items indicators
+        Expanded(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: widget.items.take(2).map((item) {
+              final index = widget.items.indexOf(item);
+              final isSelected = index == widget.currentIndex;
+              return Expanded(
+                child: Center(
+                  child: AnimatedOpacity(
+                    duration: _indicatorDuration(context),
+                    opacity: isSelected ? 1.0 : 0.0,
+                    child: AnimatedScale(
+                      duration: _indicatorDuration(context),
+                      scale: isSelected ? 1.0 : 0.9,
+                      curve: Curves.easeInOut,
+                      child: SizedBox(
+                        width: _indicatorWidth,
+                        height: _indicatorHeight,
+                        child: Container(
+                          key: Key('navTopIndicator-$index'),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(
+                              _indicatorRadius,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+
+        // Center FAB space (no indicator)
+        const SizedBox(width: AppSpacing.md),
+        const SizedBox(width: AppAccessibility.fabTouchTarget),
+        const SizedBox(width: AppSpacing.md),
+
+        // Right side items indicators
+        Expanded(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: widget.items.skip(2).map((item) {
+              final index = widget.items.indexOf(item);
+              final isSelected = index == widget.currentIndex;
+              return Expanded(
+                child: Center(
+                  child: AnimatedOpacity(
+                    duration: _indicatorDuration(context),
+                    opacity: isSelected ? 1.0 : 0.0,
+                    child: AnimatedScale(
+                      duration: _indicatorDuration(context),
+                      scale: isSelected ? 1.0 : 0.9,
+                      curve: Curves.easeInOut,
+                      child: SizedBox(
+                        width: _indicatorWidth,
+                        height: _indicatorHeight,
+                        child: Container(
+                          key: Key('navTopIndicator-$index'),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(
+                              _indicatorRadius,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
     );
   }
 
@@ -147,65 +274,55 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
       },
       onTapCancel: () => _setPressedIndex(null),
       onTap: () => widget.onTap(index),
-      child: HydraTouchTarget(
-        minSize: 48, // Accessibility touch target
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-          decoration: BoxDecoration(
-            boxShadow: isPressed ? [AppShadows.navigationIconPressed] : null,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: AnimatedScale(
-            duration: const Duration(milliseconds: 150),
-            curve: Curves.easeInOut,
-            scale: isPressed ? 0.95 : 1.0,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    HydraIcon(
-                      icon: item.icon,
-                      color: color,
-                      semanticLabel: item.label,
-                      size: 26, // Larger icon for better visibility
-                    ),
-                    const SizedBox(height: 2), // Reduced spacing to fit text
-                    Flexible(
-                      child: Text(
-                        item.label,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: color,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                          fontSize: 10, // Smaller text to prevent truncation
-                          height: 1, // Tighter line height
-                        ),
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1, // Ensure single line
+      child: Semantics(
+        button: true,
+        selected: isSelected,
+        label: item.label,
+        child: HydraTouchTarget(
+          minSize: 48, // Accessibility touch target
+          child: Container(
+            margin: const EdgeInsets.only(
+              bottom: 4,
+              left: 2,
+              right: 2,
+            ),
+            decoration: BoxDecoration(
+              boxShadow: isPressed ? [AppShadows.navigationIconPressed] : null,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: AnimatedScale(
+              duration: const Duration(milliseconds: 150),
+              curve: Curves.easeInOut,
+              scale: isPressed ? 0.95 : 1.0,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  HydraIcon(
+                    icon: item.icon,
+                    color: color,
+                    semanticLabel: item.label,
+                    size: 26,
+                  ),
+                  const SizedBox(height: 2),
+                  Flexible(
+                    child: Text(
+                      item.label,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: color,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                        fontSize: 10,
+                        height: 1,
                       ),
-                    ),
-                  ],
-                ),
-                // Show badge on profile tab for unverified users
-                if (widget.showVerificationBadge && item.label == 'Profile')
-                  Positioned(
-                    right: 0,
-                    top: -2,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.error,
-                        shape: BoxShape.circle,
-                      ),
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

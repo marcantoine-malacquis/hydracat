@@ -43,17 +43,17 @@ I already did something similar in @onboarding_code_review_report.md . I don't n
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
 
-1. a)gate rescheduleAll() and weekly summary scheduling behind auth + onboarding + primary pet; allow index cleanup to run regardless (safe, cheap, local-only).
-b) on resume, rely on current user state only; don’t clear indexes for the previous user beyond yesterday purge (cheap and already per-user-keyed). This avoids cross-user coupling and unnecessary writes.
-2. a) keep a small persisted value (e.g., last_scheduler_run_yyyy-mm-dd) so that resume after process death still catches a date change; also keep an in-memory fast path to avoid repeated work within the same day/session.
-b) treat timezone change as a “date change equivalent” if tz.local offset has changed since last run; then rescheduleAll() just like at midnight rollover. Persist last-known timezone offset minutes; compare on resume.
-3. a) implement both for robustness. Schedule a one-shot Timer to next midnight; also run the same logic in resume if date changed since last processing. For DST midnights, compute next midnight using tz-aware helper with tz.local. If the app is killed, resume-time detection still covers it.
-b) both. Clear yesterday indexes, then call rescheduleAll() and idempotently reschedule weekly summary. This ensures we don’t rely on users to resume the app for the new day’s schedule to be built.
-4. a) call cancelWeeklySummary() then scheduleWeeklySummary() (your rescheduleAll() already does this). On resume, when date/offset changed, just call rescheduleAll() which already includes weekly summary maintenance. This keeps logic centralized.
-5. a) yes. If not already done, add a unified “onLogoutCleanup” that cancels all plugin notifications for the session (meds, fluids, snooze, weekly) and clears today’s index for the current user/pet; existing code already clears settings; align cleanup here for consistency.
-b) yes. On app start, if persisted last-run date != today, run the same date change path as resume (clear yesterday, reschedule all).
-6. a) defer rescheduleAll() until the minimal preconditions hold (auth, onboarding, primary pet present). If not ready on resume, register a one-time post-frame/retry to re-check in a short delay, then run when ready. This avoids no-op or partial state work.
-b) add a lightweight in-memory guard in AppShell (e.g., _isRescheduling = true) with a 1-shot debounced execution. ReminderService.rescheduleAll() is idempotent, but this avoids unnecessary work bursts.
-7. a) yes; low cost and high diagnostic value. Add in dev-friendly logging as I already do.
-8. a) single retry with small backoff (e.g., 2–5 seconds) and then fail-open; subsequent app resume or next lifecycle event will try again. Record error via Crashlytics in production.
+1. a per-tab top line that fades/scales in on the selected item. 
+2. height 3 px, width 28 px, 12 px corner radius, color AppColors.primary (same teal), placed 6 px from the top edge of the navigation bar, centered horizontally over the item. Animate with 160 ms easeInOut on selection changes (opacity + scale from 0.9→1.0).
+3. keep labels as-is for accessibility and clarity; the indicator is additive.
+4. hide the indicator entirely when currentIndex < 0.
+5. keep using AppColors.primary (already accessible on both themes) and avoid shadows on the indicator; rely on color contrast only.
+6. use the ambient MediaQuery.maybeOf(context)?.disableAnimations (or your existing motion setting if present) to switch to 0 ms animations for the indicator when reduced motion is on.
+7. wrap each nav item in a Semantics(selected: isSelected, label: item.label, button: true); you already pass semanticLabel to icons, but the selected state improves VO/TalkBack.
+8. light haptic feedback on tab selection (HapticFeedback.selectionClick()) once per change; keep your current press-scale effect.
+9. keep sizes locally in HydraNavigationBar as constants to avoid ripple effects, but bind color to theme (AppColors.primary) as you already do.
+10. add a widget test that verifies:
+Indicator renders only for currentIndex item
+Hidden when currentIndex = -1
+Semantics selected=true for active tab
 Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development/Flutter best practices are extremely important. Please confirm that this follow industry standards, and if not explain why. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them (including the non critical ones). I will test only once we fixed the linting issues.
