@@ -812,6 +812,25 @@ class DebugPanel extends ConsumerWidget {
             ),
           ),
         ],
+
+        // View pending notifications button
+        const SizedBox(height: AppSpacing.md),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => _handleViewPendingNotifications(context, ref),
+            icon: const Icon(Icons.list_alt, size: 16),
+            label: const Text('View Pending Notifications'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.blue.shade700,
+              side: BorderSide(color: Colors.blue.shade300),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xs,
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -1001,6 +1020,355 @@ class DebugPanel extends ConsumerWidget {
           ),
         );
       }
+    }
+  }
+
+  /// Handles viewing pending notifications.
+  ///
+  /// Fetches all pending notification requests from the platform and displays
+  /// them in a bottom sheet with detailed information.
+  Future<void> _handleViewPendingNotifications(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    debugPrint('');
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('🧪 DEBUG PANEL - View Pending Notifications');
+    debugPrint('═══════════════════════════════════════════════════════');
+
+    try {
+      // Show loading indicator
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Fetching pending notifications...'),
+            duration: const Duration(seconds: 1),
+            backgroundColor: Colors.blue.shade600,
+          ),
+        );
+      }
+
+      // Fetch pending notifications
+      final plugin = ReminderPlugin();
+      final pendingNotifications = await plugin.pendingNotificationRequests();
+
+      debugPrint('Found ${pendingNotifications.length} pending notifications');
+
+      if (context.mounted) {
+        await _showPendingNotificationsBottomSheet(
+          context,
+          pendingNotifications,
+        );
+      }
+    } on Exception catch (e, stackTrace) {
+      debugPrint('❌ ERROR fetching pending notifications: $e');
+      debugPrint('Stack trace: $stackTrace');
+      debugPrint('═══════════════════════════════════════════════════════');
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to fetch notifications: $e'),
+            backgroundColor: Colors.red.shade600,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Shows the pending notifications in a bottom sheet.
+  Future<void> _showPendingNotificationsBottomSheet(
+    BuildContext context,
+    // PendingNotificationRequest type not exported by plugin
+    // ignore: avoid_dynamic_calls
+    List<dynamic> pendingNotifications,
+  ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) => Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.list_alt, color: Colors.blue.shade700),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      'Pending Notifications (${pendingNotifications.length})',
+                      style: AppTextStyles.body.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue.shade700,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                    color: Colors.blue.shade700,
+                  ),
+                ],
+              ),
+            ),
+
+            // Content
+            Expanded(
+              child: pendingNotifications.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.notifications_off,
+                            size: 64,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          Text(
+                            'No Pending Notifications',
+                            style: AppTextStyles.body.copyWith(
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            'All notifications have been delivered',
+                            style: AppTextStyles.caption.copyWith(
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: scrollController,
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      itemCount: pendingNotifications.length,
+                      itemBuilder: (context, index) {
+                        return _buildNotificationListItem(
+                          pendingNotifications[index],
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Builds a list item for a pending notification.
+  // PendingNotificationRequest type not exported by plugin
+  // ignore: avoid_annotating_with_dynamic
+  Widget _buildNotificationListItem(dynamic notification) {
+    // Extract basic info from notification object
+    // PendingNotificationRequest type not exported by plugin
+    // ignore: avoid_dynamic_calls
+    final id = notification.id as int? ?? 0;
+    // PendingNotificationRequest type not exported by plugin
+    // ignore: avoid_dynamic_calls
+    final title = notification.title as String? ?? 'No title';
+    // PendingNotificationRequest type not exported by plugin
+    // ignore: avoid_dynamic_calls
+    final body = notification.body as String? ?? 'No body';
+    // PendingNotificationRequest type not exported by plugin
+    // ignore: avoid_dynamic_calls
+    final payload = notification.payload as String?;
+
+    // Parse payload
+    final parsedPayload = _parseNotificationPayload(payload);
+
+    // Determine treatment type and kind
+    final treatmentType = parsedPayload?['treatmentType'] as String?;
+    final kind = parsedPayload?['kind'] as String?;
+    final timeSlot = parsedPayload?['timeSlot'] as String?;
+
+    // Color coding based on treatment type
+    Color accentColor;
+    IconData icon;
+    if (treatmentType == 'medication') {
+      accentColor = Colors.orange.shade700;
+      icon = Icons.medication;
+    } else if (treatmentType == 'fluid') {
+      accentColor = Colors.blue.shade700;
+      icon = Icons.water_drop;
+    } else {
+      accentColor = Colors.grey.shade700;
+      icon = Icons.notifications;
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with ID and treatment type
+            Row(
+              children: [
+                Icon(icon, size: 20, color: accentColor),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: Text(
+                    'ID: $id',
+                    style: AppTextStyles.body.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: accentColor,
+                    ),
+                  ),
+                ),
+                if (treatmentType != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: accentColor.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Text(
+                      treatmentType.toUpperCase(),
+                      style: AppTextStyles.small.copyWith(
+                        color: accentColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+
+            const SizedBox(height: AppSpacing.sm),
+
+            // Title and Body
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTextStyles.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    body,
+                    style: AppTextStyles.caption.copyWith(
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Metadata from payload
+            if (parsedPayload != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.xs,
+                children: [
+                  if (timeSlot != null)
+                    _buildMetadataChip(
+                      Icons.access_time,
+                      'Time: $timeSlot',
+                      Colors.green,
+                    ),
+                  if (kind != null)
+                    _buildMetadataChip(
+                      Icons.label,
+                      'Kind: $kind',
+                      Colors.purple,
+                    ),
+                ],
+              ),
+            ] else if (payload != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Invalid payload format',
+                style: AppTextStyles.small.copyWith(
+                  color: Colors.red.shade600,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Builds a metadata chip for notification details.
+  Widget _buildMetadataChip(IconData icon, String label, MaterialColor color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color: color.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.shade200),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color.shade700),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: AppTextStyles.small.copyWith(
+              color: color.shade700,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Parses the notification payload JSON.
+  ///
+  /// Returns a map of the parsed data, or null if parsing fails.
+  Map<String, dynamic>? _parseNotificationPayload(String? payload) {
+    if (payload == null || payload.isEmpty) {
+      return null;
+    }
+
+    try {
+      final parsed = json.decode(payload) as Map<String, dynamic>;
+      return parsed;
+    } on Exception catch (e) {
+      debugPrint('Failed to parse notification payload: $e');
+      return null;
     }
   }
 }

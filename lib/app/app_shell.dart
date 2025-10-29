@@ -27,6 +27,8 @@ import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
 import 'package:hydracat/shared/widgets/dialogs/no_schedules_dialog.dart';
 import 'package:hydracat/shared/widgets/navigation/hydra_navigation_bar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 /// Main app shell that provides consistent navigation and layout.
 class AppShell extends ConsumerStatefulWidget {
@@ -48,6 +50,19 @@ class _AppShellState extends ConsumerState<AppShell>
   late final VoidCallback _overlayListener;
   late final VoidCallback _notificationTapListener;
   late final VoidCallback _notificationSnoozeListener;
+
+  // Track whether notifications have been scheduled this session
+  bool _hasScheduledNotifications = false;
+
+  // Step 6.3 state: last scheduler run date and tz offset persistence
+  DateTime? _lastSchedulerRunDate; // date-only
+  int? _lastTzOffsetMinutes;
+
+  // Guards and timers
+  bool _isRescheduling = false;
+  Timer? _rescheduleDebounce;
+  Timer? _nextMidnightTimer;
+
   final List<HydraNavigationItem> _navigationItems = const [
     HydraNavigationItem(icon: AppIcons.home, label: 'Home', route: '/'),
     HydraNavigationItem(
@@ -113,6 +128,9 @@ class _AppShellState extends ConsumerState<AppShell>
     NotificationTapHandler.pendingSnoozePayload.addListener(
       _notificationSnoozeListener,
     );
+
+    // Initialize Step 6.3 lifecycle management
+    unawaited(_initSchedulerLifecycle());
   }
 
   @override
@@ -143,6 +161,9 @@ class _AppShellState extends ConsumerState<AppShell>
 
       // Refresh dashboard cache (NEW)
       ref.read(dashboardProvider.notifier).onAppResumed();
+
+      // Step 6.3: check for date/tz change and handle
+      _maybeHandleDateOrTzChange(trigger: 'resume');
     }
   }
 
@@ -904,6 +925,268 @@ class _AppShellState extends ConsumerState<AppShell>
     }
   }
 
+  // ===== Step 6.3: Lifecycle helpers =====
+
+  Future<void> _initSchedulerLifecycle() async {
+    await _loadSchedulerState();
+
+    // Cold-start catch-up: if date or tz offset changed since last run
+    _maybeHandleDateOrTzChange(trigger: 'startup');
+
+    // Schedule next midnight timer
+    _scheduleNextMidnightTimer();
+  }
+
+  Future<void> _loadSchedulerState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastDateStr = prefs.getString('notif_last_scheduler_run_date');
+      final lastOffset = prefs.getInt('notif_last_tz_offset_minutes');
+
+      if (lastDateStr != null) {
+        // Parse yyyy-MM-dd
+        final parts = lastDateStr.split('-');
+        if (parts.length == 3) {
+          final y = int.tryParse(parts[0]);
+          final m = int.tryParse(parts[1]);
+          final d = int.tryParse(parts[2]);
+          if (y != null && m != null && d != null) {
+            _lastSchedulerRunDate = DateTime(y, m, d);
+          }
+        }
+      }
+      if (lastOffset != null) {
+        _lastTzOffsetMinutes = lastOffset;
+      }
+    } on Exception catch (e) {
+      debugPrint('[AppShell] Failed to load scheduler state: $e');
+    }
+  }
+
+  Future<void> _saveSchedulerState({
+    required DateTime dateOnly,
+    required int tzOffsetMinutes,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final dateStr =
+          '${dateOnly.year.toString().padLeft(4, '0')}-'
+          '${dateOnly.month.toString().padLeft(2, '0')}-'
+          '${dateOnly.day.toString().padLeft(2, '0')}';
+      await prefs.setString('notif_last_scheduler_run_date', dateStr);
+      await prefs.setInt('notif_last_tz_offset_minutes', tzOffsetMinutes);
+      _lastSchedulerRunDate = DateTime(
+        dateOnly.year,
+        dateOnly.month,
+        dateOnly.day,
+      );
+      _lastTzOffsetMinutes = tzOffsetMinutes;
+    } on Exception catch (e) {
+      debugPrint('[AppShell] Failed to save scheduler state: $e');
+    }
+  }
+
+  int _currentTzOffsetMinutes() {
+    try {
+      final nowTz = tz.TZDateTime.now(tz.local);
+      return nowTz.timeZoneOffset.inMinutes;
+    } on Exception catch (_) {
+      // Fallback to Dart DateTime if tz not available
+      return DateTime.now().timeZoneOffset.inMinutes;
+    }
+  }
+
+  void _maybeHandleDateOrTzChange({required String trigger}) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final currentOffset = _currentTzOffsetMinutes();
+
+    final lastDate = _lastSchedulerRunDate;
+    final lastOffset = _lastTzOffsetMinutes;
+
+    final dateChanged =
+        lastDate == null ||
+        lastDate.year != today.year ||
+        lastDate.month != today.month ||
+        lastDate.day != today.day;
+    final tzChanged = lastOffset == null || lastOffset != currentOffset;
+
+    if (!dateChanged && !tzChanged) {
+      _devLog('No date/tz change detected on $trigger');
+      return;
+    }
+
+    _devLog(
+      'Date/TZ change detected on $trigger (dateChanged=$dateChanged, tzChanged=$tzChanged)',
+    );
+
+    // Always clear yesterday indexes (safe, local-only)
+    unawaited(ref.read(notificationIndexStoreProvider).clearAllForYesterday());
+
+    // Preconditions for reschedule
+    final isAuthenticated = ref.read(isAuthenticatedProvider);
+    final hasCompletedOnboarding = ref.read(hasCompletedOnboardingProvider);
+    final currentUser = ref.read(currentUserProvider);
+    final primaryPet = ref.read(primaryPetProvider);
+
+    if (isAuthenticated &&
+        hasCompletedOnboarding &&
+        currentUser != null &&
+        primaryPet != null) {
+      _debouncedReschedule(
+        userId: currentUser.id,
+        petId: primaryPet.id,
+        reason: trigger,
+      );
+    } else {
+      // Retry once shortly if not ready
+      _devLog('Preconditions not ready; retrying reschedule shortly');
+      Timer(const Duration(seconds: 3), () {
+        final auth2 = ref.read(isAuthenticatedProvider);
+        final onboard2 = ref.read(hasCompletedOnboardingProvider);
+        final user2 = ref.read(currentUserProvider);
+        final pet2 = ref.read(primaryPetProvider);
+        if (auth2 && onboard2 && user2 != null && pet2 != null) {
+          _debouncedReschedule(
+            userId: user2.id,
+            petId: pet2.id,
+            reason: '$trigger-retry',
+          );
+        } else {
+          _devLog(
+            'Preconditions still not ready; will rely on next lifecycle event',
+          );
+        }
+      });
+    }
+  }
+
+  void _debouncedReschedule({
+    required String userId,
+    required String petId,
+    required String reason,
+  }) {
+    _rescheduleDebounce?.cancel();
+    _rescheduleDebounce = Timer(const Duration(milliseconds: 350), () {
+      _runRescheduleFlow(userId: userId, petId: petId, reason: reason);
+    });
+  }
+
+  Future<void> _runRescheduleFlow({
+    required String userId,
+    required String petId,
+    required String reason,
+  }) async {
+    if (_isRescheduling) {
+      _devLog('Reschedule already in progress; skipping ($reason)');
+      return;
+    }
+    _isRescheduling = true;
+    try {
+      _devLog('Running rescheduleAll() due to $reason');
+      final result = await ref
+          .read(reminderServiceProvider)
+          .rescheduleAll(userId, petId, ref);
+      _devLog('Reschedule result: $result');
+
+      // Persist new state
+      final today = DateTime.now();
+      await _saveSchedulerState(
+        dateOnly: DateTime(today.year, today.month, today.day),
+        tzOffsetMinutes: _currentTzOffsetMinutes(),
+      );
+    } on Exception catch (e) {
+      _devLog('RescheduleAll failed: $e');
+      // Single small retry
+      await Future<void>.delayed(const Duration(seconds: 3));
+      try {
+        _devLog('Retrying rescheduleAll()');
+        final result = await ref
+            .read(reminderServiceProvider)
+            .rescheduleAll(userId, petId, ref);
+        _devLog('Reschedule retry result: $result');
+        final today = DateTime.now();
+        await _saveSchedulerState(
+          dateOnly: DateTime(today.year, today.month, today.day),
+          tzOffsetMinutes: _currentTzOffsetMinutes(),
+        );
+      } on Exception catch (e2, st2) {
+        _devLog('Reschedule retry failed: $e2');
+        if (!FlavorConfig.isDevelopment) {
+          unawaited(FirebaseService().crashlytics.recordError(e2, st2));
+        }
+      }
+    } finally {
+      _isRescheduling = false;
+    }
+  }
+
+  void _scheduleNextMidnightTimer() {
+    try {
+      _nextMidnightTimer?.cancel();
+
+      tz.TZDateTime now;
+      try {
+        now = tz.TZDateTime.now(tz.local);
+      } on Exception catch (_) {
+        final n = DateTime.now();
+        // Best-effort fallback: schedule for Dart DateTime midnight
+        final fallbackMidnight = DateTime(
+          n.year,
+          n.month,
+          n.day,
+        ).add(const Duration(days: 1));
+        final duration = fallbackMidnight.difference(n);
+        _nextMidnightTimer = Timer(duration, _onMidnightTimerFired);
+        _devLog('Scheduled fallback midnight timer in ${duration.inSeconds}s');
+        return;
+      }
+
+      final nextMidnight = tz.TZDateTime(
+        tz.local,
+        now.year,
+        now.month,
+        now.day,
+      ).add(const Duration(days: 1));
+      final duration = nextMidnight.difference(now);
+      _nextMidnightTimer = Timer(duration, _onMidnightTimerFired);
+      _devLog('Scheduled midnight timer in ${duration.inSeconds}s');
+    } on Exception catch (e) {
+      _devLog('Failed to schedule midnight timer: $e');
+    }
+  }
+
+  Future<void> _onMidnightTimerFired() async {
+    _devLog('Midnight timer fired');
+
+    // Always clear yesterday indexes
+    await ref.read(notificationIndexStoreProvider).clearAllForYesterday();
+
+    // If ready, reschedule all
+    final isAuthenticated = ref.read(isAuthenticatedProvider);
+    final hasCompletedOnboarding = ref.read(hasCompletedOnboardingProvider);
+    final currentUser = ref.read(currentUserProvider);
+    final primaryPet = ref.read(primaryPetProvider);
+
+    if (isAuthenticated &&
+        hasCompletedOnboarding &&
+        currentUser != null &&
+        primaryPet != null) {
+      await _runRescheduleFlow(
+        userId: currentUser.id,
+        petId: primaryPet.id,
+        reason: 'midnight',
+      );
+    } else {
+      _devLog(
+        'Midnight: preconditions not ready; will rely on resume/startup catch-up',
+      );
+    }
+
+    // Schedule next midnight again
+    _scheduleNextMidnightTimer();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLoading = ref.watch(authIsLoadingProvider);
@@ -937,19 +1220,40 @@ class _AppShellState extends ConsumerState<AppShell>
       });
     }
 
-    // Schedule weekly summary notification on app startup if enabled
+    // Schedule notifications on app startup (once per session)
     if (hasCompletedOnboarding &&
         isAuthenticated &&
         currentUser != null &&
-        primaryPet != null) {
+        primaryPet != null &&
+        !_hasScheduledNotifications) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        debugPrint('[AppShell] Scheduling weekly summary notification');
+        // Double-check flag in case multiple rebuilds happened
+        if (_hasScheduledNotifications) return;
+
+        // Mark as scheduled immediately to prevent duplicate scheduling
+        setState(() {
+          _hasScheduledNotifications = true;
+        });
+
+        debugPrint('[AppShell] Scheduling notifications for today');
         final reminderService = ref.read(reminderServiceProvider);
+
+        // Schedule treatment reminders for today (medication + fluid)
+        await reminderService.scheduleAllForToday(
+          currentUser.id,
+          primaryPet.id,
+          ref,
+        );
+
+        // Schedule weekly summary notification
+        debugPrint('[AppShell] Scheduling weekly summary notification');
         await reminderService.scheduleWeeklySummary(
           currentUser.id,
           primaryPet.id,
           ref,
         );
+
+        debugPrint('[AppShell] Notification scheduling complete');
       });
     }
 

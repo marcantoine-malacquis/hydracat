@@ -1688,14 +1688,78 @@ Implementation details:
 7. Offline create/update/delete → verify no crashes, reconciles on app resume
 8. Mixed scenarios → rapid create/update/delete sequences
 
-### Step 6.3: Lifecycle & midnight rollover
+### ✅ Step 6.3: Lifecycle & midnight rollover — COMPLETED
 Files:
-- `lib/app/app_shell.dart`
+- `lib/app/app_shell.dart` (modified)
+- `lib/features/notifications/services/reminder_service.dart` (extended)
 
 Implementation details:
-1) On app start: `ReminderService.scheduleAllForToday(userId, petId)` and schedule weekly/EOD if enabled.
-2) On app resume with date change: `ReminderService.rescheduleAll()` and re-evaluate weekly/EOD timers.
-3) At midnight, clear yesterday’s indexes (handled by provider or a lightweight once-per-day timer similar to existing cache invalidations).
+1) On app start: `ReminderService.scheduleAllForToday(userId, petId)` and `scheduleWeeklySummary()` once per session after auth + onboarding + pet are ready.
+2) On app resume with date or timezone change: detect change using persisted last-run date (`notif_last_scheduler_run_date`) and last tz offset (`notif_last_tz_offset_minutes`), then call `ReminderService.rescheduleAll()`; always run `NotificationIndexStore.clearAllForYesterday()` opportunistically (safe, local-only).
+3) At midnight: schedule a tz-aware one-shot timer to next local midnight using `tz.local`; on fire, clear yesterday’s indexes and call `rescheduleAll()` when ready, then schedule the next midnight timer again.
+
+**Implementation Summary:**
+- ✅ Startup scheduling: `scheduleAllForToday()` and `scheduleWeeklySummary()` gated by auth + onboarding + pet; session flag `_hasScheduledNotifications` prevents duplicates
+- ✅ Resume detection: persisted last-run date + tz offset; detects date/tz changes on startup and resume; guarded reschedule with debounce and single retry
+- ✅ Midnight rollover: tz-aware timer fires at next midnight; clears yesterday via `NotificationIndexStore.clearAllForYesterday()` and reschedules if ready; re-arms timer
+- ✅ Persistence: `SharedPreferences` keys `notif_last_scheduler_run_date`, `notif_last_tz_offset_minutes` (plus in-memory guards)
+- ✅ Guards: `_isRescheduling` in-progress flag, short debounce (~350ms), one retry (~3s) with Crashlytics in production
+- ✅ Fallbacks: if tz APIs unavailable, fallback to Dart `DateTime` midnight; cold-start catch-up runs same logic
+- ✅ No Firebase reads/writes added (local-only); follows offline-first requirement
+
+**Notes:**
+- Weekly summary maintenance is centralized in `ReminderService.rescheduleAll()` (cancels then re-schedules)
+- Logout cleanup supported via `ReminderService.cancelAllForToday()` (cancels today’s notifications, clears today index, cancels weekly)
+- All operations are idempotent and low-cost; resume/overnight cases are covered even after process death
+
+**⚠️ Critical Bug Fixed (2025-10-28):**
+
+**Issue**: Original implementation scheduled notifications on **every rebuild** (including all screen navigation), not just once on app startup.
+
+**Symptoms**:
+- `scheduleAllForToday()` called every time user navigated between screens
+- Group summary notification appeared immediately on every navigation
+- Logs flooded with "[AppShell] Scheduling notifications for today"
+- Only weekly summary visible in pending notifications (treatment reminders missed grace period due to repeated scheduling)
+
+**Root Cause**: Condition in `build()` method checked state without tracking if scheduling already occurred:
+```dart
+// ❌ BAD: Runs on every rebuild
+if (hasCompletedOnboarding && isAuthenticated && currentUser != null && primaryPet != null) {
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    await reminderService.scheduleAllForToday(...);  // Called repeatedly!
+  });
+}
+```
+
+**Fix Applied**: Added session-based flag to ensure one-time execution per app session:
+```dart
+// ✅ GOOD: Runs only once per app session
+bool _hasScheduledNotifications = false;
+
+if (hasCompletedOnboarding && isAuthenticated && currentUser != null && primaryPet != null
+    && !_hasScheduledNotifications) {
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    if (_hasScheduledNotifications) return;  // Double-check
+    setState(() { _hasScheduledNotifications = true; });  // Set immediately
+    await reminderService.scheduleAllForToday(...);
+  });
+}
+```
+
+**Files Modified**:
+- `lib/app/app_shell.dart:53` - Added `_hasScheduledNotifications` flag
+- `lib/app/app_shell.dart:949` - Added flag check to condition
+- `lib/app/app_shell.dart:951-957` - Added double-check and immediate flag setting
+- `lib/app/app_shell.dart:977` - Added completion log
+
+**Verification**: After hot restart, scheduling logs appear once only. Navigation no longer triggers scheduling. Group summary notification no longer appears immediately.
+
+**Lessons Learned**:
+1. Using `if` conditions in `build()` without state tracking causes repeated execution on every rebuild
+2. Navigation triggers rebuilds of AppShell, making this particularly problematic
+3. Session-based flags (reset on app restart) are appropriate for one-time app initialization tasks
+4. Double-checking the flag inside the callback prevents race conditions from multiple rapid rebuilds
 
 ---
 

@@ -274,8 +274,9 @@ class ReminderService {
 
       // Get all index entries for this schedule today
       final entries = await indexStore.getForToday(userId, petId);
-      final scheduleEntries =
-          entries.where((e) => e.scheduleId == scheduleId).toList();
+      final scheduleEntries = entries
+          .where((e) => e.scheduleId == scheduleId)
+          .toList();
 
       _devLog('Found ${scheduleEntries.length} notifications to cancel');
 
@@ -463,8 +464,11 @@ class ReminderService {
 
       // Cancel and reschedule weekly summary notification
       await cancelWeeklySummary(userId, petId, ref);
-      final weeklySummaryResult =
-          await scheduleWeeklySummary(userId, petId, ref);
+      final weeklySummaryResult = await scheduleWeeklySummary(
+        userId,
+        petId,
+        ref,
+      );
 
       _devLog(
         'Reconciliation complete: $orphansCanceled orphans canceled, '
@@ -582,7 +586,8 @@ class ReminderService {
         }
 
         // Extract time slot in "HH:mm" format
-        final timeSlot = '${reminderTime.hour.toString().padLeft(2, '0')}:'
+        final timeSlot =
+            '${reminderTime.hour.toString().padLeft(2, '0')}:'
             '${reminderTime.minute.toString().padLeft(2, '0')}';
 
         final result = await _scheduleNotificationForSlot(
@@ -1458,8 +1463,9 @@ class ReminderService {
       _devLog('Step 4: Checking if already scheduled...');
       final plugin = ref.read(reminderPluginProvider);
       final pendingNotifications = await plugin.pendingNotificationRequests();
-      final alreadyScheduled =
-          pendingNotifications.any((n) => n.id == notificationId);
+      final alreadyScheduled = pendingNotifications.any(
+        (n) => n.id == notificationId,
+      );
 
       if (alreadyScheduled) {
         _devLog('ℹ️ Weekly summary already scheduled (idempotent)');
@@ -1574,6 +1580,41 @@ class ReminderService {
       _devLog('❌ ERROR in cancelWeeklySummary: $e');
       _devLog('Stack trace: $stackTrace');
       return false;
+    }
+  }
+
+  /// Cancel all notifications for today for the given user/pet, including weekly summary.
+  ///
+  /// Used for logout cleanup to avoid stale notifications and indexes.
+  Future<void> cancelAllForToday(
+    String userId,
+    String petId,
+    WidgetRef ref,
+  ) async {
+    _devLog('cancelAllForToday called for userId=$userId, petId=$petId');
+    try {
+      final plugin = ref.read(reminderPluginProvider);
+      final indexStore = ref.read(notificationIndexStoreProvider);
+
+      // Cancel all indexed notifications for today
+      final entries = await indexStore.getForToday(userId, petId);
+      for (final entry in entries) {
+        try {
+          await plugin.cancel(entry.notificationId);
+        } on Exception catch (e) {
+          _devLog('Failed cancel id ${entry.notificationId}: $e');
+        }
+      }
+
+      // Clear today's index
+      await indexStore.clearForDate(userId, petId, DateTime.now());
+
+      // Cancel weekly summary notifications as well
+      await cancelWeeklySummary(userId, petId, ref);
+    } on Exception catch (e, stackTrace) {
+      _devLog('ERROR in cancelAllForToday: $e');
+      _devLog('Stack trace: $stackTrace');
+      // best-effort cleanup, do not throw
     }
   }
 
