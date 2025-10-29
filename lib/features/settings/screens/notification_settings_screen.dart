@@ -123,6 +123,7 @@ class _NotificationSettingsScreenState
                 ),
                 permissionStatusAsync.maybeWhen(
                   data: (permissionStatus) => Switch(
+                    key: const Key('notif_master_toggle'),
                     value: settings.enableNotifications,
                     onChanged: (value) => _handleToggleNotifications(
                       context,
@@ -143,6 +144,7 @@ class _NotificationSettingsScreenState
           // Helper text when master toggle disabled or no pet profile
           if (!canUseFeatures || noPetProfile) ...[
             Container(
+              key: const Key('notif_helper_banner'),
               padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
                 color: AppColors.warning.withValues(alpha: 0.1),
@@ -215,6 +217,7 @@ class _NotificationSettingsScreenState
 
           // Privacy Policy section
           InkWell(
+            key: const Key('notif_privacy_row'),
             onTap: () => _handlePrivacyPolicyTap(context, ref),
             child: Container(
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -392,6 +395,11 @@ class _NotificationSettingsScreenState
                 IgnorePointer(
                   ignoring: !isEnabled,
                   child: Switch(
+                    key: label.contains('Weekly')
+                        ? const Key('notif_weekly_toggle')
+                        : label.contains('Snooze')
+                            ? const Key('notif_snooze_toggle')
+                            : null,
                     value: value,
                     onChanged: onChanged,
                   ),

@@ -74,6 +74,7 @@ class NotificationStatusWidget extends ConsumerWidget {
         }
 
         return IconButton(
+          key: const Key('notif_bell'),
           icon: Icon(icon, size: 20, color: iconColor),
           tooltip: tooltip,
           onPressed: () => _handleTap(context, ref, isEnabled),
