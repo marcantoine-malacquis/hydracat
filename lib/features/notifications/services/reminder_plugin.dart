@@ -340,7 +340,8 @@ class ReminderPlugin implements ReminderPluginInterface {
       // Register category with plugin
       await _plugin!
           .resolvePlatformSpecificImplementation<
-              IOSFlutterLocalNotificationsPlugin>()
+            IOSFlutterLocalNotificationsPlugin
+          >()
           ?.initialize(
             DarwinInitializationSettings(
               requestAlertPermission: false,
@@ -561,20 +562,21 @@ class ReminderPlugin implements ReminderPluginInterface {
       // Generate deterministic ID for summary (hash of "summary_{petId}")
       final summaryId = 'summary_$petId'.hashCode.abs() & 0x7FFFFFFF;
 
-      // Build summary body
+      // Build summary title/body using localized strings
+      final l10n = _getLocalizations();
+
+      // Title
+      final title = l10n.notificationGroupSummaryTitle(petName);
+
+      // Body
       String body;
       if (medicationCount > 0 && fluidCount == 0) {
-        final plural = medicationCount == 1 ? 'reminder' : 'reminders';
-        body = '$medicationCount medication $plural';
+        body = l10n.notificationGroupSummaryMedicationOnly(medicationCount);
       } else if (medicationCount == 0 && fluidCount > 0) {
-        final plural = fluidCount == 1 ? 'reminder' : 'reminders';
-        body = '$fluidCount fluid therapy $plural';
+        body = l10n.notificationGroupSummaryFluidOnly(fluidCount);
       } else if (medicationCount > 0 && fluidCount > 0) {
-        final medPlural = medicationCount == 1 ? 'medication' : 'medications';
-        final fluidPlural = fluidCount == 1
-            ? 'fluid therapy'
-            : 'fluid therapies';
-        body = '$medicationCount $medPlural, $fluidCount $fluidPlural';
+        // Signature is (fluidCount, medCount) in generated l10n
+        body = l10n.notificationGroupSummaryBoth(fluidCount, medicationCount);
       } else {
         // No notifications, don't show summary
         _devLog('No notifications for pet $petId, skipping group summary');
@@ -584,7 +586,7 @@ class ReminderPlugin implements ReminderPluginInterface {
       // Show summary notification
       await _plugin!.show(
         summaryId,
-        "$petName's Reminders",
+        title,
         body,
         NotificationDetails(
           android: AndroidNotificationDetails(
@@ -734,6 +736,19 @@ class ReminderPlugin implements ReminderPluginInterface {
   /// return lookupAppLocalizations(locale);
   /// ```
   AppLocalizations _getLocalizations() {
+    // Resolve device locale with safe fallbacks
+    try {
+      final deviceLocale = WidgetsBinding.instance.platformDispatcher.locale;
+
+      try {
+        return lookupAppLocalizations(deviceLocale);
+      } on Exception catch (_) {}
+
+      try {
+        return lookupAppLocalizations(Locale(deviceLocale.languageCode));
+      } on Exception catch (_) {}
+    } on Exception catch (_) {}
+
     return lookupAppLocalizations(const Locale('en'));
   }
 

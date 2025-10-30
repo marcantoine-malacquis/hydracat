@@ -1,7 +1,6 @@
 import 'dart:convert';
-import 'dart:ui';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/features/notifications/models/scheduled_notification_entry.dart';
@@ -1845,6 +1844,28 @@ class ReminderService {
   /// return lookupAppLocalizations(locale);
   /// ```
   AppLocalizations _getLocalizations() {
+    // Resolve device locale with safe fallbacks
+    try {
+      final deviceLocale = WidgetsBinding.instance.platformDispatcher.locale;
+
+      // Try full locale first (e.g., en_US)
+      try {
+        return lookupAppLocalizations(deviceLocale);
+      } on Exception catch (_) {
+        // fall through to languageCode-only attempt
+      }
+
+      // Try language-only locale (e.g., en)
+      try {
+        return lookupAppLocalizations(Locale(deviceLocale.languageCode));
+      } on Exception catch (_) {
+        // fall through to English fallback
+      }
+    } on Exception catch (_) {
+      // If platformDispatcher is not available, fallback to English
+    }
+
+    // Final fallback: English
     return lookupAppLocalizations(const Locale('en'));
   }
 

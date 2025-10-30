@@ -2060,18 +2060,41 @@ Files:
 
 ## Phase 9: Performance & Reliability
 
-### Step 9.1: Idempotency
+### ✅ Step 9.1: Idempotency — COMPLETED
 Implementation details:
-1) Deterministic IDs + index reconciliation make repeated scheduling safe.
+1) Deterministic IDs ensure the same inputs always produce the same notification ID, preventing duplicates on repeat runs (`lib/features/notifications/utils/notification_id.dart`).
+2) Index is updated idempotently: `putEntry()` overwrites existing entries with the same ID, and precise removal uses scheduleId/timeSlot/kind (`lib/features/notifications/services/notification_index_store.dart`).
+3) Full reconciliation flow cancels orphans, clears today’s index, and rebuilds from cached schedules via `scheduleAllForToday()` (`lib/features/notifications/services/reminder_service.dart#rescheduleAll`).
+4) Weekly summary uses deterministic IDs and is canceled/re-scheduled during reconciliation for consistency (`reminder_service.dart`, `reminder_plugin.dart`).
 
-### Step 9.2: Minimal Firestore usage
-Implementation details:
-1) Use only cached schedules; no reads for reminders.
-2) Token writes throttled; no Cloud Functions in V1.
+Status:
+- Safe to call scheduling/cancel/reschedule multiple times without creating duplicates or drift.
 
-### Step 9.3: Localization & content
+### ✅ Step 9.2: Minimal Firestore usage — COMPLETED
 Implementation details:
-1) All strings in l10n ARB; lock-screen text neutral; include pet name and treatment specifics in non-sensitive contexts.
+1) Scheduling is cache-only (no Firestore reads at scheduling time): `ReminderService` reads schedules from `profileProvider` cache and skips when cache is empty. Deterministic IDs + local `NotificationIndexStore` ensure idempotency and reconciliation without cloud access.
+2) Token writes are throttled and minimized: `DeviceTokenService.registerDevice()` uses a 6-hour throttle window and skips Firestore writes when the FCM token is unchanged; writes use `SetOptions(merge: true)` to avoid full overwrites.
+3) No Cloud Functions in V1: Device registration only writes to `devices/{deviceId}`; push re-engagement and cross-device sync are explicitly out of scope for V1.
+4) Weekly Summary also avoids Firestore reads: It uses cached settings/providers and deterministic IDs; content is generic and requires no data fetch at delivery.
+
+Files of record:
+- `lib/features/notifications/services/reminder_service.dart` (cache-only scheduling, idempotent rescheduling)
+- `lib/features/notifications/services/notification_index_store.dart` (SharedPreferences-only index, reconciliation)
+- `lib/features/notifications/services/device_token_service.dart` (throttled writes, token-change detection, merge writes)
+
+Cost impact:
+- 0 Firestore reads for scheduling, rescheduling, tap handling, and weekly summaries
+- Sparse Firestore writes for device registration only, throttled and deduplicated
+
+### ✅ Step 9.3: Localization & content — COMPLETED
+Implementation details:
+1) Notification content is sourced from l10n ARB and is privacy‑first (generic lock‑screen text with pet name only). Titles/bodies for medication, fluid, follow‑up, snooze, and weekly summary are used directly from localizations.
+2) Notification action labels ("Log now", "Snooze 15 min") are localized and applied on both iOS categories and Android actions.
+
+Implementation notes (2025-10-30):
+- `_getLocalizations()` updated in `ReminderService` and `ReminderPlugin` to resolve runtime locale via `platformDispatcher.locale` with fallbacks to language-only and English.
+- `ReminderPlugin.showGroupSummary()` now uses l10n keys: `notificationGroupSummaryTitle`, `notificationGroupSummaryMedicationOnly`, `notificationGroupSummaryFluidOnly`, and `notificationGroupSummaryBoth` (ICU plurals).
+- Added focused tests in `test/features/notifications/l10n_group_summary_test.dart` verifying pluralization and title formatting.
 
 ---
 
