@@ -9,9 +9,10 @@
 Primary Focus Areas:
 1. Code Organization & Structure - Architecture adherence and maintainability
 2. Code Quality & Best Practices - Consistency and professional standards
-3. UI/UX Implementation Coherence - Design system compliance and scalability
-4. Firebase Integration Standards - Cost optimization and performance
-5. Built-in vs Custom Solutions - Preference for scalable, maintained solutions over custom implementations
+3. Naming Conventions - Semantic naming rules compliance for identifiers
+4. UI/UX Implementation Coherence - Design system compliance and scalability
+5. Firebase Integration Standards - Cost optimization and performance
+6. Built-in vs Custom Solutions - Preference for scalable, maintained solutions over custom implementations
 
   🎯 Reference Documents Analysis
 
@@ -19,6 +20,7 @@ Primary Focus Areas:
   - @.cursor/reference/prd.md - Product requirements and feature specifications
   - @.cursor/rules/firebase_CRUDrules.md - Firebase cost optimization guidelines
   - @.cursor/rules/ui_guidelines.md - Design system and UI/UX standards
+  - @.cursor/code reviews/semantic_rules.md - Naming conventions and semantic rules
 
   🔬 Detailed Analysis Requirements
 
@@ -34,7 +36,15 @@ components
 - Built-in Solution Preference: Verify usage of Flutter/Dart built-ins, established packages,
 and platform-native features over custom implementations where applicable
 
-  2. Firebase Implementation Compliance
+  2. Naming Conventions Compliance
+  
+  - Boolean Variables: Check all boolean getters/variables use proper prefixes (is, has, should, can, was)
+  - Method Names: Verify async methods use clear action verbs (get, fetch, save, update, delete)
+  - Variable Naming: Identify generic names (data, value, temp, flag) that need context-specific replacements
+  - Consistency Patterns: Check for naming consistency within files and across related methods
+  - Serialization Patterns: Verify proper suffixes for data transfer (*Data, *Payload, *Json, *Map)
+
+  3. Firebase Implementation Compliance
 
   - Query Optimization: Check for proper .limit(), pagination, and .where() usage
   - Caching Strategies: Verify aggressive caching patterns for single-pet optimization
@@ -43,7 +53,7 @@ and platform-native features over custom implementations where applicable
   - Summary Document Usage: Check for pre-aggregated analytics instead of full-history
   fetches
 
-  3. UI/UX Design System Adherence
+  4. UI/UX Design System Adherence
 
   - Color Palette Consistency: Verify proper usage of defined color tokens (#6BB8A8
   primary, etc.)
@@ -54,14 +64,14 @@ and platform-native features over custom implementations where applicable
   - Accessibility Standards: Verify touch targets (44px minimum) and contrast ratios
   (4.5:1)
 
-  4. Feature-Specific PRD Compliance
+  5. Feature-Specific PRD Compliance
 
   - Treatment Approach Logic: Verify fluid therapy vs. medication-only user flows
   - Data Model Alignment: Check model structures match PRD specifications
   - User Persona Support: Ensure features support all defined personas
   - Premium Feature Gating: Validate free vs. premium feature boundaries
 
-5. Developer Experience & Scalability
+6. Developer Experience & Scalability
 
 - Import Pattern Consistency: Check for uniform import conventions across features
 - Documentation Coverage: Verify comprehensive code comments and documentation
@@ -96,6 +106,11 @@ custom implementations to reduce maintenance burden and improve reliability
   ### Theme: [e.g., "UI/UX Inconsistencies"]
   - Issues ordered by scaling impact
   - Specific file locations and recommendations
+  
+  ### Theme: [e.g., "Naming Convention Violations"]
+  - Boolean variables missing required prefixes
+  - Generic variable names needing context
+  - Method names lacking clarity
 
   ## 🟢 Minor Improvements
   ### Theme: [e.g., "Code Quality Enhancements"]
@@ -116,6 +131,7 @@ custom implementations to reduce maintenance burden and improve reliability
 
 The analysis should identify:
 - ✅ All architectural pattern deviations that could confuse new developers
+- ✅ Naming convention violations that reduce code clarity and searchability
 - ✅ Firebase usage patterns that could cause cost scaling issues
 - ✅ UI/UX implementation gaps that break design system coherence
 - ✅ Feature implementations that deviate from PRD specifications
