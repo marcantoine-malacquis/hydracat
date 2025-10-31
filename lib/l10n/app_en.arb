@@ -556,6 +556,88 @@
       }
     }
   },
+
+  "@_NOTIFICATIONS_A11Y": {},
+  "notificationMedicationTitleA11y": "Treatment reminder: Medication for {petName}",
+  "@notificationMedicationTitleA11y": {
+    "description": "Accessible long-form title for medication reminders",
+    "placeholders": {
+      "petName": {
+        "type": "String",
+        "example": "Fluffy"
+      }
+    }
+  },
+  "notificationMedicationBodyA11y": "It's time to give {petName} their medication.",
+  "@notificationMedicationBodyA11y": {
+    "description": "Accessible long-form body for medication reminders",
+    "placeholders": {
+      "petName": {
+        "type": "String",
+        "example": "Fluffy"
+      }
+    }
+  },
+  "notificationFluidTitleA11y": "Treatment reminder: Fluid therapy for {petName}",
+  "@notificationFluidTitleA11y": {
+    "description": "Accessible long-form title for fluid therapy reminders",
+    "placeholders": {
+      "petName": {
+        "type": "String",
+        "example": "Fluffy"
+      }
+    }
+  },
+  "notificationFluidBodyA11y": "It's time to give {petName} their fluid therapy.",
+  "@notificationFluidBodyA11y": {
+    "description": "Accessible long-form body for fluid therapy reminders",
+    "placeholders": {
+      "petName": {
+        "type": "String",
+        "example": "Fluffy"
+      }
+    }
+  },
+  "notificationFollowupTitleA11y": "Treatment reminder for {petName}",
+  "@notificationFollowupTitleA11y": {
+    "description": "Accessible long-form title for follow-up reminders",
+    "placeholders": {
+      "petName": {
+        "type": "String",
+        "example": "Fluffy"
+      }
+    }
+  },
+  "notificationFollowupBodyA11y": "{petName} may still need their treatment.",
+  "@notificationFollowupBodyA11y": {
+    "description": "Accessible long-form body for follow-up reminders",
+    "placeholders": {
+      "petName": {
+        "type": "String",
+        "example": "Fluffy"
+      }
+    }
+  },
+  "notificationSnoozeTitleA11y": "Treatment reminder for {petName} (snoozed)",
+  "@notificationSnoozeTitleA11y": {
+    "description": "Accessible long-form title for snoozed reminders",
+    "placeholders": {
+      "petName": {
+        "type": "String",
+        "example": "Fluffy"
+      }
+    }
+  },
+  "notificationSnoozeBodyA11y": "It's time to give {petName} their treatment.",
+  "@notificationSnoozeBodyA11y": {
+    "description": "Accessible long-form body for snoozed reminders",
+    "placeholders": {
+      "petName": {
+        "type": "String",
+        "example": "Fluffy"
+      }
+    }
+  },
   "notificationWeeklySummaryTitle": "Your weekly summary is ready!",
   "@notificationWeeklySummaryTitle": {
     "description": "Title for weekly treatment summary notification (Monday 09:00)"
@@ -584,13 +666,13 @@
   },
 
   "@_NOTIFICATION_ACTIONS": {},
-  "notificationActionLogNow": "Log now",
+  "notificationActionLogNow": "Log treatment now",
   "@notificationActionLogNow": {
-    "description": "Text for notification action button to log treatment immediately"
+    "description": "Text for notification action button to log treatment immediately. Used by screen readers (VoiceOver/TalkBack) to announce the action."
   },
-  "notificationActionSnooze": "Snooze 15 min",
+  "notificationActionSnooze": "Snooze for 15 minutes",
   "@notificationActionSnooze": {
-    "description": "Text for notification action button to snooze reminder for 15 minutes"
+    "description": "Text for notification action button to snooze reminder for 15 minutes. Used by screen readers (VoiceOver/TalkBack) to announce the action."
   },
 
   "@_NOTIFICATION_DEEP_LINK": {},
@@ -856,4 +938,19 @@
   "@notificationReconciliationFailedToast": {
     "description": "Toast message shown when reconciliation fails (currently unused, reserved for future UI)"
   }
+  ,
+  "@_A11Y_SETTINGS": {},
+  "a11yOn": "on",
+  "a11yOff": "off",
+  "a11yNotifMasterLabel": "Enable notifications",
+  "a11yNotifMasterHint": "Turns all notification features on or off",
+  "a11yWeeklySummaryLabel": "Weekly summary notifications",
+  "a11yWeeklySummaryHint": "Sends a summary every Monday at 9 a.m.",
+  "a11ySnoozeLabel": "Snooze reminders",
+  "a11ySnoozeHint": "Allows snoozing a reminder for 15 minutes",
+  "a11yOpenSystemSettingsLabel": "Open system notification settings",
+  "a11yOpenSystemSettingsHint": "Opens the device settings to manage notification permission",
+  "a11ySettingsHeaderNotifications": "Notifications",
+  "a11ySettingsHeaderReminderFeatures": "Reminder features",
+  "a11ySettingsHeaderPrivacyAndData": "Privacy & data"
 }

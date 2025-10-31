@@ -1480,6 +1480,54 @@ abstract class AppLocalizations {
   /// **'Time for {petName}\'s treatment'**
   String notificationSnoozeBody(String petName);
 
+  /// Accessible long-form title for medication reminders
+  ///
+  /// In en, this message translates to:
+  /// **'Treatment reminder: Medication for {petName}'**
+  String notificationMedicationTitleA11y(String petName);
+
+  /// Accessible long-form body for medication reminders
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s time to give {petName} their medication.'**
+  String notificationMedicationBodyA11y(String petName);
+
+  /// Accessible long-form title for fluid therapy reminders
+  ///
+  /// In en, this message translates to:
+  /// **'Treatment reminder: Fluid therapy for {petName}'**
+  String notificationFluidTitleA11y(String petName);
+
+  /// Accessible long-form body for fluid therapy reminders
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s time to give {petName} their fluid therapy.'**
+  String notificationFluidBodyA11y(String petName);
+
+  /// Accessible long-form title for follow-up reminders
+  ///
+  /// In en, this message translates to:
+  /// **'Treatment reminder for {petName}'**
+  String notificationFollowupTitleA11y(String petName);
+
+  /// Accessible long-form body for follow-up reminders
+  ///
+  /// In en, this message translates to:
+  /// **'{petName} may still need their treatment.'**
+  String notificationFollowupBodyA11y(String petName);
+
+  /// Accessible long-form title for snoozed reminders
+  ///
+  /// In en, this message translates to:
+  /// **'Treatment reminder for {petName} (snoozed)'**
+  String notificationSnoozeTitleA11y(String petName);
+
+  /// Accessible long-form body for snoozed reminders
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s time to give {petName} their treatment.'**
+  String notificationSnoozeBodyA11y(String petName);
+
   /// Title for weekly treatment summary notification (Monday 09:00)
   ///
   /// In en, this message translates to:
@@ -1516,16 +1564,16 @@ abstract class AppLocalizations {
   /// **'{medCount, plural, =1{1 medication} other{{medCount} medications}}, {fluidCount, plural, =1{1 fluid therapy} other{{fluidCount} fluid therapies}}'**
   String notificationGroupSummaryBoth(num fluidCount, num medCount);
 
-  /// Text for notification action button to log treatment immediately
+  /// Text for notification action button to log treatment immediately. Used by screen readers (VoiceOver/TalkBack) to announce the action.
   ///
   /// In en, this message translates to:
-  /// **'Log now'**
+  /// **'Log treatment now'**
   String get notificationActionLogNow;
 
-  /// Text for notification action button to snooze reminder for 15 minutes
+  /// Text for notification action button to snooze reminder for 15 minutes. Used by screen readers (VoiceOver/TalkBack) to announce the action.
   ///
   /// In en, this message translates to:
-  /// **'Snooze 15 min'**
+  /// **'Snooze for 15 minutes'**
   String get notificationActionSnooze;
 
   /// Message shown when user taps notification but is not authenticated
@@ -1857,6 +1905,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Some reminders couldn\'t be restored. Check your notification settings.'**
   String get notificationReconciliationFailedToast;
+
+  /// No description provided for @a11yOn.
+  ///
+  /// In en, this message translates to:
+  /// **'on'**
+  String get a11yOn;
+
+  /// No description provided for @a11yOff.
+  ///
+  /// In en, this message translates to:
+  /// **'off'**
+  String get a11yOff;
+
+  /// No description provided for @a11yNotifMasterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable notifications'**
+  String get a11yNotifMasterLabel;
+
+  /// No description provided for @a11yNotifMasterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Turns all notification features on or off'**
+  String get a11yNotifMasterHint;
+
+  /// No description provided for @a11yWeeklySummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly summary notifications'**
+  String get a11yWeeklySummaryLabel;
+
+  /// No description provided for @a11yWeeklySummaryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sends a summary every Monday at 9 a.m.'**
+  String get a11yWeeklySummaryHint;
+
+  /// No description provided for @a11ySnoozeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze reminders'**
+  String get a11ySnoozeLabel;
+
+  /// No description provided for @a11ySnoozeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows snoozing a reminder for 15 minutes'**
+  String get a11ySnoozeHint;
+
+  /// No description provided for @a11yOpenSystemSettingsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open system notification settings'**
+  String get a11yOpenSystemSettingsLabel;
+
+  /// No description provided for @a11yOpenSystemSettingsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens the device settings to manage notification permission'**
+  String get a11yOpenSystemSettingsHint;
+
+  /// No description provided for @a11ySettingsHeaderNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get a11ySettingsHeaderNotifications;
+
+  /// No description provided for @a11ySettingsHeaderReminderFeatures.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder features'**
+  String get a11ySettingsHeaderReminderFeatures;
+
+  /// No description provided for @a11ySettingsHeaderPrivacyAndData.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy & data'**
+  String get a11ySettingsHeaderPrivacyAndData;
 }
 
 class _AppLocalizationsDelegate

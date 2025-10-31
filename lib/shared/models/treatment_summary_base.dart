@@ -124,7 +124,7 @@ abstract class TreatmentSummaryBase {
   /// Whether all scheduled medications were completed
   ///
   /// True when `medicationMissedCount == 0` and at least one dose scheduled.
-  bool get allMedicationsCompleted =>
+  bool get hasCompletedAllMedications =>
       medicationScheduledDoses > 0 && medicationMissedCount == 0;
 
   /// Whether any medications were missed

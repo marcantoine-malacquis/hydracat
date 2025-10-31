@@ -1032,25 +1032,26 @@ class ReminderService {
   }) {
     final l10n = _getLocalizations();
 
+    // Prefer A11y long-form strings with petName
     if (kind == 'initial') {
       if (treatmentType == 'medication') {
         return {
-          'title': l10n.notificationMedicationTitle,
-          'body': l10n.notificationMedicationBody(petName),
+          'title': l10n.notificationMedicationTitleA11y(petName),
+          'body': l10n.notificationMedicationBodyA11y(petName),
           'channelId': 'medication_reminders',
         };
       } else {
         // fluid
         return {
-          'title': l10n.notificationFluidTitle,
-          'body': l10n.notificationFluidBody(petName),
+          'title': l10n.notificationFluidTitleA11y(petName),
+          'body': l10n.notificationFluidBodyA11y(petName),
           'channelId': 'fluid_reminders',
         };
       }
     } else if (kind == 'followup') {
       return {
-        'title': l10n.notificationFollowupTitle,
-        'body': l10n.notificationFollowupBody(petName),
+        'title': l10n.notificationFollowupTitleA11y(petName),
+        'body': l10n.notificationFollowupBodyA11y(petName),
         'channelId': treatmentType == 'medication'
             ? 'medication_reminders'
             : 'fluid_reminders',
@@ -1058,8 +1059,8 @@ class ReminderService {
     } else {
       // snooze
       return {
-        'title': l10n.notificationSnoozeTitle,
-        'body': l10n.notificationSnoozeBody(petName),
+        'title': l10n.notificationSnoozeTitleA11y(petName),
+        'body': l10n.notificationSnoozeBodyA11y(petName),
         'channelId': treatmentType == 'medication'
             ? 'medication_reminders'
             : 'fluid_reminders',

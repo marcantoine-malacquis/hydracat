@@ -1258,10 +1258,12 @@ class _AppShellState extends ConsumerState<AppShell>
     final currentLocation = GoRouterState.of(context).uri.path;
     final isInOnboardingFlow = currentLocation.startsWith('/onboarding');
     final isOverlayVisible = OverlayService.isShowingNotifier.value;
-    final isInProfileEditScreens = [
+    final shouldHideNavBar = [
       '/profile/settings',
+      '/profile/settings/notifications',
       '/profile/ckd',
       '/profile/fluid',
+      '/profile/fluid/create',
       '/profile/medication',
     ].contains(currentLocation);
 
@@ -1393,10 +1395,10 @@ class _AppShellState extends ConsumerState<AppShell>
           ),
         ],
       ),
-      // Hide bottom navigation during onboarding flow and on profile
-      // edit screens
+      // Hide bottom navigation during onboarding flow, on full-screen
+      // profile/settings screens, and when overlay is visible
       bottomNavigationBar:
-          (isInOnboardingFlow || isInProfileEditScreens || isOverlayVisible)
+          (isInOnboardingFlow || shouldHideNavBar || isOverlayVisible)
           ? null
           : HydraNavigationBar(
               items: _navigationItems,

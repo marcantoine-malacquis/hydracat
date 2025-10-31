@@ -167,15 +167,16 @@ class SummaryService {
         return null;
       }
 
-      final data = docSnapshot.data();
-      if (data == null) {
+      final dailySummaryData = docSnapshot.data();
+      if (dailySummaryData == null) {
         if (kDebugMode) {
           debugPrint('[SummaryService] Daily summary data is null');
         }
         return null;
       }
 
-      final summary = DailySummary.fromJson(data as Map<String, dynamic>);
+      final summary =
+          DailySummary.fromJson(dailySummaryData as Map<String, dynamic>);
       _dailyMemCache[key] = (_CacheClock(DateTime.now()), summary);
       return summary;
     } on FirebaseException catch (e) {
@@ -245,15 +246,16 @@ class SummaryService {
         return null;
       }
 
-      final data = docSnapshot.data();
-      if (data == null) {
+      final weeklySummaryData = docSnapshot.data();
+      if (weeklySummaryData == null) {
         if (kDebugMode) {
           debugPrint('[SummaryService] Weekly summary data is null');
         }
         return null;
       }
 
-      final summary = WeeklySummary.fromJson(data as Map<String, dynamic>);
+      final summary =
+          WeeklySummary.fromJson(weeklySummaryData as Map<String, dynamic>);
       _weeklyMemCache[key] = (_CacheClock(DateTime.now()), summary);
       return summary;
     } on FirebaseException catch (e) {
@@ -322,15 +324,16 @@ class SummaryService {
         return null;
       }
 
-      final data = docSnapshot.data();
-      if (data == null) {
+      final monthlySummaryData = docSnapshot.data();
+      if (monthlySummaryData == null) {
         if (kDebugMode) {
           debugPrint('[SummaryService] Monthly summary data is null');
         }
         return null;
       }
 
-      final summary = MonthlySummary.fromJson(data as Map<String, dynamic>);
+      final summary =
+          MonthlySummary.fromJson(monthlySummaryData as Map<String, dynamic>);
       _monthlyMemCache[key] = (_CacheClock(DateTime.now()), summary);
       return summary;
     } on FirebaseException catch (e) {

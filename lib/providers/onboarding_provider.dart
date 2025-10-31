@@ -189,11 +189,11 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
         // Get current progress and data directly from service
         // (stream update might not have fired yet)
         final progress = _onboardingService.currentProgress;
-        final data = _onboardingService.currentData;
+        final onboardingData = _onboardingService.currentData;
 
         state = state.copyWith(
           progress: progress,
-          data: data,
+          data: onboardingData,
           isLoading: false,
           isActive: true,
         );

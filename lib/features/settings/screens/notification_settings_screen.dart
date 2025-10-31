@@ -38,8 +38,9 @@ class _NotificationSettingsScreenState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final currentUser = ref.watch(currentUserProvider);
-    final permissionStatusAsync =
-        ref.watch(notificationPermissionStatusProvider);
+    final permissionStatusAsync = ref.watch(
+      notificationPermissionStatusProvider,
+    );
 
     // Should not happen in normal flow (requires auth)
     if (currentUser == null) {
@@ -84,6 +85,12 @@ class _NotificationSettingsScreenState
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
+          // A11y: Section header - Notifications
+          Semantics(
+            header: true,
+            label: l10n.a11ySettingsHeaderNotifications,
+            child: const SizedBox.shrink(),
+          ),
           // Permission status card
           permissionStatusAsync.when(
             data: (permissionStatus) =>
@@ -99,43 +106,49 @@ class _NotificationSettingsScreenState
           const SizedBox(height: AppSpacing.lg),
 
           // Master toggle section
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline,
+          Semantics(
+            label: l10n.a11yNotifMasterLabel,
+            value: settings.enableNotifications ? l10n.a11yOn : l10n.a11yOff,
+            hint: l10n.a11yNotifMasterHint,
+            toggled: settings.enableNotifications,
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
               ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.notifications,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    l10n.notificationSettingsEnableToggleLabel,
-                    style: AppTextStyles.body,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.notifications,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
-                ),
-                permissionStatusAsync.maybeWhen(
-                  data: (permissionStatus) => Switch(
-                    key: const Key('notif_master_toggle'),
-                    value: settings.enableNotifications,
-                    onChanged: (value) => _handleToggleNotifications(
-                      context,
-                      ref,
-                      value,
-                      permissionStatus,
-                      currentUser.id,
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      l10n.notificationSettingsEnableToggleLabel,
+                      style: AppTextStyles.body,
                     ),
                   ),
-                  orElse: () => const Switch(value: false, onChanged: null),
-                ),
-              ],
+                  permissionStatusAsync.maybeWhen(
+                    data: (permissionStatus) => Switch(
+                      key: const Key('notif_master_toggle'),
+                      value: settings.enableNotifications,
+                      onChanged: (value) => _handleToggleNotifications(
+                        context,
+                        ref,
+                        value,
+                        permissionStatus,
+                        currentUser.id,
+                      ),
+                    ),
+                    orElse: () => const Switch(value: false, onChanged: null),
+                  ),
+                ],
+              ),
             ),
           ),
 
@@ -159,15 +172,22 @@ class _NotificationSettingsScreenState
                   ),
                   const SizedBox(width: AppSpacing.xs),
                   Expanded(
-                    child: Text(
-                      noPetProfile
-                          ? l10n
-                              .notificationSettingsFeatureRequiresPetProfile
-                          : l10n
-                              .notificationSettingsFeatureRequiresMasterToggle,
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                    child: Builder(
+                      builder: (context) {
+                        final requiresPet =
+                            l10n.notificationSettingsFeatureRequiresPetProfile;
+                        final requiresMaster = l10n
+                            .notificationSettingsFeatureRequiresMasterToggle;
+                        final helperText = noPetProfile
+                            ? requiresPet
+                            : requiresMaster;
+                        return Text(
+                          helperText,
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -175,6 +195,13 @@ class _NotificationSettingsScreenState
             ),
             const SizedBox(height: AppSpacing.md),
           ],
+
+          // A11y: Section header - Reminder features
+          Semantics(
+            header: true,
+            label: l10n.a11ySettingsHeaderReminderFeatures,
+            child: const SizedBox.shrink(),
+          ),
 
           // Weekly Summary toggle section
           _buildToggleSection(
@@ -214,6 +241,13 @@ class _NotificationSettingsScreenState
           ),
 
           const SizedBox(height: AppSpacing.xl),
+
+          // A11y: Section header - Privacy & data
+          Semantics(
+            header: true,
+            label: l10n.a11ySettingsHeaderPrivacyAndData,
+            child: const SizedBox.shrink(),
+          ),
 
           // Privacy Policy section
           InkWell(
@@ -276,20 +310,23 @@ class _NotificationSettingsScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  l10n.notificationSettingsDataManagementTitle,
-                  style: AppTextStyles.h3,
+                Semantics(
+                  header: true,
+                  child: Text(
+                    l10n.notificationSettingsDataManagementTitle,
+                    style: AppTextStyles.h3,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 InkWell(
                   onTap: noPetProfile
                       ? null
                       : () => _handleClearData(
-                            context,
-                            ref,
-                            currentUser.id,
-                            petId,
-                          ),
+                          context,
+                          ref,
+                          currentUser.id,
+                          petId,
+                        ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       vertical: AppSpacing.xs,
@@ -349,74 +386,105 @@ class _NotificationSettingsScreenState
     // ignore: avoid_positional_boolean_parameters
     required Future<void> Function(bool) onChanged,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: isEnabled
-            ? Theme.of(context).colorScheme.surface
-            : Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isEnabled
-              ? Theme.of(context).colorScheme.outline
-              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                icon,
-                color: isEnabled
-                    ? Theme.of(context).colorScheme.primary
-                    : AppColors.textSecondary,
-                size: 24,
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  label,
-                  style: AppTextStyles.body.copyWith(
-                    color: isEnabled
-                        ? AppColors.textPrimary
-                        : AppColors.textSecondary,
+    return Semantics(
+      label: label == l10n.notificationSettingsWeeklySummaryLabel
+          ? l10n.a11yWeeklySummaryLabel
+          : l10n.a11ySnoozeLabel,
+      value: value ? l10n.a11yOn : l10n.a11yOff,
+      hint: () {
+        final baseHint = label == l10n.notificationSettingsWeeklySummaryLabel
+            ? l10n.a11yWeeklySummaryHint
+            : l10n.a11ySnoozeHint;
+        if (!isEnabled) {
+          // Provide context-aware reason when disabled
+          if (label == l10n.notificationSettingsWeeklySummaryLabel) {
+            final notifEnabled = ref
+                .read(
+                  notificationSettingsProvider(
+                    ref.read(currentUserProvider)!.id,
                   ),
-                ),
-              ),
-              if (isLoading)
-                const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              else
-                IgnorePointer(
-                  ignoring: !isEnabled,
-                  child: Switch(
-                    key: label.contains('Weekly')
-                        ? const Key('notif_weekly_toggle')
-                        : label.contains('Snooze')
-                            ? const Key('notif_snooze_toggle')
-                            : null,
-                    value: value,
-                    onChanged: onChanged,
+                .enableNotifications;
+            final requirement = notifEnabled
+                ? l10n.notificationSettingsFeatureRequiresPetProfile
+                : l10n.notificationSettingsFeatureRequiresMasterToggle;
+            return '$baseHint. $requirement';
+          }
+          return '$baseHint. '
+              '${l10n.notificationSettingsFeatureRequiresMasterToggle}';
+        }
+        return baseHint;
+      }(),
+      toggled: value,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: isEnabled
+              ? Theme.of(context).colorScheme.surface
+              : Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isEnabled
+                ? Theme.of(context).colorScheme.outline
+                : Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  icon,
+                  color: isEnabled
+                      ? Theme.of(context).colorScheme.primary
+                      : AppColors.textSecondary,
+                  size: 24,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: AppTextStyles.body.copyWith(
+                      color: isEnabled
+                          ? AppColors.textPrimary
+                          : AppColors.textSecondary,
+                    ),
                   ),
                 ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Padding(
-            padding: const EdgeInsets.only(left: 32),
-            child: Text(
-              description,
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.textSecondary,
+                if (isLoading)
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  IgnorePointer(
+                    ignoring: !isEnabled,
+                    child: Switch(
+                      key: label.contains('Weekly')
+                          ? const Key('notif_weekly_toggle')
+                          : label.contains('Snooze')
+                          ? const Key('notif_snooze_toggle')
+                          : null,
+                      value: value,
+                      onChanged: onChanged,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Padding(
+              padding: const EdgeInsets.only(left: 32),
+              child: Text(
+                description,
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -427,8 +495,7 @@ class _NotificationSettingsScreenState
     AppLocalizations l10n,
     NotificationPermissionStatus? permissionStatus,
   ) {
-    final isGranted =
-        permissionStatus == NotificationPermissionStatus.granted;
+    final isGranted = permissionStatus == NotificationPermissionStatus.granted;
     final isPermanentlyDenied =
         permissionStatus == NotificationPermissionStatus.permanentlyDenied;
 
@@ -461,8 +528,9 @@ class _NotificationSettingsScreenState
                       : l10n.notificationSettingsPermissionDenied,
                   style: AppTextStyles.body.copyWith(
                     fontWeight: FontWeight.w600,
-                    color:
-                        isGranted ? AppColors.success : AppColors.textPrimary,
+                    color: isGranted
+                        ? AppColors.success
+                        : AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -481,15 +549,20 @@ class _NotificationSettingsScreenState
             const SizedBox(height: AppSpacing.sm),
             SizedBox(
               width: double.infinity,
-              child: OutlinedButton(
-                onPressed: isPermanentlyDenied
-                    ? openAppSettings
-                    : null, // Will be handled by toggle
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.warning,
-                  side: const BorderSide(color: AppColors.warning),
+              child: Semantics(
+                button: true,
+                label: l10n.a11yOpenSystemSettingsLabel,
+                hint: l10n.a11yOpenSystemSettingsHint,
+                child: OutlinedButton(
+                  onPressed: isPermanentlyDenied
+                      ? openAppSettings
+                      : null, // Will be handled by toggle
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.warning,
+                    side: const BorderSide(color: AppColors.warning),
+                  ),
+                  child: Text(l10n.notificationSettingsOpenSettingsButton),
                 ),
-                child: Text(l10n.notificationSettingsOpenSettingsButton),
               ),
             ),
           ],
@@ -615,7 +688,9 @@ class _NotificationSettingsScreenState
         ),
       );
 
-      await ref.read(analyticsServiceDirectProvider).trackWeeklySummaryToggled(
+      await ref
+          .read(analyticsServiceDirectProvider)
+          .trackWeeklySummaryToggled(
             enabled: value,
             result: 'error',
             errorMessage: e.toString(),
@@ -676,8 +751,7 @@ class _NotificationSettingsScreenState
     String userId,
   ) async {
     // If turning on and permission not granted, show permission dialog
-    if (value &&
-        permissionStatus != NotificationPermissionStatus.granted) {
+    if (value && permissionStatus != NotificationPermissionStatus.granted) {
       await showDialog<void>(
         context: context,
         builder: (context) => const NotificationPermissionPreprompt(),
@@ -818,4 +892,49 @@ class _NotificationSettingsScreenState
 
   /// Convenience getter for localization
   AppLocalizations get l10n => AppLocalizations.of(context)!;
+}
+
+// Temporary extension to provide a11y getters until l10n is regenerated.
+// When codegen adds these getters, the instance members will take precedence.
+/// Temporary accessibility localization extension until codegen runs.
+extension A11ySemanticsL10n on AppLocalizations {
+  /// Accessible value meaning the toggle is on.
+  String get a11yOn => 'on';
+
+  /// Accessible value meaning the toggle is off.
+  String get a11yOff => 'off';
+
+  /// Screen reader label for the master notifications toggle.
+  String get a11yNotifMasterLabel => 'Enable notifications';
+
+  /// Screen reader hint for the master notifications toggle.
+  String get a11yNotifMasterHint => 'Turns all notification features on or off';
+
+  /// Screen reader label for the Weekly Summary toggle.
+  String get a11yWeeklySummaryLabel => 'Weekly summary notifications';
+
+  /// Screen reader hint for the Weekly Summary toggle.
+  String get a11yWeeklySummaryHint => 'Sends a summary every Monday at 9 a.m.';
+
+  /// Screen reader label for the Snooze toggle.
+  String get a11ySnoozeLabel => 'Snooze reminders';
+
+  /// Screen reader hint for the Snooze toggle.
+  String get a11ySnoozeHint => 'Allows snoozing a reminder for 15 minutes';
+
+  /// Screen reader label for the Open Settings button.
+  String get a11yOpenSystemSettingsLabel => 'Open system notification settings';
+
+  /// Screen reader hint for the Open Settings button.
+  String get a11yOpenSystemSettingsHint =>
+      'Opens the device settings to manage notification permission';
+
+  /// Section header label: Notifications.
+  String get a11ySettingsHeaderNotifications => 'Notifications';
+
+  /// Section header label: Reminder features.
+  String get a11ySettingsHeaderReminderFeatures => 'Reminder features';
+
+  /// Section header label: Privacy & data.
+  String get a11ySettingsHeaderPrivacyAndData => 'Privacy & data';
 }

@@ -40,17 +40,17 @@ enum LoggingMode {
   /// Whether this mode allows time adjustment
   ///
   /// Quick-log always uses current time, manual allows time selection.
-  bool get allowsTimeAdjustment => this == LoggingMode.manual;
+  bool get canAdjustTime => this == LoggingMode.manual;
 
   /// Whether this mode shows optional fields (notes, variations, etc.)
   ///
   /// Quick-log hides optional fields for speed, manual shows everything.
-  bool get showsOptionalFields => this == LoggingMode.manual;
+  bool get shouldShowOptionalFields => this == LoggingMode.manual;
 
   /// Whether this mode requires schedule data to function
   ///
   /// Quick-log requires a schedule to pre-fill data, manual doesn't.
-  bool get requiresSchedule => this == LoggingMode.quickLog;
+  bool get isScheduleRequired => this == LoggingMode.quickLog;
 
   /// Creates a LoggingMode from a string value
   ///

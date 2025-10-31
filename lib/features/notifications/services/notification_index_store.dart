@@ -158,10 +158,10 @@ class NotificationIndexStore {
       }
 
       // Parse JSON
-      final data = jsonDecode(jsonString) as Map<String, dynamic>;
+      final indexData = jsonDecode(jsonString) as Map<String, dynamic>;
 
       // Validate checksum
-      if (!_validateChecksum(data)) {
+      if (!_validateChecksum(indexData)) {
         if (kDebugMode) {
           debugPrint(
             '[NotificationIndexStore] Checksum validation failed for '
@@ -280,7 +280,7 @@ class NotificationIndexStore {
       }
 
       // Parse entries
-      final entriesJson = data['entries'] as List<dynamic>;
+      final entriesJson = indexData['entries'] as List<dynamic>;
       final entries = entriesJson
           .map(
             (e) =>
@@ -421,13 +421,13 @@ class NotificationIndexStore {
       final checksum = _computeChecksum(entries);
 
       // Build data structure
-      final data = {
+      final indexPayload = {
         'checksum': checksum,
         'entries': entries.map((e) => e.toJson()).toList(),
       };
 
       // Save to SharedPreferences
-      final jsonString = jsonEncode(data);
+      final jsonString = jsonEncode(indexPayload);
       await prefs.setString(key, jsonString);
 
       if (kDebugMode) {

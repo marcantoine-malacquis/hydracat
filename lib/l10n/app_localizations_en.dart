@@ -787,6 +787,46 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String notificationMedicationTitleA11y(String petName) {
+    return 'Treatment reminder: Medication for $petName';
+  }
+
+  @override
+  String notificationMedicationBodyA11y(String petName) {
+    return 'It\'s time to give $petName their medication.';
+  }
+
+  @override
+  String notificationFluidTitleA11y(String petName) {
+    return 'Treatment reminder: Fluid therapy for $petName';
+  }
+
+  @override
+  String notificationFluidBodyA11y(String petName) {
+    return 'It\'s time to give $petName their fluid therapy.';
+  }
+
+  @override
+  String notificationFollowupTitleA11y(String petName) {
+    return 'Treatment reminder for $petName';
+  }
+
+  @override
+  String notificationFollowupBodyA11y(String petName) {
+    return '$petName may still need their treatment.';
+  }
+
+  @override
+  String notificationSnoozeTitleA11y(String petName) {
+    return 'Treatment reminder for $petName (snoozed)';
+  }
+
+  @override
+  String notificationSnoozeBodyA11y(String petName) {
+    return 'It\'s time to give $petName their treatment.';
+  }
+
+  @override
   String get notificationWeeklySummaryTitle => 'Your weekly summary is ready!';
 
   @override
@@ -838,10 +878,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get notificationActionLogNow => 'Log now';
+  String get notificationActionLogNow => 'Log treatment now';
 
   @override
-  String get notificationActionSnooze => 'Snooze 15 min';
+  String get notificationActionSnooze => 'Snooze for 15 minutes';
 
   @override
   String get notificationAuthRequired =>
@@ -1048,4 +1088,44 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get notificationReconciliationFailedToast =>
       'Some reminders couldn\'t be restored. Check your notification settings.';
+
+  @override
+  String get a11yOn => 'on';
+
+  @override
+  String get a11yOff => 'off';
+
+  @override
+  String get a11yNotifMasterLabel => 'Enable notifications';
+
+  @override
+  String get a11yNotifMasterHint => 'Turns all notification features on or off';
+
+  @override
+  String get a11yWeeklySummaryLabel => 'Weekly summary notifications';
+
+  @override
+  String get a11yWeeklySummaryHint => 'Sends a summary every Monday at 9 a.m.';
+
+  @override
+  String get a11ySnoozeLabel => 'Snooze reminders';
+
+  @override
+  String get a11ySnoozeHint => 'Allows snoozing a reminder for 15 minutes';
+
+  @override
+  String get a11yOpenSystemSettingsLabel => 'Open system notification settings';
+
+  @override
+  String get a11yOpenSystemSettingsHint =>
+      'Opens the device settings to manage notification permission';
+
+  @override
+  String get a11ySettingsHeaderNotifications => 'Notifications';
+
+  @override
+  String get a11ySettingsHeaderReminderFeatures => 'Reminder features';
+
+  @override
+  String get a11ySettingsHeaderPrivacyAndData => 'Privacy & data';
 }

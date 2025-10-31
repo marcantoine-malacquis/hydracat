@@ -83,7 +83,7 @@ class DeviceToken {
   /// Uses FieldValue.serverTimestamp() for timestamp fields to ensure
   /// server-side consistency and avoid client clock skew issues.
   Map<String, dynamic> toFirestore({bool isUpdate = false}) {
-    final data = <String, dynamic>{
+    final tokenData = <String, dynamic>{
       'deviceId': deviceId,
       'userId': userId,
       'fcmToken': fcmToken,
@@ -93,10 +93,10 @@ class DeviceToken {
 
     // Only set createdAt on initial creation, not on updates
     if (!isUpdate) {
-      data['createdAt'] = FieldValue.serverTimestamp();
+      tokenData['createdAt'] = FieldValue.serverTimestamp();
     }
 
-    return data;
+    return tokenData;
   }
 
   /// Creates a device token from a Firestore document snapshot
@@ -107,14 +107,14 @@ class DeviceToken {
       return null;
     }
 
-    final data = doc.data() as Map<String, dynamic>?;
-    if (data == null) {
+    final tokenData = doc.data() as Map<String, dynamic>?;
+    if (tokenData == null) {
       return null;
     }
 
     // Required fields - return null if missing
-    final deviceId = data['deviceId'] as String?;
-    final platform = data['platform'] as String?;
+    final deviceId = tokenData['deviceId'] as String?;
+    final platform = tokenData['platform'] as String?;
 
     if (deviceId == null || platform == null) {
       return null;
@@ -130,11 +130,11 @@ class DeviceToken {
 
     return DeviceToken(
       deviceId: deviceId,
-      userId: data['userId'] as String?,
-      fcmToken: data['fcmToken'] as String?,
+      userId: tokenData['userId'] as String?,
+      fcmToken: tokenData['fcmToken'] as String?,
       platform: platform,
-      lastUsedAt: parseTimestamp(data['lastUsedAt']),
-      createdAt: parseTimestamp(data['createdAt']),
+      lastUsedAt: parseTimestamp(tokenData['lastUsedAt']),
+      createdAt: parseTimestamp(tokenData['createdAt']),
     );
   }
 

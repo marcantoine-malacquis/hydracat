@@ -38,6 +38,10 @@ Basically, I want to make sure the onboarding code is production ready, follow b
 After your careful and detailled analysis, please write your result in ... before we tackle each fix one by one.
 I already did something similar in @onboarding_code_review_report.md . I don't need to know how long it would take to fix the issue. I don't need a checklist. Regarding database, I don't need to worry about backward compatibility since I will regularily delete the database manually anyway for testing throughout the development.
 
+## Semantic refactoring/Identifier Renaming (Code smell detection) ##
+
+
+
 ##
 
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.

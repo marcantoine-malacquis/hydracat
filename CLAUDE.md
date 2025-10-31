@@ -13,10 +13,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Clean Build**: `flutter clean && flutter pub get`
 
 ### Build Commands
-- **Build APK (Development)**: `flutter build apk --flavor development -t lib/main_development.dart`
-- **Build APK (Production)**: `flutter build apk --flavor production -t lib/main_production.dart`
-- **Build iOS (Development)**: `flutter build ios --flavor development -t lib/main_development.dart`
-- **Build iOS (Production)**: `flutter build ios --flavor production -t lib/main_production.dart`
+- **Build APK**: `flutter build apk --flavor [development|production] -t lib/main_[flavor].dart`
+- **Build iOS**: `flutter build ios --flavor [development|production] -t lib/main_[flavor].dart`
 
 ## Architecture Overview
 
@@ -30,44 +28,39 @@ lib/
 ├── providers/              # Riverpod state management
 └── l10n/                   # Internationalization
 ```
-### Ideal Structure reference
 
-**Ideal Structure**: `ideal_archi.md` (updated regularily)
-
+**Ideal Structure Reference**: `ideal_archi.md` (updated regularly)
 
 ### State Management
 - **Riverpod**: Primary state management solution
 - **Provider Pattern**: Service layer abstraction
 - **Repository Pattern**: Data access layer with Firebase integration
 
-### Flavors Configuration
-- **Development**: Uses `hydracattest` Firebase project
-  - App name: "Hydracat Dev"
-  - Bundle ID (iOS): `com.example.hydracatTest`
-  - Application ID (Android): `com.example.hydracat_test.dev`
-  - Entry point: `lib/main_development.dart`
-- **Production**: Uses `myckdapp` Firebase project
-  - App name: "Hydracat"
-  - Bundle ID (iOS): `com.example.hydracat`
-  - Application ID (Android): `com.example.hydracat_test`
-  - Entry point: `lib/main_production.dart`
-
-### Firebase Integration
-- **Development Project**: `hydracattest`
-- **Production Project**: `myckdapp`
+### Flavors & Firebase
+- **Development**: Firebase project `hydracattest`, app name "Hydracat Dev"
+- **Production**: Firebase project `myckdapp`, app name "Hydracat"
 - **Services**: Auth, Firestore, Analytics, Crashlytics, Messaging, Storage
-- **Configuration**: Environment-specific setup using `lib/firebase_options.dart` with `FlavorConfig`
+- **Config**: Environment-specific via `lib/firebase_options.dart` with `FlavorConfig`
 
 ## Code Standards
 
-### Analysis Rules
+### Naming Conventions
+**Critical**: Follow semantic naming rules defined in `.cursor/code reviews/semantic_rules.md`
+- Boolean variables: Use `is`, `has`, `should`, `can`, `was` prefixes
+- Methods: Use clear action verbs (`get`, `fetch`, `save`, `update`, `delete`)
+- Variables: Avoid generic names (`data`, `value`, `temp`) - use context-specific names
+- See semantic_rules.md for real-world examples and safe refactoring process
+
+### Analysis & Testing
 - Uses `very_good_analysis` for strict linting
-- Custom rules configured in `analysis_options.yaml`
+- Custom rules in `analysis_options.yaml`
 - Run `flutter analyze` before committing
+- **Widget Tests**: Located in `test/`
+- **Test Command**: `flutter test`
 
 ### Data Models
 - **Standard Dart Classes**: Manual data classes with optional JSON serialization
-- **Code Generation**: Run `dart run build_runner build` after model changes (when using json_serializable)
+- **Code Generation**: Run `dart run build_runner build` after model changes
 
 ### Feature Structure
 Each feature follows domain-driven design:
@@ -76,26 +69,20 @@ features/[feature]/
 ├── screens/               # UI screens
 ├── widgets/               # Feature-specific UI components
 ├── exceptions/            # Exceptions
-├── models/
+├── models/                # Data models
 ├── mixins/                # Reusable UI behavior (if needed)
 └── services/              # Business logic
 ```
 
-### Testing
-- **Widget Tests**: Located in `test/`
-- **Unit Tests**: Co-located with implementation
-- **Integration Tests**: Uses `integration_test` package
-- **Test Command**: `flutter test`
-
 ## Development Workflow
 
 1. **Setup**: Run `flutter pub get` to install dependencies
-2. **Development**: Use `flutter run` to start the app
+2. **Development**: Use `flutter run --flavor development` to start the app
 3. **Code Generation**: Run `dart run build_runner build` after model changes (when needed)
 4. **Testing**: Execute `flutter test` before commits
 5. **Analysis**: Run `flutter analyze` to check for issues
 
-## Important reference planning files
+## Important Planning Files
 
 - **Initial project setup**: `~PLANNING/DONE/SETUP.md`
 - **Authentication**: `~PLANNING/auth_implementation_plan.md`
@@ -103,22 +90,17 @@ features/[feature]/
 - **Logging**: `~PLANNING/logging_plan.md`
 - **Notifications & Reminders**: `~PLANNING/reminder_plan.md`
 
-Once planning files are completed, they are moved from `~PLANNING` to `~PLANNING/DONE`
+*Completed planning files are moved from `~PLANNING` to `~PLANNING/DONE`*
 
 ## Important Notes
 
-- **Security**: API keys are stored in Firebase configuration files
-- **Dual Environment**: App supports both development and production environments
-- **Entry Points**: 
-  - Development: `lib/main_development.dart`
-  - Production: `lib/main_production.dart`
-  - Default: `lib/main.dart` (defaults to development)
-- **iOS Setup**: Requires manual Xcode configuration for build schemes (see iOS flavor setup instructions)
-- **Flavor Selection**: Use `--flavor` and `-t` flags when running or building the app
-- **Internationalization**: Use l10n `lib/l10n`
+- **Security**: API keys stored in Firebase configuration files
+- **Entry Points**: Development (`main_development.dart`), Production (`main_production.dart`), Default (`main.dart` → development)
+- **iOS Setup**: Requires manual Xcode configuration for build schemes
+- **Internationalization**: Use l10n in `lib/l10n`
 
-# important-instruction-reminders
+## Important Instruction Reminders
 - Do what has been asked; nothing more, nothing less.
-- NEVER create files unless they're absolutely necessary for achieving your goal.
+- NEVER create files unless absolutely necessary for achieving your goal.
 - ALWAYS prefer editing an existing file to creating a new one.
-- NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+- NEVER proactively create documentation files (*.md) or README files unless explicitly requested.

@@ -574,10 +574,10 @@ class OnboardingService {
       if (dataJson == null || progressJson == null) return null;
 
       // Parse JSON data back to objects
-      final data = OnboardingData.fromJson(dataJson);
+      final onboardingData = OnboardingData.fromJson(dataJson);
       final progress = OnboardingProgress.fromJson(progressJson);
 
-      return (data, progress);
+      return (onboardingData, progress);
     } on Exception {
       return null;
     }

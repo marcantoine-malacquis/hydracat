@@ -214,11 +214,11 @@ class ScheduleService {
         return null;
       }
 
-      final data = doc.data()!;
+      final scheduleData = doc.data()!;
       // Ensure the document has an ID field
-      data['id'] = doc.id;
+      scheduleData['id'] = doc.id;
 
-      return Schedule.fromJson(data);
+      return Schedule.fromJson(scheduleData);
     } on FirebaseException catch (e) {
       if (kDebugMode) {
         debugPrint('[ScheduleService] Firebase error getting schedule: $e');
@@ -266,10 +266,10 @@ class ScheduleService {
       final schedules = <Schedule>[];
       for (final doc in querySnapshot.docs) {
         try {
-          final data = doc.data();
+          final scheduleData = doc.data();
           // Ensure the document has an ID field
-          data['id'] = doc.id;
-          schedules.add(Schedule.fromJson(data));
+          scheduleData['id'] = doc.id;
+          schedules.add(Schedule.fromJson(scheduleData));
         } on Exception catch (e) {
           if (kDebugMode) {
             debugPrint(

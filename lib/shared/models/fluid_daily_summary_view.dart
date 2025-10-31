@@ -20,7 +20,7 @@ class FluidDailySummaryView {
   final bool isToday;
 
   /// Whether goal has been reached or exceeded
-  bool get reached => givenMl >= goalMl && goalMl > 0;
+  bool get hasReachedGoal => givenMl >= goalMl && goalMl > 0;
 
   /// Difference: positive when goal not yet reached (ml left),
   /// negative when exceeded (ml over)

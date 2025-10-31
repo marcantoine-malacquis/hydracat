@@ -30,10 +30,10 @@ class FluidDailySummaryCard extends StatelessWidget {
         : (summary.givenMl / summary.goalMl).clamp(0.0, 1.0);
 
     final remaining = summary.deltaMl; // positive => left, negative => over
-    final reached = summary.reached;
-    final missed = !summary.isToday && !reached && summary.goalMl > 0;
+    final hasReachedGoal = summary.hasReachedGoal;
+    final missed = !summary.isToday && !hasReachedGoal && summary.goalMl > 0;
 
-    final statusColor = reached
+    final statusColor = hasReachedGoal
         ? AppColors.primary
         : (summary.isToday
               ? AppColors
@@ -43,7 +43,7 @@ class FluidDailySummaryCard extends StatelessWidget {
     final statusChip = _buildStatusChip(
       statusColor,
       remaining,
-      reached,
+      hasReachedGoal,
       summary.isToday,
       missed,
     );

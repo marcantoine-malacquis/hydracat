@@ -147,12 +147,12 @@ class LoginAttemptService {
   /// Gets attempt data for the given email
   Future<LoginAttemptData?> _getAttemptData(String email) async {
     final storageKey = _getStorageKey(email);
-    final data = await _secureStorage.getSecureData(storageKey);
+    final attemptData = await _secureStorage.getSecureData(storageKey);
 
-    if (data == null) return null;
+    if (attemptData == null) return null;
 
     try {
-      return LoginAttemptData.fromJson(data);
+      return LoginAttemptData.fromJson(attemptData);
     } on Exception {
       // If data is corrupted, remove it
       await _removeAttemptData(email);
