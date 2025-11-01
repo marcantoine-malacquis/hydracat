@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hydracat/features/notifications/utils/time_validation.dart';
 
 /// Model representing user notification preferences.
 ///
@@ -118,25 +119,7 @@ class NotificationSettings {
   /// NotificationSettings.isValidTime('12:00') // true
   /// NotificationSettings.isValidTime('invalid') // false
   /// ```
-  static bool isValidTime(String time) {
-    // Check format: exactly 5 characters, format "HH:mm"
-    final regex = RegExp(r'^\d{2}:\d{2}$');
-    if (!regex.hasMatch(time)) {
-      return false;
-    }
-
-    // Parse hour and minute
-    final parts = time.split(':');
-    final hour = int.tryParse(parts[0]);
-    final minute = int.tryParse(parts[1]);
-
-    // Validate ranges: 00-23 for hours, 00-59 for minutes
-    if (hour == null || minute == null) {
-      return false;
-    }
-
-    return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59;
-  }
+  static bool isValidTime(String time) => isValidTimeString(time);
 
   /// Converts the endOfDayTime string to Flutter's TimeOfDay for UI.
   ///

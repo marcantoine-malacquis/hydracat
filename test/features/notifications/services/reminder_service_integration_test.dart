@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hydracat/features/notifications/models/scheduled_notification_entry.dart';
 import 'package:hydracat/features/notifications/providers/notification_provider.dart';
 import 'package:hydracat/features/notifications/services/notification_index_store.dart';
-import 'package:hydracat/features/notifications/services/reminder_plugin_interface.dart';
+import 'package:hydracat/features/notifications/services/reminder_plugin.dart';
 import 'package:hydracat/features/notifications/utils/notification_id.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,7 +21,7 @@ import 'package:timezone/timezone.dart' as tz;
 // Mock Classes
 // ============================================
 
-class MockReminderPlugin extends Mock implements ReminderPluginInterface {}
+class MockReminderPlugin extends Mock implements ReminderPlugin {}
 
 class MockNotificationIndexStore extends Mock
     implements NotificationIndexStore {}
@@ -32,7 +32,7 @@ class MockNotificationIndexStore extends Mock
 
 /// Creates a test ProviderContainer with mocked plugin and index store
 ProviderContainer createTestContainer({
-  ReminderPluginInterface? mockPlugin,
+  ReminderPlugin? mockPlugin,
   NotificationIndexStore? mockIndexStore,
 }) {
   final plugin = mockPlugin ?? MockReminderPlugin();
@@ -111,6 +111,17 @@ void main() {
     // Initialize timezone data for tests
     tz.initializeTimeZones();
     tz.setLocalLocation(tz.getLocation('America/New_York'));
+
+    // Register fallback value for ScheduledNotificationEntry
+    registerFallbackValue(
+      const ScheduledNotificationEntry(
+        notificationId: 0,
+        scheduleId: 'test',
+        treatmentType: 'medication',
+        timeSlotISO: '08:00',
+        kind: 'initial',
+      ),
+    );
   });
 
   group('ReminderPluginInterface Integration Tests', () {

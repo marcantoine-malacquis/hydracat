@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/features/notifications/models/scheduled_notification_entry.dart';
-import 'package:hydracat/features/notifications/services/reminder_plugin_interface.dart';
+import 'package:hydracat/features/notifications/services/reminder_plugin.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -140,7 +140,7 @@ class NotificationIndexStore {
     String petId,
     DateTime date, {
     AnalyticsService? analyticsService,
-    ReminderPluginInterface? plugin,
+    ReminderPlugin? plugin,
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -320,7 +320,7 @@ class NotificationIndexStore {
     required String userId,
     required String petId,
     required DateTime date,
-    required ReminderPluginInterface plugin,
+    required ReminderPlugin plugin,
   }) async {
     try {
       final pending = await plugin.pendingNotificationRequests();
@@ -370,8 +370,8 @@ class NotificationIndexStore {
             continue;
           }
 
-          // Create entry
-          final entry = ScheduledNotificationEntry(
+          // Create entry with validation
+          final entry = ScheduledNotificationEntry.create(
             notificationId: notification.id,
             scheduleId: scheduleId,
             treatmentType: treatmentType,
@@ -457,7 +457,7 @@ class NotificationIndexStore {
     String userId,
     String petId, {
     AnalyticsService? analyticsService,
-    ReminderPluginInterface? plugin,
+    ReminderPlugin? plugin,
   }) async {
     final today = DateTime.now();
     return _loadIndex(
@@ -479,7 +479,7 @@ class NotificationIndexStore {
     String petId,
     DateTime date, {
     AnalyticsService? analyticsService,
-    ReminderPluginInterface? plugin,
+    ReminderPlugin? plugin,
   }) async {
     return _loadIndex(
       userId,
@@ -734,7 +734,7 @@ class NotificationIndexStore {
   Future<Map<String, int>> reconcile(
     String userId,
     String petId,
-    ReminderPluginInterface plugin, {
+    ReminderPlugin plugin, {
     AnalyticsService? analyticsService,
   }) async {
     var added = 0;

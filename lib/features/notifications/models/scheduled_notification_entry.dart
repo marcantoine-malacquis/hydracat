@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:hydracat/features/notifications/utils/time_validation.dart';
 
 /// Model representing a single scheduled notification entry in the local index.
 ///
@@ -10,9 +11,26 @@ import 'package:flutter/foundation.dart';
 /// Entries are stored per-day, per-pet, per-user in SharedPreferences with
 /// CRC32 checksum validation for corruption detection.
 ///
+/// **Factory Methods**:
+/// - [ScheduledNotificationEntry.create]: Creates with runtime validation
+///   (recommended for production code)
+/// - [ScheduledNotificationEntry.fromJson]: Creates from JSON with validation
+/// - Direct constructor: Available for const instances in tests (use with
+///   known-valid values only)
+///
 /// Example usage:
 /// ```dart
-/// final entry = ScheduledNotificationEntry(
+/// // Production code - use validated factory
+/// final entry = ScheduledNotificationEntry.create(
+///   notificationId: 12345,
+///   scheduleId: 'sched_abc123',
+///   treatmentType: 'medication',
+///   timeSlotISO: '08:00',
+///   kind: 'initial',
+/// );
+///
+/// // Tests - can use const constructor with known-valid values
+/// const testEntry = ScheduledNotificationEntry(
 ///   notificationId: 12345,
 ///   scheduleId: 'sched_abc123',
 ///   treatmentType: 'medication',
@@ -88,6 +106,69 @@ class ScheduledNotificationEntry {
     }
   }
 
+  /// Creates a validated [ScheduledNotificationEntry] with runtime validation.
+  ///
+  /// Validates:
+  /// - [treatmentType]: Must be 'medication' or 'fluid'
+  /// - [timeSlotISO]: Must be valid "HH:mm" format (00:00 to 23:59)
+  /// - [kind]: Must be 'initial', 'followup', or 'snooze'
+  ///
+  /// Throws [ArgumentError] if any validation fails.
+  ///
+  /// Use this factory for production code to ensure data integrity.
+  /// For tests, you can use the const constructor directly with known-valid
+  /// values.
+  ///
+  /// Example:
+  /// ```dart
+  /// final entry = ScheduledNotificationEntry.create(
+  ///   notificationId: 12345,
+  ///   scheduleId: 'sched_abc123',
+  ///   treatmentType: 'medication',
+  ///   timeSlotISO: '08:00',
+  ///   kind: 'initial',
+  /// );
+  /// ```
+  factory ScheduledNotificationEntry.create({
+    required int notificationId,
+    required String scheduleId,
+    required String treatmentType,
+    required String timeSlotISO,
+    required String kind,
+  }) {
+    // Validate treatmentType
+    if (!isValidTreatmentType(treatmentType)) {
+      throw ArgumentError(
+        'Invalid treatmentType: "$treatmentType". '
+        'Must be "medication" or "fluid".',
+      );
+    }
+
+    // Validate timeSlotISO
+    if (!isValidTimeSlot(timeSlotISO)) {
+      throw ArgumentError(
+        'Invalid timeSlotISO: "$timeSlotISO". '
+        'Expected "HH:mm" format (00:00 to 23:59).',
+      );
+    }
+
+    // Validate kind
+    if (!isValidKind(kind)) {
+      throw ArgumentError(
+        'Invalid kind: "$kind". '
+        'Must be "initial", "followup", or "snooze".',
+      );
+    }
+
+    return ScheduledNotificationEntry(
+      notificationId: notificationId,
+      scheduleId: scheduleId,
+      treatmentType: treatmentType,
+      timeSlotISO: timeSlotISO,
+      kind: kind,
+    );
+  }
+
   /// Platform notification ID (unique integer for plugin scheduling).
   ///
   /// This ID is deterministically generated from userId, petId, scheduleId,
@@ -140,25 +221,7 @@ class ScheduledNotificationEntry {
   /// ScheduledNotificationEntry.isValidTimeSlot('25:00') // false
   /// ScheduledNotificationEntry.isValidTimeSlot('invalid') // false
   /// ```
-  static bool isValidTimeSlot(String timeSlot) {
-    // Check format: exactly 5 characters, format "HH:mm"
-    final regex = RegExp(r'^\d{2}:\d{2}$');
-    if (!regex.hasMatch(timeSlot)) {
-      return false;
-    }
-
-    // Parse hour and minute
-    final parts = timeSlot.split(':');
-    final hour = int.tryParse(parts[0]);
-    final minute = int.tryParse(parts[1]);
-
-    // Validate ranges: 00-23 for hours, 00-59 for minutes
-    if (hour == null || minute == null) {
-      return false;
-    }
-
-    return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59;
-  }
+  static bool isValidTimeSlot(String timeSlot) => isValidTimeString(timeSlot);
 
   /// Validates a notification kind string.
   ///

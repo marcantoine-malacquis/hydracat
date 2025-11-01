@@ -259,44 +259,10 @@ class NotificationErrorHandler {
       return;
     }
 
-    // Use try-catch for localization strings that may not be generated yet
-    // Strings will be auto-generated when flutter gen-l10n runs
-    String title;
-    String message;
-    String actionText;
-
-    try {
-      // Localization strings may not be generated until flutter gen-l10n runs.
-      // Using dynamic call to access generated string with fallback handling.
-      // ignore: avoid_dynamic_calls
-      title = (l10n as dynamic).notificationPermissionRevokedTitle as String;
-    } on Exception {
-      title = 'Notification Permission Revoked';
-    }
-
-    try {
-      // Localization strings may not be generated until flutter gen-l10n runs.
-      // Using dynamic call to access generated string with fallback handling.
-      // ignore: avoid_dynamic_calls
-      message =
-          (l10n as dynamic).notificationPermissionRevokedMessage as String;
-    } on Exception {
-      message =
-          'We noticed that notification permission was disabled. '
-          'To continue receiving treatment reminders, '
-          'please re-enable notifications.';
-    }
-
-    try {
-      // Localization strings may not be generated until flutter gen-l10n runs.
-      // Using dynamic call to access generated string with fallback handling.
-      // ignore: avoid_dynamic_calls
-      actionText =
-          (l10n as dynamic).notificationPermissionRevokedAction as String;
-    } on Exception {
-      actionText = 'Open Settings';
-    }
-
+    // Get localized strings
+    final title = l10n.notificationPermissionRevokedTitle;
+    final message = l10n.notificationPermissionRevokedMessage;
+    final actionText = l10n.notificationPermissionRevokedAction;
     final cancelText = l10n.cancel;
 
     return showDialog<void>(

@@ -9,7 +9,6 @@ import 'package:hydracat/features/notifications/services/notification_index_stor
 import 'package:hydracat/features/notifications/services/notification_settings_service.dart';
 import 'package:hydracat/features/notifications/services/permission_prompt_service.dart';
 import 'package:hydracat/features/notifications/services/reminder_plugin.dart';
-import 'package:hydracat/features/notifications/services/reminder_plugin_interface.dart';
 import 'package:hydracat/features/notifications/services/reminder_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -19,15 +18,14 @@ import 'package:permission_handler/permission_handler.dart';
 /// via Riverpod dependency injection. The plugin should be initialized
 /// during app startup before this provider is used.
 ///
-/// Returns [ReminderPluginInterface] type to enable mocking in tests
-/// via dependency inversion principle.
+/// Can be mocked in tests using mocktail or mockito.
 ///
 /// Example usage:
 /// ```dart
 /// final plugin = ref.read(reminderPluginProvider);
 /// await plugin.showZoned(...);
 /// ```
-final reminderPluginProvider = Provider<ReminderPluginInterface>((ref) {
+final reminderPluginProvider = Provider<ReminderPlugin>((ref) {
   return ReminderPlugin();
 });
 

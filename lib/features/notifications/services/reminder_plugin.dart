@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/features/notifications/services/notification_tap_handler.dart';
-import 'package:hydracat/features/notifications/services/reminder_plugin_interface.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -17,9 +16,9 @@ import 'package:timezone/timezone.dart' as tz;
 /// provides dependency injection support and simplified API for
 /// scheduling reminders.
 ///
-/// Implements [ReminderPluginInterface] to enable dependency injection
-/// and testability via mocking.
-class ReminderPlugin implements ReminderPluginInterface {
+/// Can be mocked in tests using mocktail or mockito for dependency
+/// injection and testability.
+class ReminderPlugin {
   /// Factory constructor to get the singleton instance
   factory ReminderPlugin() => _instance ??= ReminderPlugin._();
 
@@ -50,7 +49,6 @@ class ReminderPlugin implements ReminderPluginInterface {
   static const String channelIdWeeklySummaries = 'weekly_summaries';
 
   /// Getter for initialization status
-  @override
   bool get isInitialized => _isInitialized;
 
   /// Initialize the notification plugin with platform-specific settings.
@@ -60,7 +58,6 @@ class ReminderPlugin implements ReminderPluginInterface {
   /// (channels, categories, etc.) will be added in later phases.
   ///
   /// Returns true if initialization succeeds, false otherwise.
-  @override
   Future<bool> initialize() async {
     try {
       _devLog('Initializing ReminderPlugin...');
@@ -373,7 +370,6 @@ class ReminderPlugin implements ReminderPluginInterface {
   /// [threadIdentifier] - Optional thread identifier for grouping (iOS)
   ///
   /// Throws [StateError] if plugin is not initialized.
-  @override
   Future<void> showZoned({
     required int id,
     required String title,
@@ -460,7 +456,6 @@ class ReminderPlugin implements ReminderPluginInterface {
   /// [id] - The notification identifier to cancel
   ///
   /// Throws [StateError] if plugin is not initialized.
-  @override
   Future<void> cancel(int id) async {
     if (!_isInitialized || _plugin == null) {
       throw StateError(
@@ -484,7 +479,6 @@ class ReminderPlugin implements ReminderPluginInterface {
   /// not yet delivered. Useful for debugging and reconciliation.
   ///
   /// Throws [StateError] if plugin is not initialized.
-  @override
   Future<List<PendingNotificationRequest>> pendingNotificationRequests() async {
     if (!_isInitialized || _plugin == null) {
       throw StateError(
@@ -508,7 +502,6 @@ class ReminderPlugin implements ReminderPluginInterface {
   /// Useful for logout or when resetting notification state.
   ///
   /// Throws [StateError] if plugin is not initialized.
-  @override
   Future<void> cancelAll() async {
     if (!_isInitialized || _plugin == null) {
       throw StateError(
@@ -543,7 +536,6 @@ class ReminderPlugin implements ReminderPluginInterface {
   /// enable idempotent updates.
   ///
   /// Throws [StateError] if plugin is not initialized.
-  @override
   Future<void> showGroupSummary({
     required String petId,
     required String petName,
@@ -622,7 +614,6 @@ class ReminderPlugin implements ReminderPluginInterface {
   /// [petId] - Pet identifier used to generate the summary notification ID
   ///
   /// Throws [StateError] if plugin is not initialized.
-  @override
   Future<void> cancelGroupSummary(String petId) async {
     if (!_isInitialized || _plugin == null) {
       throw StateError(
@@ -656,7 +647,6 @@ class ReminderPlugin implements ReminderPluginInterface {
   /// - The plugin is not initialized
   /// - The details cannot be retrieved
   /// - An error occurs during retrieval
-  @override
   Future<NotificationAppLaunchDetails?>
   getNotificationAppLaunchDetails() async {
     if (!_isInitialized || _plugin == null) {
@@ -695,7 +685,6 @@ class ReminderPlugin implements ReminderPluginInterface {
   /// 1. Use inexact alarms as fallback
   /// 2. Show warning in notification settings UI
   /// 3. Provide button to open system settings for permission grant
-  @override
   Future<bool> canScheduleExactNotifications() async {
     // iOS always returns true (not applicable)
     if (!Platform.isAndroid) {

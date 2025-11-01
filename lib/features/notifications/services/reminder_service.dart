@@ -29,6 +29,50 @@ import 'package:timezone/timezone.dart' as tz;
 /// Idempotent: Safe to call schedule methods multiple times.
 /// Timezone-aware: Handles DST transitions correctly.
 ///
+/// ## PRIVACY DESIGN PRINCIPLE
+///
+/// All notification content is intentionally **generic** to protect user
+/// privacy. Notifications may be visible on lock screens, in notification
+/// centers, and to others who can see the device screen.
+///
+/// ### ❌ NEVER include in notifications:
+/// - Medication names (e.g., "Benazepril", "Enalapril")
+/// - Dosages (e.g., "5mg", "10mg")
+/// - Fluid volumes (e.g., "100ml", "150ml subcutaneous")
+/// - Injection sites (e.g., "left shoulder")
+/// - Any other medical details
+/// - Sensitive health information
+///
+/// ### ✅ DO include in notifications:
+/// - Pet name (user's own data, already visible on device)
+/// - Generic treatment type ("medication" or "fluid therapy")
+/// - Time-of-day context ("morning", "evening")
+/// - Encouraging/supportive language
+/// - General reminders without specifics
+///
+/// ### Rationale:
+/// - **Lock screen visibility**: Others may see notification previews
+/// - **Medical privacy**: Health data is sensitive, even for pets
+/// - **User agency**: Users can choose to share or not share their pet's
+///   treatment details
+/// - **Compliance**: GDPR/HIPAA-aligned approach (even though pets aren't
+///   covered, we respect the same principles)
+/// - **Social considerations**: Users may not want neighbors/visitors to know
+///   about their pet's chronic condition
+///
+/// For detailed treatment information, users must unlock their device and
+/// open the app. This design ensures privacy while still providing helpful
+/// reminders.
+///
+/// ### Example Notification Content:
+/// ```text
+/// ✅ Good: "Time for Luna's morning medication"
+/// ❌ Bad:  "Give Luna 5mg Benazepril now"
+///
+/// ✅ Good: "Reminder: Fluid therapy for Max"
+/// ❌ Bad:  "Administer 150ml subcutaneous fluids to Max's left shoulder"
+/// ```
+///
 /// Example usage:
 /// ```dart
 /// final service = ref.read(reminderServiceProvider);
@@ -738,7 +782,7 @@ class ReminderService {
             await indexStore.putEntry(
               userId,
               petId,
-              ScheduledNotificationEntry(
+              ScheduledNotificationEntry.create(
                 notificationId: notificationId,
                 scheduleId: schedule.id,
                 treatmentType: treatmentType,
@@ -797,7 +841,7 @@ class ReminderService {
             await indexStore.putEntry(
               userId,
               petId,
-              ScheduledNotificationEntry(
+              ScheduledNotificationEntry.create(
                 notificationId: notificationId,
                 scheduleId: schedule.id,
                 treatmentType: treatmentType,
@@ -956,7 +1000,7 @@ class ReminderService {
           await indexStore.putEntry(
             userId,
             petId,
-            ScheduledNotificationEntry(
+            ScheduledNotificationEntry.create(
               notificationId: followupId,
               scheduleId: schedule.id,
               treatmentType: treatmentType,
@@ -1392,7 +1436,7 @@ class ReminderService {
       await indexStore.putEntry(
         userId,
         petId,
-        ScheduledNotificationEntry(
+        ScheduledNotificationEntry.create(
           notificationId: snoozeId,
           scheduleId: scheduleId,
           treatmentType: treatmentType,

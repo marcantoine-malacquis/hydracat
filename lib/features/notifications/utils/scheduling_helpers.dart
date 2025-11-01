@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:hydracat/features/notifications/utils/time_validation.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 /// Utility functions for timezone-aware notification scheduling.
@@ -49,28 +50,8 @@ tz.TZDateTime zonedDateTimeForToday(
   String timeSlot,
   DateTime referenceDate,
 ) {
-  // Validate format is exactly "HH:mm" (2 digits : 2 digits)
-  final regex = RegExp(r'^\d{2}:\d{2}$');
-  if (!regex.hasMatch(timeSlot)) {
-    throw FormatException('Invalid time format: $timeSlot. Expected "HH:mm"');
-  }
-
-  // Parse time components from "HH:mm" format
-  final parts = timeSlot.split(':');
-  final hour = int.tryParse(parts[0]);
-  final minute = int.tryParse(parts[1]);
-
-  if (hour == null ||
-      minute == null ||
-      hour < 0 ||
-      hour > 23 ||
-      minute < 0 ||
-      minute > 59) {
-    throw FormatException(
-      'Invalid time values: $timeSlot. '
-      'Hour must be 0-23, minute must be 0-59',
-    );
-  }
+  // Parse and validate time string
+  final (hour, minute) = parseTimeString(timeSlot);
 
   // Create TZDateTime for the specified time today in local timezone
   // This handles DST transitions correctly
