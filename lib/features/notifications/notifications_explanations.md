@@ -55,15 +55,15 @@ Think of the notification system like a restaurant kitchen:
 
 ```
 User's treatment schedules (stored in profile)
-    �
+    ↓
 ReminderService reads the schedules
-    �
+    ↓
 For each scheduled time, it asks: "Should I remind them?"
-    �
-If yes � Creates a notification via ReminderPlugin
-    �
+    ↓
+If yes → Creates a notification via ReminderPlugin
+    ↓
 Records it in NotificationIndexStore
-    �
+    ↓
 Phone's system triggers the notification at the right time
 ```
 
@@ -181,7 +181,7 @@ Can show notifications? = (System permission granted) AND (User enabled in setti
 
 **8:00 AM - Notification fires**
 - Phone buzzes
-- Shows: "Time for Luna's morning medication =�"
+- Shows: "Time for Luna's morning medication 💊"
 - User sees: Option to snooze (if enabled in settings)
 
 **User taps notification**
@@ -208,7 +208,7 @@ Can show notifications? = (System permission granted) AND (User enabled in setti
 ### Scenario: Weekly summary
 
 **Every Monday at 9:00 AM**
-- System sends: "Luna's weekly progress: Great job this week! <"
+- System sends: "Luna's weekly progress: Great job this week! ✨"
 - Shows adherence stats (how many treatments logged vs missed)
 - Encourages the user to keep up the good work
 
@@ -359,9 +359,9 @@ When the app reopens, it reconciles (checks what should be scheduled vs what act
 - After profile changes
 
 **Storage**:
-- Settings � SharedPreferences (local)
-- Index � SharedPreferences (local, per-day)
-- Schedules � Come from profile cache (already loaded)
+- Settings → SharedPreferences (local)
+- Index → SharedPreferences (local, per-day)
+- Schedules → Come from profile cache (already loaded)
 
 **Testing tip**: Most services use singletons but are exposed via Riverpod providers, making them easy to mock in tests.
 

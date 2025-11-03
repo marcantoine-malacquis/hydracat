@@ -46,3 +46,16 @@ I already did something similar in @onboarding_code_review_report.md . I don't n
 
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
+1. Option B (infer and cache in devices collection)
+2. Option A (fixed 7:00 AM)
+3. Hybrid: Single pet now, but structure data to support multi-pet
+  easily
+4. I expect most of my users to be in North America or Western Europe. The app will for sure be global/international from launch. Should I go straight to hourly function checking timezone offsets (24 functions) since it is still free ? Or is there another more optimised way you would recommend ?
+5. Option D (smart retry with eventual marking)
+6. Option B + A (local emulator for development,
+  manual for production). I have never used firebase emulator so I will need detailed guidance.
+7. Option D (comprehensive monitoring) but I will mostly rely on firebase console.
+8. Option D (defensive programming)
+9. Option D (add both fields)
+10. Option B (test in dev project first)
+Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development/Flutter best practices are extremely important. Please confirm that this follow industry standards, and if not explain why. Let me know if you need any more clarifications to feel confident in proceeding with the implementation.
