@@ -1,19 +1,33 @@
+# ⚠️ DEPRECATED - See fcm_daily_wakeup_plan.md Instead
+
+**This plan has been superseded by a simpler, industry-standard approach.**
+
+This document outlined an over-engineered solution with Cloud Tasks, timezone calculations, and complex fallback logic. After analysis, we determined a much simpler approach is more appropriate.
+
+**New plan:** `fcm_daily_wakeup_plan.md`
+
+---
+
+# ORIGINAL PLAN (For Reference Only)
+
 # HydraCat Push Notification Enhancement  Implementation Plan
 
 ## Overview
-Enhance the existing local notification system with Firebase Cloud Messaging (FCM) silent push triggers to solve the multi-day absence problem. Users who don't open the app for 48+ hours will still receive treatment reminders via a hybrid approach: FCM wakes the app in background at 7 AM daily, triggering local notification scheduling.
+Enhance the existing local notification system with a hybrid approach where the server schedules due-time notifications via Cloud Tasks, and an optional FCM data-only "seed" is sent only when the app hasn't checked in for 36–48 hours. This ensures users receive treatment reminders even if they don't open the app for multiple days.
 
-**Architecture:** Hybrid system (Local notifications primary + FCM daily trigger)
-- **Local notifications:** Continue handling all treatment reminders (reliable, offline-first)
-- **FCM silent push:** Daily 7 AM trigger wakes app in background to schedule notifications
-- **Result:** Users receive reminders even if they don't open app for days
+**Architecture:** Hybrid (Server-orchestrated + local fallback)
+- **Server due-time pushes (primary):** Cloud Tasks schedules per-occurrence notifications at exact due times.
+
+- **Optional FCM data-only seed (fallback):** Sent only when inactivity >36–48h to let the app re-seed local notifications for the next 24h.
+- **Result:** Reliable delivery without requiring daily app opens; offline/local fallback preserved.
 
 **Key Principles:**
--  Builds on existing local notification system (no replacement, just enhancement)
--  Firebase cost: $0/month for up to 1M users (free tier)
--  Single hourly Cloud Function handles all global timezones
--  Defensive programming with multiple fallbacks (FCM -> app resume -> manual open)
--  Comprehensive monitoring via Firebase Console
+-  Build on existing local notifications (no replacement)
+-  Server is source of truth; no per-send Firestore writes (cost-safe)
+-  Timezone-safe using `timeZoneId` (IANA) rather than raw offsets (DST-safe)
+-  Idempotency via stable `notificationId`; device-side dedup
+-  Defensive fallbacks (Cloud Tasks → seed push on inactivity → app resume)
+-  Comprehensive monitoring via Firebase Console; costs ~0 at small scale
 
 ---
 
@@ -21,41 +35,64 @@ Enhance the existing local notification system with Firebase Cloud Messaging (FC
 
 ### Problem Solved
 **Current limitation:** If user doesn't open app for 48+ hours, no notifications scheduled
-**Solution:** FCM silent push wakes app daily at 7 AM to trigger `scheduleAllForToday()`
+**Solution:** Server schedules per-occurrence due-time pushes (Cloud Tasks). If a device hasn't checked in for >36–48h, send a data-only seed to wake the app and re-seed local notifications for the next 24h.
 
 ### Architecture Changes
 
-**Firestore Schema Updates:**
+**Firestore Schema Updates (tiny):**
 ```
 devices/{deviceId}:
   - deviceId: string (existing)
   - userId: string | null (existing)
   - fcmToken: string | null (existing)
+  - hasFcmToken: boolean (NEW - true when valid token present)
   - platform: 'ios' | 'android' (existing)
-  - lastUsedAt: timestamp (existing)
+  - timeZoneId: string (NEW - IANA, e.g., "Europe/Paris")
+  - isActive: boolean (NEW - default true)
+  - lastUsedAt: timestamp (existing; update ≤ daily)
   - createdAt: timestamp (existing)
-  + isActive: boolean (NEW - default true)
-  + timezoneOffsetMinutes: int (NEW - e.g., -300 for EST)
-  + lastSuccessfulFcmDate: timestamp (NEW - tracks delivery)
 ```
 
-**Cloud Function Flow:**
+Queries (server):
 ```
-Hourly Cloud Function (runs at :00 of each hour UTC) ->
-  Calculates: which timezone offsets are currently 7:00 AM ->
-    Queries devices in those offsets ->
-      Sends FCM silent push to each device ->
-        Phone receives push -> Wakes Flutter app in background ->
-          App runs scheduleAllForToday() ->
-            Local notifications scheduled for day ->
-              User receives reminders normally
+// Send to one user across devices
+devices.where('userId', '==', userId).where('hasFcmToken', '==', true).where('isActive', '==', true)
+
+// Cleanup on invalid token error
+update device: { fcmToken: null, hasFcmToken: false, isActive: false }
+
+// Do NOT use: where('fcmToken', '!=', null)
 ```
 
-**Cost Analysis:**
+**Revised Server Flow (supersedes the old 7 AM silent push):**
+```
+When schedules are created/updated OR via a periodic worker:
+  - Compute next 24 hours of occurrences in the user's timeZoneId
+  - Enqueue one Cloud Task per occurrence (scheduleTime = due time UTC)
+
+Cloud Task (at due time) -> HTTPS function sendDueNotification ->
+  - Build idempotent FCM payload with stable notificationId
+  - Send visible push (or data-only if you prefer app-side rendering)
+  - On invalid/expired token: mark device inactive (single write)
+
+Optional re-seed (inactivity fallback):
+  - Daily/sparse Cloud Scheduler job finds devices with lastUsedAt >36–48h
+  - Enqueue a data-only seed task for immediate delivery (or at local 00:05)
+  - App wakes and re-seeds local notifications for the next 24h only
+```
+
+Note: The older offset-based hourly "7 AM silent push" approach below is kept for reference but is deprecated by the flow above.
+
+**Operational guardrails:**
+- Schedule only the next 24 hours on device while respecting iOS 64-pending cap; re-seed later.
+- Use stable `notificationId` for idempotency and device-side dedup.
+- Skip `lastSuccessfulFcmDate` for v1; rely on logs/metrics and `lastUsedAt` for inactivity.
+- Avoid `where('fcmToken', '!=', null)`; use `hasFcmToken == true`.
+
+**Cost Analysis (revised):**
 - **FCM messages:** $0 (unlimited, free)
-- **Cloud Function invocations:** 720/month (24 hours x 30 days) = $0 (within 2M free tier)
-- **Firestore reads:** ~3000-5000/month = $0 (within 50K/day free tier)
-- **Total:** $0/month for up to 100K users
+- **Cloud Functions + Cloud Tasks:** ~3–4 ops/user/day at small scale ≈ $0; low two-digit $/mo around 100K DAU
+- **Firestore:** Near-zero (no per-send writes; only device updates and schedules)
 
 ---
 
@@ -162,6 +199,7 @@ npm run build
 ---
 
 ### Step 0.2: Create timezone utility functions
+> Deprecated in favor of `timeZoneId` + Cloud Tasks (see Revised Server Flow). Kept for reference if you still want an hourly seed.
 
 **Goal:** Calculate which timezone offsets are currently at 7 AM target time
 
@@ -783,6 +821,7 @@ i  functions: Finished "scheduleDailyNotifications" in ~1500ms
 ## Phase 2: Flutter App Integration - Background Handler
 
 ### Step 2.1: Update devices collection with new fields
+> Note: Use `timeZoneId` (IANA) and `hasFcmToken` instead of `timezoneOffsetMinutes` and avoid `lastSuccessfulFcmDate` for v1.
 
 **Goal:** Add timezone detection and tracking fields to device registration
 
@@ -993,7 +1032,8 @@ flutter run --flavor development -t lib/main_development.dart
 
 ### Step 2.2: Create Firestore composite index
 
-**Goal:** Enable efficient queries for Cloud Function (isActive + timezoneOffset + fcmToken)
+**Goal:** Enable efficient queries for device targeting (isActive + hasFcmToken [+ userId])
+Use this instead of `fcmToken != null` or raw timezone offset checks.
 
 **Files to modify:**
 - `firestore.indexes.json` (MODIFY - add composite index)
@@ -1009,18 +1049,9 @@ flutter run --flavor development -t lib/main_development.dart
       "collectionGroup": "devices",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "isActive",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "timezoneOffsetMinutes",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "fcmToken",
-          "order": "ASCENDING"
-        }
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "hasFcmToken", "order": "ASCENDING" },
+        { "fieldPath": "userId", "order": "ASCENDING" }
       ]
     }
   ],
@@ -1053,8 +1084,8 @@ firebase firestore:indexes
 | Index Name  | Collection Group | Fields                    | State |
 +-------------+------------------+---------------------------+-------+
 | devices_idx | devices          | isActive ASC              | READY |
-|             |                  | timezoneOffsetMinutes ASC |       |
-|             |                  | fcmToken ASC              |       |
+|             |                  | hasFcmToken ASC           |       |
+|             |                  | userId ASC                |       |
 +-------------+------------------+---------------------------+-------+
 ```
 
