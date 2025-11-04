@@ -1384,6 +1384,71 @@ class AnalyticsService {
       parameters: Map<String, Object>.from(parameters),
     );
   }
+
+  /// Tracks when background scheduling completes successfully via FCM.
+  Future<void> trackBackgroundSchedulingSuccess({
+    required int notificationCount,
+    required String triggerSource,
+  }) async {
+    if (!_isEnabled) return;
+
+    try {
+      await _analytics.logEvent(
+        name: 'background_scheduling_success',
+        parameters: {
+          'notification_count': notificationCount,
+          'trigger_source': triggerSource,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Analytics] Failed to track background scheduling: $e');
+      }
+      // Don't throw - analytics failure shouldn't break functionality
+    }
+  }
+
+  /// Tracks when background scheduling fails.
+  Future<void> trackBackgroundSchedulingError({
+    required String errorReason,
+    required String triggerSource,
+  }) async {
+    if (!_isEnabled) return;
+
+    try {
+      await _analytics.logEvent(
+        name: 'background_scheduling_error',
+        parameters: {
+          'error_reason': errorReason,
+          'trigger_source': triggerSource,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Analytics] Failed to track background error: $e');
+      }
+    }
+  }
+
+  /// Tracks when FCM daily wake-up message is received.
+  Future<void> trackFcmDailyWakeupReceived() async {
+    if (!_isEnabled) return;
+
+    try {
+      await _analytics.logEvent(
+        name: 'fcm_daily_wakeup_received',
+        parameters: {
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Analytics] Failed to track FCM wake-up: $e');
+      }
+    }
+  }
 }
 
 /// Notifier class for managing analytics with authentication integration

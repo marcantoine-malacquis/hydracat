@@ -8,6 +8,7 @@ import 'package:hydracat/features/notifications/providers/notification_provider.
 import 'package:hydracat/features/notifications/services/reminder_plugin.dart';
 import 'package:hydracat/features/notifications/services/reminder_service.dart';
 import 'package:hydracat/firebase_options.dart';
+import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -136,8 +137,17 @@ Future<void> firebaseMessagingBackgroundHandler(
         _devLog('  Missed: $missedCount');
         _devLog('  Errors: ${errorsList.length}');
 
-        // Track analytics (method will be added in Step 1.6)
-        // For now, just log to Crashlytics
+        // Track analytics
+        try {
+          await container.read(analyticsServiceDirectProvider)
+            .trackBackgroundSchedulingSuccess(
+              notificationCount: scheduledCount,
+              triggerSource: 'fcm_daily_wakeup',
+            );
+        } on Exception catch (e) {
+          _devLog('Analytics tracking failed: $e');
+        }
+
         await FirebaseCrashlytics.instance.log(
           'FCM background scheduling: $scheduledCount notifications',
         );
