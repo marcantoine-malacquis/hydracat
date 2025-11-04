@@ -13,6 +13,14 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "devices",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "hasFcmToken", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
