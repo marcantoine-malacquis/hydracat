@@ -1,32 +1,188 @@
+import * as functions from 'firebase-functions/v1';
+import * as admin from 'firebase-admin';
+
+// Initialize Firebase Admin (done once)
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
+
+const db = admin.firestore();
+const messaging = admin.messaging();
+
 /**
- * Import function triggers from their respective submodules:
+ * Cloud Function that runs once daily to wake all devices for notification scheduling.
  *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
+ * Flow:
+ * 1. Query all active devices with FCM tokens
+ * 2. Send silent FCM push to each device
+ * 3. App wakes in background and schedules next 24h of notifications
+ * 4. Handle token errors and mark devices inactive
  *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
+ * Runs at: Midnight UTC daily (00:00 UTC)
+ * Cost: $0 (1 invocation/day within 2M free tier)
  */
+export const dailyNotificationWakeup = functions
+  .runWith({
+    timeoutSeconds: 540, // 9 minutes max
+    memory: '256MB',
+  })
+  .pubsub.schedule('0 0 * * *') // Every day at midnight UTC
+  .timeZone('UTC')
+  .onRun(async (context: functions.EventContext) => {
+    const startTime = Date.now();
 
-import {setGlobalOptions} from "firebase-functions";
-import {onRequest} from "firebase-functions/https";
-import * as logger from "firebase-functions/logger";
+    functions.logger.info('=== Daily Notification Wake-Up Started ===');
+    functions.logger.info(`Execution time: ${new Date().toISOString()}`);
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
+    try {
+      let totalDevices = 0;
+      let totalSent = 0;
+      let totalFailed = 0;
+      let invalidTokensRemoved = 0;
 
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
-setGlobalOptions({ maxInstances: 10 });
+      // Query all active devices with FCM tokens
+      // Using hasFcmToken field (will be added in Phase 1)
+      const devicesSnapshot = await db.collection('devices')
+        .where('isActive', '==', true)
+        .where('hasFcmToken', '==', true)
+        .get();
 
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+      totalDevices = devicesSnapshot.size;
+
+      if (totalDevices === 0) {
+        functions.logger.info('No active devices with FCM tokens found');
+        return {
+          success: true,
+          totalDevices: 0,
+          totalSent: 0,
+          totalFailed: 0,
+        };
+      }
+
+      functions.logger.info(`Found ${totalDevices} active devices`);
+
+      // Build FCM messages for all devices
+      const messages: admin.messaging.Message[] = [];
+      const deviceDocs: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+
+      for (const deviceDoc of devicesSnapshot.docs) {
+        const device = deviceDoc.data();
+
+        if (!device.fcmToken) {
+          continue; // Skip devices without token (shouldn't happen due to query)
+        }
+
+        // Build silent data-only message
+        const message: admin.messaging.Message = {
+          token: device.fcmToken,
+          data: {
+            type: 'daily_wakeup',
+            timestamp: new Date().toISOString(),
+          },
+          // iOS-specific configuration for silent push
+          apns: {
+            headers: {
+              'apns-priority': '5', // Low priority
+              'apns-push-type': 'background',
+            },
+            payload: {
+              aps: {
+                contentAvailable: true, // Wakes app in background
+                // NO alert, sound, or badge = completely silent
+              },
+            },
+          },
+          // Android-specific configuration
+          android: {
+            priority: 'high', // Required for background processing
+            data: {
+              type: 'daily_wakeup',
+              timestamp: new Date().toISOString(),
+            },
+          },
+        };
+
+        messages.push(message);
+        deviceDocs.push(deviceDoc);
+      }
+
+      // Send messages in batches of 500 (FCM limit)
+      const batchSize = 500;
+      for (let i = 0; i < messages.length; i += batchSize) {
+        const batch = messages.slice(i, i + batchSize);
+        const batchDeviceDocs = deviceDocs.slice(i, i + batchSize);
+
+        try {
+          const response = await messaging.sendEach(batch);
+
+          // Track successes
+          totalSent += response.successCount;
+          totalFailed += response.failureCount;
+
+          // Handle individual failures
+          const firestoreBatch = db.batch();
+          let batchOperations = 0;
+
+          response.responses.forEach((result, index) => {
+            const deviceDoc = batchDeviceDocs[index];
+
+            if (!result.success && result.error) {
+              const error = result.error;
+
+              functions.logger.warn(
+                `FCM send failed for device ${deviceDoc.id}: ${error.code}`,
+              );
+
+              // Remove invalid tokens
+              if (
+                error.code === 'messaging/invalid-registration-token' ||
+                error.code === 'messaging/registration-token-not-registered'
+              ) {
+                firestoreBatch.update(deviceDoc.ref, {
+                  fcmToken: null,
+                  hasFcmToken: false,
+                  isActive: false,
+                });
+                batchOperations++;
+                invalidTokensRemoved++;
+                functions.logger.info(
+                  `Marked device ${deviceDoc.id} inactive (invalid token)`,
+                );
+              }
+            }
+          });
+
+          // Commit Firestore updates if any
+          if (batchOperations > 0) {
+            await firestoreBatch.commit();
+          }
+
+        } catch (error) {
+          functions.logger.error(`Batch send failed:`, error);
+          totalFailed += batch.length;
+        }
+      }
+
+      // Log final summary
+      const duration = Date.now() - startTime;
+      functions.logger.info('=== Daily Notification Wake-Up Complete ===');
+      functions.logger.info(`Total devices queried: ${totalDevices}`);
+      functions.logger.info(`Messages sent successfully: ${totalSent}`);
+      functions.logger.info(`Messages failed: ${totalFailed}`);
+      functions.logger.info(`Invalid tokens removed: ${invalidTokensRemoved}`);
+      functions.logger.info(`Execution duration: ${duration}ms`);
+
+      return {
+        success: true,
+        totalDevices,
+        totalSent,
+        totalFailed,
+        invalidTokensRemoved,
+        durationMs: duration,
+      };
+
+    } catch (error) {
+      functions.logger.error('Fatal error in dailyNotificationWakeup:', error);
+      throw error; // Rethrow to mark function as failed
+    }
+  });
