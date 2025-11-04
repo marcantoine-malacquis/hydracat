@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/app/app.dart';
@@ -9,7 +11,9 @@ import 'package:hydracat/features/notifications/providers/notification_provider.
 import 'package:hydracat/features/notifications/services/notification_error_handler.dart';
 import 'package:hydracat/features/notifications/services/notification_tap_handler.dart';
 import 'package:hydracat/features/notifications/services/reminder_plugin.dart';
+import 'package:hydracat/firebase_options.dart';
 import 'package:hydracat/providers/logging_provider.dart';
+import 'package:hydracat/shared/services/fcm_background_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -17,6 +21,15 @@ import 'package:timezone/timezone.dart' as tz;
 Future<void> main() async {
   // Ensure Flutter bindings are initialized
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase (required for background handler registration)
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // CRITICAL: Register background message handler BEFORE everything else
+  // This must be done at the top level of main()
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   // Initialize timezone database for notification scheduling
   await _initializeTimezone();
