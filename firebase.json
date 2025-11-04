@@ -1,1 +1,88 @@
-{"firestore":{"database":"(default)","location":"eur3","rules":"firestore.rules","indexes":"firestore.indexes.json"},"functions":[{"source":"functions","codebase":"default","ignore":["node_modules",".git","firebase-debug.log","firebase-debug.*.log","*.local"],"predeploy":["npm --prefix \"$RESOURCE_DIR\" run lint"]}],"hosting":{"public":"public","ignore":["firebase.json","**/.*","**/node_modules/**"],"rewrites":[{"source":"**","destination":"/index.html"}]},"storage":{"rules":"storage.rules"},"emulators":{"auth":{"port":9099},"functions":{"port":5001},"firestore":{"port":8080},"hosting":{"port":5000},"ui":{"enabled":true},"singleProjectMode":true},"flutter":{"platforms":{"android":{"default":{"projectId":"hydracattest","appId":"1:248700006204:android:fec11b962bce1c0000b839","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"hydracattest","appId":"1:248700006204:ios:e49d2b8d44050c3b00b839","uploadDebugSymbols":true,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"hydracattest","configurations":{"android":"1:248700006204:android:fec11b962bce1c0000b839","ios":"1:248700006204:ios:e49d2b8d44050c3b00b839"}}}}}}
+{
+  "firestore": {
+    "database": "(default)",
+    "location": "eur3",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint",
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    }
+  ],
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "emulators": {
+    "auth": {
+      "port": 9099
+    },
+    "functions": {
+      "port": 5001
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "hosting": {
+      "port": 5000
+    },
+    "ui": {
+      "enabled": true
+    },
+    "singleProjectMode": true
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "hydracattest",
+          "appId": "1:248700006204:android:fec11b962bce1c0000b839",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "hydracattest",
+          "appId": "1:248700006204:ios:e49d2b8d44050c3b00b839",
+          "uploadDebugSymbols": true,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "hydracattest",
+          "configurations": {
+            "android": "1:248700006204:android:fec11b962bce1c0000b839",
+            "ios": "1:248700006204:ios:e49d2b8d44050c3b00b839"
+          }
+        }
+      }
+    }
+  }
+}
