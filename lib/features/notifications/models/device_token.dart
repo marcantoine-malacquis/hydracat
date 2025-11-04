@@ -21,6 +21,8 @@ class DeviceToken {
     required this.createdAt,
     this.userId,
     this.fcmToken,
+    this.hasFcmToken = true,
+    this.isActive = true,
   });
 
   /// Unique stable device identifier (UUID v4)
@@ -48,6 +50,18 @@ class DeviceToken {
   /// Used for platform-specific push notification handling (future).
   final String platform;
 
+  /// Whether this device currently has a valid FCM token
+  ///
+  /// Used by Cloud Function to efficiently query devices for FCM wake-up.
+  /// Automatically computed based on whether fcmToken is present.
+  final bool hasFcmToken;
+
+  /// Whether this device is active (not marked inactive due to token errors)
+  ///
+  /// Set to false by Cloud Function when FCM token is invalid/expired.
+  /// Becomes true again when user opens app and token refreshes.
+  final bool isActive;
+
   /// Last time this device was actively used
   ///
   /// Updated on sign-in and throttled to once per 24 hours to
@@ -67,6 +81,8 @@ class DeviceToken {
     String? platform,
     DateTime? lastUsedAt,
     DateTime? createdAt,
+    bool? hasFcmToken,
+    bool? isActive,
   }) {
     return DeviceToken(
       deviceId: deviceId ?? this.deviceId,
@@ -75,6 +91,8 @@ class DeviceToken {
       platform: platform ?? this.platform,
       lastUsedAt: lastUsedAt ?? this.lastUsedAt,
       createdAt: createdAt ?? this.createdAt,
+      hasFcmToken: hasFcmToken ?? this.hasFcmToken,
+      isActive: isActive ?? this.isActive,
     );
   }
 
@@ -88,6 +106,8 @@ class DeviceToken {
       'userId': userId,
       'fcmToken': fcmToken,
       'platform': platform,
+      'hasFcmToken': fcmToken != null,
+      'isActive': isActive,
       'lastUsedAt': FieldValue.serverTimestamp(),
     };
 
@@ -135,6 +155,8 @@ class DeviceToken {
       platform: platform,
       lastUsedAt: parseTimestamp(tokenData['lastUsedAt']),
       createdAt: parseTimestamp(tokenData['createdAt']),
+      hasFcmToken: tokenData['hasFcmToken'] as bool? ?? true,
+      isActive: tokenData['isActive'] as bool? ?? true,
     );
   }
 
@@ -147,6 +169,8 @@ class DeviceToken {
         'userId: $userId, '
         'fcmToken: $tokenDisplay, '
         'platform: $platform, '
+        'hasFcmToken: $hasFcmToken, '
+        'isActive: $isActive, '
         'lastUsedAt: $lastUsedAt, '
         'createdAt: $createdAt'
         ')';
@@ -161,6 +185,8 @@ class DeviceToken {
         other.userId == userId &&
         other.fcmToken == fcmToken &&
         other.platform == platform &&
+        other.hasFcmToken == hasFcmToken &&
+        other.isActive == isActive &&
         other.lastUsedAt == lastUsedAt &&
         other.createdAt == createdAt;
   }
@@ -172,6 +198,8 @@ class DeviceToken {
       userId,
       fcmToken,
       platform,
+      hasFcmToken,
+      isActive,
       lastUsedAt,
       createdAt,
     );
