@@ -187,6 +187,38 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Caches user ID in SharedPreferences for background FCM handler access.
+  Future<void> _cacheUserId(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('cached_user_id', userId);
+      if (kDebugMode) {
+        debugPrint('[Auth] Cached user ID for background access');
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Auth] Failed to cache user ID: $e');
+      }
+      // Non-critical, don't throw
+    }
+  }
+
+  /// Clears cached user ID from SharedPreferences on sign-out.
+  Future<void> _clearCachedUserId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('cached_user_id');
+      await prefs.remove('cached_primary_pet_id'); // Also clear pet ID
+      if (kDebugMode) {
+        debugPrint('[Auth] Cleared cached user/pet IDs');
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Auth] Failed to clear cached IDs: $e');
+      }
+    }
+  }
+
   /// Listen to Firebase auth state changes and update the state accordingly
   void _listenToAuthChanges() {
     _authService.authStateChanges.listen((user) async {
@@ -206,6 +238,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
               debugPrint('Failed to register device token: $e');
             }
           }
+
+          // Cache user ID for background FCM handler
+          await _cacheUserId(completeUser.id);
         } on Exception {
           // If Firestore fetch fails, use Firebase auth data only
           state = AuthStateAuthenticated(user: user);
@@ -218,6 +253,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
               debugPrint('Failed to register device token: $e');
             }
           }
+
+          // Cache user ID for background FCM handler
+          await _cacheUserId(user.id);
         }
       } else {
         // Only set to unauthenticated if we don't have a recent error
@@ -310,6 +348,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Signs out the currently authenticated user and updates state.
   Future<void> signOut() async {
     state = const AuthStateLoading();
+
+    // Clear cached IDs for background handler
+    await _clearCachedUserId();
 
     // Unregister device token (non-blocking)
     try {

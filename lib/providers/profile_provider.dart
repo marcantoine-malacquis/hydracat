@@ -10,6 +10,7 @@ import 'package:hydracat/features/profile/services/schedule_service.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/connectivity_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Cache status enum to track data freshness
 enum CacheStatus {
@@ -256,6 +257,11 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       final pet = await _petService.getPrimaryPet();
       final cacheTimestamp = _petService.getCacheTimestamp();
 
+      // Cache pet ID for background FCM handler
+      if (pet != null) {
+        await _cachePrimaryPetId(pet.id);
+      }
+
       state = state.copyWith(
         primaryPet: pet,
         isLoading: false,
@@ -322,6 +328,9 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 
     switch (result) {
       case PetSuccess(pet: final pet):
+        // Cache pet ID for background FCM handler
+        await _cachePrimaryPetId(pet.id);
+
         state = state.copyWith(
           primaryPet: pet,
           isLoading: false,
@@ -413,6 +422,22 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
   void clearCache() {
     _petService.clearCache();
     state = const ProfileState.initial();
+  }
+
+  /// Caches primary pet ID in SharedPreferences for background FCM handler.
+  Future<void> _cachePrimaryPetId(String petId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('cached_primary_pet_id', petId);
+      if (kDebugMode) {
+        debugPrint('[Profile] Cached primary pet ID for background access');
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Profile] Failed to cache pet ID: $e');
+      }
+      // Non-critical, don't throw
+    }
   }
 
   /// Clear only schedule cache
