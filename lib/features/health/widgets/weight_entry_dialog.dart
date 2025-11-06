@@ -72,8 +72,9 @@ class _WeightEntryDialogState extends ConsumerState<WeightEntryDialog> {
           ? (currentUnit == 'kg' ? existingWeight : existingWeight * 2.20462)
           : null;
 
-      _weightController.text =
-          displayWeight != null ? displayWeight.toStringAsFixed(2) : '';
+      _weightController.text = displayWeight != null
+          ? displayWeight.toStringAsFixed(2)
+          : '';
 
       _isInitialized = true;
     }
@@ -128,7 +129,7 @@ class _WeightEntryDialogState extends ConsumerState<WeightEntryDialog> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
+            colorScheme: const ColorScheme.light(
               primary: AppColors.primary,
             ),
           ),
@@ -210,8 +211,9 @@ class _WeightEntryDialogState extends ConsumerState<WeightEntryDialog> {
             // Weight input
             TextField(
               controller: _weightController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               textInputAction: TextInputAction.next,
               autofocus: !isEditMode,
               decoration: InputDecoration(
