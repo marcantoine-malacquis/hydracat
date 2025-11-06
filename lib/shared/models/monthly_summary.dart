@@ -38,6 +38,15 @@ class MonthlySummary extends TreatmentSummaryBase {
     required super.overallTreatmentDone,
     required super.createdAt,
     super.updatedAt,
+    this.weightEntriesCount = 0,
+    this.weightLatest,
+    this.weightLatestDate,
+    this.weightFirst,
+    this.weightFirstDate,
+    this.weightAverage,
+    this.weightChange,
+    this.weightChangePercent,
+    this.weightTrend,
   });
 
   /// Factory constructor to create an empty monthly summary
@@ -129,6 +138,19 @@ class MonthlySummary extends TreatmentSummaryBase {
           TreatmentSummaryBase.parseDateTimeNullable(json['createdAt']) ??
           DateTime.now(),
       updatedAt: TreatmentSummaryBase.parseDateTimeNullable(json['updatedAt']),
+      weightEntriesCount: (json['weightEntriesCount'] as num?)?.toInt() ?? 0,
+      weightLatest: (json['weightLatest'] as num?)?.toDouble(),
+      weightLatestDate: TreatmentSummaryBase.parseDateTimeNullable(
+        json['weightLatestDate'],
+      ),
+      weightFirst: (json['weightFirst'] as num?)?.toDouble(),
+      weightFirstDate: TreatmentSummaryBase.parseDateTimeNullable(
+        json['weightFirstDate'],
+      ),
+      weightAverage: (json['weightAverage'] as num?)?.toDouble(),
+      weightChange: (json['weightChange'] as num?)?.toDouble(),
+      weightChangePercent: (json['weightChangePercent'] as num?)?.toDouble(),
+      weightTrend: json['weightTrend'] as String?,
     );
   }
 
@@ -197,6 +219,34 @@ class MonthlySummary extends TreatmentSummaryBase {
   /// Reset to 0 when a day without treatment occurs.
   final int overallCurrentStreak;
 
+  /// Number of weight entries logged this month
+  final int weightEntriesCount;
+
+  /// Most recent weight value (kg)
+  final double? weightLatest;
+
+  /// Date when latest weight was recorded
+  final DateTime? weightLatestDate;
+
+  /// First weight of the month (kg)
+  final double? weightFirst;
+
+  /// Date of first weight entry this month
+  final DateTime? weightFirstDate;
+
+  /// Average weight for the month (kg)
+  final double? weightAverage;
+
+  /// Change from previous month (kg)
+  /// Positive = gained, negative = lost
+  final double? weightChange;
+
+  /// Percentage change from previous month
+  final double? weightChangePercent;
+
+  /// Trend indicator: "increasing", "stable", "decreasing"
+  final String? weightTrend;
+
   @override
   String get documentId => AppDateUtils.formatMonthForSummary(startDate);
 
@@ -250,6 +300,18 @@ class MonthlySummary extends TreatmentSummaryBase {
       'overallTreatmentDone': overallTreatmentDone,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'weightEntriesCount': weightEntriesCount,
+      if (weightLatest != null) 'weightLatest': weightLatest,
+      if (weightLatestDate != null)
+        'weightLatestDate': weightLatestDate!.toIso8601String(),
+      if (weightFirst != null) 'weightFirst': weightFirst,
+      if (weightFirstDate != null)
+        'weightFirstDate': weightFirstDate!.toIso8601String(),
+      if (weightAverage != null) 'weightAverage': weightAverage,
+      if (weightChange != null) 'weightChange': weightChange,
+      if (weightChangePercent != null)
+        'weightChangePercent': weightChangePercent,
+      if (weightTrend != null) 'weightTrend': weightTrend,
     };
   }
 
@@ -354,6 +416,15 @@ class MonthlySummary extends TreatmentSummaryBase {
     bool? overallTreatmentDone,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? weightEntriesCount,
+    double? weightLatest,
+    DateTime? weightLatestDate,
+    double? weightFirst,
+    DateTime? weightFirstDate,
+    double? weightAverage,
+    double? weightChange,
+    double? weightChangePercent,
+    String? weightTrend,
   }) {
     return MonthlySummary(
       startDate: startDate ?? this.startDate,
@@ -383,6 +454,15 @@ class MonthlySummary extends TreatmentSummaryBase {
       overallTreatmentDone: overallTreatmentDone ?? this.overallTreatmentDone,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      weightEntriesCount: weightEntriesCount ?? this.weightEntriesCount,
+      weightLatest: weightLatest ?? this.weightLatest,
+      weightLatestDate: weightLatestDate ?? this.weightLatestDate,
+      weightFirst: weightFirst ?? this.weightFirst,
+      weightFirstDate: weightFirstDate ?? this.weightFirstDate,
+      weightAverage: weightAverage ?? this.weightAverage,
+      weightChange: weightChange ?? this.weightChange,
+      weightChangePercent: weightChangePercent ?? this.weightChangePercent,
+      weightTrend: weightTrend ?? this.weightTrend,
     );
   }
 
@@ -404,12 +484,21 @@ class MonthlySummary extends TreatmentSummaryBase {
         other.overallMissedDays == overallMissedDays &&
         other.overallLongestStreak == overallLongestStreak &&
         other.overallCurrentStreak == overallCurrentStreak &&
+        other.weightEntriesCount == weightEntriesCount &&
+        other.weightLatest == weightLatest &&
+        other.weightLatestDate == weightLatestDate &&
+        other.weightFirst == weightFirst &&
+        other.weightFirstDate == weightFirstDate &&
+        other.weightAverage == weightAverage &&
+        other.weightChange == weightChange &&
+        other.weightChangePercent == weightChangePercent &&
+        other.weightTrend == weightTrend &&
         super == other;
   }
 
   @override
   int get hashCode {
-    return Object.hash(
+    return Object.hashAll([
       super.hashCode,
       startDate,
       endDate,
@@ -424,7 +513,16 @@ class MonthlySummary extends TreatmentSummaryBase {
       overallMissedDays,
       overallLongestStreak,
       overallCurrentStreak,
-    );
+      weightEntriesCount,
+      weightLatest,
+      weightLatestDate,
+      weightFirst,
+      weightFirstDate,
+      weightAverage,
+      weightChange,
+      weightChangePercent,
+      weightTrend,
+    ]);
   }
 
   @override
@@ -451,7 +549,16 @@ class MonthlySummary extends TreatmentSummaryBase {
         'fluidSessionCount: $fluidSessionCount, '
         'overallTreatmentDone: $overallTreatmentDone, '
         'createdAt: $createdAt, '
-        'updatedAt: $updatedAt'
+        'updatedAt: $updatedAt, '
+        'weightEntriesCount: $weightEntriesCount, '
+        'weightLatest: $weightLatest, '
+        'weightLatestDate: $weightLatestDate, '
+        'weightFirst: $weightFirst, '
+        'weightFirstDate: $weightFirstDate, '
+        'weightAverage: $weightAverage, '
+        'weightChange: $weightChange, '
+        'weightChangePercent: $weightChangePercent, '
+        'weightTrend: $weightTrend'
         ')';
   }
 }
