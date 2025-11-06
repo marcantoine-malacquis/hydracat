@@ -756,6 +756,14 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ],
 
+        // Weight section - always shown
+        const SizedBox(height: AppSpacing.sm),
+        ProfileSectionItem(
+          title: 'Weight',
+          icon: Icons.scale,
+          onTap: () => context.go('/profile/weight'),
+        ),
+
         // Future sections will be added here
         // Example: Treatment Plan, etc.
       ],

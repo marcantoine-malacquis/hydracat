@@ -3,17 +3,68 @@
 ## Overview
 This schema supports comprehensive CKD management while maintaining strict cost optimization through pre-aggregated summaries, efficient query patterns, and minimal real-time listeners.
 
+## Implementation Status
+✅ **Fully Implemented:**
+- `devices` - FCM token management and daily wake-up notifications
+- `users` - User profiles and authentication
+- `pets` - Pet profiles and management
+- `fluidSessions` - Fluid therapy logging
+- `medicationSessions` - Medication logging
+- `treatmentSummaries` - Daily/weekly/monthly aggregations
+- `schedules` - Treatment scheduling
+
+🚧 **Planned/Not Yet Implemented:**
+- `healthParameters` - Weight, appetite, symptoms tracking (UI placeholder exists)
+- `labResults` - Bloodwork and lab test tracking
+- `fluidInventory` - Fluid volume tracking
+- `crossPetSummaries` - Premium multi-pet analytics
+
+## Design Notes
+
+### Treatment Summaries Nested Structure
+The treatment summaries use a nested collection pattern:
+```
+treatmentSummaries/
+  ├── daily/summaries/{YYYY-MM-DD}
+  ├── weekly/summaries/{YYYY-Www}
+  └── monthly/summaries/{YYYY-MM}
+```
+
+This design provides:
+- **Organization**: Groups related summary types under one parent collection
+- **Extensibility**: Easy to add new summary types (e.g., yearly) without cluttering pet subcollections
+- **Query flexibility**: Can query across all summary types or target specific periods
+- **Cost optimization**: Maintains the same read cost while improving structure
+
 ## Root Collections
 
 ### devices
 ```
 devices/
 ├── {deviceId} (document)
-│     ├── userId: string
-│     ├── fcmToken: string
+│     ├── deviceId: string          (unique device identifier)
+│     ├── userId: string?           (nullable - user ID if logged in)
+│     ├── fcmToken: string?         (nullable - FCM token for push notifications)
 │     ├── platform: string          (ios, android, web)
+│     ├── hasFcmToken: boolean      (derived from fcmToken, for efficient querying)
+│     ├── isActive: boolean         (false when token is invalid/expired)
 │     ├── lastUsedAt: Timestamp     (update only once per session/day)
 │     └── createdAt: Timestamp
+```
+
+**Purpose**: Tracks device registrations for FCM push notifications. Enables daily wake-up messages to schedule local notifications even when app hasn't been opened.
+
+**Key Fields**:
+- `hasFcmToken`: Automatically set based on `fcmToken` presence. Enables efficient composite queries.
+- `isActive`: Set to `false` when FCM returns invalid token errors. Prevents sending to dead tokens.
+- `userId`, `fcmToken`: Nullable to support devices before user login or token registration.
+
+**Daily Wake-Up Query**:
+```dart
+// Used by Cloud Function to find devices for daily notification scheduling
+Query activeDevices = db.collection('devices')
+  .where('isActive', isEqualTo: true)
+  .where('hasFcmToken', isEqualTo: true);
 ```
 
 ### users
@@ -117,97 +168,92 @@ users/
                   │           ├── createdAt: Timestamp
                   │           └── updatedAt: Timestamp
                   │
-                  ├── treatmentSummaryDaily (subcollection)
+                  ├── treatmentSummaries (subcollection)
                   │     │
-                  │     └── {YYYY-MM-DD} (date-based document ID)
-                  │           ├── date: Timestamp           # for consistent querying
-                  │           │
-                  │           # Fluid Therapy Summary
-                  │           ├── fluidTotalVolume: number  # total fluid given this day
-                  │           ├── fluidTreatmentDone: boolean
-                  │           ├── fluidSessionCount: number  # number of fluid sessions
-                  │           ├── fluidAvgStressLevel: string # low/medium/high
-                  │           ├── fluidLastInjectionSite: string
-                  │           │
-                  │           # Medication Summary
-                  │           ├── medicationTotalDoses: number      # total doses given
-                  │           ├── medicationScheduledDoses: number  # total doses scheduled
-                  │           ├── medicationAdherence: number       # percentage (0.0-1.0)
-                  │           ├── medicationMissedCount: number     # missed doses
-                  │           │
-                  │           # Health Parameters Summary (from healthParameters collection)
-                  │           ├── weightRecorded: boolean
-                  │           ├── appetiteRecorded: boolean
-                  │           ├── symptomsRecorded: boolean
-                  │           │
-                  │           # Overall Treatment Adherence
-                  │           ├── overallTreatmentDone: boolean     # true if primary treatments completed
-                  │           ├── overallStreak: number            # consecutive days of adherence
-                  │           ├── overallAdherence: number         # combined adherence score (0.0-1.0)
-                  │           │
-                  │           ├── createdAt: Timestamp
-                  │           └── updatedAt: Timestamp
-                  │
-                  ├── treatmentSummaryWeekly (subcollection)
+                  │     ├── daily (document) - organizational container
+                  │     │     │
+                  │     │     └── summaries (subcollection)
+                  │     │           │
+                  │     │           └── {YYYY-MM-DD} (e.g., "2025-10-05")
+                  │     │                 ├── date: Timestamp           # for consistent querying
+                  │     │                 │
+                  │     │                 # Fluid Therapy Summary
+                  │     │                 ├── fluidTotalVolume: number  # total fluid given this day
+                  │     │                 ├── fluidTreatmentDone: boolean
+                  │     │                 ├── fluidSessionCount: number  # number of fluid sessions
+                  │     │                 ├── fluidDailyGoalMl: number  # daily goal (optional)
+                  │     │                 │
+                  │     │                 # Medication Summary
+                  │     │                 ├── medicationTotalDoses: number      # total doses given
+                  │     │                 ├── medicationScheduledDoses: number  # total doses scheduled
+                  │     │                 ├── medicationMissedCount: number     # missed doses
+                  │     │                 │
+                  │     │                 # Overall Treatment Adherence
+                  │     │                 ├── overallTreatmentDone: boolean     # true if primary treatments completed
+                  │     │                 ├── overallStreak: number            # consecutive days of adherence
+                  │     │                 │
+                  │     │                 ├── createdAt: Timestamp
+                  │     │                 └── updatedAt: Timestamp
                   │     │
-                  │     └── {YYYY-Www} (e.g., "2025-W33")
-                  │           ├── startDate: Timestamp
-                  │           ├── endDate: Timestamp
-                  │           │
-                  │           # Fluid Therapy Summary
-                  │           ├── fluidTotalVolume: number
-                  │           ├── fluidTreatmentDays: number
-                  │           ├── fluidMissedDays: number
-                  │           ├── fluidAvgStressLevel: string
-                  │           │
-                  │           # Medication Summary
-                  │           ├── medicationTotalDoses: number
-                  │           ├── medicationScheduledDoses: number
-                  │           ├── medicationAvgAdherence: number   # average adherence for the week
-                  │           │
-                  │           # Overall Treatment Summary
-                  │           ├── overallTreatmentDays: number
-                  │           ├── overallMissedDays: number
-                  │           ├── overallAvgAdherence: number
-                  │           │
-                  │           ├── createdAt: Timestamp
-                  │           └── updatedAt: Timestamp
-                  │
-                  ├── treatmentSummaryMonthly (subcollection)
+                  │     ├── weekly (document) - organizational container
+                  │     │     │
+                  │     │     └── summaries (subcollection)
+                  │     │           │
+                  │     │           └── {YYYY-Www} (e.g., "2025-W40")
+                  │     │                 ├── startDate: Timestamp
+                  │     │                 ├── endDate: Timestamp
+                  │     │                 │
+                  │     │                 # Fluid Therapy Summary
+                  │     │                 ├── fluidTotalVolume: number
+                  │     │                 ├── fluidTreatmentDays: number
+                  │     │                 ├── fluidMissedDays: number
+                  │     │                 │
+                  │     │                 # Medication Summary
+                  │     │                 ├── medicationTotalDoses: number
+                  │     │                 ├── medicationScheduledDoses: number
+                  │     │                 ├── medicationMissedCount: number
+                  │     │                 ├── medicationAvgAdherence: number   # average adherence for the week
+                  │     │                 │
+                  │     │                 # Overall Treatment Summary
+                  │     │                 ├── overallTreatmentDays: number
+                  │     │                 ├── overallMissedDays: number
+                  │     │                 ├── overallTreatmentDone: boolean
+                  │     │                 │
+                  │     │                 ├── createdAt: Timestamp
+                  │     │                 └── updatedAt: Timestamp
                   │     │
-                  │     └── {YYYY-MM} (e.g., "2025-08")
-                  │           ├── startDate: Timestamp
-                  │           ├── endDate: Timestamp
+                  │     └── monthly (document) - organizational container
                   │           │
-                  │           # Fluid Therapy Summary
-                  │           ├── fluidTotalVolume: number
-                  │           ├── fluidTreatmentDays: number
-                  │           ├── fluidMissedDays: number
-                  │           ├── fluidLongestStreak: number
-                  │           ├── fluidCurrentStreak: number
-                  │           ├── fluidDailyVolumes: map          # { "01": 50, "02": 40, ... }
-                  │           │
-                  │           # Medication Summary
-                  │           ├── medicationTotalDoses: number
-                  │           ├── medicationScheduledDoses: number
-                  │           ├── medicationMonthlyAdherence: number
-                  │           ├── medicationLongestStreak: number
-                  │           ├── medicationCurrentStreak: number
-                  │           │
-                  │           # Health Monitoring Summary
-                  │           ├── weightEntriesCount: number
-                  │           ├── appetiteEntriesCount: number
-                  │           ├── symptomsEntriesCount: number
-                  │           │
-                  │           # Overall Treatment Summary
-                  │           ├── overallTreatmentDays: number
-                  │           ├── overallMissedDays: number
-                  │           ├── overallLongestStreak: number
-                  │           ├── overallCurrentStreak: number
-                  │           ├── overallMonthlyAdherence: number
-                  │           │
-                  │           ├── createdAt: Timestamp
-                  │           └── updatedAt: Timestamp
+                  │           └── summaries (subcollection)
+                  │                 │
+                  │                 └── {YYYY-MM} (e.g., "2025-10")
+                  │                       ├── startDate: Timestamp
+                  │                       ├── endDate: Timestamp
+                  │                       │
+                  │                       # Fluid Therapy Summary
+                  │                       ├── fluidTotalVolume: number
+                  │                       ├── fluidTreatmentDays: number
+                  │                       ├── fluidMissedDays: number
+                  │                       ├── fluidLongestStreak: number
+                  │                       ├── fluidCurrentStreak: number
+                  │                       │
+                  │                       # Medication Summary
+                  │                       ├── medicationTotalDoses: number
+                  │                       ├── medicationScheduledDoses: number
+                  │                       ├── medicationMissedCount: number
+                  │                       ├── medicationMonthlyAdherence: number
+                  │                       ├── medicationLongestStreak: number
+                  │                       ├── medicationCurrentStreak: number
+                  │                       │
+                  │                       # Overall Treatment Summary
+                  │                       ├── overallTreatmentDays: number
+                  │                       ├── overallMissedDays: number
+                  │                       ├── overallLongestStreak: number
+                  │                       ├── overallCurrentStreak: number
+                  │                       ├── overallTreatmentDone: boolean
+                  │                       │
+                  │                       ├── createdAt: Timestamp
+                  │                       └── updatedAt: Timestamp
                   │
                   └── schedules (subcollection)
                         │
@@ -237,7 +283,10 @@ users/
 ### Free Users (30-day limitation)
 ```dart
 // Daily summaries for recent period
-Query recentSummaries = pet.collection('treatmentSummaryDaily')
+Query recentSummaries = pet
+  .collection('treatmentSummaries')
+  .doc('daily')
+  .collection('summaries')
   .where('date', isGreaterThan: Timestamp.fromDate(thirtyDaysAgo))
   .orderBy('date', descending: true)
   .limit(30);
@@ -252,7 +301,10 @@ Query recentFluidSessions = pet.collection('fluidSessions')
 ### Premium Users (unlimited access)
 ```dart
 // Monthly summaries for long-term trends
-Query monthlySummaries = pet.collection('treatmentSummaryMonthly')
+Query monthlySummaries = pet
+  .collection('treatmentSummaries')
+  .doc('monthly')
+  .collection('summaries')
   .orderBy('startDate', descending: true)
   .limit(12); // Last 12 months
 
@@ -275,7 +327,9 @@ Query recentMedicationSessions = pet.collection('medicationSessions')
 ```dart
 // Only listen to today's summary and current pet profile
 StreamSubscription todaySummaryListener = pet
-  .collection('treatmentSummaryDaily')
+  .collection('treatmentSummaries')
+  .doc('daily')
+  .collection('summaries')
   .doc(todayDateString)
   .snapshots()
   .listen((doc) => updateHomeScreen(doc));
@@ -309,10 +363,10 @@ allow read: if isOwner(resource) &&
 ### Daily Summary Updates
 When a session is logged:
 1. Write to session collection (`fluidSessions`, `medicationSessions`)
-2. Update daily summary (`treatmentSummaryDaily/{YYYY-MM-DD}`)
-3. Update weekly summary if needed (`treatmentSummaryWeekly/{YYYY-Www}`)
-4. Update monthly summary if needed (`treatmentSummaryMonthly/{YYYY-MM}`)
-5. Update cross-pet summaries for premium users
+2. Update daily summary (`treatmentSummaries/daily/summaries/{YYYY-MM-DD}`)
+3. Update weekly summary (`treatmentSummaries/weekly/summaries/{YYYY-Www}`)
+4. Update monthly summary (`treatmentSummaries/monthly/summaries/{YYYY-MM}`)
+5. Update cross-pet summaries for premium users (future)
 
 ### Cost-Efficient Batch Operations
 ```dart
@@ -322,17 +376,29 @@ WriteBatch batch = FirebaseFirestore.instance.batch();
 batch.set(sessionRef, sessionData);
 
 // Update daily summary
-batch.update(dailySummaryRef, {
+final dailyRef = pet
+  .collection('treatmentSummaries')
+  .doc('daily')
+  .collection('summaries')
+  .doc(dateString);
+
+batch.set(dailyRef, {
   'fluidTotalVolume': FieldValue.increment(volumeGiven),
   'fluidTreatmentDone': true,
   'updatedAt': FieldValue.serverTimestamp(),
-});
+}, SetOptions(merge: true));
 
 // Update weekly summary
-batch.update(weeklySummaryRef, {
+final weeklyRef = pet
+  .collection('treatmentSummaries')
+  .doc('weekly')
+  .collection('summaries')
+  .doc(weekString);
+
+batch.set(weeklyRef, {
   'fluidTotalVolume': FieldValue.increment(volumeGiven),
   'updatedAt': FieldValue.serverTimestamp(),
-});
+}, SetOptions(merge: true));
 
 await batch.commit();
 ```

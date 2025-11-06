@@ -1,5 +1,5 @@
-import * as functions from 'firebase-functions/v1';
-import * as admin from 'firebase-admin';
+import * as functions from "firebase-functions/v1";
+import * as admin from "firebase-admin";
 
 // Initialize Firebase Admin (done once)
 if (admin.apps.length === 0) {
@@ -10,7 +10,8 @@ const db = admin.firestore();
 const messaging = admin.messaging();
 
 /**
- * Cloud Function that runs once daily to wake all devices for notification scheduling.
+ * Cloud Function that runs once daily to wake all devices for
+ * notification scheduling.
  *
  * Flow:
  * 1. Query all active devices with FCM tokens
@@ -24,14 +25,14 @@ const messaging = admin.messaging();
 export const dailyNotificationWakeup = functions
   .runWith({
     timeoutSeconds: 540, // 9 minutes max
-    memory: '256MB',
+    memory: "256MB",
   })
-  .pubsub.schedule('0 0 * * *') // Every day at midnight UTC
-  .timeZone('UTC')
-  .onRun(async (context: functions.EventContext) => {
+  .pubsub.schedule("0 0 * * *") // Every day at midnight UTC
+  .timeZone("UTC")
+  .onRun(async () => {
     const startTime = Date.now();
 
-    functions.logger.info('=== Daily Notification Wake-Up Started ===');
+    functions.logger.info("=== Daily Notification Wake-Up Started ===");
     functions.logger.info(`Execution time: ${new Date().toISOString()}`);
 
     try {
@@ -42,15 +43,15 @@ export const dailyNotificationWakeup = functions
 
       // Query all active devices with FCM tokens
       // Using hasFcmToken field (will be added in Phase 1)
-      const devicesSnapshot = await db.collection('devices')
-        .where('isActive', '==', true)
-        .where('hasFcmToken', '==', true)
+      const devicesSnapshot = await db.collection("devices")
+        .where("isActive", "==", true)
+        .where("hasFcmToken", "==", true)
         .get();
 
       totalDevices = devicesSnapshot.size;
 
       if (totalDevices === 0) {
-        functions.logger.info('No active devices with FCM tokens found');
+        functions.logger.info("No active devices with FCM tokens found");
         return {
           success: true,
           totalDevices: 0,
@@ -69,21 +70,22 @@ export const dailyNotificationWakeup = functions
         const device = deviceDoc.data();
 
         if (!device.fcmToken) {
-          continue; // Skip devices without token (shouldn't happen due to query)
+          // Skip devices without token (shouldn't happen due to query)
+          continue;
         }
 
         // Build silent data-only message
         const message: admin.messaging.Message = {
           token: device.fcmToken,
           data: {
-            type: 'daily_wakeup',
+            type: "daily_wakeup",
             timestamp: new Date().toISOString(),
           },
           // iOS-specific configuration for silent push
           apns: {
             headers: {
-              'apns-priority': '5', // Low priority
-              'apns-push-type': 'background',
+              "apns-priority": "5", // Low priority
+              "apns-push-type": "background",
             },
             payload: {
               aps: {
@@ -94,9 +96,9 @@ export const dailyNotificationWakeup = functions
           },
           // Android-specific configuration
           android: {
-            priority: 'high', // Required for background processing
+            priority: "high", // Required for background processing
             data: {
-              type: 'daily_wakeup',
+              type: "daily_wakeup",
               timestamp: new Date().toISOString(),
             },
           },
@@ -135,8 +137,8 @@ export const dailyNotificationWakeup = functions
 
               // Remove invalid tokens
               if (
-                error.code === 'messaging/invalid-registration-token' ||
-                error.code === 'messaging/registration-token-not-registered'
+                error.code === "messaging/invalid-registration-token" ||
+                error.code === "messaging/registration-token-not-registered"
               ) {
                 firestoreBatch.update(deviceDoc.ref, {
                   fcmToken: null,
@@ -156,16 +158,15 @@ export const dailyNotificationWakeup = functions
           if (batchOperations > 0) {
             await firestoreBatch.commit();
           }
-
         } catch (error) {
-          functions.logger.error(`Batch send failed:`, error);
+          functions.logger.error("Batch send failed:", error);
           totalFailed += batch.length;
         }
       }
 
       // Log final summary
       const duration = Date.now() - startTime;
-      functions.logger.info('=== Daily Notification Wake-Up Complete ===');
+      functions.logger.info("=== Daily Notification Wake-Up Complete ===");
       functions.logger.info(`Total devices queried: ${totalDevices}`);
       functions.logger.info(`Messages sent successfully: ${totalSent}`);
       functions.logger.info(`Messages failed: ${totalFailed}`);
@@ -180,9 +181,8 @@ export const dailyNotificationWakeup = functions
         invalidTokensRemoved,
         durationMs: duration,
       };
-
     } catch (error) {
-      functions.logger.error('Fatal error in dailyNotificationWakeup:', error);
+      functions.logger.error("Fatal error in dailyNotificationWakeup:", error);
       throw error; // Rethrow to mark function as failed
     }
   });

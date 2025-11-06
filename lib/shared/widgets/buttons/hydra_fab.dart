@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hydracat/core/theme/theme.dart';
 
 /// Special Floating Action Button for logging sessions.
@@ -45,6 +46,9 @@ class _HydraFabState extends State<HydraFab> {
   }
 
   void _onTapDown(TapDownDetails details) {
+    // Trigger haptic feedback immediately on touch down
+    HapticFeedback.selectionClick();
+    
     if (widget.onLongPress != null && !widget.isLoading) {
       _longPressTimer = Timer(const Duration(milliseconds: 500), () {
         widget.onLongPress!();
@@ -105,7 +109,12 @@ class _HydraFabState extends State<HydraFab> {
 
     // Fallback to standard FloatingActionButton for simple press-only case
     return FloatingActionButton(
-      onPressed: widget.isLoading ? null : widget.onPressed,
+      onPressed: widget.isLoading
+          ? null
+          : () {
+              HapticFeedback.selectionClick();
+              widget.onPressed?.call();
+            },
       tooltip: widget.tooltip,
       backgroundColor: AppColors.surface, // White background
       foregroundColor: AppColors.primary, // Teal droplet

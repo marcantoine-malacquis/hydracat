@@ -1265,6 +1265,7 @@ class _AppShellState extends ConsumerState<AppShell>
       '/profile/fluid',
       '/profile/fluid/create',
       '/profile/medication',
+      '/profile/weight',
     ].contains(currentLocation);
 
     // Load pet profile if authenticated and onboarding completed
