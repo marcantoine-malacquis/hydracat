@@ -194,15 +194,15 @@ class WeightNotifier extends StateNotifier<WeightState> {
       ]);
 
       final latestWeight = results[0] as double?;
-      final historyEntries = results[1]! as List<HealthParameter>;
+      final historyResult = results[1]! as WeightHistoryResult;
 
       state = state.copyWith(
         graphData: graphData,
         latestWeight: latestWeight,
-        historyEntries: historyEntries,
-        hasMore: historyEntries.length == 50,
+        historyEntries: historyResult.entries,
+        hasMore: historyResult.entries.length == 50,
+        lastDocument: historyResult.lastDocument,
         isLoading: false,
-        clearLastDocument: true,
       );
 
       // Track analytics event
@@ -269,15 +269,15 @@ class WeightNotifier extends StateNotifier<WeightState> {
       ]);
 
       final latestWeight = results[0] as double?;
-      final historyEntries = results[1]! as List<HealthParameter>;
+      final historyResult = results[1]! as WeightHistoryResult;
 
       state = state.copyWith(
         graphData: graphData,
         latestWeight: latestWeight,
-        historyEntries: historyEntries,
-        hasMore: historyEntries.length == 50,
+        historyEntries: historyResult.entries,
+        hasMore: historyResult.entries.length == 50,
+        lastDocument: historyResult.lastDocument,
         isRefreshing: false,
-        clearLastDocument: true,
       );
 
       // Track analytics event
@@ -326,15 +326,16 @@ class WeightNotifier extends StateNotifier<WeightState> {
     state = state.copyWith(isLoading: true);
 
     try {
-      final moreEntries = await _service.getWeightHistory(
+      final historyResult = await _service.getWeightHistory(
         userId: authState.user.id,
         petId: primaryPet.id,
         startAfterDoc: state.lastDocument,
       );
 
       state = state.copyWith(
-        historyEntries: [...state.historyEntries, ...moreEntries],
-        hasMore: moreEntries.length == 50,
+        historyEntries: [...state.historyEntries, ...historyResult.entries],
+        hasMore: historyResult.entries.length == 50,
+        lastDocument: historyResult.lastDocument,
         isLoading: false,
       );
 

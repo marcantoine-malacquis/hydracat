@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/features/health/models/health_parameter.dart';
 import 'package:hydracat/features/health/models/weight_granularity.dart';
 import 'package:hydracat/features/health/widgets/weight_entry_dialog.dart';
 import 'package:hydracat/features/health/widgets/weight_line_chart.dart';
@@ -43,11 +44,13 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
     );
 
     if (result != null && mounted) {
-      final success = await ref.read(weightProvider.notifier).logWeight(
-        date: result['date'] as DateTime,
-        weightKg: result['weightKg'] as double,
-        notes: result['notes'] as String?,
-      );
+      final success = await ref
+          .read(weightProvider.notifier)
+          .logWeight(
+            date: result['date'] as DateTime,
+            weightKg: result['weightKg'] as double,
+            notes: result['notes'] as String?,
+          );
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -86,10 +89,10 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
       body: weightState.isLoading && weightState.historyEntries.isEmpty
           ? _buildLoadingState()
           : weightState.error != null && weightState.historyEntries.isEmpty
-              ? _buildErrorState()
-              : weightState.historyEntries.isEmpty
-                  ? _buildEmptyState()
-                  : _buildContentView(weightState),
+          ? _buildErrorState()
+          : weightState.historyEntries.isEmpty
+          ? _buildEmptyState()
+          : _buildContentView(weightState),
       floatingActionButton: HydraFab(
         onPressed: _showAddWeightDialog,
         icon: Icons.scale,
@@ -185,71 +188,61 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
     );
   }
 
-  /// Content view with graph card
+  /// Content view with graph controls and chart
   Widget _buildContentView(WeightState state) {
     final currentUnit = ref.watch(weightUnitProvider);
 
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: _buildGraphCard(state, currentUnit),
-      ),
-    );
-  }
-
-  /// Graph card showing weight trend or single weight stat
-  Widget _buildGraphCard(WeightState state, String currentUnit) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildGranularitySelector(state),
-          const SizedBox(height: AppSpacing.sm),
-          _buildGraphHeader(state),
-          const SizedBox(height: AppSpacing.md),
-          if (state.graphData.isEmpty)
-            SizedBox(
-              height: 200,
-              child: Center(
-                child: Text(
-                  'Log more weights to see your trend',
-                  style: AppTextStyles.small.copyWith(
-                    color: AppColors.textSecondary,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildGranularitySelector(state),
+            const SizedBox(height: AppSpacing.sm),
+            _buildGraphHeader(state),
+            const SizedBox(height: AppSpacing.md),
+            if (state.graphData.isEmpty)
+              SizedBox(
+                height: 200,
+                child: Center(
+                  child: Text(
+                    'Log more weights to see your trend',
+                    style: AppTextStyles.small.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
+              )
+            else if (state.graphData.length == 1)
+              // Show stat card for single data point
+              WeightStatCard(
+                weight: currentUnit == 'kg'
+                    ? state.graphData.first.weightKg
+                    : state.graphData.first.weightLbs,
+                date: state.graphData.first.date,
+                unit: currentUnit,
+              )
+            else
+              // Show line chart for 2+ data points
+              WeightLineChart(
+                dataPoints: state.graphData,
+                unit: currentUnit,
+                granularity: state.granularity,
               ),
-            )
-          else if (state.graphData.length == 1)
-            // Show stat card for single data point
-            WeightStatCard(
-              weight: currentUnit == 'kg'
-                  ? state.graphData.first.weightKg
-                  : state.graphData.first.weightLbs,
-              date: state.graphData.first.date,
-              unit: currentUnit,
-            )
-          else
-            // Show line chart for 2+ data points
-            WeightLineChart(
-              dataPoints: state.graphData,
-              unit: currentUnit,
-              granularity: state.granularity,
-            ),
-        ],
+            const SizedBox(height: AppSpacing.lg),
+            _buildHistorySection(state, currentUnit),
+          ],
+        ),
       ),
     );
   }
 
   /// Builds period navigation header with chevrons and Today button
   Widget _buildGraphHeader(WeightState state) {
-    final isOnCurrentPeriod =
-        ref.read(weightProvider.notifier).isOnCurrentPeriod;
+    final isOnCurrentPeriod = ref
+        .read(weightProvider.notifier)
+        .isOnCurrentPeriod;
     final periodLabel = _formatPeriodLabel(state);
 
     return Row(
@@ -265,18 +258,18 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
           constraints: const BoxConstraints(),
           tooltip: 'Previous ${state.granularity.label.toLowerCase()}',
         ),
-        const SizedBox(width: AppSpacing.sm),
+        const SizedBox(width: AppSpacing.xs),
         // Period label
-        Expanded(
-          child: Text(
-            periodLabel,
-            style: AppTextStyles.body.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
+        Text(
+          periodLabel,
+          style: AppTextStyles.body.copyWith(
+            fontWeight: FontWeight.w500,
           ),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.visible,
         ),
-        const SizedBox(width: AppSpacing.sm),
+        const SizedBox(width: AppSpacing.xs),
         // Right chevron
         IconButton(
           icon: const Icon(Icons.chevron_right),
@@ -366,8 +359,9 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
   String _formatPeriodLabel(WeightState state) {
     return switch (state.granularity) {
       WeightGranularity.week => _formatWeekLabel(state.periodStart),
-      WeightGranularity.month =>
-        DateFormat('MMMM yyyy').format(state.periodStart),
+      WeightGranularity.month => DateFormat(
+        'MMMM yyyy',
+      ).format(state.periodStart),
       WeightGranularity.year => state.periodStart.year.toString(),
     };
   }
@@ -383,6 +377,133 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
     } else {
       return '${DateFormat('MMM d').format(weekStart)} - '
           '${DateFormat('MMM d, yyyy').format(weekEnd)}';
+    }
+  }
+
+  /// Builds the paginated history list section
+  Widget _buildHistorySection(WeightState state, String currentUnit) {
+    if (state.historyEntries.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Recent Entries',
+          style: AppTextStyles.h3,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: state.historyEntries.length,
+          separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.xs),
+          itemBuilder: (context, index) {
+            final entry = state.historyEntries[index];
+            final displayWeight = currentUnit == 'kg'
+                ? entry.weight!
+                : entry.weight! * 2.20462;
+
+            return Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          DateFormat('MMM dd, yyyy').format(entry.date),
+                          style: AppTextStyles.body,
+                        ),
+                        if (entry.notes != null) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            entry.notes!,
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Text(
+                    '${displayWeight.toStringAsFixed(2)} $currentUnit',
+                    style: AppTextStyles.h3,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: 18),
+                    onPressed: () => _showEditWeightDialog(entry),
+                    tooltip: 'Edit',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        if (state.hasMore) ...[
+          const SizedBox(height: AppSpacing.md),
+          Center(
+            child: OutlinedButton(
+              onPressed: state.isLoading
+                  ? null
+                  : () => ref.read(weightProvider.notifier).loadMoreHistory(),
+              child: state.isLoading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Load More'),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Shows dialog to edit an existing weight entry
+  Future<void> _showEditWeightDialog(HealthParameter entry) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => WeightEntryDialog(existingEntry: entry),
+    );
+
+    if (result != null && mounted) {
+      final success = await ref
+          .read(weightProvider.notifier)
+          .updateWeight(
+            oldDate: entry.date,
+            oldWeightKg: entry.weight!,
+            newDate: result['date'] as DateTime,
+            newWeightKg: result['weightKg'] as double,
+            newNotes: result['notes'] as String?,
+          );
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Weight updated successfully'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      }
     }
   }
 }

@@ -7,6 +7,21 @@ import 'package:hydracat/features/health/models/weight_data_point.dart';
 import 'package:hydracat/features/profile/services/profile_validation_service.dart';
 import 'package:intl/intl.dart';
 
+/// Result class for weight history queries with pagination support
+class WeightHistoryResult {
+  /// Creates a [WeightHistoryResult]
+  const WeightHistoryResult({
+    required this.entries,
+    this.lastDocument,
+  });
+
+  /// List of weight entries
+  final List<HealthParameter> entries;
+
+  /// Firestore document snapshot for pagination cursor
+  final DocumentSnapshot? lastDocument;
+}
+
 /// Service for weight tracking operations
 ///
 /// Handles CRUD operations for weight entries with:
@@ -475,19 +490,18 @@ class WeightService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // 3. Update CatProfile.weightKg to most recent remaining entry
-      // Query for most recent weight (excluding the one being deleted)
-      final recentWeightQuery = await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('pets')
-          .doc(petId)
-          .collection('healthParameters')
-          .where('weight', isNotEqualTo: null)
-          .orderBy('weight')
-          .orderBy('date', descending: true)
-          .limit(2) // Get 2 to find next most recent
-          .get();
+    // 3. Update CatProfile.weightKg to most recent remaining entry
+    // Query for most recent weight (excluding the one being deleted)
+    final recentWeightQuery = await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('pets')
+        .doc(petId)
+        .collection('healthParameters')
+        .where('hasWeight', isEqualTo: true)
+        .orderBy('date', descending: true)
+        .limit(2) // Get 2 to find next most recent
+        .get();
 
       // Find the most recent entry that's not the one being deleted
       double? newLatestWeight;
@@ -535,8 +549,9 @@ class WeightService {
   /// Gets paginated weight history
   ///
   /// Returns up to [limit] entries, optionally starting after [startAfterDoc].
-  /// Filters for documents with non-null weight values only.
-  Future<List<HealthParameter>> getWeightHistory({
+  /// Filters for documents with hasWeight flag set to true.
+  /// Returns [WeightHistoryResult] containing entries and pagination cursor.
+  Future<WeightHistoryResult> getWeightHistory({
     required String userId,
     required String petId,
     DocumentSnapshot? startAfterDoc,
@@ -549,8 +564,7 @@ class WeightService {
           .collection('pets')
           .doc(petId)
           .collection('healthParameters')
-          .where('weight', isNotEqualTo: null)
-          .orderBy('weight')
+          .where('hasWeight', isEqualTo: true)
           .orderBy('date', descending: true)
           .limit(limit);
 
@@ -559,7 +573,13 @@ class WeightService {
       }
 
       final snapshot = await query.get();
-      return snapshot.docs.map(HealthParameter.fromFirestore).toList();
+      final entries = snapshot.docs.map(HealthParameter.fromFirestore).toList();
+
+      // Return both entries AND the last document for pagination
+      return WeightHistoryResult(
+        entries: entries,
+        lastDocument: snapshot.docs.isNotEmpty ? snapshot.docs.last : null,
+      );
     } on FirebaseException catch (e) {
       if (kDebugMode) {
         debugPrint(

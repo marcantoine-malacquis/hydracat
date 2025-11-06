@@ -2816,13 +2816,13 @@ LineChartBarData(
 )
 
 // Y-axis labels (no unit - cleaner)
-getTitlesWidget: (value, meta) {
-  return Text(
+                getTitlesWidget: (value, meta) {
+                  return Text(
     value.toStringAsFixed(2),  // e.g., "4.00", "4.25"
-    style: AppTextStyles.caption.copyWith(
-      color: AppColors.textSecondary,
-    ),
-  );
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  );
 }
 ```
 *See actual implementation in `lib/features/health/widgets/weight_line_chart.dart`*
@@ -2835,44 +2835,19 @@ getTitlesWidget: (value, meta) {
 ```
 
 **Weight Screen Integration**:
-```dart
-// lib/features/health/screens/weight_screen.dart
-
-Widget _buildGraphCard(WeightState state, String currentUnit) {
-  return Container(
-    // ... styling
-    child: Column(
-      children: [
-        // Note: "Weight Trend" title removed to save space for step 3.4 controls
-        if (state.graphData.isEmpty)
-          // Empty state message
-        else if (state.graphData.length == 1)
-          WeightStatCard(...)  // Single data point
-        else
-          WeightLineChart(
-            dataPoints: state.graphData,
-            unit: currentUnit,
-            granularity: state.granularity,  // Added in 3.4
-          ),
-      ],
-    ),
-  );
-}
-```
+- Cardless layout (removed white card wrapper for more horizontal space)
+- Controls and chart directly on background
+- Conditional rendering: empty state → stat card (1 point) → line chart (2+ points)
+- Chart receives `granularity` parameter for adaptive X-axis labels
 
 **Critical Fixes Applied**:
 1. Added `startDate` field to monthly summaries when logging weights
-2. Set `startDate` if document exists but has no weight data yet
-3. Created Firebase composite indexes for queries
+2. Set `startDate` check: `currentData?['startDate'] == null` (handles existing treatment-only summaries)
+3. Created Firebase composite indexes for all queries
 4. Fixed curve overshooting with `preventCurveOverShooting: true`
+5. Added comma (`,`) decimal separator support for European locales
 
-**Testing**:
-```bash
-flutter analyze  # ✅ Passed
-# Graph renders with clean intervals
-# No curve overshooting between equal values
-# Tooltips work on touch
-```
+**Testing**: ✅ All passed - clean intervals, no overshooting, tooltips functional
 
 ---
 
@@ -2893,12 +2868,13 @@ flutter analyze  # ✅ Passed
 **UX/Controls Implemented**:
 - ✅ Segmented control: `Week | Month | Year` (default Year, teal when selected)
 - ✅ Toggles positioned ABOVE date navigation (saves space, better hierarchy)
-- ✅ Left/Right chevrons to navigate periods
+- ✅ Left/Right chevrons to navigate periods (4px spacing for compactness)
 - ✅ Right chevron disabled at current period (prevents future navigation)
 - ✅ "Today" button appears when not on current period (quick jump)
-- ✅ Period labels: "Nov 4-10, 2025" / "November 2025" / "2025"
+- ✅ Period labels: "Nov 4-10, 2025" / "November 2025" / "2025" (full month names)
 - ✅ Session-only persistence (resets to Year on screen re-open)
 - ✅ Haptic feedback on all interactions
+- ✅ Cardless layout (controls + chart on background, no white card wrapper)
 
 **Data/CRUD Implementation**:
 - ✅ Added `hasWeight: true` to healthParameters on write
@@ -2960,24 +2936,29 @@ Future<void> loadGraphDataForPeriod();          // Loads data with cache
 
 **UI Implementation**:
 ```dart
-// lib/features/health/screens/weight_screen.dart
+// Cardless layout - no Container wrapper
+SingleChildScrollView(
+  padding: EdgeInsets.all(AppSpacing.md),  // 16px
+    child: Column(
+      children: [
+      _buildGranularitySelector(state),     // Week|Month|Year (teal selected)
+      SizedBox(height: AppSpacing.sm),      // 8px
+      _buildGraphHeader(state),             // [<] Label [>] Today (4px spacing)
+      SizedBox(height: AppSpacing.md),      // 16px
+      [Chart or Empty State or Stat Card]
+    ],
+  ),
+)
 
-// Layout (toggles above navigation)
-_buildGranularitySelector(state),       // Week|Month|Year (teal selected)
-const SizedBox(height: AppSpacing.sm),
-_buildGraphHeader(state),               // [<] Period Label [>] Today
-const SizedBox(height: AppSpacing.md),
-[Chart or Empty State]
-
-// Period labels by granularity
+// Period labels: Full month names, no wrapping
 Week:  "Nov 4-10, 2025"
-Month: "November 2025"  
+Month: "November 2025" (maxLines: 1, overflow: visible)
 Year:  "2025"
 
-// X-axis labels by granularity
-Week:  EEE (Mon, Tue, Wed...)
-Month: d (1, 2, 3...31)
-Year:  MMM (Jan, Feb, Mar...)
+// X-axis labels adapt per granularity
+Week:  EEE (Mon, Tue...)
+Month: d (1, 2, 3...)
+Year:  MMM (Jan, Feb...)
 ```
 
 **Firebase Indexes Created**:
@@ -2990,14 +2971,13 @@ Year:  MMM (Jan, Feb, Mar...)
 - Week: ≤7 reads (filtered by hasWeight)
 - Cached navigation: 0 reads (30-min TTL)
 
-**Testing**:
-```bash
-flutter analyze  # ✅ Passed - No issues found
-# All granularities work correctly
-# Navigation smooth with haptic feedback
-# Cache logs confirm 0 reads on revisit
-# Empty states display properly per period
-```
+**Layout Optimizations**:
+- Removed card wrapper (+34px horizontal space)
+- Reduced chevron spacing to 4px (AppSpacing.xs)
+- Full month names display without wrapping
+- No overflow errors
+
+**Testing**: ✅ All passed - navigation works, caching effective, no layout overflow
 
 ---
 
