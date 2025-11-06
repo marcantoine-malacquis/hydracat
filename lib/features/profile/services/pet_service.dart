@@ -687,4 +687,27 @@ class PetService {
 
     return dependencies;
   }
+
+  /// Updates the cached weight without a Firestore read
+  ///
+  /// This is an optimization for weight tracking - since WeightService
+  /// already updates Firestore, we just need to sync our cache.
+  /// Also updates persistent cache to maintain consistency across app restarts.
+  void updateCachedWeight(double? weightKg) {
+    if (_cachedPrimaryPet != null) {
+      _cachedPrimaryPet = _cachedPrimaryPet!.copyWith(
+        weightKg: weightKg,
+        updatedAt: DateTime.now(),
+      );
+      _cacheTimestamp = DateTime.now();
+
+      // Also update persistent cache (fire and forget)
+      if (_cachedPrimaryPetUserId != null) {
+        unawaited(_saveToPersistentCache(
+          _cachedPrimaryPet!,
+          _cachedPrimaryPetUserId!,
+        ));
+      }
+    }
+  }
 }

@@ -103,8 +103,8 @@ class WeightLineChart extends StatelessWidget {
     final maxWeight = weights.reduce(max);
     final range = maxWeight - minWeight;
 
-    // Enforce minimum 0.5kg range for meaningful scale
-    final effectiveRange = max(range, 0.5);
+    // Enforce minimum 2.0kg range for meaningful scale
+    final effectiveRange = max(range, 2);
 
     // Add 10% padding to Y axis
     final padding = effectiveRange * 0.1;

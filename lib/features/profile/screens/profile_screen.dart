@@ -761,7 +761,7 @@ class ProfileScreen extends ConsumerWidget {
         ProfileSectionItem(
           title: 'Weight',
           icon: Icons.scale,
-          onTap: () => context.go('/profile/weight'),
+          onTap: () => context.push('/profile/weight'),
         ),
 
         // Future sections will be added here

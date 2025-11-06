@@ -2,60 +2,90 @@ import 'package:flutter/material.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
-import 'package:intl/intl.dart';
 
-/// Stat card widget for displaying a single weight entry
+/// Stat card widget for displaying current weight
 ///
-/// Used when there's only one weight data point available.
-/// Shows the weight value, date, and encourages more logging.
+/// Shows the current weight value and optionally a change indicator
+/// with trend arrow (up/down/flat) when comparing to previous measurement.
 class WeightStatCard extends StatelessWidget {
   /// Creates a [WeightStatCard]
   const WeightStatCard({
     required this.weight,
-    required this.date,
     required this.unit,
+    this.change,
     super.key,
   });
 
   /// Weight value in the display unit
   final double weight;
 
-  /// Date of the weight measurement
-  final DateTime date;
-
   /// Unit to display (kg or lbs)
   final String unit;
 
+  /// Weight change from previous measurement (optional)
+  final double? change;
+
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 200,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              '${weight.toStringAsFixed(2)} $unit',
-              style: AppTextStyles.display.copyWith(
-                color: AppColors.primary,
-              ),
+    // Determine trend based on change
+    String? trend;
+    if (change != null) {
+      if (change! > 0.1) {
+        trend = 'increasing';
+      } else if (change! < -0.1) {
+        trend = 'decreasing';
+      } else {
+        trend = 'stable';
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          Text(
+            '${weight.toStringAsFixed(2)} $unit',
+            style: AppTextStyles.h1.copyWith(
+              color: AppColors.primary,
             ),
-            const SizedBox(height: AppSpacing.xs),
+          ),
+          if (change != null && trend != null) ...[
+            const SizedBox(width: AppSpacing.xs),
+            Icon(
+              trend == 'increasing'
+                  ? Icons.trending_up
+                  : trend == 'decreasing'
+                      ? Icons.trending_down
+                      : Icons.trending_flat,
+              color: trend == 'increasing'
+                  ? Colors.orange
+                  : trend == 'decreasing'
+                      ? Colors.blue
+                      : AppColors.textSecondary,
+              size: 20,
+            ),
+            const SizedBox(width: AppSpacing.xs),
             Text(
-              DateFormat('MMM dd, yyyy').format(date),
+              '${change! >= 0 ? "+" : ""}${change!.toStringAsFixed(2)}',
               style: AppTextStyles.body.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              'Log more weights to see trends',
-              style: AppTextStyles.small.copyWith(
-                color: AppColors.textSecondary,
+                color: trend == 'increasing'
+                    ? Colors.orange
+                    : trend == 'decreasing'
+                        ? Colors.blue
+                        : AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
-        ),
+        ],
       ),
     );
   }

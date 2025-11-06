@@ -123,17 +123,17 @@ class WeightState {
 
   @override
   int get hashCode => Object.hash(
-        graphData,
-        historyEntries,
-        latestWeight,
-        isLoading,
-        isRefreshing,
-        error,
-        hasMore,
-        lastDocument,
-        granularity,
-        periodStart,
-      );
+    graphData,
+    historyEntries,
+    latestWeight,
+    isLoading,
+    isRefreshing,
+    error,
+    hasMore,
+    lastDocument,
+    granularity,
+    periodStart,
+  );
 }
 
 /// Notifier for managing weight state
@@ -400,6 +400,10 @@ class WeightNotifier extends StateNotifier<WeightState> {
       // Reload data (will fetch fresh from Firebase)
       await loadInitialData();
 
+      // Update profile cache with new weight
+      //(optimization to avoid Firestore read)
+      _ref.read(profileProvider.notifier).updateCachedWeight(weightKg);
+
       // Track analytics event
       final currentUnit = _ref.read(weightUnitProvider);
       final analytics = _ref.read(analyticsServiceDirectProvider);
@@ -475,6 +479,10 @@ class WeightNotifier extends StateNotifier<WeightState> {
       // Reload data (will fetch fresh from Firebase)
       await loadInitialData();
 
+      // Update profile cache with new weight
+      //(optimization to avoid Firestore read)
+      _ref.read(profileProvider.notifier).updateCachedWeight(newWeightKg);
+
       // Track analytics event
       final dateChanged = !oldDate.isAtSameMomentAs(newDate);
       final weightChanged = oldWeightKg != newWeightKg;
@@ -539,6 +547,14 @@ class WeightNotifier extends StateNotifier<WeightState> {
 
       // Reload data (will fetch fresh from Firebase)
       await loadInitialData();
+
+      // Update profile cache with latest weight after deletion
+      // (WeightService already updated Firestore with most recent weight
+      // or null)
+      final latestWeight = state.historyEntries.isNotEmpty
+          ? state.historyEntries.first.weight
+          : null;
+      _ref.read(profileProvider.notifier).updateCachedWeight(latestWeight);
 
       // Track analytics event
       final analytics = _ref.read(analyticsServiceDirectProvider);
@@ -651,19 +667,19 @@ class WeightNotifier extends StateNotifier<WeightState> {
 
     final graphData = await switch (granularity) {
       WeightGranularity.week => _service.getWeightGraphDataWeek(
-          userId: userId,
-          petId: petId,
-          weekStart: periodStart,
-        ),
+        userId: userId,
+        petId: petId,
+        weekStart: periodStart,
+      ),
       WeightGranularity.month => _service.getWeightGraphDataMonth(
-          userId: userId,
-          petId: petId,
-          monthStart: periodStart,
-        ),
+        userId: userId,
+        petId: petId,
+        monthStart: periodStart,
+      ),
       WeightGranularity.year => _service.getWeightGraphData(
-          userId: userId,
-          petId: petId,
-        ),
+        userId: userId,
+        petId: petId,
+      ),
     };
 
     // Store in cache for next time
@@ -704,8 +720,10 @@ class WeightNotifier extends StateNotifier<WeightState> {
 
   /// Navigates to the previous period (week/month/year)
   void previousPeriod() {
-    final newPeriodStart =
-        _getPreviousPeriod(state.periodStart, state.granularity);
+    final newPeriodStart = _getPreviousPeriod(
+      state.periodStart,
+      state.granularity,
+    );
     state = state.copyWith(periodStart: newPeriodStart);
     loadGraphDataForPeriod();
   }
@@ -761,8 +779,9 @@ class WeightNotifier extends StateNotifier<WeightState> {
 }
 
 /// Provider for weight state
-final weightProvider =
-    StateNotifierProvider<WeightNotifier, WeightState>((ref) {
+final weightProvider = StateNotifierProvider<WeightNotifier, WeightState>((
+  ref,
+) {
   return WeightNotifier(
     ref.watch(weightServiceProvider),
     ref,

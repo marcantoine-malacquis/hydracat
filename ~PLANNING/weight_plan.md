@@ -2983,16 +2983,41 @@ Year:  MMM (Jan, Feb...)
 
 ## Phase 4: Additional Features & Polish
 
-### Step 4.1: Add Delete Functionality
+### Step 4.1: Add Delete Functionality ✅ COMPLETED
 
-**Goal**: Add swipe-to-delete and confirmation dialog for weight entries
+**Goal**: Add swipe-to-reveal delete button for weight entries (industry-standard UX)
 
 **Files to modify**:
+- `pubspec.yaml` (ADD flutter_slidable dependency)
 - `lib/features/health/screens/weight_screen.dart` (MODIFY)
 
 **Implementation**:
 
-Update the history list item builder in `_buildHistorySection()`:
+**Step 1: Add flutter_slidable dependency**
+
+Add to `pubspec.yaml`:
+```yaml
+dependencies:
+  flutter:
+    sdk: flutter
+  # ... existing dependencies ...
+  flutter_slidable: ^4.0.3  # ADD THIS LINE
+```
+
+Then run:
+```bash
+flutter pub get
+```
+
+**Step 2: Update weight_screen.dart**
+
+Add imports:
+```dart
+import 'dart:async';  // For unawaited()
+import 'package:flutter_slidable/flutter_slidable.dart';
+```
+
+Replace the history list item builder in `_buildHistorySection()`:
 
 ```dart
 // REPLACE the ListView.separated itemBuilder in _buildHistorySection() with:
@@ -3003,25 +3028,24 @@ itemBuilder: (context, index) {
       ? entry.weight!
       : entry.weight! * 2.20462;
 
-  return Dismissible(
+  return Slidable(
     key: Key('weight_${entry.date.millisecondsSinceEpoch}'),
-    direction: DismissDirection.endToStart,
-    background: Container(
-      alignment: Alignment.centerRight,
-      padding: const EdgeInsets.only(right: AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Colors.red,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: const Icon(
-        Icons.delete,
-        color: Colors.white,
-      ),
+    endActionPane: ActionPane(
+      motion: const DrawerMotion(),
+      extentRatio: 0.25,
+      children: [
+        SlidableAction(
+          onPressed: (context) => _deleteWeight(entry.date),
+          backgroundColor: AppColors.error,
+          foregroundColor: Colors.white,
+          icon: Icons.delete_outline,
+          label: 'Delete',
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ],
     ),
-    confirmDismiss: (direction) => _confirmDelete(context),
-    onDismissed: (direction) => _deleteWeight(entry.date),
     child: Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(8),
@@ -3041,7 +3065,7 @@ itemBuilder: (context, index) {
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     entry.notes!,
-                    style: AppTextStyles.bodySmall.copyWith(
+                    style: AppTextStyles.caption.copyWith(
                       color: AppColors.textSecondary,
                     ),
                     maxLines: 1,
@@ -3055,11 +3079,17 @@ itemBuilder: (context, index) {
             '${displayWeight.toStringAsFixed(2)} $currentUnit',
             style: AppTextStyles.h3,
           ),
-          const SizedBox(width: AppSpacing.sm),
+          const SizedBox(width: AppSpacing.xs),
           IconButton(
-            icon: const Icon(Icons.edit, size: 20),
+            icon: const Icon(Icons.edit, size: 18),
             onPressed: () => _showEditWeightDialog(entry),
             tooltip: 'Edit',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(
+              minWidth: 32,
+              minHeight: 32,
+            ),
+            visualDensity: VisualDensity.compact,
           ),
         ],
       ),
@@ -3068,41 +3098,19 @@ itemBuilder: (context, index) {
 },
 ```
 
-Add these methods to `_WeightScreenState`:
+Add delete method to `_WeightScreenState`:
 
 ```dart
-// ADD these methods to _WeightScreenState class:
+// ADD this method to _WeightScreenState class:
 
-Future<bool> _confirmDelete(BuildContext context) async {
-  return await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Delete Weight Entry'),
-      content: const Text(
-        'Are you sure you want to delete this weight entry? '
-        'This action cannot be undone.',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          style: FilledButton.styleFrom(
-            backgroundColor: Colors.red,
-          ),
-          child: const Text('Delete'),
-        ),
-      ],
-    ),
-  ) ?? false;
-}
-
+/// Deletes a weight entry
 Future<void> _deleteWeight(DateTime date) async {
+  // Provide haptic feedback
+  unawaited(HapticFeedback.mediumImpact());
+
   final success = await ref.read(weightProvider.notifier).deleteWeight(
-    date: date,
-  );
+        date: date,
+      );
 
   if (mounted) {
     if (success) {
@@ -3113,16 +3121,26 @@ Future<void> _deleteWeight(DateTime date) async {
         ),
       );
     } else {
+      final error = ref.read(weightProvider).error;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to delete: ${ref.read(weightProvider).error}'),
-          backgroundColor: Colors.red,
+          content: Text(error?.message ?? 'Failed to delete weight'),
+          backgroundColor: AppColors.error,
         ),
       );
     }
   }
 }
 ```
+
+**UX Details**:
+- ✅ **Swipe left** to reveal red delete button (no dialog needed!)
+- ✅ **Tap "Delete"** to confirm deletion (two-step action)
+- ✅ **Haptic feedback** on tap
+- ✅ **Smooth drawer animation** (`DrawerMotion`)
+- ✅ **25% extent ratio** (compact reveal width)
+- ✅ **Rounded corners** matching design
+- ✅ Industry-standard pattern (iOS Mail, WhatsApp, etc.)
 
 **Testing**:
 ```bash
@@ -3131,216 +3149,275 @@ flutter analyze
 
 # Run the app
 # Swipe left on a weight entry
-# Confirm deletion
+# Tap red "Delete" button
 # Entry should be removed and graph updated
 ```
 
 ---
 
-### Step 4.2: Add Weight Change Indicator to Stats Card
+### Step 4.2: Add Weight Change Indicator to Stats Card ✅ COMPLETED
 
-**Goal**: Show monthly weight change with trend arrow
+**Goal**: Show weight change with trend arrow in a compact, prominent card at the top of the screen
 
-**Files to modify**:
+**Files created**:
+- `lib/features/health/widgets/weight_stat_card.dart` (NEW - 93 lines)
+
+**Files modified**:
 - `lib/features/health/screens/weight_screen.dart` (MODIFY)
 
 **Implementation**:
 
+**Created WeightStatCard Widget** (`lib/features/health/widgets/weight_stat_card.dart`):
+- Compact, centered horizontal layout
+- Shows: `4.60 kg ↑ +0.60` (weight + trend arrow + change)
+- Trend classification: >0.1 = increasing (orange), <-0.1 = decreasing (blue), else stable (gray)
+- No date shown (redundant with graph and history list)
+- White card with rounded corners and border
+- ~70px height (60% reduction from initial 200px prototype)
+
 ```dart
-// UPDATE _buildStatsCard() method to show change indicator:
+// lib/features/health/widgets/weight_stat_card.dart
+class WeightStatCard extends StatelessWidget {
+  const WeightStatCard({
+    required this.weight,
+    required this.unit,
+    this.change,
+    super.key,
+  });
 
-Widget _buildStatsCard(WeightState state, String currentUnit) {
-  if (state.latestWeight == null) {
-    return const SizedBox.shrink();
-  }
+  final double weight;
+  final String unit;
+  final double? change;
 
-  final displayWeight = currentUnit == 'kg'
-      ? state.latestWeight!
-      : state.latestWeight! * 2.20462;
-
-  // Get change from graph data (compare last 2 points)
-  double? change;
-  String? trend;
-  if (state.graphData.length >= 2) {
-    final sorted = [...state.graphData]..sort((a, b) => a.date.compareTo(b.date));
-    final latest = sorted.last.weightKg;
-    final previous = sorted[sorted.length - 2].weightKg;
-    
-    change = currentUnit == 'kg' 
-        ? latest - previous 
-        : (latest - previous) * 2.20462;
-    
-    if (change > 0.1) {
-      trend = 'increasing';
-    } else if (change < -0.1) {
-      trend = 'decreasing';
-    } else {
-      trend = 'stable';
+  @override
+  Widget build(BuildContext context) {
+    // Determine trend based on change
+    String? trend;
+    if (change != null) {
+      if (change! > 0.1) {
+        trend = 'increasing';
+      } else if (change! < -0.1) {
+        trend = 'decreasing';
+      } else {
+        trend = 'stable';
+      }
     }
-  }
 
-  return Container(
-    padding: const EdgeInsets.all(AppSpacing.md),
-    decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: AppColors.border),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Current Weight',
-          style: AppTextStyles.bodySmall,
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Text(
-              '${displayWeight.toStringAsFixed(2)} $currentUnit',
-              style: AppTextStyles.h1,
-            ),
-            if (change != null) ...[
-              const SizedBox(width: AppSpacing.sm),
-              Icon(
-                trend == 'increasing' 
-                    ? Icons.trending_up 
-                    : trend == 'decreasing' 
-                        ? Icons.trending_down 
-                        : Icons.trending_flat,
-                color: trend == 'increasing' 
-                    ? Colors.orange 
-                    : trend == 'decreasing' 
-                        ? Colors.blue 
-                        : AppColors.textSecondary,
-                size: 24,
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              Text(
-                '${change >= 0 ? "+" : ""}${change.toStringAsFixed(2)} $currentUnit',
-                style: AppTextStyles.body.copyWith(
-                  color: trend == 'increasing' 
-                      ? Colors.orange 
-                      : trend == 'decreasing' 
-                          ? Colors.blue 
-                          : AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ],
-        ),
-        if (change != null) ...[
-          const SizedBox(height: AppSpacing.xs),
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
           Text(
-            'from previous month',
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.textSecondary,
+            '${weight.toStringAsFixed(2)} $unit',
+            style: AppTextStyles.h1.copyWith(
+              color: AppColors.primary,
             ),
           ),
+          if (change != null && trend != null) ...[
+            const SizedBox(width: AppSpacing.xs),
+            Icon(
+              trend == 'increasing'
+                  ? Icons.trending_up
+                  : trend == 'decreasing'
+                      ? Icons.trending_down
+                      : Icons.trending_flat,
+              color: trend == 'increasing'
+                  ? Colors.orange
+                  : trend == 'decreasing'
+                      ? Colors.blue
+                      : AppColors.textSecondary,
+              size: 20,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              '${change! >= 0 ? "+" : ""}${change!.toStringAsFixed(2)}',
+              style: AppTextStyles.body.copyWith(
+                color: trend == 'increasing'
+                    ? Colors.orange
+                    : trend == 'decreasing'
+                        ? Colors.blue
+                        : AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
+    );
+  }
+}
+```
+
+**Updated WeightScreen Layout**:
+```dart
+// lib/features/health/screens/weight_screen.dart - _buildContentView()
+
+Widget _buildContentView(WeightState state) {
+  final currentUnit = ref.watch(weightUnitProvider);
+
+  return SafeArea(
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Weight change indicator at the top
+          if (state.graphData.isEmpty)
+            SizedBox(
+              height: 200,
+              child: Center(
+                child: Text(
+                  'Log more weights to see your trend',
+                  style: AppTextStyles.small.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            )
+          else if (state.graphData.length == 1)
+            // Show stat card for single data point (no change indicator)
+            WeightStatCard(
+              weight: currentUnit == 'kg'
+                  ? state.graphData.first.weightKg
+                  : state.graphData.first.weightLbs,
+              unit: currentUnit,
+            )
+          else
+            // Calculate change from previous period (2+ data points)
+            () {
+              final sorted = [...state.graphData]
+                ..sort((a, b) => a.date.compareTo(b.date));
+              final latest = sorted.last.weightKg;
+              final previous = sorted[sorted.length - 2].weightKg;
+              final change = currentUnit == 'kg'
+                  ? latest - previous
+                  : (latest - previous) * 2.20462;
+
+              return WeightStatCard(
+                weight: currentUnit == 'kg'
+                    ? sorted.last.weightKg
+                    : sorted.last.weightLbs,
+                unit: currentUnit,
+                change: change,
+              );
+            }(),
+          const SizedBox(height: AppSpacing.lg),
+          // Graph controls and chart together
+          _buildGranularitySelector(state),
+          const SizedBox(height: AppSpacing.sm),
+          _buildGraphHeader(state),
+          const SizedBox(height: AppSpacing.md),
+          if (state.graphData.length >= 2)
+            WeightLineChart(
+              dataPoints: state.graphData,
+              unit: currentUnit,
+              granularity: state.granularity,
+            ),
+          const SizedBox(height: AppSpacing.lg),
+          _buildHistorySection(state, currentUnit),
+        ],
+      ),
     ),
   );
 }
 ```
+
+**Key Design Decisions**:
+1. **Position**: Stats card at top → makes current weight most prominent
+2. **Compactness**: Single horizontal line (~70px height) vs original multi-line (200px)
+3. **No date**: Removed as redundant (already in graph and history list)
+4. **Centered layout**: Better visual balance than left-aligned
+5. **Conditional display**: Only shows change when 2+ data points exist
+6. **Color coding**: Orange (increase), Blue (decrease), Gray (stable ±0.1 threshold)
 
 **Testing**:
 ```bash
 flutter analyze
 # Should pass with no errors
 
-# Run the app
-# Add weights across different months
-# Stats card should show change with trend indicator
+# Visual tests:
+# 1. No data: empty state message
+# 2. Single entry: stats card without change indicator
+# 3. Two+ entries: stats card with change indicator (arrow + amount)
+# 4. Weight increase: orange arrow up with +0.XX
+# 5. Weight decrease: blue arrow down with -0.XX
+# 6. Stable weight: gray flat arrow with ~0.00
+# 7. Unit conversion: change values correct in kg and lbs
 ```
 
 ---
 
 ## Phase 5: Firestore Rules & Navigation
 
-### Step 5.1: Update Firestore Security Rules
+### Step 5.1: Update Firestore Security Rules ✅ COMPLETED
 
-**Goal**: Add validation rules for healthParameters collection
+**Goal**: Ensure healthParameters collection has proper authentication rules
 
-**Files to modify**:
-- `firestore.rules` (MODIFY)
+**Decision**: **Skip validation in Firestore rules** - code validation is sufficient
+
+**Rationale**:
+- ✅ Weight validation already exists in `ProfileValidationService`
+- ✅ Used by `WeightService._validateWeight()` on all write operations
+- ✅ Simpler to maintain (one source of truth)
+- ✅ Low-risk data (pet weights, not financial/sensitive data)
+- ✅ Single controlled access point (our app)
 
 **Implementation**:
 
-Add these rules inside the `pets/{petId}` match block:
+The existing Firestore rules are sufficient:
 
 ```javascript
-// ADD this inside match /users/{userId} { match /pets/{petId} { ... } }
-
 // HEALTH PARAMETERS
 match /healthParameters/{dateId} {
-  allow read: if request.auth.uid == userId;
-  allow write: if request.auth.uid == userId && validateHealthParameter();
-  
-  function validateHealthParameter() {
-    // Validate weight if present
-    return !request.resource.data.keys().hasAny(['weight']) ||
-           (request.resource.data.weight is number &&
-            request.resource.data.weight > 0 &&
-            request.resource.data.weight <= 15);
-  }
+  allow read, write: if request.auth.uid == userId;
 }
 ```
 
-Deploy rules:
-```bash
-firebase deploy --only firestore:rules
-```
+**No deployment needed** - existing rules already cover this.
 
 **Testing**:
 ```bash
-firebase deploy --only firestore:rules
-# Should deploy successfully
+# No changes needed - rules already in place
+# Weight validation happens in app code via ProfileValidationService
 ```
 
 ---
 
-### Step 5.2: Add Navigation to Weight Screen
+### Step 5.2: Add Navigation to Weight Screen ✅ ALREADY COMPLETE
 
 **Goal**: Add weight tracking link to profile screen
 
-**Files to modify**:
-- `lib/features/profile/screens/profile_screen.dart` (MODIFY)
+**Status**: Navigation already implemented during development
 
-**Implementation**:
+**Current Implementation**:
 
-Add a navigation tile in the profile screen (find a suitable location in the existing list):
+The profile screen (lines 759-765) already includes the weight navigation:
 
 ```dart
-// ADD this tile in the profile screen's list of options:
-
-ListTile(
-  leading: const Icon(Icons.monitor_weight),
-  title: const Text('Weight Tracking'),
-  subtitle: const Text('Monitor weight changes'),
-  trailing: const Icon(Icons.chevron_right),
-  onTap: () {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const WeightScreen(),
-      ),
-    );
-  },
+// Weight section - always shown
+const SizedBox(height: AppSpacing.sm),
+ProfileSectionItem(
+  title: 'Weight',
+  icon: Icons.scale,
+  onTap: () => context.go('/profile/weight'),
 ),
 ```
 
-**Testing**:
-```bash
-flutter analyze
-# Should pass with no errors
+**Features**:
+- ✅ Uses GoRouter for navigation (`context.go('/profile/weight')`)
+- ✅ Consistent with other profile sections (uses `ProfileSectionItem`)
+- ✅ Always shown (weight tracking is always relevant)
+- ✅ Located in profile sections list with other health features
 
-# Run the app
-# Navigate to Profile screen
-# Tap "Weight Tracking"
-# Should navigate to weight screen
-```
+**No changes needed** - navigation is already functional.
 
 ---
 
@@ -3457,8 +3534,8 @@ flutter analyze
 ✅ **Phase 2**: WeightEntryDialog and WeightProvider with cache integration  
 ✅ **Phase 3**: WeightScreen with fl_chart line graph  
 ✅ **Phase 4**: Delete functionality and stats indicators  
-✅ **Phase 5**: Firestore rules and navigation integration  
-✅ **Phase 6**: Testing and lint fixes  
+✅ **Phase 5**: Firestore rules verification (already sufficient) and navigation (already implemented)  
+⏳ **Phase 6**: Testing and lint fixes (IN PROGRESS)  
 
 **Key Features Delivered**:
 - Cost-optimized Firebase queries (monthly summaries for graphs)

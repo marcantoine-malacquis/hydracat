@@ -160,6 +160,7 @@ class ProfileState {
     CacheStatus? cacheStatus,
     DateTime? schedulesLoadedAt,
     String? schedulesLoadedDate,
+    bool clearError = false,
   }) {
     return ProfileState(
       primaryPet: primaryPet ?? this.primaryPet,
@@ -168,7 +169,7 @@ class ProfileState {
       isLoading: isLoading ?? this.isLoading,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       scheduleIsLoading: scheduleIsLoading ?? this.scheduleIsLoading,
-      error: error ?? this.error,
+      error: clearError ? null : (error ?? this.error),
       lastUpdated: lastUpdated ?? this.lastUpdated,
       cacheStatus: cacheStatus ?? this.cacheStatus,
       schedulesLoadedAt: schedulesLoadedAt ?? this.schedulesLoadedAt,
@@ -178,7 +179,7 @@ class ProfileState {
 
   /// Creates a copy with error cleared
   ProfileState clearError() {
-    return copyWith();
+    return copyWith(clearError: true);
   }
 
   /// Creates a copy with loading state
@@ -275,7 +276,9 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       }
 
       return pet != null;
-    } on Exception catch (e) {
+    } on Object catch (e) {
+      // Catches all throwables including TypeError from JSON parsing
+      // This prevents the app from hanging if deserialization fails
       state = state.copyWith(
         isLoading: false,
         error: PetServiceException('Failed to load pet profile: $e'),
@@ -287,7 +290,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 
   /// Manually refresh the primary pet profile from Firestore
   Future<bool> refreshPrimaryPet() async {
-    state = state.copyWith(isRefreshing: true);
+    state = state.copyWith(isRefreshing: true, clearError: true);
 
     try {
       final pet = await _petService.getPrimaryPet(forceRefresh: true);
@@ -297,17 +300,13 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         isRefreshing: false,
         lastUpdated: DateTime.now(),
         cacheStatus: pet != null ? CacheStatus.fresh : CacheStatus.empty,
+        clearError: true,
       );
 
-      // Reload schedules on manual refresh
-      if (pet != null) {
-        // Force reload by clearing date cache first
-        state = state.copyWith(schedulesLoadedDate: '');
-        await loadAllSchedules();
-      }
-
       return pet != null;
-    } on Exception catch (e) {
+    } on Object catch (e) {
+      // Catches all throwables including TypeError from JSON parsing
+      // This prevents the refresh spinner from hanging forever
       // Don't clear existing pet data if refresh fails
       state = state.copyWith(
         isRefreshing: false,
@@ -1410,6 +1409,28 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
           );
         }
       }
+    }
+  }
+
+  /// Updates the cached weight without a Firestore read
+  ///
+  /// This is an optimization for weight tracking - since WeightService
+  /// already updates Firestore, we just need to sync our cache.
+  /// Updates both ProfileState and PetService cache for consistency.
+  void updateCachedWeight(double? weightKg) {
+    if (state.primaryPet != null) {
+      final updatedPet = state.primaryPet!.copyWith(
+        weightKg: weightKg,
+        updatedAt: DateTime.now(),
+      );
+      state = state.copyWith(
+        primaryPet: updatedPet,
+        lastUpdated: DateTime.now(),
+        cacheStatus: CacheStatus.fresh,
+      );
+
+      // Also update PetService's cache
+      _petService.updateCachedWeight(weightKg);
     }
   }
 }

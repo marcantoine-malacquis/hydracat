@@ -22,6 +22,21 @@ class WeightHistoryResult {
   final DocumentSnapshot? lastDocument;
 }
 
+/// Internal helper class for latest weight information
+class _LatestWeightInfo {
+  /// Creates a [_LatestWeightInfo]
+  const _LatestWeightInfo({
+    required this.weight,
+    required this.date,
+  });
+
+  /// Weight value in kg
+  final double weight;
+
+  /// Date of the weight entry
+  final DateTime date;
+}
+
 /// Service for weight tracking operations
 ///
 /// Handles CRUD operations for weight entries with:
@@ -142,6 +157,194 @@ class WeightService {
   }
 
   // ============================================
+  // HELPER: Find Latest Weights
+  // ============================================
+
+  /// Finds the latest weight entry in a specific month
+  ///
+  /// Returns the most recent weight and its date for the given month,
+  /// optionally excluding a specific date (useful when updating/deleting).
+  Future<_LatestWeightInfo?> _findLatestWeightInMonth({
+    required String userId,
+    required String petId,
+    required DateTime monthDate,
+    DateTime? excludeDate,
+  }) async {
+    final monthStart = DateTime(monthDate.year, monthDate.month);
+    final monthEnd = DateTime(monthDate.year, monthDate.month + 1);
+
+    final query = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('pets')
+        .doc(petId)
+        .collection('healthParameters')
+        .where('hasWeight', isEqualTo: true)
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(monthStart))
+        .where('date', isLessThan: Timestamp.fromDate(monthEnd))
+        .orderBy('date', descending: true)
+        .limit(10); // Get a few to handle exclusion
+
+    final snapshot = await query.get();
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final date = (data['date'] as Timestamp).toDate();
+      final normalizedDate = AppDateUtils.startOfDay(date);
+
+      // Skip excluded date if specified
+      if (excludeDate != null &&
+          AppDateUtils.isSameDay(normalizedDate, excludeDate)) {
+        continue;
+      }
+
+      final weight = (data['weight'] as num).toDouble();
+      return _LatestWeightInfo(weight: weight, date: normalizedDate);
+    }
+
+    return null;
+  }
+
+  /// Finds the globally latest weight entry across all time
+  ///
+  /// Returns the most recent weight value across all health parameters,
+  /// optionally excluding a specific date (useful when updating/deleting).
+  Future<_LatestWeightInfo?> _findGlobalLatestWeight({
+    required String userId,
+    required String petId,
+    DateTime? excludeDate,
+  }) async {
+    final query = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('pets')
+        .doc(petId)
+        .collection('healthParameters')
+        .where('hasWeight', isEqualTo: true)
+        .orderBy('date', descending: true)
+        .limit(10); // Get a few to handle exclusion
+
+    final snapshot = await query.get();
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final date = (data['date'] as Timestamp).toDate();
+      final normalizedDate = AppDateUtils.startOfDay(date);
+
+      // Skip excluded date if specified
+      if (excludeDate != null &&
+          AppDateUtils.isSameDay(normalizedDate, excludeDate)) {
+        continue;
+      }
+
+      final weight = (data['weight'] as num).toDouble();
+      return _LatestWeightInfo(weight: weight, date: normalizedDate);
+    }
+
+    return null;
+  }
+
+  /// Helper to update monthly summary for new/updated weight entry
+  ///
+  /// Checks if the date is actually the latest before updating latest fields.
+  Future<void> _updateNewMonthSummary({
+    required WriteBatch batch,
+    required String userId,
+    required String petId,
+    required DateTime normalizedNewDate,
+    required double newWeightKg,
+    required bool isSameMonth,
+    required bool isSameDate,
+  }) async {
+    final newMonthlySummaryRef = _getMonthlySummaryRef(
+      userId,
+      petId,
+      normalizedNewDate,
+    );
+    final currentSummaryDoc = await newMonthlySummaryRef.get();
+    final currentData = currentSummaryDoc.data() as Map<String, dynamic>?;
+
+    // Check if this is the latest weight in the month
+    final currentLatestDate =
+        currentSummaryDoc.exists &&
+            currentData != null &&
+            currentData['weightLatestDate'] != null
+        ? (currentData['weightLatestDate'] as Timestamp).toDate()
+        : null;
+    final isLatestInMonth =
+        currentLatestDate == null ||
+        !normalizedNewDate.isBefore(currentLatestDate);
+
+    if (kDebugMode) {
+      debugPrint(
+        '[WeightService] New month date comparison: '
+        'normalizedNewDate=$normalizedNewDate, '
+        'currentLatestDate=$currentLatestDate, '
+        'isLatestInMonth=$isLatestInMonth',
+      );
+    }
+
+    final newSummaryUpdates = <String, dynamic>{
+      if (!isSameMonth || !isSameDate)
+        'weightEntriesCount': FieldValue.increment(1),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    // Only update latest weight fields if this is the most recent date
+    if (isLatestInMonth) {
+      final previousWeight =
+          currentSummaryDoc.exists &&
+              currentData != null &&
+              currentData['weightLatest'] != null
+          ? (currentData['weightLatest'] as num).toDouble()
+          : null;
+
+      final weightChange = previousWeight != null
+          ? newWeightKg - previousWeight
+          : 0.0;
+      final weightChangePercent = previousWeight != null
+          ? ((newWeightKg - previousWeight) / previousWeight) * 100
+          : 0.0;
+
+      newSummaryUpdates['weightLatest'] = newWeightKg;
+      newSummaryUpdates['weightLatestDate'] = Timestamp.fromDate(
+        normalizedNewDate,
+      );
+      newSummaryUpdates['weightChange'] = weightChange;
+      newSummaryUpdates['weightChangePercent'] = weightChangePercent;
+      newSummaryUpdates['weightTrend'] = _calculateTrend(weightChange);
+
+      if (kDebugMode) {
+        debugPrint(
+          '[WeightService] Updating latest weight in new monthly summary',
+        );
+      }
+    } else {
+      if (kDebugMode) {
+        debugPrint(
+          '[WeightService] Not updating latest weight '
+          '(entry is not most recent in month)',
+        );
+      }
+    }
+
+    // Set startDate if it doesn't exist (needed for graph queries)
+    if (!currentSummaryDoc.exists || currentData?['startDate'] == null) {
+      final monthStart = DateTime(
+        normalizedNewDate.year,
+        normalizedNewDate.month,
+      );
+      newSummaryUpdates['startDate'] = Timestamp.fromDate(monthStart);
+    }
+
+    batch.set(
+      newMonthlySummaryRef,
+      newSummaryUpdates,
+      SetOptions(merge: true),
+    );
+  }
+
+  // ============================================
   // CRUD OPERATIONS
   // ============================================
 
@@ -215,26 +418,61 @@ class WeightService {
         debugPrint('  - Current data: $currentData');
       }
 
-      final previousWeight = hasExistingData
-          ? (currentData!['weightLatest'] as num).toDouble()
+      // Check if this is the latest weight in the month
+      final currentLatestDate =
+          hasExistingData && currentData!['weightLatestDate'] != null
+          ? (currentData['weightLatestDate'] as Timestamp).toDate()
           : null;
+      final isLatestInMonth =
+          currentLatestDate == null ||
+          !normalizedDate.isBefore(currentLatestDate);
 
-      final weightChange = previousWeight != null
-          ? weightKg - previousWeight
-          : 0.0;
-      final weightChangePercent = previousWeight != null
-          ? ((weightKg - previousWeight) / previousWeight) * 100
-          : 0.0;
+      if (kDebugMode) {
+        debugPrint(
+          '[WeightService] Date comparison: '
+          'normalizedDate=$normalizedDate, '
+          'currentLatestDate=$currentLatestDate, '
+          'isLatestInMonth=$isLatestInMonth',
+        );
+      }
 
       final summaryUpdates = <String, dynamic>{
         'weightEntriesCount': FieldValue.increment(1),
-        'weightLatest': weightKg,
-        'weightLatestDate': Timestamp.fromDate(normalizedDate),
-        'weightChange': weightChange,
-        'weightChangePercent': weightChangePercent,
-        'weightTrend': _calculateTrend(weightChange),
         'updatedAt': FieldValue.serverTimestamp(),
       };
+
+      // Only update latest weight fields if this is the most recent date
+      if (isLatestInMonth) {
+        final previousWeight = hasExistingData
+            ? (currentData!['weightLatest'] as num).toDouble()
+            : null;
+
+        final weightChange = previousWeight != null
+            ? weightKg - previousWeight
+            : 0.0;
+        final weightChangePercent = previousWeight != null
+            ? ((weightKg - previousWeight) / previousWeight) * 100
+            : 0.0;
+
+        summaryUpdates['weightLatest'] = weightKg;
+        summaryUpdates['weightLatestDate'] = Timestamp.fromDate(normalizedDate);
+        summaryUpdates['weightChange'] = weightChange;
+        summaryUpdates['weightChangePercent'] = weightChangePercent;
+        summaryUpdates['weightTrend'] = _calculateTrend(weightChange);
+
+        if (kDebugMode) {
+          debugPrint(
+            '[WeightService] Updating latest weight in monthly summary',
+          );
+        }
+      } else {
+        if (kDebugMode) {
+          debugPrint(
+            '[WeightService] Not updating latest weight '
+            '(entry is not most recent in month)',
+          );
+        }
+      }
 
       // Set first weight of month if not exists
       if (!hasExistingData || currentData!['weightFirst'] == null) {
@@ -264,15 +502,30 @@ class WeightService {
 
       batch.set(monthlySummaryRef, summaryUpdates, SetOptions(merge: true));
 
-      // 3. Update pet profile with latest weight
-      final petRef = _getPetRef(userId, petId);
-      batch.update(petRef, {
-        'weightKg': weightKg,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      // Commit batch
+      // 3. Update pet profile with latest weight (only if globally latest)
+      // First commit the health parameter so it's included in the query
       await batch.commit();
+
+      // Query for the actual global latest weight
+      final globalLatest = await _findGlobalLatestWeight(
+        userId: userId,
+        petId: petId,
+      );
+
+      if (globalLatest != null) {
+        final petRef = _getPetRef(userId, petId);
+        await petRef.update({
+          'weightKg': globalLatest.weight,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        if (kDebugMode) {
+          debugPrint(
+            '[WeightService] Updated pet profile with global latest: '
+            '${globalLatest.weight}kg',
+          );
+        }
+      }
 
       if (kDebugMode) {
         debugPrint('[WeightService] Weight logged successfully');
@@ -330,7 +583,7 @@ class WeightService {
 
       final batch = _firestore.batch();
 
-      // 1. If date changed, delete old entry
+      // 1. If date changed, delete old entry and handle old month summary
       if (!isSameDate) {
         final oldHealthParamRef = _getHealthParameterRef(
           userId,
@@ -339,98 +592,188 @@ class WeightService {
         );
         batch.delete(oldHealthParamRef);
 
-        // Decrement old month's count if different month
+        // Handle old month's summary if different month
         if (!isSameMonth) {
           final oldMonthlySummaryRef = _getMonthlySummaryRef(
             userId,
             petId,
             normalizedOldDate,
           );
-          batch.update(oldMonthlySummaryRef, {
-            'weightEntriesCount': FieldValue.increment(-1),
+
+          // Commit batch so deleted entry is not included in queries
+          await batch.commit();
+
+          // Check if old entry was the latest in its month
+          final oldSummaryDoc = await oldMonthlySummaryRef.get();
+          final oldSummaryData = oldSummaryDoc.data() as Map<String, dynamic>?;
+
+          if (oldSummaryDoc.exists &&
+              oldSummaryData != null &&
+              oldSummaryData['weightLatestDate'] != null) {
+            final oldLatestDate =
+                (oldSummaryData['weightLatestDate'] as Timestamp).toDate();
+
+            if (AppDateUtils.isSameDay(oldLatestDate, normalizedOldDate)) {
+              // Old entry was the latest, find new latest for old month
+              final newLatestInOldMonth = await _findLatestWeightInMonth(
+                userId: userId,
+                petId: petId,
+                monthDate: normalizedOldDate,
+              );
+
+              if (newLatestInOldMonth != null) {
+                // Update old month with new latest
+                await oldMonthlySummaryRef.update({
+                  'weightLatest': newLatestInOldMonth.weight,
+                  'weightLatestDate': Timestamp.fromDate(
+                    newLatestInOldMonth.date,
+                  ),
+                  'weightEntriesCount': FieldValue.increment(-1),
+                  'updatedAt': FieldValue.serverTimestamp(),
+                });
+
+                if (kDebugMode) {
+                  debugPrint(
+                    '[WeightService] Updated old month with new latest: '
+                    '${newLatestInOldMonth.weight}kg',
+                  );
+                }
+              } else {
+                // No more entries in old month, just decrement count
+                await oldMonthlySummaryRef.update({
+                  'weightEntriesCount': FieldValue.increment(-1),
+                  'updatedAt': FieldValue.serverTimestamp(),
+                });
+              }
+            } else {
+              // Old entry was not the latest, just decrement count
+              await oldMonthlySummaryRef.update({
+                'weightEntriesCount': FieldValue.increment(-1),
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
+            }
+          }
+
+          // Create new batch for remaining operations
+          final newBatch = _firestore.batch();
+
+          // 2. Write/update new entry
+          final newHealthParamRef = _getHealthParameterRef(
+            userId,
+            petId,
+            normalizedNewDate,
+          );
+          newBatch.set(
+            newHealthParamRef,
+            {
+              'weight': newWeightKg,
+              'hasWeight': true,
+              if (newNotes != null) 'notes': newNotes,
+              'date': Timestamp.fromDate(normalizedNewDate),
+              'createdAt': FieldValue.serverTimestamp(),
+              'updatedAt': FieldValue.serverTimestamp(),
+            },
+            SetOptions(merge: true),
+          );
+
+          // Continue with new batch
+          await _updateNewMonthSummary(
+            batch: newBatch,
+            userId: userId,
+            petId: petId,
+            normalizedNewDate: normalizedNewDate,
+            newWeightKg: newWeightKg,
+            isSameMonth: isSameMonth,
+            isSameDate: isSameDate,
+          );
+
+          await newBatch.commit();
+        } else {
+          // Same month, different date - no need to commit early
+          // Just continue with the batch
+          final newHealthParamRef = _getHealthParameterRef(
+            userId,
+            petId,
+            normalizedNewDate,
+          );
+          batch.set(
+            newHealthParamRef,
+            {
+              'weight': newWeightKg,
+              'hasWeight': true,
+              if (newNotes != null) 'notes': newNotes,
+              'date': Timestamp.fromDate(normalizedNewDate),
+              'createdAt': FieldValue.serverTimestamp(),
+              'updatedAt': FieldValue.serverTimestamp(),
+            },
+            SetOptions(merge: true),
+          );
+
+          await _updateNewMonthSummary(
+            batch: batch,
+            userId: userId,
+            petId: petId,
+            normalizedNewDate: normalizedNewDate,
+            newWeightKg: newWeightKg,
+            isSameMonth: isSameMonth,
+            isSameDate: isSameDate,
+          );
+
+          await batch.commit();
+        }
+      } else {
+        // Same date, just update in place
+        final newHealthParamRef = _getHealthParameterRef(
+          userId,
+          petId,
+          normalizedNewDate,
+        );
+        batch.set(
+          newHealthParamRef,
+          {
+            'weight': newWeightKg,
+            'hasWeight': true,
+            if (newNotes != null) 'notes': newNotes,
+            'date': Timestamp.fromDate(normalizedNewDate),
+            'createdAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
-          });
+          },
+          SetOptions(merge: true),
+        );
+
+        await _updateNewMonthSummary(
+          batch: batch,
+          userId: userId,
+          petId: petId,
+          normalizedNewDate: normalizedNewDate,
+          newWeightKg: newWeightKg,
+          isSameMonth: isSameMonth,
+          isSameDate: isSameDate,
+        );
+
+        await batch.commit();
+      }
+
+      // Query for the actual global latest weight to update pet profile
+      final globalLatest = await _findGlobalLatestWeight(
+        userId: userId,
+        petId: petId,
+      );
+
+      if (globalLatest != null) {
+        final petRef = _getPetRef(userId, petId);
+        await petRef.update({
+          'weightKg': globalLatest.weight,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        if (kDebugMode) {
+          debugPrint(
+            '[WeightService] Updated pet profile with global latest: '
+            '${globalLatest.weight}kg',
+          );
         }
       }
-
-      // 2. Write/update new entry
-      final newHealthParamRef = _getHealthParameterRef(
-        userId,
-        petId,
-        normalizedNewDate,
-      );
-      batch.set(
-        newHealthParamRef,
-        {
-          'weight': newWeightKg,
-          'hasWeight': true,
-          if (newNotes != null) 'notes': newNotes,
-          'date': Timestamp.fromDate(normalizedNewDate),
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-
-      // 3. Update monthly summary for new date
-      final newMonthlySummaryRef = _getMonthlySummaryRef(
-        userId,
-        petId,
-        normalizedNewDate,
-      );
-      final currentSummaryDoc = await newMonthlySummaryRef.get();
-      final currentData = currentSummaryDoc.data() as Map<String, dynamic>?;
-
-      final previousWeight =
-          currentSummaryDoc.exists &&
-              currentData != null &&
-              currentData['weightLatest'] != null
-          ? (currentData['weightLatest'] as num).toDouble()
-          : null;
-
-      final weightChange = previousWeight != null
-          ? newWeightKg - previousWeight
-          : 0.0;
-      final weightChangePercent = previousWeight != null
-          ? ((newWeightKg - previousWeight) / previousWeight) * 100
-          : 0.0;
-
-      final newSummaryUpdates = <String, dynamic>{
-        if (!isSameMonth || !isSameDate)
-          'weightEntriesCount': FieldValue.increment(1),
-        'weightLatest': newWeightKg,
-        'weightLatestDate': Timestamp.fromDate(normalizedNewDate),
-        'weightChange': weightChange,
-        'weightChangePercent': weightChangePercent,
-        'weightTrend': _calculateTrend(weightChange),
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
-
-      // Set startDate if it doesn't exist (needed for graph queries)
-      if (!currentSummaryDoc.exists || currentData?['startDate'] == null) {
-        final monthStart = DateTime(
-          normalizedNewDate.year,
-          normalizedNewDate.month,
-        );
-        newSummaryUpdates['startDate'] = Timestamp.fromDate(monthStart);
-      }
-
-      batch.set(
-        newMonthlySummaryRef,
-        newSummaryUpdates,
-        SetOptions(merge: true),
-      );
-
-      // 4. Update pet profile with latest weight
-      // (always update to newest entry)
-      final petRef = _getPetRef(userId, petId);
-      batch.update(petRef, {
-        'weightKg': newWeightKg,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      // Commit batch
-      await batch.commit();
 
       if (kDebugMode) {
         debugPrint('[WeightService] Weight updated successfully');
@@ -479,56 +822,113 @@ class WeightService {
       );
       batch.delete(healthParamRef);
 
-      // 2. Decrement monthly summary count
+      // 2. Check monthly summary before deletion
       final monthlySummaryRef = _getMonthlySummaryRef(
         userId,
         petId,
         normalizedDate,
       );
-      batch.update(monthlySummaryRef, {
-        'weightEntriesCount': FieldValue.increment(-1),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      final monthlySummaryDoc = await monthlySummaryRef.get();
+      final monthlySummaryData =
+          monthlySummaryDoc.data() as Map<String, dynamic>?;
 
-    // 3. Update CatProfile.weightKg to most recent remaining entry
-    // Query for most recent weight (excluding the one being deleted)
-    final recentWeightQuery = await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('pets')
-        .doc(petId)
-        .collection('healthParameters')
-        .where('hasWeight', isEqualTo: true)
-        .orderBy('date', descending: true)
-        .limit(2) // Get 2 to find next most recent
-        .get();
+      // Check if deleted entry was the latest in its month
+      final wasLatestInMonth =
+          monthlySummaryDoc.exists &&
+          monthlySummaryData != null &&
+          monthlySummaryData['weightLatestDate'] != null &&
+          AppDateUtils.isSameDay(
+            (monthlySummaryData['weightLatestDate'] as Timestamp).toDate(),
+            normalizedDate,
+          );
 
-      // Find the most recent entry that's not the one being deleted
-      double? newLatestWeight;
-      for (final doc in recentWeightQuery.docs) {
-        final docDate = (doc.data()['date'] as Timestamp).toDate();
-        if (!AppDateUtils.isSameDay(docDate, normalizedDate)) {
-          newLatestWeight = (doc.data()['weight'] as num).toDouble();
-          break;
-        }
+      if (kDebugMode) {
+        debugPrint(
+          '[WeightService] Deleted entry was latest in month: '
+          '$wasLatestInMonth',
+        );
       }
 
-      final petRef = _getPetRef(userId, petId);
-      if (newLatestWeight != null) {
-        batch.update(petRef, {
-          'weightKg': newLatestWeight,
+      // Commit deletion first so it's excluded from queries
+      await batch.commit();
+
+      // 3. Update monthly summary
+      if (wasLatestInMonth) {
+        // Find new latest for the month
+        final newLatestInMonth = await _findLatestWeightInMonth(
+          userId: userId,
+          petId: petId,
+          monthDate: normalizedDate,
+        );
+
+        if (newLatestInMonth != null) {
+          // Update with new latest
+          await monthlySummaryRef.update({
+            'weightLatest': newLatestInMonth.weight,
+            'weightLatestDate': Timestamp.fromDate(newLatestInMonth.date),
+            'weightEntriesCount': FieldValue.increment(-1),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+
+          if (kDebugMode) {
+            debugPrint(
+              '[WeightService] Updated monthly summary with new latest: '
+              '${newLatestInMonth.weight}kg on ${newLatestInMonth.date}',
+            );
+          }
+        } else {
+          // No more entries in month, just decrement count
+          await monthlySummaryRef.update({
+            'weightEntriesCount': FieldValue.increment(-1),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+
+          if (kDebugMode) {
+            debugPrint(
+              '[WeightService] No more entries in month after deletion',
+            );
+          }
+        }
+      } else {
+        // Not the latest, just decrement count
+        await monthlySummaryRef.update({
+          'weightEntriesCount': FieldValue.increment(-1),
           'updatedAt': FieldValue.serverTimestamp(),
         });
+      }
+
+      // 4. Update CatProfile.weightKg to most recent remaining entry
+      final globalLatest = await _findGlobalLatestWeight(
+        userId: userId,
+        petId: petId,
+      );
+
+      final petRef = _getPetRef(userId, petId);
+      if (globalLatest != null) {
+        await petRef.update({
+          'weightKg': globalLatest.weight,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        if (kDebugMode) {
+          debugPrint(
+            '[WeightService] Updated pet profile with global latest: '
+            '${globalLatest.weight}kg',
+          );
+        }
       } else {
         // No more weight entries, set to null
-        batch.update(petRef, {
+        await petRef.update({
           'weightKg': null,
           'updatedAt': FieldValue.serverTimestamp(),
         });
-      }
 
-      // Commit batch
-      await batch.commit();
+        if (kDebugMode) {
+          debugPrint(
+            '[WeightService] No more weight entries, cleared pet profile',
+          );
+        }
+      }
 
       if (kDebugMode) {
         debugPrint('[WeightService] Weight deleted successfully');

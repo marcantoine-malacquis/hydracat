@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/health/models/health_parameter.dart';
 import 'package:hydracat/features/health/models/weight_granularity.dart';
@@ -198,10 +201,7 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildGranularitySelector(state),
-            const SizedBox(height: AppSpacing.sm),
-            _buildGraphHeader(state),
-            const SizedBox(height: AppSpacing.md),
+            // Weight change indicator at the top
             if (state.graphData.isEmpty)
               SizedBox(
                 height: 200,
@@ -220,11 +220,35 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
                 weight: currentUnit == 'kg'
                     ? state.graphData.first.weightKg
                     : state.graphData.first.weightLbs,
-                date: state.graphData.first.date,
                 unit: currentUnit,
               )
             else
-              // Show line chart for 2+ data points
+              // Calculate change from previous period
+              () {
+                final sorted = [...state.graphData]
+                  ..sort((a, b) => a.date.compareTo(b.date));
+                final latest = sorted.last.weightKg;
+                final previous = sorted[sorted.length - 2].weightKg;
+                final change = currentUnit == 'kg'
+                    ? latest - previous
+                    : (latest - previous) * 2.20462;
+
+                return WeightStatCard(
+                  weight: currentUnit == 'kg'
+                      ? sorted.last.weightKg
+                      : sorted.last.weightLbs,
+                  unit: currentUnit,
+                  change: change,
+                );
+              }(),
+            const SizedBox(height: AppSpacing.lg),
+            // Graph controls and chart together
+            _buildGranularitySelector(state),
+            const SizedBox(height: AppSpacing.sm),
+            _buildGraphHeader(state),
+            const SizedBox(height: AppSpacing.md),
+            if (state.graphData.isNotEmpty)
+              // Show line chart for data points
               WeightLineChart(
                 dataPoints: state.graphData,
                 unit: currentUnit,
@@ -405,54 +429,71 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
                 ? entry.weight!
                 : entry.weight! * 2.20462;
 
-            return Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Row(
+            return Slidable(
+              key: Key('weight_${entry.date.millisecondsSinceEpoch}'),
+              endActionPane: ActionPane(
+                motion: const DrawerMotion(),
+                extentRatio: 0.25,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          DateFormat('MMM dd, yyyy').format(entry.date),
-                          style: AppTextStyles.body,
-                        ),
-                        if (entry.notes != null) ...[
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            entry.notes!,
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  Text(
-                    '${displayWeight.toStringAsFixed(2)} $currentUnit',
-                    style: AppTextStyles.h3,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  IconButton(
-                    icon: const Icon(Icons.edit, size: 18),
-                    onPressed: () => _showEditWeightDialog(entry),
-                    tooltip: 'Edit',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                    visualDensity: VisualDensity.compact,
+                  SlidableAction(
+                    onPressed: (context) => _deleteWeight(entry.date),
+                    backgroundColor: AppColors.error,
+                    foregroundColor: Colors.white,
+                    icon: Icons.delete_outline,
+                    label: 'Delete',
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ],
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            DateFormat('MMM dd, yyyy').format(entry.date),
+                            style: AppTextStyles.body,
+                          ),
+                          if (entry.notes != null) ...[
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              entry.notes!,
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    Text(
+                      '${displayWeight.toStringAsFixed(2)} $currentUnit',
+                      style: AppTextStyles.h3,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    IconButton(
+                      icon: const Icon(Icons.edit, size: 18),
+                      onPressed: () => _showEditWeightDialog(entry),
+                      tooltip: 'Edit',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -501,6 +542,35 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
           const SnackBar(
             content: Text('Weight updated successfully'),
             backgroundColor: AppColors.primary,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Deletes a weight entry
+  Future<void> _deleteWeight(DateTime date) async {
+    // Provide haptic feedback
+    unawaited(HapticFeedback.mediumImpact());
+
+    final success = await ref.read(weightProvider.notifier).deleteWeight(
+          date: date,
+        );
+
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Weight entry deleted'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      } else {
+        final error = ref.read(weightProvider).error;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error?.message ?? 'Failed to delete weight'),
+            backgroundColor: AppColors.error,
           ),
         );
       }
