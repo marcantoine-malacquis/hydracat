@@ -1,129 +1,132 @@
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/features/health/models/weight_data_point.dart';
+import 'package:hydracat/features/health/models/weight_granularity.dart';
 
 /// In-memory cache for weight graph data
 ///
-/// Reduces Firebase reads by caching graph data for 1 hour.
+/// Reduces Firebase reads by caching graph data per period.
 /// Cache is invalidated when:
 /// - User logs new weight
 /// - User edits existing weight
 /// - User deletes weight entry
-/// - Cache expires (1 hour)
+/// - Cache expires (30 minutes)
 class WeightCacheService {
   WeightCacheService._();
 
-  static WeightGraphCache? _graphCache;
-  static DateTime? _graphCacheTimestamp;
-  static const _cacheDuration = Duration(hours: 1);
+  static final Map<String, _CachedPeriodData> _caches = {};
+  static const _cacheDuration = Duration(minutes: 30);
+
+  /// Generates cache key for period-specific caching
+  static String _getCacheKey({
+    required String userId,
+    required String petId,
+    required WeightGranularity granularity,
+    required DateTime periodStart,
+  }) {
+    return '$userId|$petId|${granularity.name}|'
+        '${periodStart.toIso8601String()}';
+  }
 
   /// Gets cached graph data or returns null if cache miss
   ///
   /// Cache is valid if:
-  /// - Cache exists
-  /// - Cache is for same user and pet
-  /// - Cache is less than 1 hour old
+  /// - Cache exists for this specific period
+  /// - Cache is less than 30 minutes old
   static List<WeightDataPoint>? getCachedGraphData({
     required String userId,
     required String petId,
+    required WeightGranularity granularity,
+    required DateTime periodStart,
   }) {
-    // Check if cache exists and is valid
-    if (_graphCache == null || _graphCacheTimestamp == null) {
-      if (kDebugMode) {
-        debugPrint('[WeightCache] Cache miss - no cache exists');
-      }
-      return null;
-    }
+    final key = _getCacheKey(
+      userId: userId,
+      petId: petId,
+      granularity: granularity,
+      periodStart: periodStart,
+    );
 
-    // Check if cache is for same user/pet
-    if (_graphCache!.userId != userId || _graphCache!.petId != petId) {
+    final cached = _caches[key];
+    if (cached == null) {
       if (kDebugMode) {
-        debugPrint('[WeightCache] Cache miss - different user/pet');
+        debugPrint('[WeightCache] Cache miss - no cache for period');
       }
       return null;
     }
 
     // Check if cache is still fresh
-    final age = DateTime.now().difference(_graphCacheTimestamp!);
+    final age = DateTime.now().difference(cached.timestamp);
     if (age >= _cacheDuration) {
       if (kDebugMode) {
         debugPrint(
           '[WeightCache] Cache miss - expired (age: ${age.inMinutes}m)',
         );
       }
+      _caches.remove(key);
       return null;
     }
 
     if (kDebugMode) {
-      debugPrint('[WeightCache] Cache hit - age: ${age.inMinutes}m');
+      debugPrint(
+        '[WeightCache] Cache hit - age: ${age.inMinutes}m, '
+        'period: ${granularity.label}',
+      );
     }
-    return _graphCache!.dataPoints;
+    return cached.dataPoints;
   }
 
-  /// Stores graph data in cache
+  /// Stores graph data in cache for specific period
   static void setCachedGraphData({
     required String userId,
     required String petId,
+    required WeightGranularity granularity,
+    required DateTime periodStart,
     required List<WeightDataPoint> dataPoints,
   }) {
-    _graphCache = WeightGraphCache(
+    final key = _getCacheKey(
       userId: userId,
       petId: petId,
-      dataPoints: dataPoints,
+      granularity: granularity,
+      periodStart: periodStart,
     );
-    _graphCacheTimestamp = DateTime.now();
+
+    _caches[key] = _CachedPeriodData(
+      dataPoints: dataPoints,
+      timestamp: DateTime.now(),
+    );
 
     if (kDebugMode) {
-      debugPrint('[WeightCache] Cached ${dataPoints.length} data points');
+      debugPrint(
+        '[WeightCache] Cached ${dataPoints.length} data points '
+        'for ${granularity.label}',
+      );
     }
   }
 
-  /// Invalidates the cache
+  /// Invalidates all cached data
   ///
   /// Call this after:
   /// - Adding new weight
   /// - Updating existing weight
   /// - Deleting weight entry
   static void invalidateCache() {
-    if (_graphCache != null) {
+    if (_caches.isNotEmpty) {
       if (kDebugMode) {
-        debugPrint('[WeightCache] Cache invalidated');
+        debugPrint(
+          '[WeightCache] Cache invalidated (${_caches.length} periods)',
+        );
       }
+      _caches.clear();
     }
-    _graphCache = null;
-    _graphCacheTimestamp = null;
-  }
-
-  /// Checks if cache exists and is valid
-  static bool hasCachedData({
-    required String userId,
-    required String petId,
-  }) {
-    return getCachedGraphData(userId: userId, petId: petId) != null;
-  }
-
-  /// Gets cache age in minutes (returns null if no cache)
-  static int? getCacheAgeMinutes() {
-    if (_graphCacheTimestamp == null) return null;
-    return DateTime.now().difference(_graphCacheTimestamp!).inMinutes;
   }
 }
 
-/// Cache container for weight graph data
-@immutable
-class WeightGraphCache {
-  /// Creates a [WeightGraphCache]
-  const WeightGraphCache({
-    required this.userId,
-    required this.petId,
+/// Internal cache container for period data
+class _CachedPeriodData {
+  const _CachedPeriodData({
     required this.dataPoints,
+    required this.timestamp,
   });
 
-  /// User ID this cache belongs to
-  final String userId;
-
-  /// Pet ID this cache belongs to
-  final String petId;
-
-  /// Cached weight data points
   final List<WeightDataPoint> dataPoints;
+  final DateTime timestamp;
 }

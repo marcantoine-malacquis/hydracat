@@ -19,9 +19,9 @@ class WeightService {
   WeightService({
     FirebaseFirestore? firestore,
     ProfileValidationService? validationService,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _validationService =
-            validationService ?? const ProfileValidationService();
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _validationService =
+           validationService ?? const ProfileValidationService();
 
   final FirebaseFirestore _firestore;
   final ProfileValidationService _validationService;
@@ -162,12 +162,16 @@ class WeightService {
       final batch = _firestore.batch();
 
       // 1. Write health parameter
-      final healthParamRef =
-          _getHealthParameterRef(userId, petId, normalizedDate);
+      final healthParamRef = _getHealthParameterRef(
+        userId,
+        petId,
+        normalizedDate,
+      );
       batch.set(
         healthParamRef,
         {
           'weight': weightKg,
+          'hasWeight': true,
           if (notes != null) 'notes': notes,
           'date': Timestamp.fromDate(normalizedDate),
           'createdAt': FieldValue.serverTimestamp(),
@@ -177,8 +181,11 @@ class WeightService {
       );
 
       // 2. Update monthly summary
-      final monthlySummaryRef =
-          _getMonthlySummaryRef(userId, petId, normalizedDate);
+      final monthlySummaryRef = _getMonthlySummaryRef(
+        userId,
+        petId,
+        normalizedDate,
+      );
 
       // Fetch current summary to calculate deltas
       final currentSummaryDoc = await monthlySummaryRef.get();
@@ -186,12 +193,20 @@ class WeightService {
       final hasExistingData =
           currentSummaryDoc.exists && currentData?['weightLatest'] != null;
 
+      if (kDebugMode) {
+        debugPrint('[WeightService] Monthly summary state:');
+        debugPrint('  - Document exists: ${currentSummaryDoc.exists}');
+        debugPrint('  - Has weight data: $hasExistingData');
+        debugPrint('  - Current data: $currentData');
+      }
+
       final previousWeight = hasExistingData
           ? (currentData!['weightLatest'] as num).toDouble()
           : null;
 
-      final weightChange =
-          previousWeight != null ? weightKg - previousWeight : 0.0;
+      final weightChange = previousWeight != null
+          ? weightKg - previousWeight
+          : 0.0;
       final weightChangePercent = previousWeight != null
           ? ((weightKg - previousWeight) / previousWeight) * 100
           : 0.0;
@@ -210,6 +225,26 @@ class WeightService {
       if (!hasExistingData || currentData!['weightFirst'] == null) {
         summaryUpdates['weightFirst'] = weightKg;
         summaryUpdates['weightFirstDate'] = Timestamp.fromDate(normalizedDate);
+      }
+
+      // Set startDate if it doesn't exist (needed for graph queries)
+      if (!currentSummaryDoc.exists || currentData?['startDate'] == null) {
+        final monthStart = DateTime(normalizedDate.year, normalizedDate.month);
+        summaryUpdates['startDate'] = Timestamp.fromDate(monthStart);
+        if (kDebugMode) {
+          debugPrint(
+            '[WeightService] Setting startDate for monthly summary: '
+            '$monthStart',
+          );
+        }
+      }
+
+      if (kDebugMode) {
+        debugPrint(
+          '[WeightService] Updating monthly summary: '
+          '${DateFormat('yyyy-MM').format(normalizedDate)}'
+          ' with data: $summaryUpdates',
+        );
       }
 
       batch.set(monthlySummaryRef, summaryUpdates, SetOptions(merge: true));
@@ -273,23 +308,29 @@ class WeightService {
 
       final normalizedOldDate = AppDateUtils.startOfDay(oldDate);
       final normalizedNewDate = AppDateUtils.startOfDay(newDate);
-      final isSameDate =
-          normalizedOldDate.isAtSameMomentAs(normalizedNewDate);
-      final isSameMonth = normalizedOldDate.year == normalizedNewDate.year &&
+      final isSameDate = normalizedOldDate.isAtSameMomentAs(normalizedNewDate);
+      final isSameMonth =
+          normalizedOldDate.year == normalizedNewDate.year &&
           normalizedOldDate.month == normalizedNewDate.month;
 
       final batch = _firestore.batch();
 
       // 1. If date changed, delete old entry
       if (!isSameDate) {
-        final oldHealthParamRef =
-            _getHealthParameterRef(userId, petId, normalizedOldDate);
+        final oldHealthParamRef = _getHealthParameterRef(
+          userId,
+          petId,
+          normalizedOldDate,
+        );
         batch.delete(oldHealthParamRef);
 
         // Decrement old month's count if different month
         if (!isSameMonth) {
-          final oldMonthlySummaryRef =
-              _getMonthlySummaryRef(userId, petId, normalizedOldDate);
+          final oldMonthlySummaryRef = _getMonthlySummaryRef(
+            userId,
+            petId,
+            normalizedOldDate,
+          );
           batch.update(oldMonthlySummaryRef, {
             'weightEntriesCount': FieldValue.increment(-1),
             'updatedAt': FieldValue.serverTimestamp(),
@@ -298,12 +339,16 @@ class WeightService {
       }
 
       // 2. Write/update new entry
-      final newHealthParamRef =
-          _getHealthParameterRef(userId, petId, normalizedNewDate);
+      final newHealthParamRef = _getHealthParameterRef(
+        userId,
+        petId,
+        normalizedNewDate,
+      );
       batch.set(
         newHealthParamRef,
         {
           'weight': newWeightKg,
+          'hasWeight': true,
           if (newNotes != null) 'notes': newNotes,
           'date': Timestamp.fromDate(normalizedNewDate),
           'createdAt': FieldValue.serverTimestamp(),
@@ -313,35 +358,51 @@ class WeightService {
       );
 
       // 3. Update monthly summary for new date
-      final newMonthlySummaryRef =
-          _getMonthlySummaryRef(userId, petId, normalizedNewDate);
+      final newMonthlySummaryRef = _getMonthlySummaryRef(
+        userId,
+        petId,
+        normalizedNewDate,
+      );
       final currentSummaryDoc = await newMonthlySummaryRef.get();
       final currentData = currentSummaryDoc.data() as Map<String, dynamic>?;
 
-      final previousWeight = currentSummaryDoc.exists &&
+      final previousWeight =
+          currentSummaryDoc.exists &&
               currentData != null &&
               currentData['weightLatest'] != null
           ? (currentData['weightLatest'] as num).toDouble()
           : null;
 
-      final weightChange =
-          previousWeight != null ? newWeightKg - previousWeight : 0.0;
+      final weightChange = previousWeight != null
+          ? newWeightKg - previousWeight
+          : 0.0;
       final weightChangePercent = previousWeight != null
           ? ((newWeightKg - previousWeight) / previousWeight) * 100
           : 0.0;
 
+      final newSummaryUpdates = <String, dynamic>{
+        if (!isSameMonth || !isSameDate)
+          'weightEntriesCount': FieldValue.increment(1),
+        'weightLatest': newWeightKg,
+        'weightLatestDate': Timestamp.fromDate(normalizedNewDate),
+        'weightChange': weightChange,
+        'weightChangePercent': weightChangePercent,
+        'weightTrend': _calculateTrend(weightChange),
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      // Set startDate if it doesn't exist (needed for graph queries)
+      if (!currentSummaryDoc.exists || currentData?['startDate'] == null) {
+        final monthStart = DateTime(
+          normalizedNewDate.year,
+          normalizedNewDate.month,
+        );
+        newSummaryUpdates['startDate'] = Timestamp.fromDate(monthStart);
+      }
+
       batch.set(
         newMonthlySummaryRef,
-        {
-          if (!isSameMonth || !isSameDate)
-            'weightEntriesCount': FieldValue.increment(1),
-          'weightLatest': newWeightKg,
-          'weightLatestDate': Timestamp.fromDate(normalizedNewDate),
-          'weightChange': weightChange,
-          'weightChangePercent': weightChangePercent,
-          'weightTrend': _calculateTrend(weightChange),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
+        newSummaryUpdates,
         SetOptions(merge: true),
       );
 
@@ -396,13 +457,19 @@ class WeightService {
       final batch = _firestore.batch();
 
       // 1. Delete health parameter
-      final healthParamRef =
-          _getHealthParameterRef(userId, petId, normalizedDate);
+      final healthParamRef = _getHealthParameterRef(
+        userId,
+        petId,
+        normalizedDate,
+      );
       batch.delete(healthParamRef);
 
       // 2. Decrement monthly summary count
-      final monthlySummaryRef =
-          _getMonthlySummaryRef(userId, petId, normalizedDate);
+      final monthlySummaryRef = _getMonthlySummaryRef(
+        userId,
+        petId,
+        normalizedDate,
+      );
       batch.update(monthlySummaryRef, {
         'weightEntriesCount': FieldValue.increment(-1),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -520,6 +587,12 @@ class WeightService {
     int months = 12,
   }) async {
     try {
+      if (kDebugMode) {
+        debugPrint(
+          '[WeightService] Fetching graph data for last $months months',
+        );
+      }
+
       final query = _firestore
           .collection('users')
           .doc(userId)
@@ -535,11 +608,23 @@ class WeightService {
 
       final snapshot = await query.get();
 
+      if (kDebugMode) {
+        debugPrint(
+          '[WeightService] Graph query returned '
+          '${snapshot.docs.length} documents',
+        );
+        for (final doc in snapshot.docs) {
+          debugPrint(
+            '[WeightService] Doc ID: ${doc.id}, data: ${doc.data()}',
+          );
+        }
+      }
+
       return snapshot.docs.map((doc) {
         final data = doc.data();
         final weightLatest = (data['weightLatest'] as num).toDouble();
-        final weightLatestDate =
-            (data['weightLatestDate'] as Timestamp).toDate();
+        final weightLatestDate = (data['weightLatestDate'] as Timestamp)
+            .toDate();
 
         return WeightDataPoint(
           date: weightLatestDate,
@@ -560,6 +645,139 @@ class WeightService {
         debugPrint('[WeightService] Unexpected error: $e');
       }
       throw WeightServiceException('Failed to fetch graph data: $e');
+    }
+  }
+
+  /// Gets weight graph data for a specific week
+  ///
+  /// Returns daily weight data points for 7-day period (Monday to Sunday).
+  /// Uses hasWeight filter for efficient querying (only days with weight data).
+  /// Cost: ≤7 reads per week
+  Future<List<WeightDataPoint>> getWeightGraphDataWeek({
+    required String userId,
+    required String petId,
+    required DateTime weekStart,
+  }) async {
+    try {
+      if (kDebugMode) {
+        debugPrint(
+          '[WeightService] Fetching week graph data starting $weekStart',
+        );
+      }
+
+      final weekEnd = weekStart.add(const Duration(days: 7));
+
+      final query = _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('pets')
+          .doc(petId)
+          .collection('healthParameters')
+          .where('hasWeight', isEqualTo: true)
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(weekStart))
+          .where('date', isLessThan: Timestamp.fromDate(weekEnd))
+          .orderBy('date');
+
+      final snapshot = await query.get();
+
+      if (kDebugMode) {
+        debugPrint(
+          '[WeightService] Week query returned '
+          '${snapshot.docs.length} documents',
+        );
+      }
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        final weightKg = (data['weight'] as num).toDouble();
+        final date = (data['date'] as Timestamp).toDate();
+
+        return WeightDataPoint(
+          date: date,
+          weightKg: weightKg,
+        );
+      }).toList();
+    } on FirebaseException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[WeightService] Failed to fetch week data: ${e.message}',
+        );
+      }
+      throw WeightServiceException(
+        'Failed to fetch week data: ${e.message}',
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[WeightService] Unexpected error: $e');
+      }
+      throw WeightServiceException('Failed to fetch week data: $e');
+    }
+  }
+
+  /// Gets weight graph data for a specific month
+  ///
+  /// Returns daily weight data points for calendar month.
+  /// Uses hasWeight filter for efficient querying (only days with weight data).
+  /// Cost: ≤31 reads per month
+  Future<List<WeightDataPoint>> getWeightGraphDataMonth({
+    required String userId,
+    required String petId,
+    required DateTime monthStart,
+  }) async {
+    try {
+      if (kDebugMode) {
+        debugPrint(
+          '[WeightService] Fetching month graph data for '
+          '${DateFormat('yyyy-MM').format(monthStart)}',
+        );
+      }
+
+      final monthEnd = DateTime(monthStart.year, monthStart.month + 1);
+
+      final query = _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('pets')
+          .doc(petId)
+          .collection('healthParameters')
+          .where('hasWeight', isEqualTo: true)
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(monthStart))
+          .where('date', isLessThan: Timestamp.fromDate(monthEnd))
+          .orderBy('date');
+
+      final snapshot = await query.get();
+
+      if (kDebugMode) {
+        debugPrint(
+          '[WeightService] Month query returned '
+          '${snapshot.docs.length} documents',
+        );
+      }
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        final weightKg = (data['weight'] as num).toDouble();
+        final date = (data['date'] as Timestamp).toDate();
+
+        return WeightDataPoint(
+          date: date,
+          weightKg: weightKg,
+        );
+      }).toList();
+    } on FirebaseException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[WeightService] Failed to fetch month data: ${e.message}',
+        );
+      }
+      throw WeightServiceException(
+        'Failed to fetch month data: ${e.message}',
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[WeightService] Unexpected error: $e');
+      }
+      throw WeightServiceException('Failed to fetch month data: $e');
     }
   }
 

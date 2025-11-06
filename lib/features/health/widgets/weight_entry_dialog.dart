@@ -90,7 +90,7 @@ class _WeightEntryDialogState extends ConsumerState<WeightEntryDialog> {
 
   /// Validates and returns weight in kg (or null if invalid)
   double? _getValidatedWeightKg() {
-    final text = _weightController.text.trim();
+    final text = _weightController.text.trim().replaceAll(',', '.');
     if (text.isEmpty) {
       setState(() {
         _errorMessage = 'Please enter a weight';
@@ -229,7 +229,7 @@ class _WeightEntryDialogState extends ConsumerState<WeightEntryDialog> {
                 ),
               ),
               inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d{0,2}')),
               ],
               onChanged: (_) {
                 if (_errorMessage != null) {

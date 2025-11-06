@@ -8,6 +8,7 @@ import 'package:hydracat/features/auth/screens/email_verification_screen.dart';
 import 'package:hydracat/features/auth/screens/forgot_password_screen.dart';
 import 'package:hydracat/features/auth/screens/login_screen.dart';
 import 'package:hydracat/features/auth/screens/register_screen.dart';
+import 'package:hydracat/features/health/screens/weight_screen.dart';
 import 'package:hydracat/features/home/screens/component_demo_screen.dart';
 import 'package:hydracat/features/home/screens/home_screen.dart';
 import 'package:hydracat/features/learn/screens/learn_screen.dart';
@@ -20,7 +21,6 @@ import 'package:hydracat/features/profile/screens/create_fluid_schedule_screen.d
 import 'package:hydracat/features/profile/screens/fluid_schedule_screen.dart';
 import 'package:hydracat/features/profile/screens/medication_schedule_screen.dart';
 import 'package:hydracat/features/profile/screens/profile_screen.dart';
-import 'package:hydracat/features/profile/screens/weight_screen.dart';
 import 'package:hydracat/features/progress/screens/progress_screen.dart';
 import 'package:hydracat/features/settings/screens/notification_settings_screen.dart';
 import 'package:hydracat/features/settings/screens/settings_screen.dart';

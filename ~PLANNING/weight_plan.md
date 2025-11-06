@@ -2394,7 +2394,7 @@ flutter analyze
 
 ## Phase 3: UI Components - Weight Screen Foundation
 
-### Step 3.1: Add fl_chart Dependency
+### Step 3.1: Add fl_chart Dependency ✅ COMPLETED
 
 **Goal**: Add fl_chart package for line graph rendering
 
@@ -2426,7 +2426,7 @@ flutter pub get
 
 ---
 
-### Step 3.2: Create WeightScreen with Empty State
+### Step 3.2: Create WeightScreen with Empty State ✅ COMPLETED
 
 **Goal**: Create weight screen scaffold with empty state (before graph implementation)
 
@@ -2760,275 +2760,243 @@ flutter analyze
 
 ---
 
-### Step 3.3: Implement Weight Graph with fl_chart
+### Step 3.3: Implement Weight Graph with fl_chart ✅ COMPLETED
 
-**Goal**: Replace graph placeholder with actual line chart
+**Goal**: Replace graph placeholder with actual line chart with clean Y-axis intervals
 
-**Files to create**:
-- `lib/features/health/widgets/weight_line_chart.dart` (NEW)
+**Files created**:
+- `lib/features/health/widgets/weight_line_chart.dart` (235 lines)
+- `lib/features/health/widgets/weight_stat_card.dart` (63 lines)
 
-**Files to modify**:
-- `lib/features/health/screens/weight_screen.dart` (MODIFY)
+**Files modified**:
+- `lib/features/health/screens/weight_screen.dart`
 
-**Implementation**:
+**Key Features Implemented**:
+- Smooth curved line with `preventCurveOverShooting` (prevents dips between equal values)
+- Clean Y-axis intervals (0.25, 0.5, 1.0 kg) using "nice interval" algorithm
+- Y-axis labels without unit suffix (just numbers like "4.00", "4.25")
+- Minimum 0.5kg Y-axis range for meaningful scale
+- Touch tooltips with date and weight
+- WeightStatCard for single data point (shows value + date + encouragement)
+- Empty state handling
 
-First, create the chart widget:
+**Implementation details**:
 
+**Core Chart Features**:
 ```dart
-// lib/features/health/widgets/weight_line_chart.dart
+// Nice interval calculation for clean Y-axis
+double _calculateNiceInterval(double rawInterval) {
+  final magnitude = pow(10, (log(rawInterval) / ln10).floor()).toDouble();
+  final normalized = rawInterval / magnitude;
+  
+  final nice = normalized <= 0.15 ? 0.1
+      : normalized <= 0.35 ? 0.25
+      : normalized <= 0.75 ? 0.5
+      : normalized <= 1.5 ? 1.0
+      : normalized <= 3.0 ? 2.0
+      : 5.0;
+  
+  return nice * magnitude;
+}
 
-import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
-import 'package:hydracat/core/theme/app_colors.dart';
-import 'package:hydracat/core/theme/app_text_styles.dart';
-import 'package:hydracat/features/health/models/weight_data_point.dart';
-import 'package:intl/intl.dart';
+// Y-axis with clean intervals and aligned range
+final rawInterval = (yMax - yMin) / 4;
+final niceInterval = _calculateNiceInterval(rawInterval);
+final alignedMin = (yMin / niceInterval).floor() * niceInterval;
+final alignedMax = (yMax / niceInterval).ceil() * niceInterval;
 
-/// Line chart widget for displaying weight trends
-///
-/// Shows weight data points over time with:
-/// - Smooth curved line
-/// - Gradient fill below line
-/// - Touch interaction with tooltips
-/// - Responsive axis labels
-class WeightLineChart extends StatelessWidget {
-  /// Creates a [WeightLineChart]
-  const WeightLineChart({
-    required this.dataPoints,
-    required this.unit,
-    super.key,
-  });
+// Chart configuration
+LineChartBarData(
+  spots: spots,
+  isCurved: true,
+  preventCurveOverShooting: true,  // Prevents dips between equal values
+  color: AppColors.primary,
+  barWidth: 3,
+  // ...
+)
 
-  /// Weight data points to display
-  final List<WeightDataPoint> dataPoints;
-
-  /// Unit to display (kg or lbs)
-  final String unit;
-
-  @override
-  Widget build(BuildContext context) {
-    if (dataPoints.isEmpty) {
-      return const Center(
-        child: Text(
-          'No weight data available',
-          style: AppTextStyles.bodySmall,
-        ),
-      );
-    }
-
-    // Sort by date ascending for chart
-    final sortedPoints = [...dataPoints]
-      ..sort((a, b) => a.date.compareTo(b.date));
-
-    // Convert to chart spots
-    final spots = sortedPoints.asMap().entries.map((entry) {
-      final x = entry.key.toDouble();
-      final weight = unit == 'kg' ? entry.value.weightKg : entry.value.weightLbs;
-      return FlSpot(x, weight);
-    }).toList();
-
-    // Calculate min/max for Y axis
-    final weights = spots.map((spot) => spot.y).toList();
-    final minWeight = weights.reduce((a, b) => a < b ? a : b);
-    final maxWeight = weights.reduce((a, b) => a > b ? a : b);
-    
-    // Add padding to Y axis
-    final yMin = minWeight - (maxWeight - minWeight) * 0.1;
-    final yMax = maxWeight + (maxWeight - minWeight) * 0.1;
-
-    return AspectRatio(
-      aspectRatio: 1.7,
-      child: LineChart(
-        LineChartData(
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: false,
-            horizontalInterval: (yMax - yMin) / 4,
-            getDrawingHorizontalLine: (value) {
-              return FlLine(
-                color: AppColors.border,
-                strokeWidth: 1,
-              );
-            },
-          ),
-          titlesData: FlTitlesData(
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 45,
-                interval: (yMax - yMin) / 4,
-                getTitlesWidget: (value, meta) {
-                  return Text(
-                    '${value.toStringAsFixed(1)} $unit',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  );
-                },
-              ),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 30,
-                interval: sortedPoints.length > 6 ? 2 : 1,
-                getTitlesWidget: (value, meta) {
-                  final index = value.toInt();
-                  if (index < 0 || index >= sortedPoints.length) {
-                    return const SizedBox.shrink();
-                  }
-
-                  final date = sortedPoints[index].date;
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      DateFormat('MMM').format(date),
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            topTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            rightTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-          ),
-          borderData: FlBorderData(
-            show: true,
-            border: Border(
-              bottom: BorderSide(color: AppColors.border),
-              left: BorderSide(color: AppColors.border),
-            ),
-          ),
-          minX: 0,
-          maxX: (spots.length - 1).toDouble(),
-          minY: yMin,
-          maxY: yMax,
-          lineBarsData: [
-            LineChartBarData(
-              spots: spots,
-              isCurved: true,
-              color: AppColors.primary,
-              barWidth: 3,
-              isStrokeCapRound: true,
-              dotData: FlDotData(
-                show: true,
-                getDotPainter: (spot, percent, barData, index) {
-                  return FlDotCirclePainter(
-                    radius: 4,
-                    color: AppColors.primary,
-                    strokeWidth: 2,
-                    strokeColor: AppColors.surface,
-                  );
-                },
-              ),
-              belowBarData: BarAreaData(
-                show: true,
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.primary.withOpacity(0.3),
-                    AppColors.primary.withOpacity(0.0),
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            ),
-          ],
-          lineTouchData: LineTouchData(
-            enabled: true,
-            touchTooltipData: LineTouchTooltipData(
-              getTooltipItems: (touchedSpots) {
-                return touchedSpots.map((spot) {
-                  final index = spot.x.toInt();
-                  final date = sortedPoints[index].date;
-                  final weight = spot.y;
-                  
-                  return LineTooltipItem(
-                    '${DateFormat('MMM dd').format(date)}\n'
-                    '${weight.toStringAsFixed(2)} $unit',
-                    AppTextStyles.caption.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  );
-                }).toList();
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+// Y-axis labels (no unit - cleaner)
+getTitlesWidget: (value, meta) {
+  return Text(
+    value.toStringAsFixed(2),  // e.g., "4.00", "4.25"
+    style: AppTextStyles.caption.copyWith(
+      color: AppColors.textSecondary,
+    ),
+  );
 }
 ```
+*See actual implementation in `lib/features/health/widgets/weight_line_chart.dart`*
 
-Now update the weight screen to use the chart:
-
+**WeightStatCard for single data point**:
 ```dart
-// In lib/features/health/screens/weight_screen.dart
+// lib/features/health/widgets/weight_stat_card.dart
+// Shows large weight value, date, and "Log more weights to see trends" message
+// Used when only 1 monthly summary exists
+```
 
-// ADD this import at the top:
-import 'package:hydracat/features/health/widgets/weight_line_chart.dart';
+**Weight Screen Integration**:
+```dart
+// lib/features/health/screens/weight_screen.dart
 
-// REPLACE _buildGraphPlaceholder() method with:
 Widget _buildGraphCard(WeightState state, String currentUnit) {
   return Container(
-    padding: const EdgeInsets.all(AppSpacing.md),
-    decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: AppColors.border),
-    ),
+    // ... styling
     child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Weight Trend',
-          style: AppTextStyles.h3,
-        ),
-        const SizedBox(height: AppSpacing.md),
+        // Note: "Weight Trend" title removed to save space for step 3.4 controls
         if (state.graphData.isEmpty)
-          const SizedBox(
-            height: 200,
-            child: Center(
-              child: Text(
-                'Log more weights to see your trend',
-                style: AppTextStyles.bodySmall,
-              ),
-            ),
-          )
+          // Empty state message
+        else if (state.graphData.length == 1)
+          WeightStatCard(...)  // Single data point
         else
           WeightLineChart(
             dataPoints: state.graphData,
             unit: currentUnit,
+            granularity: state.granularity,  // Added in 3.4
           ),
       ],
     ),
   );
 }
-
-// UPDATE _buildContentView() to use the new method:
-// REPLACE the line:
-// _buildGraphPlaceholder(),
-// WITH:
-// _buildGraphCard(state, currentUnit),
 ```
+
+**Critical Fixes Applied**:
+1. Added `startDate` field to monthly summaries when logging weights
+2. Set `startDate` if document exists but has no weight data yet
+3. Created Firebase composite indexes for queries
+4. Fixed curve overshooting with `preventCurveOverShooting: true`
 
 **Testing**:
 ```bash
-flutter analyze
-# Should pass with no errors
+flutter analyze  # ✅ Passed
+# Graph renders with clean intervals
+# No curve overshooting between equal values
+# Tooltips work on touch
+```
 
-# Run the app
-# Add multiple weight entries over different dates
-# Graph should render with smooth line and data points
-# Touch interaction should show tooltips
+---
+
+### Step 3.4: Add Week/Month/Year Views with Period Navigation ✅ COMPLETED
+
+**Goal**: Allow users to switch granularity (Week / Month / Year) and navigate between periods with arrows while keeping Firestore costs minimal.
+
+**Files created**:
+- `lib/features/health/models/weight_granularity.dart` (24 lines)
+
+**Files modified**:
+- `lib/features/health/services/weight_service.dart` (+150 lines)
+- `lib/features/health/services/weight_cache_service.dart` (complete rewrite for per-period caching)
+- `lib/providers/weight_provider.dart` (+120 lines)
+- `lib/features/health/screens/weight_screen.dart` (+120 lines)
+- `lib/features/health/widgets/weight_line_chart.dart` (+10 lines)
+
+**UX/Controls Implemented**:
+- ✅ Segmented control: `Week | Month | Year` (default Year, teal when selected)
+- ✅ Toggles positioned ABOVE date navigation (saves space, better hierarchy)
+- ✅ Left/Right chevrons to navigate periods
+- ✅ Right chevron disabled at current period (prevents future navigation)
+- ✅ "Today" button appears when not on current period (quick jump)
+- ✅ Period labels: "Nov 4-10, 2025" / "November 2025" / "2025"
+- ✅ Session-only persistence (resets to Year on screen re-open)
+- ✅ Haptic feedback on all interactions
+
+**Data/CRUD Implementation**:
+- ✅ Added `hasWeight: true` to healthParameters on write
+- ✅ Uses `FieldValue.delete()` for cleaner data model
+- ✅ Efficient queries with `hasWeight` equality filter + date range
+
+**Firebase Index Created**:
+- Collection: `healthParameters` (collection group)
+- Fields: `hasWeight` Asc, `date` Asc
+
+**Service – Implemented Read APIs**:
+
+```dart
+// Week view: Mon 00:00 inclusive .. next Mon 00:00 exclusive
+Future<List<WeightDataPoint>> getWeightGraphDataWeek({
+  required String userId,
+  required String petId,
+  required DateTime weekStart, // normalized to Monday 00:00
+});
+
+// Month view: 1st 00:00 inclusive .. 1st of next month 00:00 exclusive
+Future<List<WeightDataPoint>> getWeightGraphDataMonth({
+  required String userId,
+  required String petId,
+  required DateTime monthStart, // normalized to YYYY-MM-01 00:00
+});
+
+// Existing Year view stays the same (monthly summaries)
+```
+
+**Provider – Implemented State & Methods**:
+
+```dart
+// lib/features/health/models/weight_granularity.dart
+enum WeightGranularity { week, month, year }
+
+// lib/providers/weight_provider.dart
+class WeightState {  
+  final WeightGranularity granularity;           // default: year
+  final DateTime periodStart;                    // aligned to granularity
+  // ...existing fields
+}
+
+// WeightNotifier methods
+void setGranularity(WeightGranularity g);       // Changes view + loads current period
+void nextPeriod();                               // Navigate forward
+void previousPeriod();                           // Navigate backward  
+void goToToday();                                // Jump to current period
+bool get isOnCurrentPeriod;                      // Check if viewing current period
+Future<void> loadGraphDataForPeriod();          // Loads data with cache
+```
+
+**Caching Implementation**:
+- ✅ Map-based cache: `Map<String, _CachedPeriodData> _caches`
+- ✅ Cache key: `userId|petId|granularity|periodStartISO`
+- ✅ TTL: 30 minutes per period
+- ✅ Invalidation: clears all periods on write operations
+- ✅ Navigation: cached periods = 0 reads when returning
+
+**UI Implementation**:
+```dart
+// lib/features/health/screens/weight_screen.dart
+
+// Layout (toggles above navigation)
+_buildGranularitySelector(state),       // Week|Month|Year (teal selected)
+const SizedBox(height: AppSpacing.sm),
+_buildGraphHeader(state),               // [<] Period Label [>] Today
+const SizedBox(height: AppSpacing.md),
+[Chart or Empty State]
+
+// Period labels by granularity
+Week:  "Nov 4-10, 2025"
+Month: "November 2025"  
+Year:  "2025"
+
+// X-axis labels by granularity
+Week:  EEE (Mon, Tue, Wed...)
+Month: d (1, 2, 3...31)
+Year:  MMM (Jan, Feb, Mar...)
+```
+
+**Firebase Indexes Created**:
+1. `summaries` collection: `weightEntriesCount` Asc, `startDate` Desc
+2. `healthParameters` collection group: `hasWeight` Asc, `date` Asc
+
+**Performance Results**:
+- Year: 12 reads (monthly summaries)
+- Month: ≤31 reads (filtered by hasWeight)
+- Week: ≤7 reads (filtered by hasWeight)
+- Cached navigation: 0 reads (30-min TTL)
+
+**Testing**:
+```bash
+flutter analyze  # ✅ Passed - No issues found
+# All granularities work correctly
+# Navigation smooth with haptic feedback
+# Cache logs confirm 0 reads on revisit
+# Empty states display properly per period
 ```
 
 ---
