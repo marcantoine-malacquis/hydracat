@@ -252,11 +252,25 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 
   /// Load the primary pet profile
   Future<bool> loadPrimaryPet() async {
+    if (kDebugMode) {
+      debugPrint('[ProfileNotifier] loadPrimaryPet: Starting...');
+    }
     state = state.withLoading(loading: true);
 
     try {
+      if (kDebugMode) {
+        debugPrint(
+          '[ProfileNotifier] loadPrimaryPet: Calling getPrimaryPet...',
+        );
+      }
       final pet = await _petService.getPrimaryPet();
       final cacheTimestamp = _petService.getCacheTimestamp();
+
+      if (kDebugMode) {
+        debugPrint(
+          '[ProfileNotifier] loadPrimaryPet: Got pet = ${pet?.name ?? 'null'}',
+        );
+      }
 
       // Cache pet ID for background FCM handler
       if (pet != null) {
@@ -272,13 +286,30 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 
       // Proactively load schedules after pet is loaded
       if (pet != null) {
+        if (kDebugMode) {
+          debugPrint(
+            '[ProfileNotifier] loadPrimaryPet: Loading schedules for pet '
+            '${pet.id}',
+          );
+        }
         await loadAllSchedules();
       }
 
+      if (kDebugMode) {
+        debugPrint(
+          '[ProfileNotifier] loadPrimaryPet: Complete, success=${pet != null}',
+        );
+      }
       return pet != null;
-    } on Object catch (e) {
+    } on Object catch (e, stackTrace) {
       // Catches all throwables including TypeError from JSON parsing
       // This prevents the app from hanging if deserialization fails
+      if (kDebugMode) {
+        debugPrint('[ProfileNotifier] loadPrimaryPet: ERROR: $e');
+        debugPrint(
+          '[ProfileNotifier] loadPrimaryPet: Stack trace: $stackTrace',
+        );
+      }
       state = state.copyWith(
         isLoading: false,
         error: PetServiceException('Failed to load pet profile: $e'),

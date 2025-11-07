@@ -227,7 +227,8 @@ class AppTheme {
       backgroundColor: AppColors.primary,
       foregroundColor: AppColors.onPrimary,
       elevation: 0,
-      shape: CircleBorder(),
+      // Don't set shape - let Flutter use default shapes:
+      // CircleBorder for regular FAB, StadiumBorder for extended FAB
     );
   }
 

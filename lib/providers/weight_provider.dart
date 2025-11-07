@@ -181,20 +181,14 @@ class WeightNotifier extends StateNotifier<WeightState> {
         periodStart: state.periodStart,
       );
 
-      // Fetch latest weight and history (not cached)
-      final results = await Future.wait([
-        _service.getLatestWeight(
-          userId: userId,
-          petId: petId,
-        ),
-        _service.getWeightHistory(
-          userId: userId,
-          petId: petId,
-        ),
-      ]);
+      // Fetch history (not cached) and get weight from profile
+      final historyResult = await _service.getWeightHistory(
+        userId: userId,
+        petId: petId,
+      );
 
-      final latestWeight = results[0] as double?;
-      final historyResult = results[1]! as WeightHistoryResult;
+      // Get latest weight from pet profile (more reliable than getLatestWeight)
+      final latestWeight = primaryPet.weightKg;
 
       state = state.copyWith(
         graphData: graphData,
@@ -397,12 +391,16 @@ class WeightNotifier extends StateNotifier<WeightState> {
       // Invalidate cache since data changed
       WeightCacheService.invalidateCache();
 
+      // Force refresh profile with forceRefresh flag
+      // (WeightService already updated pet profile with global latest)
+      await _ref.read(profileProvider.notifier).refreshPrimaryPet();
+      
+      // Clear and invalidate the pet service cache to ensure fresh data
+      await _ref.read(petServiceProvider).clearCache();
+      await _ref.read(profileProvider.notifier).refreshPrimaryPet();
+
       // Reload data (will fetch fresh from Firebase)
       await loadInitialData();
-
-      // Update profile cache with new weight
-      //(optimization to avoid Firestore read)
-      _ref.read(profileProvider.notifier).updateCachedWeight(weightKg);
 
       // Track analytics event
       final currentUnit = _ref.read(weightUnitProvider);
@@ -476,12 +474,16 @@ class WeightNotifier extends StateNotifier<WeightState> {
       // Invalidate cache since data changed
       WeightCacheService.invalidateCache();
 
+      // Force refresh profile with forceRefresh flag
+      // (WeightService already updated pet profile with global latest)
+      await _ref.read(profileProvider.notifier).refreshPrimaryPet();
+      
+      // Clear and invalidate the pet service cache to ensure fresh data
+      await _ref.read(petServiceProvider).clearCache();
+      await _ref.read(profileProvider.notifier).refreshPrimaryPet();
+
       // Reload data (will fetch fresh from Firebase)
       await loadInitialData();
-
-      // Update profile cache with new weight
-      //(optimization to avoid Firestore read)
-      _ref.read(profileProvider.notifier).updateCachedWeight(newWeightKg);
 
       // Track analytics event
       final dateChanged = !oldDate.isAtSameMomentAs(newDate);
@@ -545,16 +547,16 @@ class WeightNotifier extends StateNotifier<WeightState> {
       // Invalidate cache since data changed
       WeightCacheService.invalidateCache();
 
+      // Force refresh profile with forceRefresh flag
+      // (WeightService already updated pet profile with global latest or null)
+      await _ref.read(profileProvider.notifier).refreshPrimaryPet();
+      
+      // Clear and invalidate the pet service cache to ensure fresh data
+      await _ref.read(petServiceProvider).clearCache();
+      await _ref.read(profileProvider.notifier).refreshPrimaryPet();
+
       // Reload data (will fetch fresh from Firebase)
       await loadInitialData();
-
-      // Update profile cache with latest weight after deletion
-      // (WeightService already updated Firestore with most recent weight
-      // or null)
-      final latestWeight = state.historyEntries.isNotEmpty
-          ? state.historyEntries.first.weight
-          : null;
-      _ref.read(profileProvider.notifier).updateCachedWeight(latestWeight);
 
       // Track analytics event
       final analytics = _ref.read(analyticsServiceDirectProvider);

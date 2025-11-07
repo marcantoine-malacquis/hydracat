@@ -48,7 +48,7 @@ class _HydraFabState extends State<HydraFab> {
   void _onTapDown(TapDownDetails details) {
     // Trigger haptic feedback immediately on touch down
     HapticFeedback.selectionClick();
-    
+
     if (widget.onLongPress != null && !widget.isLoading) {
       _longPressTimer = Timer(const Duration(milliseconds: 500), () {
         widget.onLongPress!();
@@ -156,6 +156,9 @@ class HydraExtendedFab extends StatelessWidget {
     super.key,
     this.icon = Icons.water_drop,
     this.isLoading = false,
+    this.backgroundColor,
+    this.foregroundColor,
+    this.elevation,
   });
 
   /// Callback function when FAB is pressed
@@ -170,13 +173,24 @@ class HydraExtendedFab extends StatelessWidget {
   /// Whether to show loading state
   final bool isLoading;
 
+  /// Background color for the FAB. Defaults to [AppColors.surface]
+  final Color? backgroundColor;
+
+  /// Foreground color for text and icon. Defaults to [AppColors.primary]
+  final Color? foregroundColor;
+
+  /// Elevation of the FAB. Defaults to 0
+  final double? elevation;
+
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton.extended(
       onPressed: isLoading ? null : onPressed,
-      backgroundColor: AppColors.surface, // White background
-      foregroundColor: AppColors.primary, // Teal text and icon
-      elevation: 0,
+      backgroundColor:
+          backgroundColor ?? AppColors.surface, // White background by default
+      foregroundColor:
+          foregroundColor ?? AppColors.primary, // Teal text and icon by default
+      elevation: elevation ?? 0,
       icon: _buildIcon(),
       label: _buildLabel(),
     );
@@ -205,7 +219,9 @@ class HydraExtendedFab extends StatelessWidget {
     return Text(
       label,
       style: AppTextStyles.buttonPrimary.copyWith(
-        color: AppColors.primary, // Teal text color
+        color:
+            foregroundColor ??
+            AppColors.primary, // Use custom color or default to teal
       ),
     );
   }

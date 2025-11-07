@@ -63,6 +63,10 @@ class _AppShellState extends ConsumerState<AppShell>
   bool _isRescheduling = false;
   Timer? _rescheduleDebounce;
   Timer? _nextMidnightTimer;
+  Timer? _retryPreconditionsTimer;
+
+  // Track whether pet profile auto-loading has been attempted
+  bool _hasAttemptedPetLoad = false;
 
   final List<HydraNavigationItem> _navigationItems = const [
     HydraNavigationItem(icon: AppIcons.home, label: 'Home', route: '/'),
@@ -144,6 +148,9 @@ class _AppShellState extends ConsumerState<AppShell>
     NotificationTapHandler.pendingSnoozePayload.removeListener(
       _notificationSnoozeListener,
     );
+    _rescheduleDebounce?.cancel();
+    _nextMidnightTimer?.cancel();
+    _retryPreconditionsTimer?.cancel();
     super.dispose();
   }
 
@@ -1104,7 +1111,9 @@ class _AppShellState extends ConsumerState<AppShell>
     } else {
       // Retry once shortly if not ready
       _devLog('Preconditions not ready; retrying reschedule shortly');
-      Timer(const Duration(seconds: 3), () {
+      _retryPreconditionsTimer?.cancel();
+      _retryPreconditionsTimer = Timer(const Duration(seconds: 3), () {
+        if (!mounted) return;
         final auth2 = ref.read(isAuthenticatedProvider);
         final onboard2 = ref.read(hasCompletedOnboardingProvider);
         final user2 = ref.read(currentUserProvider);
@@ -1274,15 +1283,30 @@ class _AppShellState extends ConsumerState<AppShell>
     final primaryPet = ref.watch(primaryPetProvider);
     final profileIsLoading = ref.watch(profileIsLoadingProvider);
 
-    // Trigger profile loading when conditions are met
+    // Trigger profile loading when conditions are met (only once)
     if (hasCompletedOnboarding &&
         isAuthenticated &&
         primaryPet == null &&
         !profileIsLoading &&
-        !isLoading) {
+        !isLoading &&
+        !_hasAttemptedPetLoad) {
+      _hasAttemptedPetLoad = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        debugPrint('[AppShell] Auto-loading pet profile');
-        ref.read(profileProvider.notifier).loadPrimaryPet();
+        if (mounted) {
+          debugPrint('[AppShell] Auto-loading pet profile');
+          ref.read(profileProvider.notifier).loadPrimaryPet();
+        }
+      });
+    }
+
+    // Reset the flag if pet is loaded (allow retry if pet becomes null again)
+    if (primaryPet != null && _hasAttemptedPetLoad) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _hasAttemptedPetLoad = false;
+          });
+        }
       });
     }
 

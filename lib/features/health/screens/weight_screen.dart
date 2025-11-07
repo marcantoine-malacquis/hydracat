@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -31,13 +32,46 @@ class WeightScreen extends ConsumerStatefulWidget {
 }
 
 class _WeightScreenState extends ConsumerState<WeightScreen> {
+  ScrollController? _scrollController;
+  bool _showFab = true;
+
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController()..addListener(_handleScroll);
     // Load weight data after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(weightProvider.notifier).loadInitialData();
     });
+  }
+
+  void _handleScroll() {
+    if (_scrollController == null || !_scrollController!.hasClients) return;
+
+    final direction = _scrollController!.position.userScrollDirection;
+    
+    // Hide FAB when scrolling down
+    if (direction == ScrollDirection.reverse) {
+      if (_showFab) {
+        setState(() {
+          _showFab = false;
+        });
+      }
+    }
+    // Show FAB when scrolling up
+    else if (direction == ScrollDirection.forward) {
+      if (!_showFab) {
+        setState(() {
+          _showFab = true;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController?.dispose();
+    super.dispose();
   }
 
   Future<void> _showAddWeightDialog() async {
@@ -96,11 +130,17 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
           : weightState.historyEntries.isEmpty
           ? _buildEmptyState()
           : _buildContentView(weightState),
-      floatingActionButton: HydraFab(
-        onPressed: _showAddWeightDialog,
-        icon: Icons.scale,
-        tooltip: 'Add Weight',
-      ),
+      floatingActionButton: _showFab
+          ? HydraExtendedFab(
+              onPressed: _showAddWeightDialog,
+              icon: Icons.add,
+              label: 'Add Weight',
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+              elevation: 6,
+            )
+          : null,
+      floatingActionButtonAnimator: FloatingActionButtonAnimator.scaling,
     );
   }
 
@@ -197,6 +237,7 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
 
     return SafeArea(
       child: SingleChildScrollView(
+        controller: _scrollController,
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

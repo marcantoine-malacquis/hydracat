@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:hydracat/features/profile/models/medical_info.dart';
@@ -30,8 +31,8 @@ class CatProfile {
       weightKg: json['weightKg'] != null
           ? (json['weightKg'] as num).toDouble()
           : null,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      createdAt: _parseDateTime(json['createdAt']),
+      updatedAt: _parseDateTime(json['updatedAt']),
       medicalInfo: json['medicalInfo'] != null
           ? MedicalInfo.fromJson(json['medicalInfo'] as Map<String, dynamic>)
           : const MedicalInfo(),
@@ -39,6 +40,17 @@ class CatProfile {
       breed: json['breed'] as String?,
       gender: json['gender'] as String?,
     );
+  }
+
+  /// Helper to parse DateTime from either Timestamp or String
+  static DateTime _parseDateTime(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate();
+    } else if (value is String) {
+      return DateTime.parse(value);
+    } else {
+      throw FormatException('Invalid datetime format: $value');
+    }
   }
 
   /// Unique identifier for the pet profile

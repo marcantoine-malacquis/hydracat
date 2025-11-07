@@ -108,8 +108,9 @@ class PetService {
       // Validate the profile first (prevents failed writes)
       final validationResult = _validationService.validateProfile(profile);
       if (!validationResult.isValid) {
-        final errorMessages =
-            validationResult.errors.map((e) => e.message).toList();
+        final errorMessages = validationResult.errors
+            .map((e) => e.message)
+            .toList();
         return PetFailure(
           ProfileValidationException(errorMessages),
         );
@@ -166,43 +167,73 @@ class PetService {
   /// Returns cached result for 90% of users after initial load.
   /// Includes persistent cache fallback for offline scenarios.
   Future<CatProfile?> getPrimaryPet({bool forceRefresh = false}) async {
+    debugPrint(
+      '[PetService] getPrimaryPet: Starting (forceRefresh=$forceRefresh)',
+    );
     final userId = _currentUserId;
-    if (userId == null) return null;
+    if (userId == null) {
+      debugPrint('[PetService] getPrimaryPet: No userId, returning null');
+      return null;
+    }
+
+    debugPrint('[PetService] getPrimaryPet: userId=$userId');
 
     // Check memory cache first (90% of calls return here)
     if (!forceRefresh && _isPrimaryCacheValid(userId)) {
+      debugPrint(
+        '[PetService] getPrimaryPet: Returning from memory cache: '
+        '${_cachedPrimaryPet?.name}',
+      );
       return _cachedPrimaryPet;
     }
 
     // Check persistent cache if memory cache is invalid
     if (!forceRefresh) {
+      debugPrint('[PetService] getPrimaryPet: Checking persistent cache...');
       final persistentPet = await _loadFromPersistentCache(userId);
       if (persistentPet != null) {
+        debugPrint(
+          '[PetService] getPrimaryPet: Found in persistent cache: '
+          '${persistentPet.name}',
+        );
         // Load into memory cache
         _cachedPrimaryPet = persistentPet;
         _cachedPrimaryPetUserId = userId;
         _cacheTimestamp = DateTime.now();
         return persistentPet;
       }
+      debugPrint('[PetService] getPrimaryPet: Not in persistent cache');
     }
 
     try {
+      debugPrint('[PetService] getPrimaryPet: Querying Firestore...');
       // Get user's pets (typically just 1 for 90% of users)
       final petsQuery = await _petsCollection!
           .orderBy('createdAt', descending: false)
           .limit(1) // Only need the first pet for primary
           .get();
 
+      debugPrint(
+        '[PetService] getPrimaryPet: Query returned '
+        '${petsQuery.docs.length} docs',
+      );
+
       if (petsQuery.docs.isEmpty) {
+        debugPrint('[PetService] getPrimaryPet: No pets found');
         return null;
       }
 
       // Cache the primary pet
       final petDoc = petsQuery.docs.first;
+      debugPrint('[PetService] getPrimaryPet: Parsing pet document...');
       final pet = CatProfile.fromJson({
         ...petDoc.data(),
         'id': petDoc.id,
       });
+
+      debugPrint(
+        '[PetService] getPrimaryPet: Successfully parsed pet: ${pet.name}',
+      );
 
       // Update both memory and persistent cache
       _cachedPrimaryPet = pet;
@@ -212,19 +243,33 @@ class PetService {
       // Save to persistent cache (fire and forget)
       unawaited(_saveToPersistentCache(pet, userId));
 
+      debugPrint('[PetService] getPrimaryPet: Returning pet: ${pet.name}');
       return pet;
     } on FirebaseException catch (e) {
-      debugPrint('Error getting primary pet: ${e.message}');
+      debugPrint(
+        '[PetService] getPrimaryPet: FirebaseException: '
+        '${e.code} - ${e.message}',
+      );
 
       // Try to return persistent cache as fallback
       final persistentPet = await _loadFromPersistentCache(userId);
       if (persistentPet != null) {
+        debugPrint(
+          '[PetService] getPrimaryPet: Returning fallback from persistent '
+          'cache: ${persistentPet.name}',
+        );
         _cachedPrimaryPet = persistentPet;
         _cachedPrimaryPetUserId = userId;
         _cacheTimestamp = DateTime.now();
+      } else {
+        debugPrint('[PetService] getPrimaryPet: No fallback available');
       }
 
       return persistentPet;
+    } on Object catch (e, stackTrace) {
+      debugPrint('[PetService] getPrimaryPet: Unexpected error: $e');
+      debugPrint('[PetService] getPrimaryPet: Stack trace: $stackTrace');
+      rethrow;
     }
   }
 
@@ -335,8 +380,9 @@ class PetService {
         updatedProfile,
       );
       if (!validationResult.isValid) {
-        final errorMessages =
-            validationResult.errors.map((e) => e.message).toList();
+        final errorMessages = validationResult.errors
+            .map((e) => e.message)
+            .toList();
         return PetFailure(
           ProfileValidationException(errorMessages),
         );
@@ -703,10 +749,12 @@ class PetService {
 
       // Also update persistent cache (fire and forget)
       if (_cachedPrimaryPetUserId != null) {
-        unawaited(_saveToPersistentCache(
-          _cachedPrimaryPet!,
-          _cachedPrimaryPetUserId!,
-        ));
+        unawaited(
+          _saveToPersistentCache(
+            _cachedPrimaryPet!,
+            _cachedPrimaryPetUserId!,
+          ),
+        );
       }
     }
   }
