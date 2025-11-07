@@ -707,7 +707,6 @@ class ProfileScreen extends ConsumerWidget {
         // CKD Profile section
         ProfileSectionItem(
           title: "$petName's CKD Profile",
-          subtitle: 'Medical information and lab results',
           icon: Icons.medical_information,
           onTap: () => context.go('/profile/ckd'),
         ),
@@ -717,7 +716,6 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.sm),
           ProfileSectionItem(
             title: "$petName's Fluid Schedule",
-            subtitle: 'Fluid therapy settings and reminders',
             icon: Icons.water_drop,
             onTap: () => context.go('/profile/fluid'),
           ),
@@ -728,7 +726,6 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.sm),
           ProfileSectionItem(
             title: 'Add Fluid Therapy Tracking',
-            subtitle: 'Set up subcutaneous fluid schedules',
             icon: Icons.add_circle_outline,
             onTap: () => context.push('/profile/fluid/create'),
           ),
@@ -739,7 +736,6 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.sm),
           ProfileSectionItem(
             title: "$petName's Medication Schedule",
-            subtitle: 'Medication settings and reminders',
             icon: Icons.medication,
             onTap: () => context.go('/profile/medication'),
           ),
@@ -750,7 +746,6 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.sm),
           ProfileSectionItem(
             title: 'Add Medication Tracking',
-            subtitle: 'Set up medication schedules',
             icon: Icons.add_circle_outline,
             onTap: () => context.push('/profile/medication'),
           ),

@@ -67,14 +67,6 @@ class ProgressWeekCalendar extends ConsumerWidget {
               color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.bold,
             ),
-            selectedDecoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            selectedTextStyle:
-                Theme.of(context).textTheme.labelMedium!.copyWith(
-              color: Theme.of(context).colorScheme.onPrimary,
-            ),
             outsideDaysVisible: false,
             cellMargin: EdgeInsets.symmetric(
               vertical: format == CalendarFormat.month ? 8 : 10,
@@ -84,14 +76,8 @@ class ProgressWeekCalendar extends ConsumerWidget {
           onPageChanged: (newFocusedDay) {
             ref.read(focusedDayProvider.notifier).state = newFocusedDay;
           },
-          selectedDayPredicate: (day) {
-            final selectedDay = ref.watch(selectedDayProvider);
-            return selectedDay != null &&
-                AppDateUtils.isSameDay(day, selectedDay);
-          },
           onDaySelected: (selected, focused) {
             HapticFeedback.selectionClick();
-            ref.read(selectedDayProvider.notifier).state = selected;
             onDaySelected(selected);
           },
           calendarBuilders: CalendarBuilders(
@@ -110,66 +96,86 @@ class ProgressWeekCalendar extends ConsumerWidget {
   /// Builds the format bar with Week/Month toggle and Jump to date button.
   Widget _buildFormatBar(BuildContext context, WidgetRef ref) {
     final format = ref.watch(calendarFormatProvider);
-    final isMonth = format == CalendarFormat.month;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: SizedBox(
-        height: 32,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Week/Month toggle buttons - centered on screen
-            Center(
-              child: ToggleButtons(
-                isSelected: [!isMonth, isMonth],
-                onPressed: (index) {
-                  ref.read(calendarFormatProvider.notifier).state =
-                      index == 0 ? CalendarFormat.week : CalendarFormat.month;
-                },
-                constraints: const BoxConstraints(minHeight: 32, minWidth: 48),
-                borderRadius: BorderRadius.circular(8),
-                children: const [
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('Week'),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Week/Month segmented button - centered and full width
+          Padding(
+            padding: const EdgeInsets.only(right: 40),
+            child: SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<CalendarFormat>(
+                segments: const [
+                  ButtonSegment<CalendarFormat>(
+                    value: CalendarFormat.week,
+                    label: Text('Week'),
                   ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('Month'),
+                  ButtonSegment<CalendarFormat>(
+                    value: CalendarFormat.month,
+                    label: Text('Month'),
                   ),
                 ],
-              ),
-            ),
-            // Jump to date button - positioned on right with reduced padding
-            Positioned(
-              right: -8,
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                tooltip: 'Jump to date',
-                icon: const Icon(Icons.calendar_month, size: 24),
-                onPressed: () async {
-                  final theme = Theme.of(context);
-                  final focused = ref.read(focusedDayProvider);
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: focused,
-                    firstDate: DateTime(2010),
-                    lastDate: DateTime.now(),
-                    builder: (context, child) => Theme(
-                      data: theme.copyWith(colorScheme: theme.colorScheme),
-                      child: child!,
-                    ),
-                  );
-                  if (picked != null) {
-                    ref.read(focusedDayProvider.notifier).state = picked;
+                selected: {format},
+                onSelectionChanged: (Set<CalendarFormat> newSelection) {
+                  HapticFeedback.selectionClick();
+                  if (newSelection.isNotEmpty) {
+                    ref.read(calendarFormatProvider.notifier).state =
+                        newSelection.first;
                   }
                 },
+                showSelectedIcon: false,
+                style: ButtonStyle(
+                  backgroundColor: WidgetStateProperty.resolveWith<Color>(
+                    (Set<WidgetState> states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return AppColors.primary;
+                      }
+                      return Colors.transparent;
+                    },
+                  ),
+                  foregroundColor: WidgetStateProperty.resolveWith<Color>(
+                    (Set<WidgetState> states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return Colors.white;
+                      }
+                      return AppColors.textPrimary;
+                    },
+                  ),
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+          // Jump to date button - positioned on right with reduced padding
+          Positioned(
+            right: -8,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              tooltip: 'Jump to date',
+              icon: const Icon(Icons.calendar_month, size: 24),
+              onPressed: () async {
+                final theme = Theme.of(context);
+                final focused = ref.read(focusedDayProvider);
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: focused,
+                  firstDate: DateTime(2010),
+                  lastDate: DateTime.now(),
+                  builder: (context, child) => Theme(
+                    data: theme.copyWith(colorScheme: theme.colorScheme),
+                    child: child!,
+                  ),
+                );
+                if (picked != null) {
+                  ref.read(focusedDayProvider.notifier).state = picked;
+                }
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -239,8 +245,6 @@ class ProgressWeekCalendar extends ConsumerWidget {
                 HapticFeedback.selectionClick();
                 final today = DateTime.now();
                 ref.read(focusedDayProvider.notifier).state = today;
-                ref.read(selectedDayProvider.notifier).state = today;
-                onDaySelected(today);
               },
               child: Text(
                 'Today',

@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hydracat/core/utils/memoization.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/features/progress/models/day_dot_status.dart';
+import 'package:hydracat/features/progress/utils/memoization.dart';
 import 'package:hydracat/shared/models/daily_summary.dart';
 
 void main() {

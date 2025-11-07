@@ -356,8 +356,9 @@ class _MedicationScheduleScreenState
                     const SizedBox(height: AppSpacing.lg),
                   ],
 
-                  // Add medication button (always show at bottom)
-                  if (medicationSchedules != null)
+                  // Add medication button (only show when list is not empty)
+                  if (medicationSchedules != null &&
+                      medicationSchedules.isNotEmpty)
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(

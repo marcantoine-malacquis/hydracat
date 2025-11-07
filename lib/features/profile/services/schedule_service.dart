@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/features/profile/exceptions/profile_exceptions.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
-import 'package:hydracat/shared/models/schedule_dto.dart';
+import 'package:hydracat/features/profile/models/schedule_dto.dart';
 
 /// Service for managing treatment schedules in Firestore
 class ScheduleService {

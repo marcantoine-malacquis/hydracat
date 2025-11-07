@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
-import 'package:hydracat/core/utils/memoization.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/session_read_service.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/features/progress/models/day_dot_status.dart';
+import 'package:hydracat/features/progress/utils/memoization.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
@@ -19,12 +19,6 @@ import 'package:table_calendar/table_calendar.dart';
 /// Used by TableCalendar to track which day is currently selected/visible.
 /// Defaults to today.
 final focusedDayProvider = StateProvider<DateTime>((ref) => DateTime.now());
-
-/// Provider for the currently selected day in the progress calendar.
-///
-/// Used to track which day has been tapped by the user (filled circle).
-/// Null means no day is selected. Cleared by tapping outside calendar.
-final selectedDayProvider = StateProvider<DateTime?>((ref) => null);
 
 /// Provider for the calendar format (week or month view).
 ///

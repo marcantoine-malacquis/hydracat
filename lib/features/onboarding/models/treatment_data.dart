@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/core/utils/dosage_text_utils.dart';
-import 'package:hydracat/shared/models/schedule_dto.dart';
+import 'package:hydracat/features/profile/models/schedule_dto.dart';
 
 /// Enumeration of treatment frequencies
 enum TreatmentFrequency {
