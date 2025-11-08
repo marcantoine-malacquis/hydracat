@@ -3,6 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:uuid/uuid.dart';
 
+/// Sentinel value for [MedicationSession.copyWith] to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
+
 /// Data class for medication logging sessions
 ///
 /// Represents a single instance of medication administration with complete
@@ -339,15 +343,15 @@ class MedicationSession {
     double? dosageGiven,
     double? dosageScheduled,
     String? medicationUnit,
-    String? medicationStrengthAmount,
-    String? medicationStrengthUnit,
-    String? customMedicationStrengthUnit,
+    Object? medicationStrengthAmount = _undefined,
+    Object? medicationStrengthUnit = _undefined,
+    Object? customMedicationStrengthUnit = _undefined,
     bool? completed,
-    String? notes,
-    String? scheduleId,
-    DateTime? scheduledTime,
+    Object? notes = _undefined,
+    Object? scheduleId = _undefined,
+    Object? scheduledTime = _undefined,
     DateTime? createdAt,
-    DateTime? updatedAt,
+    Object? updatedAt = _undefined,
   }) {
     return MedicationSession(
       id: id ?? this.id,
@@ -358,18 +362,27 @@ class MedicationSession {
       dosageGiven: dosageGiven ?? this.dosageGiven,
       dosageScheduled: dosageScheduled ?? this.dosageScheduled,
       medicationUnit: medicationUnit ?? this.medicationUnit,
-      medicationStrengthAmount:
-          medicationStrengthAmount ?? this.medicationStrengthAmount,
-      medicationStrengthUnit:
-          medicationStrengthUnit ?? this.medicationStrengthUnit,
-      customMedicationStrengthUnit:
-          customMedicationStrengthUnit ?? this.customMedicationStrengthUnit,
+      medicationStrengthAmount: medicationStrengthAmount == _undefined
+          ? this.medicationStrengthAmount
+          : medicationStrengthAmount as String?,
+      medicationStrengthUnit: medicationStrengthUnit == _undefined
+          ? this.medicationStrengthUnit
+          : medicationStrengthUnit as String?,
+      customMedicationStrengthUnit: customMedicationStrengthUnit == _undefined
+          ? this.customMedicationStrengthUnit
+          : customMedicationStrengthUnit as String?,
       completed: completed ?? this.completed,
-      notes: notes ?? this.notes,
-      scheduleId: scheduleId ?? this.scheduleId,
-      scheduledTime: scheduledTime ?? this.scheduledTime,
+      notes: notes == _undefined ? this.notes : notes as String?,
+      scheduleId: scheduleId == _undefined 
+          ? this.scheduleId 
+          : scheduleId as String?,
+      scheduledTime: scheduledTime == _undefined 
+          ? this.scheduledTime 
+          : scheduledTime as DateTime?,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      updatedAt: updatedAt == _undefined 
+          ? this.updatedAt 
+          : updatedAt as DateTime?,
     );
   }
 

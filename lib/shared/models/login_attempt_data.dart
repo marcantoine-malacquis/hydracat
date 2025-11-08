@@ -1,5 +1,9 @@
 import 'package:flutter/foundation.dart';
 
+/// Sentinel value for [LoginAttemptData.copyWith] to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
+
 /// Model for tracking login attempts and lockout state
 @immutable
 class LoginAttemptData {
@@ -70,14 +74,18 @@ class LoginAttemptData {
   LoginAttemptData copyWith({
     String? email,
     int? failedAttempts,
-    DateTime? firstFailureTime,
-    DateTime? lockoutUntil,
+    Object? firstFailureTime = _undefined,
+    Object? lockoutUntil = _undefined,
   }) {
     return LoginAttemptData(
       email: email ?? this.email,
       failedAttempts: failedAttempts ?? this.failedAttempts,
-      firstFailureTime: firstFailureTime ?? this.firstFailureTime,
-      lockoutUntil: lockoutUntil,
+      firstFailureTime: firstFailureTime == _undefined 
+          ? this.firstFailureTime 
+          : firstFailureTime as DateTime?,
+      lockoutUntil: lockoutUntil == _undefined 
+          ? this.lockoutUntil 
+          : lockoutUntil as DateTime?,
     );
   }
 

@@ -1,5 +1,9 @@
 import 'package:flutter/foundation.dart';
 
+/// Sentinel value for copyWith methods to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
+
 /// Laboratory values for CKD monitoring
 @immutable
 class LabValues {
@@ -61,16 +65,22 @@ class LabValues {
 
   /// Creates a copy of this [LabValues] with the given fields replaced
   LabValues copyWith({
-    DateTime? bloodworkDate,
-    double? creatinineMgDl,
-    double? bunMgDl,
-    double? sdmaMcgDl,
+    Object? bloodworkDate = _undefined,
+    Object? creatinineMgDl = _undefined,
+    Object? bunMgDl = _undefined,
+    Object? sdmaMcgDl = _undefined,
   }) {
     return LabValues(
-      bloodworkDate: bloodworkDate ?? this.bloodworkDate,
-      creatinineMgDl: creatinineMgDl ?? this.creatinineMgDl,
-      bunMgDl: bunMgDl ?? this.bunMgDl,
-      sdmaMcgDl: sdmaMcgDl ?? this.sdmaMcgDl,
+      bloodworkDate: bloodworkDate == _undefined 
+          ? this.bloodworkDate 
+          : bloodworkDate as DateTime?,
+      creatinineMgDl: creatinineMgDl == _undefined 
+          ? this.creatinineMgDl 
+          : creatinineMgDl as double?,
+      bunMgDl: bunMgDl == _undefined ? this.bunMgDl : bunMgDl as double?,
+      sdmaMcgDl: sdmaMcgDl == _undefined 
+          ? this.sdmaMcgDl 
+          : sdmaMcgDl as double?,
     );
   }
 
@@ -252,17 +262,23 @@ class MedicalInfo {
 
   /// Creates a copy of this [MedicalInfo] with the given fields replaced
   MedicalInfo copyWith({
-    DateTime? ckdDiagnosisDate,
-    IrisStage? irisStage,
-    DateTime? lastCheckupDate,
-    String? notes,
+    Object? ckdDiagnosisDate = _undefined,
+    Object? irisStage = _undefined,
+    Object? lastCheckupDate = _undefined,
+    Object? notes = _undefined,
     LabValues? labValues,
   }) {
     return MedicalInfo(
-      ckdDiagnosisDate: ckdDiagnosisDate ?? this.ckdDiagnosisDate,
-      irisStage: irisStage ?? this.irisStage,
-      lastCheckupDate: lastCheckupDate ?? this.lastCheckupDate,
-      notes: notes ?? this.notes,
+      ckdDiagnosisDate: ckdDiagnosisDate == _undefined 
+          ? this.ckdDiagnosisDate 
+          : ckdDiagnosisDate as DateTime?,
+      irisStage: irisStage == _undefined 
+          ? this.irisStage 
+          : irisStage as IrisStage?,
+      lastCheckupDate: lastCheckupDate == _undefined 
+          ? this.lastCheckupDate 
+          : lastCheckupDate as DateTime?,
+      notes: notes == _undefined ? this.notes : notes as String?,
       labValues: labValues ?? this.labValues,
     );
   }

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/core/utils/weight_utils.dart';
 import 'package:hydracat/features/health/models/health_parameter.dart';
 import 'package:hydracat/features/health/models/weight_granularity.dart';
 import 'package:hydracat/features/health/widgets/weight_entry_dialog.dart';
@@ -270,9 +271,10 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
                   ..sort((a, b) => a.date.compareTo(b.date));
                 final latest = sorted.last.weightKg;
                 final previous = sorted[sorted.length - 2].weightKg;
+                final changeKg = latest - previous;
                 final change = currentUnit == 'kg'
-                    ? latest - previous
-                    : (latest - previous) * 2.20462;
+                    ? changeKg
+                    : WeightUtils.convertKgToLbs(changeKg);
 
                 return WeightStatCard(
                   weight: currentUnit == 'kg'
@@ -468,7 +470,7 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
             final entry = state.historyEntries[index];
             final displayWeight = currentUnit == 'kg'
                 ? entry.weight!
-                : entry.weight! * 2.20462;
+                : WeightUtils.convertKgToLbs(entry.weight!);
 
             return Slidable(
               key: Key('weight_${entry.date.millisecondsSinceEpoch}'),

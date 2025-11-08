@@ -5,6 +5,7 @@ import 'package:hydracat/core/constants/app_animations.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
+import 'package:hydracat/core/utils/weight_utils.dart';
 import 'package:hydracat/features/health/models/health_parameter.dart';
 import 'package:hydracat/providers/weight_unit_provider.dart';
 import 'package:intl/intl.dart';
@@ -69,7 +70,9 @@ class _WeightEntryDialogState extends ConsumerState<WeightEntryDialog> {
       final currentUnit = ref.read(weightUnitProvider);
       final existingWeight = widget.existingEntry?.weight;
       final displayWeight = existingWeight != null
-          ? (currentUnit == 'kg' ? existingWeight : existingWeight * 2.20462)
+          ? (currentUnit == 'kg'
+              ? existingWeight
+              : WeightUtils.convertKgToLbs(existingWeight))
           : null;
 
       _weightController.text = displayWeight != null
@@ -107,7 +110,8 @@ class _WeightEntryDialogState extends ConsumerState<WeightEntryDialog> {
     }
 
     final currentUnit = ref.read(weightUnitProvider);
-    final weightKg = currentUnit == 'kg' ? value : value / 2.20462;
+    final weightKg =
+        currentUnit == 'kg' ? value : WeightUtils.convertLbsToKg(value);
 
     // Validate range (0.5-15kg)
     if (weightKg < 0.5 || weightKg > 15) {

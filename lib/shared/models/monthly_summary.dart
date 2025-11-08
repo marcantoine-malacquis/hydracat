@@ -2,6 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/shared/models/treatment_summary_base.dart';
 
+/// Sentinel value for [MonthlySummary.copyWith] to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
+
 /// Monthly treatment summary model
 ///
 /// Tracks medication and fluid therapy data for a calendar month.
@@ -415,16 +419,16 @@ class MonthlySummary extends TreatmentSummaryBase {
     int? fluidSessionCount,
     bool? overallTreatmentDone,
     DateTime? createdAt,
-    DateTime? updatedAt,
+    Object? updatedAt = _undefined,
     int? weightEntriesCount,
-    double? weightLatest,
-    DateTime? weightLatestDate,
-    double? weightFirst,
-    DateTime? weightFirstDate,
-    double? weightAverage,
-    double? weightChange,
-    double? weightChangePercent,
-    String? weightTrend,
+    Object? weightLatest = _undefined,
+    Object? weightLatestDate = _undefined,
+    Object? weightFirst = _undefined,
+    Object? weightFirstDate = _undefined,
+    Object? weightAverage = _undefined,
+    Object? weightChange = _undefined,
+    Object? weightChangePercent = _undefined,
+    Object? weightTrend = _undefined,
   }) {
     return MonthlySummary(
       startDate: startDate ?? this.startDate,
@@ -453,16 +457,34 @@ class MonthlySummary extends TreatmentSummaryBase {
       fluidSessionCount: fluidSessionCount ?? this.fluidSessionCount,
       overallTreatmentDone: overallTreatmentDone ?? this.overallTreatmentDone,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      updatedAt: updatedAt == _undefined 
+          ? this.updatedAt 
+          : updatedAt as DateTime?,
       weightEntriesCount: weightEntriesCount ?? this.weightEntriesCount,
-      weightLatest: weightLatest ?? this.weightLatest,
-      weightLatestDate: weightLatestDate ?? this.weightLatestDate,
-      weightFirst: weightFirst ?? this.weightFirst,
-      weightFirstDate: weightFirstDate ?? this.weightFirstDate,
-      weightAverage: weightAverage ?? this.weightAverage,
-      weightChange: weightChange ?? this.weightChange,
-      weightChangePercent: weightChangePercent ?? this.weightChangePercent,
-      weightTrend: weightTrend ?? this.weightTrend,
+      weightLatest: weightLatest == _undefined 
+          ? this.weightLatest 
+          : weightLatest as double?,
+      weightLatestDate: weightLatestDate == _undefined 
+          ? this.weightLatestDate 
+          : weightLatestDate as DateTime?,
+      weightFirst: weightFirst == _undefined 
+          ? this.weightFirst 
+          : weightFirst as double?,
+      weightFirstDate: weightFirstDate == _undefined 
+          ? this.weightFirstDate 
+          : weightFirstDate as DateTime?,
+      weightAverage: weightAverage == _undefined 
+          ? this.weightAverage 
+          : weightAverage as double?,
+      weightChange: weightChange == _undefined 
+          ? this.weightChange 
+          : weightChange as double?,
+      weightChangePercent: weightChangePercent == _undefined 
+          ? this.weightChangePercent 
+          : weightChangePercent as double?,
+      weightTrend: weightTrend == _undefined 
+          ? this.weightTrend 
+          : weightTrend as String?,
     );
   }
 

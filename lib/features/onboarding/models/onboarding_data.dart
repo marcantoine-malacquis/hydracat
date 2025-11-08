@@ -4,8 +4,13 @@
 
 import 'package:flutter/foundation.dart';
 
+import 'package:hydracat/core/utils/weight_utils.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/models/medical_info.dart';
+
+/// Sentinel value for [OnboardingData.copyWith] to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
 
 /// Temporary data collection during onboarding flow
 ///
@@ -141,7 +146,7 @@ class OnboardingData {
 
   /// Pet's weight in pounds (converted from kg)
   double? get petWeightLbs =>
-      petWeightKg != null ? petWeightKg! * 2.20462 : null;
+      petWeightKg != null ? WeightUtils.convertKgToLbs(petWeightKg!) : null;
 
   /// Whether basic pet info is complete
   bool get hasBasicPetInfo =>
@@ -211,40 +216,56 @@ class OnboardingData {
 
   /// Creates a copy of this [OnboardingData] with the given fields replaced
   OnboardingData copyWith({
-    String? userId,
-    String? petName,
-    int? petAge,
-    DateTime? petDateOfBirth,
-    String? petGender,
-    String? petBreed,
-    double? petWeightKg,
-    DateTime? ckdDiagnosisDate,
-    IrisStage? irisStage,
-    String? notes,
+    Object? userId = _undefined,
+    Object? petName = _undefined,
+    Object? petAge = _undefined,
+    Object? petDateOfBirth = _undefined,
+    Object? petGender = _undefined,
+    Object? petBreed = _undefined,
+    Object? petWeightKg = _undefined,
+    Object? ckdDiagnosisDate = _undefined,
+    Object? irisStage = _undefined,
+    Object? notes = _undefined,
     bool? hasSkippedWelcome,
     bool? useMetricUnits,
-    DateTime? bloodworkDate,
-    double? creatinineMgDl,
-    double? bunMgDl,
-    double? sdmaMcgDl,
+    Object? bloodworkDate = _undefined,
+    Object? creatinineMgDl = _undefined,
+    Object? bunMgDl = _undefined,
+    Object? sdmaMcgDl = _undefined,
   }) {
     return OnboardingData(
-      userId: userId ?? this.userId,
-      petName: petName ?? this.petName,
-      petAge: petAge ?? this.petAge,
-      petDateOfBirth: petDateOfBirth ?? this.petDateOfBirth,
-      petGender: petGender ?? this.petGender,
-      petBreed: petBreed ?? this.petBreed,
-      petWeightKg: petWeightKg ?? this.petWeightKg,
-      ckdDiagnosisDate: ckdDiagnosisDate ?? this.ckdDiagnosisDate,
-      irisStage: irisStage ?? this.irisStage,
-      notes: notes ?? this.notes,
+      userId: userId == _undefined ? this.userId : userId as String?,
+      petName: petName == _undefined ? this.petName : petName as String?,
+      petAge: petAge == _undefined ? this.petAge : petAge as int?,
+      petDateOfBirth: petDateOfBirth == _undefined
+          ? this.petDateOfBirth
+          : petDateOfBirth as DateTime?,
+      petGender: petGender == _undefined
+          ? this.petGender
+          : petGender as String?,
+      petBreed: petBreed == _undefined ? this.petBreed : petBreed as String?,
+      petWeightKg: petWeightKg == _undefined
+          ? this.petWeightKg
+          : petWeightKg as double?,
+      ckdDiagnosisDate: ckdDiagnosisDate == _undefined
+          ? this.ckdDiagnosisDate
+          : ckdDiagnosisDate as DateTime?,
+      irisStage: irisStage == _undefined
+          ? this.irisStage
+          : irisStage as IrisStage?,
+      notes: notes == _undefined ? this.notes : notes as String?,
       hasSkippedWelcome: hasSkippedWelcome ?? this.hasSkippedWelcome,
       useMetricUnits: useMetricUnits ?? this.useMetricUnits,
-      bloodworkDate: bloodworkDate ?? this.bloodworkDate,
-      creatinineMgDl: creatinineMgDl ?? this.creatinineMgDl,
-      bunMgDl: bunMgDl ?? this.bunMgDl,
-      sdmaMcgDl: sdmaMcgDl ?? this.sdmaMcgDl,
+      bloodworkDate: bloodworkDate == _undefined
+          ? this.bloodworkDate
+          : bloodworkDate as DateTime?,
+      creatinineMgDl: creatinineMgDl == _undefined
+          ? this.creatinineMgDl
+          : creatinineMgDl as double?,
+      bunMgDl: bunMgDl == _undefined ? this.bunMgDl : bunMgDl as double?,
+      sdmaMcgDl: sdmaMcgDl == _undefined
+          ? this.sdmaMcgDl
+          : sdmaMcgDl as double?,
     );
   }
 
@@ -255,7 +276,7 @@ class OnboardingData {
 
   /// Updates weight with a new value in pounds (converted to kg)
   OnboardingData updateWeightLbs(double newWeightLbs) {
-    return updateWeightKg(newWeightLbs / 2.20462);
+    return updateWeightKg(WeightUtils.convertLbsToKg(newWeightLbs));
   }
 
   /// Clears all medical information

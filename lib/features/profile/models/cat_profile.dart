@@ -1,7 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
+import 'package:hydracat/core/utils/weight_utils.dart';
 import 'package:hydracat/features/profile/models/medical_info.dart';
+
+/// Sentinel value for [CatProfile.copyWith] to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
 
 /// Core pet profile model for CKD management
 @immutable
@@ -87,7 +92,8 @@ class CatProfile {
   final String? gender;
 
   /// Pet's weight in pounds (converted from kg)
-  double? get weightLbs => weightKg != null ? weightKg! * 2.20462 : null;
+  double? get weightLbs =>
+      weightKg != null ? WeightUtils.convertKgToLbs(weightKg!) : null;
 
   /// Pet's age in months (approximate)
   int get ageMonths => ageYears * 12;
@@ -124,11 +130,11 @@ class CatProfile {
     int? ageYears,
     DateTime? createdAt,
     DateTime? updatedAt,
-    double? weightKg,
+    Object? weightKg = _undefined,
     MedicalInfo? medicalInfo,
-    String? photoUrl,
-    String? breed,
-    String? gender,
+    Object? photoUrl = _undefined,
+    Object? breed = _undefined,
+    Object? gender = _undefined,
   }) {
     return CatProfile(
       id: id ?? this.id,
@@ -137,11 +143,11 @@ class CatProfile {
       ageYears: ageYears ?? this.ageYears,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      weightKg: weightKg ?? this.weightKg,
+      weightKg: weightKg == _undefined ? this.weightKg : weightKg as double?,
       medicalInfo: medicalInfo ?? this.medicalInfo,
-      photoUrl: photoUrl ?? this.photoUrl,
-      breed: breed ?? this.breed,
-      gender: gender ?? this.gender,
+      photoUrl: photoUrl == _undefined ? this.photoUrl : photoUrl as String?,
+      breed: breed == _undefined ? this.breed : breed as String?,
+      gender: gender == _undefined ? this.gender : gender as String?,
     );
   }
 
@@ -155,7 +161,7 @@ class CatProfile {
 
   /// Updates the weight with a new value in pounds (converted to kg)
   CatProfile updateWeightLbs(double newWeightLbs) {
-    return updateWeightKg(newWeightLbs / 2.20462);
+    return updateWeightKg(WeightUtils.convertLbsToKg(newWeightLbs));
   }
 
   /// Validates the pet profile data for consistency

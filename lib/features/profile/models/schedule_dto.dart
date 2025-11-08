@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
+import 'package:hydracat/features/profile/models/schedule.dart';
 
 /// Data Transfer Object for creating treatment schedules
 ///
@@ -44,10 +45,10 @@ class ScheduleDto {
     String? medicationStrengthAmount,
     String? medicationStrengthUnit,
     String? customMedicationStrengthUnit,
-  }) {
+  }  ) {
     return ScheduleDto(
       id: id,
-      treatmentType: 'medication',
+      treatmentType: TreatmentType.medication,
       medicationName: medicationName,
       targetDosage: targetDosage,
       medicationUnit: medicationUnit,
@@ -72,10 +73,10 @@ class ScheduleDto {
     required List<DateTime> reminderTimes,
     String? id,
     bool isActive = true,
-  }) {
+  }  ) {
     return ScheduleDto(
       id: id,
-      treatmentType: 'fluid',
+      treatmentType: TreatmentType.fluid,
       targetVolume: targetVolume,
       frequency: frequency,
       preferredLocation: preferredLocation,
@@ -89,7 +90,7 @@ class ScheduleDto {
   final String? id;
 
   /// Type of treatment: 'medication' or 'fluid'
-  final String treatmentType;
+  final TreatmentType treatmentType;
 
   /// Treatment frequency
   final TreatmentFrequency frequency;
@@ -138,7 +139,7 @@ class ScheduleDto {
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{
       if (id != null) 'id': id,
-      'treatmentType': treatmentType,
+      'treatmentType': treatmentType.name,
       'frequency': frequency.name,
       'reminderTimes': reminderTimes
           .map((dateTime) => dateTime.toIso8601String())
@@ -147,7 +148,7 @@ class ScheduleDto {
     };
 
     // Add medication-specific fields
-    if (treatmentType == 'medication') {
+    if (treatmentType == TreatmentType.medication) {
       json['medicationName'] = medicationName;
       json['targetDosage'] = targetDosage;
       json['medicationUnit'] = medicationUnit;
@@ -157,7 +158,7 @@ class ScheduleDto {
     }
 
     // Add fluid-specific fields
-    if (treatmentType == 'fluid') {
+    if (treatmentType == TreatmentType.fluid) {
       json['targetVolume'] = targetVolume;
       json['preferredLocation'] = preferredLocation?.name;
       json['needleGauge'] = needleGauge;

@@ -1,10 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/core/utils/date_utils.dart';
+import 'package:hydracat/core/utils/weight_utils.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/widgets/debug_panel.dart';
-import 'package:hydracat/features/profile/widgets/profile_section_item.dart';
+import 'package:hydracat/features/profile/widgets/profile_navigation_tile.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/weight_unit_provider.dart';
@@ -191,7 +194,7 @@ class ProfileScreen extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       'Offline – last updated '
-                      '${_formatLastUpdated(lastUpdated)}',
+                      '${AppDateUtils.getRelativeTimeCompact(lastUpdated)}',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.orange.shade700,
@@ -294,7 +297,7 @@ class ProfileScreen extends ConsumerWidget {
           builder: (context, ref, _) {
             final weightUnit = ref.watch(weightUnitProvider);
             final weightItem = infoItems[5].copyWith(
-              value: _formatWeight(pet.weightKg, weightUnit),
+              value: WeightUtils.formatWeight(pet.weightKg, weightUnit),
             );
 
             return Row(
@@ -601,35 +604,6 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  /// Formats the last updated timestamp
-  String _formatLastUpdated(DateTime timestamp) {
-    final now = DateTime.now();
-    final difference = now.difference(timestamp);
-
-    if (difference.inMinutes < 1) {
-      return 'just now';
-    } else if (difference.inHours < 1) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inDays < 1) {
-      return '${difference.inHours}h ago';
-    } else {
-      return '${difference.inDays}d ago';
-    }
-  }
-
-  /// Formats weight with proper unit conversion and decimal places
-  String _formatWeight(double? weightKg, String unit) {
-    if (weightKg == null) {
-      return 'Unknown';
-    }
-
-    if (unit == 'lbs') {
-      final weightLbs = weightKg * 2.20462;
-      return '${weightLbs.toStringAsFixed(2)} lbs';
-    } else {
-      return '${weightKg.toStringAsFixed(2)} kg';
-    }
-  }
 
   /// Builds the navigation drawer
   Widget _buildDrawer(BuildContext context, WidgetRef ref) {
@@ -676,7 +650,7 @@ class ProfileScreen extends ConsumerWidget {
           ),
 
           // Debug Panel
-          const DebugPanel(),
+          if (kDebugMode) const DebugPanel(),
 
           // Divider
           const Divider(),
@@ -705,7 +679,7 @@ class ProfileScreen extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // CKD Profile section
-        ProfileSectionItem(
+        ProfileNavigationTile(
           title: "$petName's CKD Profile",
           icon: Icons.medical_information,
           onTap: () => context.go('/profile/ckd'),
@@ -714,7 +688,7 @@ class ProfileScreen extends ConsumerWidget {
         // Fluid Schedule section (only if user has fluid schedule)
         if (profileState.hasFluidSchedule) ...[
           const SizedBox(height: AppSpacing.sm),
-          ProfileSectionItem(
+          ProfileNavigationTile(
             title: "$petName's Fluid Schedule",
             icon: Icons.water_drop,
             onTap: () => context.go('/profile/fluid'),
@@ -724,7 +698,7 @@ class ProfileScreen extends ConsumerWidget {
         // Add Fluid Therapy button (if no fluid schedule exists)
         if (!profileState.hasFluidSchedule) ...[
           const SizedBox(height: AppSpacing.sm),
-          ProfileSectionItem(
+          ProfileNavigationTile(
             title: 'Add Fluid Therapy Tracking',
             icon: Icons.add_circle_outline,
             onTap: () => context.push('/profile/fluid/create'),
@@ -734,7 +708,7 @@ class ProfileScreen extends ConsumerWidget {
         // Medication Schedule section (only if user has medication schedules)
         if (profileState.hasMedicationSchedules) ...[
           const SizedBox(height: AppSpacing.sm),
-          ProfileSectionItem(
+          ProfileNavigationTile(
             title: "$petName's Medication Schedule",
             icon: Icons.medication,
             onTap: () => context.go('/profile/medication'),
@@ -744,7 +718,7 @@ class ProfileScreen extends ConsumerWidget {
         // Add Medication button (if no medication schedules exist)
         if (!profileState.hasMedicationSchedules) ...[
           const SizedBox(height: AppSpacing.sm),
-          ProfileSectionItem(
+          ProfileNavigationTile(
             title: 'Add Medication Tracking',
             icon: Icons.add_circle_outline,
             onTap: () => context.push('/profile/medication'),
@@ -753,7 +727,7 @@ class ProfileScreen extends ConsumerWidget {
 
         // Weight section - always shown
         const SizedBox(height: AppSpacing.sm),
-        ProfileSectionItem(
+        ProfileNavigationTile(
           title: 'Weight',
           icon: Icons.scale,
           onTap: () => context.push('/profile/weight'),

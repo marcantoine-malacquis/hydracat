@@ -6,6 +6,10 @@ import 'package:hydracat/core/utils/medication_unit_utils.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/profile/models/schedule_dto.dart';
 
+/// Sentinel value for [Schedule.copyWith] to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
+
 /// Enumeration of treatment types for schedules
 enum TreatmentType {
   /// Fluid therapy treatment
@@ -271,15 +275,15 @@ class Schedule {
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
-    double? targetVolume,
-    FluidLocation? preferredLocation,
-    String? needleGauge,
-    String? medicationName,
-    double? targetDosage,
-    String? medicationUnit,
-    String? medicationStrengthAmount,
-    String? medicationStrengthUnit,
-    String? customMedicationStrengthUnit,
+    Object? targetVolume = _undefined,
+    Object? preferredLocation = _undefined,
+    Object? needleGauge = _undefined,
+    Object? medicationName = _undefined,
+    Object? targetDosage = _undefined,
+    Object? medicationUnit = _undefined,
+    Object? medicationStrengthAmount = _undefined,
+    Object? medicationStrengthUnit = _undefined,
+    Object? customMedicationStrengthUnit = _undefined,
   }) {
     return Schedule(
       id: id ?? this.id,
@@ -289,18 +293,33 @@ class Schedule {
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      targetVolume: targetVolume ?? this.targetVolume,
-      preferredLocation: preferredLocation ?? this.preferredLocation,
-      needleGauge: needleGauge ?? this.needleGauge,
-      medicationName: medicationName ?? this.medicationName,
-      targetDosage: targetDosage ?? this.targetDosage,
-      medicationUnit: medicationUnit ?? this.medicationUnit,
-      medicationStrengthAmount:
-          medicationStrengthAmount ?? this.medicationStrengthAmount,
-      medicationStrengthUnit:
-          medicationStrengthUnit ?? this.medicationStrengthUnit,
-      customMedicationStrengthUnit:
-          customMedicationStrengthUnit ?? this.customMedicationStrengthUnit,
+      targetVolume: targetVolume == _undefined 
+          ? this.targetVolume 
+          : targetVolume as double?,
+      preferredLocation: preferredLocation == _undefined 
+          ? this.preferredLocation 
+          : preferredLocation as FluidLocation?,
+      needleGauge: needleGauge == _undefined 
+          ? this.needleGauge 
+          : needleGauge as String?,
+      medicationName: medicationName == _undefined 
+          ? this.medicationName 
+          : medicationName as String?,
+      targetDosage: targetDosage == _undefined 
+          ? this.targetDosage 
+          : targetDosage as double?,
+      medicationUnit: medicationUnit == _undefined 
+          ? this.medicationUnit 
+          : medicationUnit as String?,
+      medicationStrengthAmount: medicationStrengthAmount == _undefined
+          ? this.medicationStrengthAmount
+          : medicationStrengthAmount as String?,
+      medicationStrengthUnit: medicationStrengthUnit == _undefined
+          ? this.medicationStrengthUnit
+          : medicationStrengthUnit as String?,
+      customMedicationStrengthUnit: customMedicationStrengthUnit == _undefined
+          ? this.customMedicationStrengthUnit
+          : customMedicationStrengthUnit as String?,
     );
   }
 

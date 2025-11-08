@@ -9,6 +9,10 @@ import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/services/onboarding_service.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 
+/// Sentinel value for [OnboardingState.copyWith] to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
+
 /// Onboarding state that holds current progress and data
 @immutable
 class OnboardingState {
@@ -79,24 +83,26 @@ class OnboardingState {
 
   /// Creates a copy of this [OnboardingState] with the given fields replaced
   OnboardingState copyWith({
-    OnboardingProgress? progress,
-    OnboardingData? data,
+    Object? progress = _undefined,
+    Object? data = _undefined,
     bool? isLoading,
-    OnboardingException? error,
+    Object? error = _undefined,
     bool? isActive,
   }) {
     return OnboardingState(
-      progress: progress ?? this.progress,
-      data: data ?? this.data,
+      progress: progress == _undefined 
+          ? this.progress 
+          : progress as OnboardingProgress?,
+      data: data == _undefined ? this.data : data as OnboardingData?,
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+      error: error == _undefined ? this.error : error as OnboardingException?,
       isActive: isActive ?? this.isActive,
     );
   }
 
   /// Creates a copy with error cleared
   OnboardingState clearError() {
-    return copyWith();
+    return copyWith(error: null);
   }
 
   /// Creates a copy with loading state

@@ -6,6 +6,7 @@ import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/extensions/string_extensions.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
+import 'package:hydracat/core/utils/weight_utils.dart';
 import 'package:hydracat/core/validation/models/validation_result.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
@@ -159,7 +160,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
     try {
       // Convert weight to kg if needed
       final weightInKg = _weightValue != null && _weightUnit == 'lbs'
-          ? _weightValue! / 2.20462
+          ? WeightUtils.convertLbsToKg(_weightValue!)
           : _weightValue;
 
       // Calculate age from date of birth

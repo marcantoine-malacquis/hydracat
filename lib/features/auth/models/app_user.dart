@@ -1,6 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+/// Sentinel value for [AppUser.copyWith] to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
+
 /// Enumeration of authentication provider types
 enum AuthProvider {
   /// Email and password authentication
@@ -140,31 +144,39 @@ class AppUser {
   /// Creates a copy of this [AppUser] with the given fields replaced
   AppUser copyWith({
     String? id,
-    String? email,
-    String? displayName,
-    String? photoURL,
+    Object? email = _undefined,
+    Object? displayName = _undefined,
+    Object? photoURL = _undefined,
     bool? emailVerified,
     AuthProvider? provider,
-    DateTime? createdAt,
-    DateTime? lastSignInAt,
+    Object? createdAt = _undefined,
+    Object? lastSignInAt = _undefined,
     bool? hasCompletedOnboarding,
     bool? hasSkippedOnboarding,
-    String? primaryPetId,
+    Object? primaryPetId = _undefined,
   }) {
     return AppUser(
       id: id ?? this.id,
-      email: email ?? this.email,
-      displayName: displayName ?? this.displayName,
-      photoURL: photoURL ?? this.photoURL,
+      email: email == _undefined ? this.email : email as String?,
+      displayName: displayName == _undefined 
+          ? this.displayName 
+          : displayName as String?,
+      photoURL: photoURL == _undefined ? this.photoURL : photoURL as String?,
       emailVerified: emailVerified ?? this.emailVerified,
       provider: provider ?? this.provider,
-      createdAt: createdAt ?? this.createdAt,
-      lastSignInAt: lastSignInAt ?? this.lastSignInAt,
+      createdAt: createdAt == _undefined 
+          ? this.createdAt 
+          : createdAt as DateTime?,
+      lastSignInAt: lastSignInAt == _undefined 
+          ? this.lastSignInAt 
+          : lastSignInAt as DateTime?,
       hasCompletedOnboarding: hasCompletedOnboarding ?? 
           this.hasCompletedOnboarding,
       hasSkippedOnboarding: hasSkippedOnboarding ?? 
           this.hasSkippedOnboarding,
-      primaryPetId: primaryPetId ?? this.primaryPetId,
+      primaryPetId: primaryPetId == _undefined 
+          ? this.primaryPetId 
+          : primaryPetId as String?,
     );
   }
 

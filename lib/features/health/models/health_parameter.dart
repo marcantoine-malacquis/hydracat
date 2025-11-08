@@ -2,6 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 
+/// Sentinel value for [HealthParameter.copyWith] to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
+
 /// Health parameter data for a specific date
 ///
 /// Tracks daily health metrics including weight, appetite, symptoms.
@@ -98,21 +102,23 @@ class HealthParameter {
   /// Create a copy with updated fields
   HealthParameter copyWith({
     DateTime? date,
-    double? weight,
-    String? appetite,
-    String? symptoms,
-    String? notes,
+    Object? weight = _undefined,
+    Object? appetite = _undefined,
+    Object? symptoms = _undefined,
+    Object? notes = _undefined,
     DateTime? createdAt,
-    DateTime? updatedAt,
+    Object? updatedAt = _undefined,
   }) {
     return HealthParameter(
       date: date ?? this.date,
-      weight: weight ?? this.weight,
-      appetite: appetite ?? this.appetite,
-      symptoms: symptoms ?? this.symptoms,
-      notes: notes ?? this.notes,
+      weight: weight == _undefined ? this.weight : weight as double?,
+      appetite: appetite == _undefined ? this.appetite : appetite as String?,
+      symptoms: symptoms == _undefined ? this.symptoms : symptoms as String?,
+      notes: notes == _undefined ? this.notes : notes as String?,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      updatedAt: updatedAt == _undefined 
+          ? this.updatedAt 
+          : updatedAt as DateTime?,
     );
   }
 

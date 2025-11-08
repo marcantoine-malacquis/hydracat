@@ -2,6 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:hydracat/features/home/models/pending_fluid_treatment.dart';
 import 'package:hydracat/features/home/models/pending_treatment.dart';
 
+/// Sentinel value for [DashboardState.copyWith] to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
+
 /// Immutable UI state container for the dashboard's pending treatments section.
 @immutable
 class DashboardState {
@@ -36,15 +40,19 @@ class DashboardState {
   /// Creates a copy with the given fields replaced
   DashboardState copyWith({
     List<PendingTreatment>? pendingMedications,
-    PendingFluidTreatment? pendingFluid,
+    Object? pendingFluid = _undefined,
     bool? isLoading,
-    String? errorMessage,
+    Object? errorMessage = _undefined,
   }) {
     return DashboardState(
       pendingMedications: pendingMedications ?? this.pendingMedications,
-      pendingFluid: pendingFluid ?? this.pendingFluid,
+      pendingFluid: pendingFluid == _undefined 
+          ? this.pendingFluid 
+          : pendingFluid as PendingFluidTreatment?,
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: errorMessage == _undefined 
+          ? this.errorMessage 
+          : errorMessage as String?,
     );
   }
 

@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
+/// Sentinel value for [DeviceToken.copyWith] to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
+
 /// Model representing a device registration for push notifications.
 ///
 /// Each device gets a stable UUID that persists across app reinstalls
@@ -76,8 +80,8 @@ class DeviceToken {
   /// Creates a copy of this device token with updated fields
   DeviceToken copyWith({
     String? deviceId,
-    String? userId,
-    String? fcmToken,
+    Object? userId = _undefined,
+    Object? fcmToken = _undefined,
     String? platform,
     DateTime? lastUsedAt,
     DateTime? createdAt,
@@ -86,8 +90,8 @@ class DeviceToken {
   }) {
     return DeviceToken(
       deviceId: deviceId ?? this.deviceId,
-      userId: userId ?? this.userId,
-      fcmToken: fcmToken ?? this.fcmToken,
+      userId: userId == _undefined ? this.userId : userId as String?,
+      fcmToken: fcmToken == _undefined ? this.fcmToken : fcmToken as String?,
       platform: platform ?? this.platform,
       lastUsedAt: lastUsedAt ?? this.lastUsedAt,
       createdAt: createdAt ?? this.createdAt,

@@ -7,6 +7,10 @@ import 'package:hydracat/features/logging/models/daily_summary_cache.dart';
 import 'package:hydracat/features/logging/models/logging_mode.dart';
 import 'package:hydracat/features/logging/models/treatment_choice.dart';
 
+/// Sentinel value for [LoggingState.copyWith] to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
+
 /// Immutable state for the logging feature
 ///
 /// Manages the state of the logging flow including current mode, treatment
@@ -117,18 +121,24 @@ class LoggingState {
 
   /// Creates a copy of this [LoggingState] with the given fields replaced
   LoggingState copyWith({
-    LoggingMode? loggingMode,
-    TreatmentChoice? treatmentChoice,
-    DailySummaryCache? dailyCache,
+    Object? loggingMode = _undefined,
+    Object? treatmentChoice = _undefined,
+    Object? dailyCache = _undefined,
     bool? isLoading,
-    String? error,
+    Object? error = _undefined,
   }) {
     return LoggingState(
-      loggingMode: loggingMode ?? this.loggingMode,
-      treatmentChoice: treatmentChoice ?? this.treatmentChoice,
-      dailyCache: dailyCache ?? this.dailyCache,
+      loggingMode: loggingMode == _undefined 
+          ? this.loggingMode 
+          : loggingMode as LoggingMode?,
+      treatmentChoice: treatmentChoice == _undefined 
+          ? this.treatmentChoice 
+          : treatmentChoice as TreatmentChoice?,
+      dailyCache: dailyCache == _undefined 
+          ? this.dailyCache 
+          : dailyCache as DailySummaryCache?,
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+      error: error == _undefined ? this.error : error as String?,
     );
   }
 

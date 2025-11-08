@@ -2,6 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/shared/models/treatment_summary_base.dart';
 
+/// Sentinel value for [DailySummary.copyWith] to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
+
 /// Daily treatment summary model
 ///
 /// Tracks medication and fluid therapy data for a single day.
@@ -180,8 +184,8 @@ class DailySummary extends TreatmentSummaryBase {
     int? fluidSessionCount,
     bool? overallTreatmentDone,
     DateTime? createdAt,
-    DateTime? updatedAt,
-    int? fluidDailyGoalMl,
+    Object? updatedAt = _undefined,
+    Object? fluidDailyGoalMl = _undefined,
   }) {
     return DailySummary(
       date: date ?? this.date,
@@ -196,8 +200,12 @@ class DailySummary extends TreatmentSummaryBase {
       fluidSessionCount: fluidSessionCount ?? this.fluidSessionCount,
       overallTreatmentDone: overallTreatmentDone ?? this.overallTreatmentDone,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-      fluidDailyGoalMl: fluidDailyGoalMl ?? this.fluidDailyGoalMl,
+      updatedAt: updatedAt == _undefined 
+          ? this.updatedAt 
+          : updatedAt as DateTime?,
+      fluidDailyGoalMl: fluidDailyGoalMl == _undefined 
+          ? this.fluidDailyGoalMl 
+          : fluidDailyGoalMl as int?,
     );
   }
 

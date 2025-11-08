@@ -39,6 +39,31 @@ class AppDateUtils {
     }
   }
 
+  /// Get relative time in compact format (e.g., "2h ago", "5m ago", "just now")
+  ///
+  /// Returns a shorter, more concise version of relative time suitable for
+  /// displaying in constrained spaces like status bars or list items.
+  ///
+  /// Examples:
+  /// - Less than 1 minute: "just now"
+  /// - Less than 1 hour: "15m ago"
+  /// - Less than 1 day: "3h ago"
+  /// - 1 or more days: "5d ago"
+  static String getRelativeTimeCompact(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inMinutes < 1) {
+      return 'just now';
+    } else if (difference.inHours < 1) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inDays < 1) {
+      return '${difference.inHours}h ago';
+    } else {
+      return '${difference.inDays}d ago';
+    }
+  }
+
   /// Check if date is today
   static bool isToday(DateTime date) {
     final now = DateTime.now();

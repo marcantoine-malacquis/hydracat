@@ -2,6 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/shared/models/treatment_summary_base.dart';
 
+/// Sentinel value for [WeeklySummary.copyWith] to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
+
 /// Weekly treatment summary model
 ///
 /// Tracks medication and fluid therapy data for a calendar week
@@ -250,7 +254,7 @@ class WeeklySummary extends TreatmentSummaryBase {
     int? fluidSessionCount,
     bool? overallTreatmentDone,
     DateTime? createdAt,
-    DateTime? updatedAt,
+    Object? updatedAt = _undefined,
   }) {
     return WeeklySummary(
       startDate: startDate ?? this.startDate,
@@ -271,7 +275,9 @@ class WeeklySummary extends TreatmentSummaryBase {
       fluidSessionCount: fluidSessionCount ?? this.fluidSessionCount,
       overallTreatmentDone: overallTreatmentDone ?? this.overallTreatmentDone,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      updatedAt: updatedAt == _undefined 
+          ? this.updatedAt 
+          : updatedAt as DateTime?,
     );
   }
 

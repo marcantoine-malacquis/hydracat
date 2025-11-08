@@ -1,6 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/features/auth/models/app_user.dart';
 
+/// Sentinel value for copyWith methods to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
+
 /// Base class representing the authentication state of the application
 sealed class AuthState {
   /// Creates an [AuthState] instance
@@ -147,13 +151,13 @@ class AuthStateError extends AuthState {
   /// Creates a copy of this [AuthStateError] with the given fields replaced
   AuthStateError copyWith({
     String? message,
-    String? code,
-    dynamic details,
+    Object? code = _undefined,
+    Object? details = _undefined,
   }) {
     return AuthStateError(
       message: message ?? this.message,
-      code: code ?? this.code,
-      details: details ?? this.details,
+      code: code == _undefined ? this.code : code as String?,
+      details: details == _undefined ? this.details : details,
     );
   }
 

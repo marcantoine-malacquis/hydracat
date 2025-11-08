@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/core/utils/number_input_utils.dart';
 
+/// Sentinel value for [LabValueData.copyWith] to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
 
 /// Model for lab value input data
 class LabValueData {
@@ -27,16 +30,20 @@ class LabValueData {
 
   /// Creates a copy with updated values
   LabValueData copyWith({
-    double? creatinine,
-    double? bun,
-    double? sdma,
-    DateTime? bloodworkDate,
+    Object? creatinine = _undefined,
+    Object? bun = _undefined,
+    Object? sdma = _undefined,
+    Object? bloodworkDate = _undefined,
   }) {
     return LabValueData(
-      creatinine: creatinine ?? this.creatinine,
-      bun: bun ?? this.bun,
-      sdma: sdma ?? this.sdma,
-      bloodworkDate: bloodworkDate ?? this.bloodworkDate,
+      creatinine: creatinine == _undefined 
+          ? this.creatinine 
+          : creatinine as double?,
+      bun: bun == _undefined ? this.bun : bun as double?,
+      sdma: sdma == _undefined ? this.sdma : sdma as double?,
+      bloodworkDate: bloodworkDate == _undefined 
+          ? this.bloodworkDate 
+          : bloodworkDate as DateTime?,
     );
   }
 

@@ -26,6 +26,10 @@ enum SyncStatus {
   offline,
 }
 
+/// Sentinel value for [SyncState.copyWith] to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
+
 /// Data model for sync state
 @immutable
 class SyncState {
@@ -67,15 +71,19 @@ class SyncState {
   /// Creates a copy of this sync state with the given fields replaced
   SyncState copyWith({
     SyncStatus? status,
-    DateTime? lastSyncTime,
-    String? errorMessage,
-    String? userId,
+    Object? lastSyncTime = _undefined,
+    Object? errorMessage = _undefined,
+    Object? userId = _undefined,
   }) {
     return SyncState(
       status: status ?? this.status,
-      lastSyncTime: lastSyncTime ?? this.lastSyncTime,
-      errorMessage: errorMessage ?? this.errorMessage,
-      userId: userId ?? this.userId,
+      lastSyncTime: lastSyncTime == _undefined 
+          ? this.lastSyncTime 
+          : lastSyncTime as DateTime?,
+      errorMessage: errorMessage == _undefined 
+          ? this.errorMessage 
+          : errorMessage as String?,
+      userId: userId == _undefined ? this.userId : userId as String?,
     );
   }
 

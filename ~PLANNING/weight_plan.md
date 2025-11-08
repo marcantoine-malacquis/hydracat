@@ -3404,7 +3404,7 @@ The profile screen (lines 759-765) already includes the weight navigation:
 ```dart
 // Weight section - always shown
 const SizedBox(height: AppSpacing.sm),
-ProfileSectionItem(
+ProfileNavigationTile(
   title: 'Weight',
   icon: Icons.scale,
   onTap: () => context.go('/profile/weight'),
@@ -3413,7 +3413,7 @@ ProfileSectionItem(
 
 **Features**:
 - ✅ Uses GoRouter for navigation (`context.go('/profile/weight')`)
-- ✅ Consistent with other profile sections (uses `ProfileSectionItem`)
+- ✅ Consistent with other profile sections (uses `ProfileNavigationTile`)
 - ✅ Always shown (weight tracking is always relevant)
 - ✅ Located in profile sections list with other health features
 

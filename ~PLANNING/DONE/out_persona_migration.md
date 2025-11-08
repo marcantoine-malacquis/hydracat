@@ -435,11 +435,11 @@ The quick-log should just:
 **Current**:
 ```dart
 if (primaryPet?.treatmentApproach.includesFluidTherapy ?? false) {
-  ProfileSectionItem(title: "$petName's Fluid Schedule", ...);
+  ProfileNavigationTile(title: "$petName's Fluid Schedule", ...);
 }
 
 if (primaryPet?.treatmentApproach.includesMedication ?? false) {
-  ProfileSectionItem(title: "$petName's Medication Schedule", ...);
+  ProfileNavigationTile(title: "$petName's Medication Schedule", ...);
 }
 ```
 
@@ -448,11 +448,11 @@ if (primaryPet?.treatmentApproach.includesMedication ?? false) {
 final profileState = ref.watch(profileProvider);
 
 if (profileState.hasFluidSchedule) {
-  ProfileSectionItem(title: "$petName's Fluid Schedule", ...);
+  ProfileNavigationTile(title: "$petName's Fluid Schedule", ...);
 }
 
 if (profileState.hasMedicationSchedules) {
-  ProfileSectionItem(title: "$petName's Medication Schedule", ...);
+  ProfileNavigationTile(title: "$petName's Medication Schedule", ...);
 }
 ```
 

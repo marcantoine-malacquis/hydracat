@@ -19,6 +19,10 @@ final weightServiceProvider = Provider<WeightService>((ref) {
   return WeightService();
 });
 
+/// Sentinel value for [WeightState.copyWith] to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
+
 /// State class for weight data
 @immutable
 class WeightState {
@@ -70,31 +74,28 @@ class WeightState {
   WeightState copyWith({
     List<WeightDataPoint>? graphData,
     List<HealthParameter>? historyEntries,
-    double? latestWeight,
+    Object? latestWeight = _undefined,
     bool? isLoading,
     bool? isRefreshing,
-    HealthException? error,
+    Object? error = _undefined,
     bool? hasMore,
-    DocumentSnapshot? lastDocument,
+    Object? lastDocument = _undefined,
     WeightGranularity? granularity,
     DateTime? periodStart,
-    bool clearError = false,
-    bool clearLatestWeight = false,
-    bool clearLastDocument = false,
   }) {
     return WeightState(
       graphData: graphData ?? this.graphData,
       historyEntries: historyEntries ?? this.historyEntries,
-      latestWeight: clearLatestWeight
-          ? null
-          : (latestWeight ?? this.latestWeight),
+      latestWeight: latestWeight == _undefined 
+          ? this.latestWeight 
+          : latestWeight as double?,
       isLoading: isLoading ?? this.isLoading,
       isRefreshing: isRefreshing ?? this.isRefreshing,
-      error: clearError ? null : error,
+      error: error == _undefined ? this.error : error as HealthException?,
       hasMore: hasMore ?? this.hasMore,
-      lastDocument: clearLastDocument
-          ? null
-          : (lastDocument ?? this.lastDocument),
+      lastDocument: lastDocument == _undefined 
+          ? this.lastDocument 
+          : lastDocument as DocumentSnapshot?,
       granularity: granularity ?? this.granularity,
       periodStart: periodStart ?? this.periodStart,
     );
@@ -102,7 +103,7 @@ class WeightState {
 
   /// Helper to reset error state
   WeightState clearError() {
-    return copyWith(clearError: true);
+    return copyWith(error: null);
   }
 
   @override
@@ -167,7 +168,7 @@ class WeightNotifier extends StateNotifier<WeightState> {
       return;
     }
 
-    state = state.copyWith(isLoading: true, clearError: true);
+    state = state.copyWith(isLoading: true, error: null);
 
     try {
       final userId = authState.user.id;
@@ -233,7 +234,7 @@ class WeightNotifier extends StateNotifier<WeightState> {
       return;
     }
 
-    state = state.copyWith(isRefreshing: true, clearError: true);
+    state = state.copyWith(isRefreshing: true, error: null);
 
     try {
       // Invalidate cache to force fresh data
@@ -601,7 +602,7 @@ class WeightNotifier extends StateNotifier<WeightState> {
       return;
     }
 
-    state = state.copyWith(clearError: true);
+    state = state.copyWith(error: null);
 
     try {
       final userId = authState.user.id;

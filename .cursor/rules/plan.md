@@ -42,17 +42,5 @@ I already did something similar in @onboarding_code_review_report.md . I don't n
 
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
-1. a) yes, disabled At the current period (can't go into future) - recommended based on existing progress calendar pattern
-2. a) Current period (this week/month/year depending on granularity). The year view (12 reads max) should be the default one that opens when navigating on the screen.
-3. a) Per session only (resets to Year on screen re-open)
-4. a) Show empty state message in chart area: "No weights logged this [week/month/year]"
-5. a) Week: "Nov 4-10, 2025" (date range) - recommended, shows exact span
-b) Month: "November 2025" (month year) - recommended, standard format
-c) Year: "2025" (year only) - recommended, minimal
-6. a) Abbreviated weekday (Mon, Tue, Wed...)
-7. a) Yes, shows when not on current period
-You can have a look at how things are implemented in the progress calendar if that can help.
-Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development/Flutter best practices are extremely important. Please confirm that this follow industry standards, and if not explain why. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them (including the non critical ones). I will test only once we fixed the linting issues.
 
-
-
+I am now ready to start implementing the streak system for my app. The user will be able to track on the home screen (above the today's treatment dashboard) the current streak (number of days) for their pet treatment. You can have a look at prd.md to know more about the philosophy of this streak system. Please create a detailed implementation plan 

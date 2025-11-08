@@ -4,6 +4,7 @@
 /// with veterinary-appropriate rules and user-friendly error messages.
 library;
 
+import 'package:hydracat/core/utils/weight_utils.dart';
 import 'package:hydracat/core/validation/models/validation_result.dart';
 import 'package:hydracat/features/profile/exceptions/profile_exceptions.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
@@ -374,7 +375,7 @@ class ProfileValidationService {
   ) {
     if (unit.toLowerCase() == 'lbs' || unit.toLowerCase() == 'pounds') {
       // Convert to kg for validation
-      final weightKg = weight / 2.20462;
+      final weightKg = WeightUtils.convertLbsToKg(weight);
       return validateWeight(weightKg);
     } else if (unit.toLowerCase() == 'kg' ||
         unit.toLowerCase() == 'kilograms') {

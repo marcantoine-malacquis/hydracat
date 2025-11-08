@@ -4,6 +4,10 @@ import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:uuid/uuid.dart';
 
+/// Sentinel value for [FluidSession.copyWith] to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
+
 /// Data class for fluid therapy logging sessions
 ///
 /// Represents a single instance of fluid therapy administration with complete
@@ -257,14 +261,14 @@ class FluidSession {
     String? userId,
     DateTime? dateTime,
     double? volumeGiven,
-    FluidLocation? injectionSite,
-    String? stressLevel,
-    String? notes,
-    String? scheduleId,
-    DateTime? scheduledTime,
+    Object? injectionSite = _undefined,
+    Object? stressLevel = _undefined,
+    Object? notes = _undefined,
+    Object? scheduleId = _undefined,
+    Object? scheduledTime = _undefined,
     DateTime? createdAt,
-    DateTime? updatedAt,
-    double? dailyGoalMl,
+    Object? updatedAt = _undefined,
+    Object? dailyGoalMl = _undefined,
   }) {
     return FluidSession(
       id: id ?? this.id,
@@ -272,14 +276,26 @@ class FluidSession {
       userId: userId ?? this.userId,
       dateTime: dateTime ?? this.dateTime,
       volumeGiven: volumeGiven ?? this.volumeGiven,
-      injectionSite: injectionSite ?? this.injectionSite,
-      stressLevel: stressLevel ?? this.stressLevel,
-      notes: notes ?? this.notes,
-      scheduleId: scheduleId ?? this.scheduleId,
-      scheduledTime: scheduledTime ?? this.scheduledTime,
+      injectionSite: injectionSite == _undefined 
+          ? this.injectionSite 
+          : injectionSite as FluidLocation?,
+      stressLevel: stressLevel == _undefined 
+          ? this.stressLevel 
+          : stressLevel as String?,
+      notes: notes == _undefined ? this.notes : notes as String?,
+      scheduleId: scheduleId == _undefined 
+          ? this.scheduleId 
+          : scheduleId as String?,
+      scheduledTime: scheduledTime == _undefined 
+          ? this.scheduledTime 
+          : scheduledTime as DateTime?,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-      dailyGoalMl: dailyGoalMl ?? this.dailyGoalMl,
+      updatedAt: updatedAt == _undefined 
+          ? this.updatedAt 
+          : updatedAt as DateTime?,
+      dailyGoalMl: dailyGoalMl == _undefined 
+          ? this.dailyGoalMl 
+          : dailyGoalMl as double?,
     );
   }
 

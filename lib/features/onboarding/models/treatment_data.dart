@@ -3,6 +3,10 @@ import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/core/utils/dosage_text_utils.dart';
 import 'package:hydracat/features/profile/models/schedule_dto.dart';
 
+/// Sentinel value for [MedicationData.copyWith] to distinguish between
+/// "not provided" and "explicitly set to null"
+const _undefined = Object();
+
 /// Enumeration of treatment frequencies
 enum TreatmentFrequency {
   /// Once daily
@@ -364,20 +368,26 @@ class MedicationData {
     MedicationUnit? unit,
     TreatmentFrequency? frequency,
     List<DateTime>? reminderTimes,
-    double? dosage,
-    String? strengthAmount,
-    MedicationStrengthUnit? strengthUnit,
-    String? customStrengthUnit,
+    Object? dosage = _undefined,
+    Object? strengthAmount = _undefined,
+    Object? strengthUnit = _undefined,
+    Object? customStrengthUnit = _undefined,
   }) {
     return MedicationData(
       name: name ?? this.name,
       unit: unit ?? this.unit,
       frequency: frequency ?? this.frequency,
       reminderTimes: reminderTimes ?? this.reminderTimes,
-      dosage: dosage ?? this.dosage,
-      strengthAmount: strengthAmount ?? this.strengthAmount,
-      strengthUnit: strengthUnit ?? this.strengthUnit,
-      customStrengthUnit: customStrengthUnit ?? this.customStrengthUnit,
+      dosage: dosage == _undefined ? this.dosage : dosage as double?,
+      strengthAmount: strengthAmount == _undefined 
+          ? this.strengthAmount 
+          : strengthAmount as String?,
+      strengthUnit: strengthUnit == _undefined 
+          ? this.strengthUnit 
+          : strengthUnit as MedicationStrengthUnit?,
+      customStrengthUnit: customStrengthUnit == _undefined 
+          ? this.customStrengthUnit 
+          : customStrengthUnit as String?,
     );
   }
 

@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import 'package:hydracat/core/utils/weight_utils.dart';
+
 /// Data point for weight graph visualization
 ///
 /// Represents a single point on the weight trend line graph.
@@ -24,7 +26,7 @@ class WeightDataPoint {
   final bool isAverage;
 
   /// Weight in pounds (for display)
-  double get weightLbs => weightKg * 2.20462;
+  double get weightLbs => WeightUtils.convertKgToLbs(weightKg);
 
   @override
   String toString() =>
