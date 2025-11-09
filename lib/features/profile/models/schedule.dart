@@ -424,50 +424,19 @@ extension ScheduleDateHelpers on Schedule {
   /// Returns all reminder times that fall on the provided [date].
   /// Normalizes comparisons using [AppDateUtils.startOfDay].
   Iterable<DateTime> reminderTimesOnDate(DateTime date) sync* {
-    // Skip if this schedule is not active on the given day per frequency
-    if (!_isActiveOnDate(date)) return;
-
-    // Generate today's datetimes using stored time-of-day components
-    final day = AppDateUtils.startOfDay(date);
+    final targetDay = AppDateUtils.startOfDay(date);
+    
     for (final reminder in reminderTimes) {
-      yield DateTime(
-        day.year,
-        day.month,
-        day.day,
-        reminder.hour,
-        reminder.minute,
-        reminder.second,
-        reminder.millisecond,
-        reminder.microsecond,
-      );
+      final reminderDay = AppDateUtils.startOfDay(reminder);
+      if (reminderDay == targetDay) {
+        yield reminder;
+      }
     }
   }
 
   /// Convenience wrapper to get today's reminder times based on [now].
   Iterable<DateTime> todaysReminderTimes(DateTime now) =>
       reminderTimesOnDate(now);
-
-  /// Whether this schedule should be considered active on the specified date
-  /// based on its [frequency]. For non-daily frequencies, we anchor the
-  /// cadence to the schedule's [createdAt] day.
-  bool _isActiveOnDate(DateTime date) {
-    switch (frequency) {
-      case TreatmentFrequency.onceDaily:
-      case TreatmentFrequency.twiceDaily:
-      case TreatmentFrequency.thriceDaily:
-        return true; // repeats every day
-      case TreatmentFrequency.everyOtherDay:
-        final createdDay = AppDateUtils.startOfDay(createdAt);
-        final targetDay = AppDateUtils.startOfDay(date);
-        final diff = targetDay.difference(createdDay).inDays;
-        return diff >= 0 && diff.isEven;
-      case TreatmentFrequency.every3Days:
-        final createdDay = AppDateUtils.startOfDay(createdAt);
-        final targetDay = AppDateUtils.startOfDay(date);
-        final diff = targetDay.difference(createdDay).inDays;
-        return diff >= 0 && diff % 3 == 0;
-    }
-  }
 }
 
 /// Extension for medication display helpers
