@@ -72,6 +72,7 @@ class _FakeSummaryService implements SummaryService {
       medicationMissedCount: 0,
       fluidTotalVolume: 0,
       fluidTreatmentDone: false,
+      fluidScheduledSessions: 0,
       fluidSessionCount: 0,
       overallTreatmentDone: true,
       createdAt: today,

@@ -28,6 +28,7 @@ class DailySummary extends TreatmentSummaryBase {
     required super.fluidTotalVolume,
     required super.fluidTreatmentDone,
     required super.fluidSessionCount,
+    required super.fluidScheduledSessions,
     required super.overallTreatmentDone,
     required super.createdAt,
     super.updatedAt,
@@ -55,6 +56,7 @@ class DailySummary extends TreatmentSummaryBase {
       fluidTotalVolume: 0,
       fluidTreatmentDone: false,
       fluidSessionCount: 0,
+      fluidScheduledSessions: 0,
       overallTreatmentDone: false,
       createdAt: now,
     );
@@ -93,6 +95,8 @@ class DailySummary extends TreatmentSummaryBase {
       fluidTotalVolume: (json['fluidTotalVolume'] as num?)?.toDouble() ?? 0.0,
       fluidTreatmentDone: asBool(json['fluidTreatmentDone']),
       fluidSessionCount: (json['fluidSessionCount'] as num?)?.toInt() ?? 0,
+      fluidScheduledSessions:
+          (json['fluidScheduledSessions'] as num?)?.toInt() ?? 0,
       overallTreatmentDone: asBool(json['overallTreatmentDone']),
       createdAt:
           TreatmentSummaryBase.parseDateTimeNullable(json['createdAt']) ??
@@ -141,6 +145,7 @@ class DailySummary extends TreatmentSummaryBase {
       'fluidTotalVolume': fluidTotalVolume,
       'fluidTreatmentDone': fluidTreatmentDone,
       'fluidSessionCount': fluidSessionCount,
+      'fluidScheduledSessions': fluidScheduledSessions,
       'overallTreatmentDone': overallTreatmentDone,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
@@ -182,6 +187,7 @@ class DailySummary extends TreatmentSummaryBase {
     double? fluidTotalVolume,
     bool? fluidTreatmentDone,
     int? fluidSessionCount,
+    int? fluidScheduledSessions,
     bool? overallTreatmentDone,
     DateTime? createdAt,
     Object? updatedAt = _undefined,
@@ -198,6 +204,8 @@ class DailySummary extends TreatmentSummaryBase {
       fluidTotalVolume: fluidTotalVolume ?? this.fluidTotalVolume,
       fluidTreatmentDone: fluidTreatmentDone ?? this.fluidTreatmentDone,
       fluidSessionCount: fluidSessionCount ?? this.fluidSessionCount,
+      fluidScheduledSessions:
+          fluidScheduledSessions ?? this.fluidScheduledSessions,
       overallTreatmentDone: overallTreatmentDone ?? this.overallTreatmentDone,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt == _undefined 

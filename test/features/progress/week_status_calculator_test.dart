@@ -739,6 +739,7 @@ DailySummary _createSummary({
     fluidTotalVolume: 0,
     fluidTreatmentDone: false,
     fluidSessionCount: fluidSessionCount,
+    fluidScheduledSessions: 0,
     overallTreatmentDone: false,
     createdAt: date,
   );

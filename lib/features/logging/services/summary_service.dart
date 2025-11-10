@@ -198,6 +198,29 @@ class SummaryService {
   }
 
   // ============================================
+  // PUBLIC API - Cache Management
+  // ============================================
+
+  /// Clear all in-memory caches
+  ///
+  /// Should be called after session updates to ensure fresh data on next read.
+  /// This clears the TTL-based memory caches, forcing Firestore refetch.
+  ///
+  /// Usage:
+  /// ```dart
+  /// await summaryService.updateFluidSession(...);
+  /// summaryService.clearMemoryCache(); // Force fresh reads
+  /// ```
+  void clearMemoryCache() {
+    _dailyMemCache.clear();
+    _weeklyMemCache.clear();
+    _monthlyMemCache.clear();
+    if (kDebugMode) {
+      debugPrint('[SummaryService] Memory caches cleared');
+    }
+  }
+
+  // ============================================
   // PUBLIC API - Weekly Summary Reads
   // ============================================
 

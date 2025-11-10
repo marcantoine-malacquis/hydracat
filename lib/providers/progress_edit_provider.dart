@@ -251,22 +251,27 @@ class ProgressEditNotifier extends StateNotifier<ProgressEditState> {
   /// Invalidate relevant caches to trigger UI refresh
   ///
   /// Invalidates:
+  /// - SummaryService internal memory cache (for fresh Firestore reads)
   /// - dailyCacheProvider (for today's summary on dashboard/calendar)
   /// - weekSessionsProvider (for the week containing the edited session)
-  ///
-  /// The weekSummariesProvider automatically refreshes because it watches
-  /// dailyCacheProvider.
+  /// - weekSummariesProvider (for progress bars and daily summaries)
   void _invalidateCaches(DateTime sessionDate) {
     if (kDebugMode) {
       debugPrint('[ProgressEdit] Invalidating caches for $sessionDate');
     }
 
+    // CRITICAL: Clear SummaryService internal TTL cache first
+    // This ensures Firestore is queried for fresh data on next provider read
+    _ref.read(summaryServiceProvider).clearMemoryCache();
+
     // Invalidate daily cache (triggers cascade refresh of summaries)
     _ref.invalidate(dailyCacheProvider);
 
-    // Invalidate week sessions for the week containing this date
+    // Invalidate week sessions and summaries for the week containing this date
     final weekStart = AppDateUtils.startOfWeekMonday(sessionDate);
-    _ref.invalidate(weekSessionsProvider(weekStart));
+    _ref
+      ..invalidate(weekSessionsProvider(weekStart))
+      ..invalidate(weekSummariesProvider(weekStart));
 
     if (kDebugMode) {
       debugPrint('[ProgressEdit] Cache invalidation complete');

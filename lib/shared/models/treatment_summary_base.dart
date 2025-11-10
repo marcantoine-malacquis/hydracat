@@ -21,6 +21,7 @@ abstract class TreatmentSummaryBase {
     required this.fluidTotalVolume,
     required this.fluidTreatmentDone,
     required this.fluidSessionCount,
+    required this.fluidScheduledSessions,
     required this.overallTreatmentDone,
     required this.createdAt,
     this.updatedAt,
@@ -63,6 +64,13 @@ abstract class TreatmentSummaryBase {
   ///
   /// Incremented for each `FluidSession` logged in this period.
   final int fluidSessionCount;
+
+  /// Number of fluid therapy sessions scheduled
+  ///
+  /// Represents total planned fluid sessions for this period based on
+  /// schedules.
+  /// Used as denominator for fluid adherence calculations.
+  final int fluidScheduledSessions;
 
   // Overall Treatment Fields
 
@@ -247,6 +255,7 @@ abstract class TreatmentSummaryBase {
         other.fluidTotalVolume == fluidTotalVolume &&
         other.fluidTreatmentDone == fluidTreatmentDone &&
         other.fluidSessionCount == fluidSessionCount &&
+        other.fluidScheduledSessions == fluidScheduledSessions &&
         other.overallTreatmentDone == overallTreatmentDone &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
@@ -261,6 +270,7 @@ abstract class TreatmentSummaryBase {
       fluidTotalVolume,
       fluidTreatmentDone,
       fluidSessionCount,
+      fluidScheduledSessions,
       overallTreatmentDone,
       createdAt,
       updatedAt,

@@ -7,9 +7,8 @@ import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
+import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
-import 'package:hydracat/features/progress/widgets/fluid_edit_dialog.dart';
-import 'package:hydracat/features/progress/widgets/medication_edit_dialog.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
@@ -17,6 +16,18 @@ import 'package:hydracat/providers/progress_edit_provider.dart';
 import 'package:hydracat/providers/progress_provider.dart';
 import 'package:hydracat/shared/widgets/fluid/fluid_daily_summary_card.dart';
 import 'package:intl/intl.dart';
+
+/// Popup content mode for transitioning between views
+enum _PopupMode {
+  /// Showing day detail with list of treatments
+  dayView,
+
+  /// Editing a medication session
+  editMedication,
+
+  /// Editing a fluid session
+  editFluid,
+}
 
 /// Full-screen popup showing treatment details for a specific day.
 ///
@@ -51,6 +62,12 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
   double _dragOffset = 0; // Current drag distance in pixels
   late AnimationController _dragAnimationController;
   late Animation<double> _dragAnimation;
+
+  // Popup mode state
+  _PopupMode _mode = _PopupMode.dayView;
+  MedicationSession? _editingMedicationSession;
+  Schedule? _editingSchedule;
+  FluidSession? _editingFluidSession;
 
   // Constants
   static const double _dismissThreshold = 150; // Minimum drag to dismiss
@@ -199,7 +216,8 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
                 ),
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 constraints: BoxConstraints(
-                  maxHeight: mediaQuery.size.height * 0.75,
+                  maxHeight: mediaQuery.size.height * 0.8,
+                  minHeight: mediaQuery.size.height * 0.65,
                 ),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
@@ -219,36 +237,23 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
                     _buildDragHandle(context),
                     const SizedBox(height: 2),
                     Expanded(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildHeader(context),
-                            const SizedBox(height: AppSpacing.md),
-                            Divider(
-                              height: 1,
-                              thickness: 1,
-                              color:
-                                  Theme.of(
-                                    context,
-                                  ).colorScheme.outlineVariant.withValues(
-                                    alpha: 0.3,
-                                  ),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        switchInCurve: Curves.easeInOut,
+                        switchOutCurve: Curves.easeInOut,
+                        transitionBuilder: (child, animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0.05, 0),
+                                end: Offset.zero,
+                              ).animate(animation),
+                              child: child,
                             ),
-                            const SizedBox(height: AppSpacing.md),
-                            // Lazy load content after animation completes
-                            if (_showContent)
-                              _buildContent(context, ref, isFuture)
-                            else
-                              const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(AppSpacing.xl),
-                                  child: CircularProgressIndicator(),
-                                ),
-                              ),
-                          ],
-                        ),
+                          );
+                        },
+                        child: _buildCurrentContent(context, ref, isFuture),
                       ),
                     ),
                   ],
@@ -281,22 +286,30 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
   /// Builds the header with date and close button.
   Widget _buildHeader(BuildContext context) {
     final formattedDate = DateFormat('EEEE, MMMM d').format(widget.date);
+    final isEditMode = _mode != _PopupMode.dayView;
 
     return Row(
       children: [
+        if (isEditMode)
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: _handleEditCancel,
+            tooltip: 'Back',
+            padding: EdgeInsets.zero,
+          ),
         Expanded(
           child: Text(
-            formattedDate,
+            isEditMode ? 'Edit Treatment' : formattedDate,
             style: AppTextStyles.h2,
           ),
         ),
-        const SizedBox(
+        SizedBox(
           width: AppSpacing.minTouchTarget,
           height: AppSpacing.minTouchTarget,
           child: IconButton(
-            icon: Icon(Icons.close),
-            onPressed: OverlayService.hide,
-            tooltip: 'Close',
+            icon: const Icon(Icons.close),
+            onPressed: isEditMode ? _handleEditCancel : OverlayService.hide,
+            tooltip: isEditMode ? 'Cancel' : 'Close',
             iconSize: 24,
             padding: EdgeInsets.zero,
           ),
@@ -330,6 +343,55 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
         ),
       ],
     );
+  }
+
+  /// Build content based on current mode
+  Widget _buildCurrentContent(
+    BuildContext context,
+    WidgetRef ref,
+    bool isFuture,
+  ) {
+    if (!_showContent) {
+      return const Center(
+        key: ValueKey('loading'),
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.xl),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    return switch (_mode) {
+      _PopupMode.dayView => SingleChildScrollView(
+          key: const ValueKey('dayView'),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(context),
+              const SizedBox(height: AppSpacing.md),
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: Theme.of(context)
+                    .colorScheme
+                    .outlineVariant
+                    .withValues(alpha: 0.3),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildContent(context, ref, isFuture),
+            ],
+          ),
+        ),
+      _PopupMode.editMedication => SingleChildScrollView(
+          key: const ValueKey('editMedication'),
+          child: _buildMedicationEditContent(context),
+        ),
+      _PopupMode.editFluid => SingleChildScrollView(
+          key: const ValueKey('editFluid'),
+          child: _buildFluidEditContent(context),
+        ),
+    };
   }
 
   /// Builds the content section based on date (logged vs planned).
@@ -921,6 +983,33 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
     return map;
   }
 
+  /// Build medication edit content (inline version)
+  Widget _buildMedicationEditContent(BuildContext context) {
+    if (_editingMedicationSession == null || _editingSchedule == null) {
+      return const SizedBox.shrink();
+    }
+
+    return _MedicationEditInlineForm(
+      session: _editingMedicationSession!,
+      schedule: _editingSchedule!,
+      onSave: _handleMedicationEditSave,
+      onCancel: _handleEditCancel,
+    );
+  }
+
+  /// Build fluid edit content (inline version)
+  Widget _buildFluidEditContent(BuildContext context) {
+    if (_editingFluidSession == null) {
+      return const SizedBox.shrink();
+    }
+
+    return _FluidEditInlineForm(
+      session: _editingFluidSession!,
+      onSave: _handleFluidEditSave,
+      onCancel: _handleEditCancel,
+    );
+  }
+
   /// Create temporary medication session for unlogged past treatments
   MedicationSession _createTempMedicationSession(
     Schedule schedule,
@@ -965,48 +1054,77 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
     );
   }
 
-  /// Handle edit medication session
-  Future<void> _handleEditMedication(
+  /// Handle medication edit (transition to edit mode)
+  void _handleEditMedication(
     MedicationSession session,
     Schedule schedule,
-  ) async {
-    final result = await showDialog<MedicationSession>(
-      context: context,
-      builder: (context) => MedicationEditDialog(
-        session: session,
-        schedule: schedule,
-      ),
-    );
+  ) {
+    setState(() {
+      _mode = _PopupMode.editMedication;
+      _editingMedicationSession = session;
+      _editingSchedule = schedule;
+    });
+  }
 
-    if (result != null && mounted) {
-      // Detect if new session by checking weekSessions
-      final weekStart = AppDateUtils.startOfWeekMonday(widget.date);
-      final weekSessionsAsync = ref.read(weekSessionsProvider(weekStart));
-      final isNewSession = weekSessionsAsync.whenOrNull(
-        data: (weekSessions) {
-          final normalizedDate = AppDateUtils.startOfDay(widget.date);
-          final (medSessions, _) = weekSessions[normalizedDate] ??
-              (<MedicationSession>[], <FluidSession>[]);
-          return !medSessions.any((s) => s.id == session.id);
-        },
-      ) ??
-          true;
+  /// Handle cancel edit (back to day view)
+  void _handleEditCancel() {
+    setState(() {
+      _mode = _PopupMode.dayView;
+      _editingMedicationSession = null;
+      _editingSchedule = null;
+      _editingFluidSession = null;
+    });
+  }
 
-      final success = isNewSession
-          ? await _createMedicationSession(result, schedule)
-          : await _updateMedicationSession(session, result);
+  /// Handle medication save from inline form
+  Future<void> _handleMedicationEditSave(MedicationSession result) async {
+    if (!mounted) return;
 
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isNewSession ? 'Treatment logged' : 'Medication updated',
-            ),
-            duration: const Duration(seconds: 2),
-            backgroundColor: AppColors.primary,
+    final session = _editingMedicationSession;
+    final schedule = _editingSchedule;
+    if (session == null || schedule == null) return;
+
+    // Detect if new session by checking weekSessions
+    final weekStart = AppDateUtils.startOfWeekMonday(widget.date);
+    final weekSessionsAsync = ref.read(weekSessionsProvider(weekStart));
+    final isNewSession = weekSessionsAsync.whenOrNull(
+      data: (weekSessions) {
+        final normalizedDate = AppDateUtils.startOfDay(widget.date);
+        final (medSessions, _) = weekSessions[normalizedDate] ??
+            (<MedicationSession>[], <FluidSession>[]);
+        return !medSessions.any((s) => s.id == session.id);
+      },
+    ) ??
+        true;
+
+    final success = isNewSession
+        ? await _createMedicationSession(result, schedule)
+        : await _updateMedicationSession(session, result);
+
+    if (success && mounted) {
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isNewSession ? 'Treatment logged' : 'Medication updated',
           ),
-        );
-      }
+          duration: const Duration(seconds: 2),
+          backgroundColor: AppColors.primary,
+        ),
+      );
+
+      // Explicit refresh: Wait for Firestore refetch to complete
+      final weekStart = AppDateUtils.startOfWeekMonday(widget.date);
+      final _ = await ref.refresh(weekSummariesProvider(weekStart).future);
+
+      if (!mounted) return;
+
+      // Transition back to day view
+      setState(() {
+        _mode = _PopupMode.dayView;
+        _editingMedicationSession = null;
+        _editingSchedule = null;
+      });
     }
   }
 
@@ -1021,14 +1139,21 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
     if (user == null || pet == null) return false;
 
     final profileState = ref.read(profileProvider);
-    final todaysSchedules = profileState.medicationSchedules
-            ?.where((s) => s.isActive)
+    final sessionDate = session.dateTime;
+
+    // Filter schedules that had reminders on the SESSION DATE
+    final schedulesForDate = profileState.medicationSchedules
+            ?.where(
+              (s) =>
+                  s.isActive &&
+                  s.reminderTimesOnDate(sessionDate).isNotEmpty,
+            )
             .toList() ??
         <Schedule>[];
 
     return ref.read(loggingProvider.notifier).logMedicationSession(
       session: session,
-      todaysSchedules: todaysSchedules,
+      todaysSchedules: schedulesForDate,
     );
   }
 
@@ -1043,41 +1168,60 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
     );
   }
 
-  /// Handle edit fluid session
-  Future<void> _handleEditFluid(FluidSession session) async {
-    final result = await showDialog<FluidSession>(
-      context: context,
-      builder: (context) => FluidEditDialog(session: session),
-    );
+  /// Handle fluid edit (transition to edit mode)
+  void _handleEditFluid(FluidSession session) {
+    setState(() {
+      _mode = _PopupMode.editFluid;
+      _editingFluidSession = session;
+    });
+  }
 
-    if (result != null && mounted) {
-      final weekStart = AppDateUtils.startOfWeekMonday(widget.date);
-      final weekSessionsAsync = ref.read(weekSessionsProvider(weekStart));
-      final isNewSession = weekSessionsAsync.whenOrNull(
-        data: (weekSessions) {
-          final normalizedDate = AppDateUtils.startOfDay(widget.date);
-          final (_, fluidSessions) = weekSessions[normalizedDate] ??
-              (<MedicationSession>[], <FluidSession>[]);
-          return !fluidSessions.any((s) => s.id == session.id);
-        },
-      ) ??
-          true;
+  /// Handle fluid save from inline form
+  Future<void> _handleFluidEditSave(FluidSession result) async {
+    if (!mounted) return;
 
-      final success = isNewSession
-          ? await _createFluidSession(result)
-          : await _updateFluidSession(session, result);
+    final session = _editingFluidSession;
+    if (session == null) return;
 
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isNewSession ? 'Fluid therapy logged' : 'Fluid therapy updated',
-            ),
-            duration: const Duration(seconds: 2),
-            backgroundColor: AppColors.primary,
+    final weekStart = AppDateUtils.startOfWeekMonday(widget.date);
+    final weekSessionsAsync = ref.read(weekSessionsProvider(weekStart));
+    final isNewSession = weekSessionsAsync.whenOrNull(
+      data: (weekSessions) {
+        final normalizedDate = AppDateUtils.startOfDay(widget.date);
+        final (_, fluidSessions) = weekSessions[normalizedDate] ??
+            (<MedicationSession>[], <FluidSession>[]);
+        return !fluidSessions.any((s) => s.id == session.id);
+      },
+    ) ??
+        true;
+
+    final success = isNewSession
+        ? await _createFluidSession(result)
+        : await _updateFluidSession(session, result);
+
+    if (success && mounted) {
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isNewSession ? 'Fluid therapy logged' : 'Fluid therapy updated',
           ),
-        );
-      }
+          duration: const Duration(seconds: 2),
+          backgroundColor: AppColors.primary,
+        ),
+      );
+
+      // Explicit refresh: Wait for Firestore refetch to complete
+      final weekStart = AppDateUtils.startOfWeekMonday(widget.date);
+      final _ = await ref.refresh(weekSummariesProvider(weekStart).future);
+
+      if (!mounted) return;
+
+      // Transition back to day view
+      setState(() {
+        _mode = _PopupMode.dayView;
+        _editingFluidSession = null;
+      });
     }
   }
 
@@ -1090,9 +1234,15 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
 
     final fluidSchedule = ref.read(fluidScheduleProvider);
 
+    // Verify schedule had reminders on session date
+    final sessionDate = session.dateTime;
+    final scheduleValidForDate = fluidSchedule != null &&
+        fluidSchedule.isActive &&
+        fluidSchedule.reminderTimesOnDate(sessionDate).isNotEmpty;
+
     return ref.read(loggingProvider.notifier).logFluidSession(
       session: session,
-      fluidSchedule: fluidSchedule,
+      fluidSchedule: scheduleValidForDate ? fluidSchedule : null,
     );
   }
 
@@ -1111,6 +1261,869 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
   String _buildSemanticLabel() {
     final formattedDate = DateFormat('EEEE, MMMM d').format(widget.date);
     return 'Treatment details for $formattedDate';
+  }
+}
+
+// ============================================
+// Inline Edit Form Widgets
+// ============================================
+
+/// Inline medication edit form (content only, no Dialog wrapper)
+class _MedicationEditInlineForm extends StatefulWidget {
+  const _MedicationEditInlineForm({
+    required this.session,
+    required this.schedule,
+    required this.onSave,
+    required this.onCancel,
+  });
+
+  final MedicationSession session;
+  final Schedule schedule;
+  final void Function(MedicationSession) onSave;
+  final VoidCallback onCancel;
+
+  @override
+  State<_MedicationEditInlineForm> createState() =>
+      _MedicationEditInlineFormState();
+}
+
+class _MedicationEditInlineFormState
+    extends State<_MedicationEditInlineForm> {
+  late bool _completed;
+  late double _dosageGiven;
+  late TextEditingController _notesController;
+  bool _notesExpanded = false;
+  final FocusNode _notesFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _completed = widget.session.completed;
+    _dosageGiven = widget.session.dosageGiven;
+    _notesController = TextEditingController(text: widget.session.notes ?? '');
+    
+    // Expand notes if already has content
+    _notesExpanded = widget.session.notes?.isNotEmpty ?? false;
+    
+    // Expand on focus, collapse on unfocus if empty
+    _notesFocusNode.addListener(() {
+      if (_notesFocusNode.hasFocus && !_notesExpanded) {
+        setState(() {
+          _notesExpanded = true;
+        });
+      } else if (!_notesFocusNode.hasFocus &&
+          _notesExpanded &&
+          _notesController.text.isEmpty) {
+        setState(() {
+          _notesExpanded = false;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _notesFocusNode.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  bool get _hasChanges =>
+      _completed != widget.session.completed ||
+      _dosageGiven != widget.session.dosageGiven ||
+      _notesController.text != (widget.session.notes ?? '');
+
+  void _incrementDosage() {
+    setState(() {
+      if (_dosageGiven < 100) {
+        _dosageGiven += 0.5;
+      }
+    });
+  }
+
+  void _decrementDosage() {
+    setState(() {
+      if (_dosageGiven > 0) {
+        _dosageGiven = (_dosageGiven - 0.5).clamp(0, 100);
+      }
+    });
+  }
+
+  void _handleSave() {
+    if (!_hasChanges) {
+      widget.onCancel();
+      return;
+    }
+
+    final updatedSession = widget.session.copyWith(
+      completed: _completed,
+      dosageGiven: _dosageGiven,
+      notes: _notesController.text.isEmpty ? null : _notesController.text,
+      updatedAt: DateTime.now(),
+    );
+
+    widget.onSave(updatedSession);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header with medication info
+        _buildHeader(theme),
+        const SizedBox(height: AppSpacing.md),
+        const Divider(height: 1, thickness: 1),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Completion status toggle
+        _buildCompletionToggle(theme),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Dosage adjuster
+        _buildDosageAdjuster(theme),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Notes field
+        _buildNotesField(theme),
+        const SizedBox(height: AppSpacing.xl),
+
+        // Action buttons
+        _buildActionButtons(theme),
+      ],
+    );
+  }
+
+  Widget _buildHeader(ThemeData theme) {
+    final medicationName = widget.schedule.medicationName ?? 'Medication';
+    final strengthAmount = widget.schedule.medicationStrengthAmount;
+    final strengthUnit = widget.schedule.medicationStrengthUnit ?? '';
+    final strengthText =
+        strengthAmount != null ? ' $strengthAmount$strengthUnit' : '';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          medicationName,
+          style: AppTextStyles.h3.copyWith(
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        if (strengthText.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            strengthText.trim(),
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCompletionToggle(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Status',
+          style: AppTextStyles.body.copyWith(
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatusButton(
+                label: 'Completed',
+                icon: Icons.check_circle,
+                isSelected: _completed,
+                onTap: () => setState(() => _completed = true),
+                theme: theme,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: _buildStatusButton(
+                label: 'Missed',
+                icon: Icons.cancel,
+                isSelected: !_completed,
+                onTap: () => setState(() => _completed = false),
+                theme: theme,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusButton({
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required ThemeData theme,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primaryLight.withValues(alpha: 0.2)
+              : Colors.transparent,
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.border,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Flexible(
+              child: Text(
+                label,
+                style: AppTextStyles.body.copyWith(
+                  color:
+                      isSelected ? AppColors.primary : AppColors.textSecondary,
+                  fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDosageAdjuster(ThemeData theme) {
+    final unit = widget.schedule.medicationUnit ?? 'dose';
+    final displayDosage = _dosageGiven == _dosageGiven.toInt()
+        ? _dosageGiven.toInt().toString()
+        : _dosageGiven.toStringAsFixed(1);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Dosage',
+          style: AppTextStyles.body.copyWith(
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildCircularButton(
+                icon: Icons.remove,
+                onPressed: _decrementDosage,
+                enabled: _dosageGiven > 0,
+              ),
+              const SizedBox(width: AppSpacing.lg),
+              Column(
+                children: [
+                  Text(
+                    displayDosage,
+                    style: AppTextStyles.display.copyWith(
+                      color: theme.colorScheme.onSurface,
+                      fontSize: 40,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    unit,
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: AppSpacing.lg),
+              _buildCircularButton(
+                icon: Icons.add,
+                onPressed: _incrementDosage,
+                enabled: _dosageGiven < 100,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCircularButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    required bool enabled,
+  }) {
+    return Material(
+      color: enabled
+          ? AppColors.primaryLight.withValues(alpha: 0.3)
+          : AppColors.disabled,
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: enabled ? onPressed : null,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 48,
+          height: 48,
+          alignment: Alignment.center,
+          child: Icon(
+            icon,
+            color: enabled ? AppColors.primaryDark : AppColors.textTertiary,
+            size: 24,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotesField(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Notes (optional)',
+          style: AppTextStyles.body.copyWith(
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        TextField(
+          controller: _notesController,
+          focusNode: _notesFocusNode,
+          maxLength: _notesExpanded ? 500 : null,
+          maxLines: _notesExpanded ? 3 : 1,
+          decoration: InputDecoration(
+            hintText: _notesExpanded
+                ? 'Add any notes about this dose...'
+                : 'Tap to add notes...',
+            hintStyle: AppTextStyles.body.copyWith(
+              color: AppColors.textTertiary,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+            contentPadding: const EdgeInsets.all(AppSpacing.md),
+            counterStyle: _notesExpanded
+                ? AppTextStyles.small.copyWith(
+                    color: AppColors.textSecondary,
+                  )
+                : null,
+          ),
+          style: AppTextStyles.body,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ElevatedButton(
+          onPressed: _handleSave,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Text(
+            'Save',
+            style: AppTextStyles.buttonPrimary.copyWith(
+              color: Colors.white,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        OutlinedButton(
+          onPressed: widget.onCancel,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.textPrimary,
+            side: const BorderSide(color: AppColors.border),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Text(
+            'Cancel',
+            style: AppTextStyles.buttonSecondary.copyWith(
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Inline fluid edit form (content only, no Dialog wrapper)
+class _FluidEditInlineForm extends StatefulWidget {
+  const _FluidEditInlineForm({
+    required this.session,
+    required this.onSave,
+    required this.onCancel,
+  });
+
+  final FluidSession session;
+  final void Function(FluidSession) onSave;
+  final VoidCallback onCancel;
+
+  @override
+  State<_FluidEditInlineForm> createState() => _FluidEditInlineFormState();
+}
+
+class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
+  late double _volumeGiven;
+  late FluidLocation? _injectionSite;
+  late String? _stressLevel;
+  late TextEditingController _notesController;
+  bool _notesExpanded = false;
+  final FocusNode _notesFocusNode = FocusNode();
+
+  static const List<String> _stressLevels = ['low', 'medium', 'high'];
+
+  @override
+  void initState() {
+    super.initState();
+    _volumeGiven = widget.session.volumeGiven;
+    _injectionSite = widget.session.injectionSite;
+    _stressLevel = widget.session.stressLevel;
+    _notesController = TextEditingController(text: widget.session.notes ?? '');
+    
+    // Expand notes if already has content
+    _notesExpanded = widget.session.notes?.isNotEmpty ?? false;
+    
+    // Expand on focus, collapse on unfocus if empty
+    _notesFocusNode.addListener(() {
+      if (_notesFocusNode.hasFocus && !_notesExpanded) {
+        setState(() {
+          _notesExpanded = true;
+        });
+      } else if (!_notesFocusNode.hasFocus &&
+          _notesExpanded &&
+          _notesController.text.isEmpty) {
+        setState(() {
+          _notesExpanded = false;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _notesFocusNode.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  bool get _hasChanges =>
+      _volumeGiven != widget.session.volumeGiven ||
+      _injectionSite != widget.session.injectionSite ||
+      _stressLevel != widget.session.stressLevel ||
+      _notesController.text != (widget.session.notes ?? '');
+
+  void _incrementVolume() {
+    setState(() {
+      if (_volumeGiven < 500) {
+        _volumeGiven = (_volumeGiven + 10).clamp(0, 500);
+      }
+    });
+  }
+
+  void _decrementVolume() {
+    setState(() {
+      if (_volumeGiven > 0) {
+        _volumeGiven = (_volumeGiven - 10).clamp(0, 500);
+      }
+    });
+  }
+
+  void _handleSave() {
+    if (!_hasChanges) {
+      widget.onCancel();
+      return;
+    }
+
+    if (_volumeGiven < 0 || _volumeGiven > 500) {
+      return;
+    }
+
+    final updatedSession = widget.session.copyWith(
+      volumeGiven: _volumeGiven,
+      injectionSite: _injectionSite,
+      stressLevel: _stressLevel,
+      notes: _notesController.text.isEmpty ? null : _notesController.text,
+      updatedAt: DateTime.now(),
+    );
+
+    widget.onSave(updatedSession);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Text(
+          'Fluid Therapy',
+          style: AppTextStyles.h3.copyWith(
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        const Divider(height: 1, thickness: 1),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Volume adjuster
+        _buildVolumeAdjuster(theme),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Injection site selector
+        _buildInjectionSiteSelector(theme),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Stress level selector
+        _buildStressLevelSelector(theme),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Notes field
+        _buildNotesField(theme),
+        const SizedBox(height: AppSpacing.xl),
+
+        // Action buttons
+        _buildActionButtons(theme),
+      ],
+    );
+  }
+
+  Widget _buildVolumeAdjuster(ThemeData theme) {
+    final displayVolume = _volumeGiven == _volumeGiven.toInt()
+        ? _volumeGiven.toInt().toString()
+        : _volumeGiven.toStringAsFixed(1);
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildCircularButton(
+            icon: Icons.remove,
+            onPressed: _decrementVolume,
+            enabled: _volumeGiven > 0,
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Column(
+            children: [
+              Text(
+                displayVolume,
+                style: AppTextStyles.display.copyWith(
+                  color: theme.colorScheme.onSurface,
+                  fontSize: 40,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'ml',
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          _buildCircularButton(
+            icon: Icons.add,
+            onPressed: _incrementVolume,
+            enabled: _volumeGiven < 500,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCircularButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    required bool enabled,
+  }) {
+    return Material(
+      color: enabled
+          ? AppColors.primaryLight.withValues(alpha: 0.3)
+          : AppColors.disabled,
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: enabled ? onPressed : null,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 48,
+          height: 48,
+          alignment: Alignment.center,
+          child: Icon(
+            icon,
+            color: enabled ? AppColors.primaryDark : AppColors.textTertiary,
+            size: 24,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInjectionSiteSelector(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Injection Site (optional)',
+          style: AppTextStyles.body.copyWith(
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        DropdownButtonFormField<FluidLocation?>(
+          initialValue: _injectionSite,
+          decoration: InputDecoration(
+            hintText: 'Select location',
+            hintStyle: AppTextStyles.body.copyWith(
+              color: AppColors.textTertiary,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+          ),
+          items: [
+            const DropdownMenuItem<FluidLocation?>(
+              child: Text('None'),
+            ),
+            ...FluidLocation.values.map(
+              (location) => DropdownMenuItem<FluidLocation?>(
+                value: location,
+                child: Text(location.displayName),
+              ),
+            ),
+          ],
+          onChanged: (value) {
+            setState(() {
+              _injectionSite = value;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStressLevelSelector(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Stress Level (optional)',
+          style: AppTextStyles.body.copyWith(
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        DropdownButtonFormField<String?>(
+          initialValue: _stressLevel,
+          decoration: InputDecoration(
+            hintText: 'Select stress level',
+            hintStyle: AppTextStyles.body.copyWith(
+              color: AppColors.textTertiary,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+          ),
+          items: [
+            const DropdownMenuItem<String?>(
+              child: Text('None'),
+            ),
+            ..._stressLevels.map(
+              (level) => DropdownMenuItem<String?>(
+                value: level,
+                child: Text(level[0].toUpperCase() + level.substring(1)),
+              ),
+            ),
+          ],
+          onChanged: (value) {
+            setState(() {
+              _stressLevel = value;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNotesField(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Notes (optional)',
+          style: AppTextStyles.body.copyWith(
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        TextField(
+          controller: _notesController,
+          focusNode: _notesFocusNode,
+          maxLength: _notesExpanded ? 500 : null,
+          maxLines: _notesExpanded ? 3 : 1,
+          decoration: InputDecoration(
+            hintText: _notesExpanded
+                ? 'Add any notes about this session...'
+                : 'Tap to add notes...',
+            hintStyle: AppTextStyles.body.copyWith(
+              color: AppColors.textTertiary,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+            contentPadding: const EdgeInsets.all(AppSpacing.md),
+            counterStyle: _notesExpanded
+                ? AppTextStyles.small.copyWith(
+                    color: AppColors.textSecondary,
+                  )
+                : null,
+          ),
+          style: AppTextStyles.body,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ElevatedButton(
+          onPressed: _handleSave,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Text(
+            'Save',
+            style: AppTextStyles.buttonPrimary.copyWith(
+              color: Colors.white,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        OutlinedButton(
+          onPressed: widget.onCancel,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.textPrimary,
+            side: const BorderSide(color: AppColors.border),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Text(
+            'Cancel',
+            style: AppTextStyles.buttonSecondary.copyWith(
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 

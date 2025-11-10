@@ -179,16 +179,39 @@ class LoggingService {
         }
       }
 
-      // STEP 4: Build 4-write batch
+      // STEP 4: Check if scheduled doses already counted for this date
+      final sessionDate = AppDateUtils.startOfDay(session.dateTime);
+      final alreadyCounted = await _hasScheduledDosesCounted(
+        userId,
+        petId,
+        sessionDate,
+      );
+
+      // STEP 5: Calculate scheduled doses (only if not already counted)
+      final scheduledDosesCount = alreadyCounted
+          ? 0
+          : todaysSchedules
+              .map((s) => s.reminderTimesOnDate(session.dateTime).length)
+              .fold(0, (total, reminderCount) => total + reminderCount);
+
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingService] Scheduled doses: $scheduledDosesCount '
+          '(alreadyCounted: $alreadyCounted)',
+        );
+      }
+
+      // STEP 6: Build 4-write batch
       final batch = _firestore.batch();
       _addMedicationSessionToBatch(
         batch: batch,
         session: sessionWithSchedule,
         userId: userId,
         petId: petId,
+        scheduledDosesCount: scheduledDosesCount,
       );
 
-      // STEP 5: Commit batch
+      // STEP 7: Commit batch
       await _executeBatchWrite(
         batch: batch,
         operation: 'logMedicationSession',
@@ -489,16 +512,39 @@ class LoggingService {
         }
       }
 
-      // STEP 4: Build 4-write batch
+      // STEP 4: Check if scheduled sessions already counted for this date
+      final sessionDate = AppDateUtils.startOfDay(session.dateTime);
+      final alreadyCounted = await _hasFluidScheduledCounted(
+        userId,
+        petId,
+        sessionDate,
+      );
+
+      // STEP 5: Calculate scheduled fluid sessions (only if not counted)
+      final scheduledSessionsCount = alreadyCounted
+          ? 0
+          : (fluidSchedule != null
+              ? fluidSchedule.reminderTimesOnDate(session.dateTime).length
+              : 0);
+
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingService] Scheduled fluid sessions: $scheduledSessionsCount '
+          '(alreadyCounted: $alreadyCounted)',
+        );
+      }
+
+      // STEP 6: Build 4-write batch
       final batch = _firestore.batch();
       _addFluidSessionToBatch(
         batch: batch,
         session: sessionWithSchedule,
         userId: userId,
         petId: petId,
+        scheduledSessionsCount: scheduledSessionsCount,
       );
 
-      // STEP 5: Commit batch
+      // STEP 7: Commit batch
       await _executeBatchWrite(
         batch: batch,
         operation: 'logFluidSession',
@@ -1428,10 +1474,13 @@ class LoggingService {
     required MedicationSession session,
     required String userId,
     required String petId,
+    required int scheduledDosesCount,
   }) {
     final sessionRef = _getMedicationSessionRef(userId, petId, session.id);
     final date = AppDateUtils.startOfDay(session.dateTime);
-    final dto = SummaryUpdateDto.fromMedicationSession(session);
+    final dto = SummaryUpdateDto.fromMedicationSession(session).copyWith(
+      medicationScheduledDelta: scheduledDosesCount,
+    );
 
     // Operation 1: Write session
     batch.set(sessionRef, _buildSessionCreateData(session.toJson()));
@@ -1475,10 +1524,13 @@ class LoggingService {
     required FluidSession session,
     required String userId,
     required String petId,
+    required int scheduledSessionsCount,
   }) {
     final sessionRef = _getFluidSessionRef(userId, petId, session.id);
     final date = AppDateUtils.startOfDay(session.dateTime);
-    final dto = SummaryUpdateDto.fromFluidSession(session);
+    final dto = SummaryUpdateDto.fromFluidSession(session).copyWith(
+      fluidScheduledDelta: scheduledSessionsCount,
+    );
 
     // Operation 1: Write session
     batch.set(sessionRef, _buildSessionCreateData(session.toJson()));
@@ -1876,5 +1928,76 @@ class LoggingService {
         .doc('monthly')
         .collection('summaries')
         .doc(docId);
+  }
+
+  // ============================================
+  // PRIVATE HELPERS - Schedule Count Checks
+  // ============================================
+
+  /// Check if scheduled doses have already been counted for this date
+  ///
+  /// Returns true if medicationScheduledDoses > 0 in the daily summary.
+  /// This prevents overcounting when logging multiple medication sessions
+  /// on the same day.
+  ///
+  /// Used by logMedicationSession to only count schedules once per day.
+  Future<bool> _hasScheduledDosesCounted(
+    String userId,
+    String petId,
+    DateTime date,
+  ) async {
+    try {
+      final dailyRef = _getDailySummaryRef(userId, petId, date);
+      final snapshot = await dailyRef.get();
+
+      if (!snapshot.exists) return false;
+
+      final data = snapshot.data() as Map<String, dynamic>?;
+      final scheduledDoses =
+          (data?['medicationScheduledDoses'] as num?)?.toInt() ?? 0;
+
+      return scheduledDoses > 0;
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingService] Error checking scheduled doses: $e',
+        );
+      }
+      // On error, assume not counted (safer to overcount than undercount)
+      return false;
+    }
+  }
+
+  /// Check if scheduled fluid sessions have already been counted for this date
+  ///
+  /// Returns true if fluidScheduledSessions > 0 in the daily summary.
+  /// This prevents overcounting when logging multiple fluid sessions
+  /// on the same day.
+  ///
+  /// Used by logFluidSession to only count schedules once per day.
+  Future<bool> _hasFluidScheduledCounted(
+    String userId,
+    String petId,
+    DateTime date,
+  ) async {
+    try {
+      final dailyRef = _getDailySummaryRef(userId, petId, date);
+      final snapshot = await dailyRef.get();
+
+      if (!snapshot.exists) return false;
+
+      final data = snapshot.data() as Map<String, dynamic>?;
+      final scheduledSessions =
+          (data?['fluidScheduledSessions'] as num?)?.toInt() ?? 0;
+
+      return scheduledSessions > 0;
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingService] Error checking scheduled fluid sessions: $e',
+        );
+      }
+      return false;
+    }
   }
 }

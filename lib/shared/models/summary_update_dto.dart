@@ -37,6 +37,7 @@ class SummaryUpdateDto {
     this.medicationMissedDelta,
     this.fluidVolumeDelta,
     this.fluidSessionDelta,
+    this.fluidScheduledDelta,
     this.overallStreakDelta,
     this.fluidTreatmentDone,
     this.overallTreatmentDone,
@@ -214,6 +215,11 @@ class SummaryUpdateDto {
   /// Only incremented when a new session is created, not when updating.
   final int? fluidSessionDelta;
 
+  /// Change in scheduled fluid sessions (+1 for new sessions, null for updates)
+  ///
+  /// Only incremented when a new session is created, not when updating.
+  final int? fluidScheduledDelta;
+
   // Overall Deltas
 
   /// Change in overall adherence streak
@@ -277,6 +283,10 @@ class SummaryUpdateDto {
     if (fluidSessionDelta != null) {
       update['fluidSessionCount'] = FieldValue.increment(fluidSessionDelta!);
     }
+    if (fluidScheduledDelta != null) {
+      update['fluidScheduledSessions'] =
+          FieldValue.increment(fluidScheduledDelta!);
+    }
 
     // Overall deltas
     if (overallStreakDelta != null) {
@@ -306,9 +316,37 @@ class SummaryUpdateDto {
       medicationMissedDelta != null ||
       fluidVolumeDelta != null ||
       fluidSessionDelta != null ||
+      fluidScheduledDelta != null ||
       overallStreakDelta != null ||
       fluidTreatmentDone != null ||
       overallTreatmentDone != null;
+
+  /// Creates a copy of this DTO with the given fields replaced
+  SummaryUpdateDto copyWith({
+    int? medicationDosesDelta,
+    int? medicationScheduledDelta,
+    int? medicationMissedDelta,
+    double? fluidVolumeDelta,
+    int? fluidSessionDelta,
+    int? fluidScheduledDelta,
+    int? overallStreakDelta,
+    bool? fluidTreatmentDone,
+    bool? overallTreatmentDone,
+  }) {
+    return SummaryUpdateDto(
+      medicationDosesDelta: medicationDosesDelta ?? this.medicationDosesDelta,
+      medicationScheduledDelta:
+          medicationScheduledDelta ?? this.medicationScheduledDelta,
+      medicationMissedDelta:
+          medicationMissedDelta ?? this.medicationMissedDelta,
+      fluidVolumeDelta: fluidVolumeDelta ?? this.fluidVolumeDelta,
+      fluidSessionDelta: fluidSessionDelta ?? this.fluidSessionDelta,
+      fluidScheduledDelta: fluidScheduledDelta ?? this.fluidScheduledDelta,
+      overallStreakDelta: overallStreakDelta ?? this.overallStreakDelta,
+      fluidTreatmentDone: fluidTreatmentDone ?? this.fluidTreatmentDone,
+      overallTreatmentDone: overallTreatmentDone ?? this.overallTreatmentDone,
+    );
+  }
 
   @override
   bool operator ==(Object other) {
@@ -320,6 +358,7 @@ class SummaryUpdateDto {
         other.medicationMissedDelta == medicationMissedDelta &&
         other.fluidVolumeDelta == fluidVolumeDelta &&
         other.fluidSessionDelta == fluidSessionDelta &&
+        other.fluidScheduledDelta == fluidScheduledDelta &&
         other.overallStreakDelta == overallStreakDelta &&
         other.fluidTreatmentDone == fluidTreatmentDone &&
         other.overallTreatmentDone == overallTreatmentDone;
@@ -333,6 +372,7 @@ class SummaryUpdateDto {
       medicationMissedDelta,
       fluidVolumeDelta,
       fluidSessionDelta,
+      fluidScheduledDelta,
       overallStreakDelta,
       fluidTreatmentDone,
       overallTreatmentDone,
@@ -347,6 +387,7 @@ class SummaryUpdateDto {
         'medicationMissedDelta: $medicationMissedDelta, '
         'fluidVolumeDelta: $fluidVolumeDelta, '
         'fluidSessionDelta: $fluidSessionDelta, '
+        'fluidScheduledDelta: $fluidScheduledDelta, '
         'overallStreakDelta: $overallStreakDelta, '
         'fluidTreatmentDone: $fluidTreatmentDone, '
         'overallTreatmentDone: $overallTreatmentDone'

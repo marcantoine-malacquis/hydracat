@@ -42,5 +42,21 @@ I already did something similar in @onboarding_code_review_report.md . I don't n
 
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
-
-I am now ready to start implementing the streak system for my app. The user will be able to track on the home screen (above the today's treatment dashboard) the current streak (number of days) for their pet treatment. You can have a look at prd.md to know more about the philosophy of this streak system. Please create a detailed implementation plan 
+1. a) Let's allow the users to edit ANY past treatment session. Since it will only be possible from the focused day popup, it will be a very concious decision from the user to navigate to that day and press the edit button.
+b) Hide edit buttons for future dates entirely.
+2. Allow editing (a) completion status, (b) dosage given, and (d) notes. Do NOT allow changing the date/time in this flow.
+3. Allow editing Volume given (with number input, 0-500ml range per existing validation), Injection site, Stress level, Notes field. Do NOT allow changing the date/time in this flow.
+If volume is set to zero, leave it as a 0ml session.
+4. Individual edit button per session
+5. Require explicit "Save" confirmation to prevent accidental edits. Include a "Cancel" button to discard changes. No need for undo toast. No need for explanatory text.
+6. a) Allow higher-than-scheduled dosages with no warning.
+b) Allow any volume within the validation range (1-500ml) with no additional warnings beyond the model's built-in validation.
+c) Yes, queue edits offline using the existing OfflineLoggingService pattern with a new operation type like UpdateMedicationOperation and UpdateFluidOperation.
+7. a) Show edit button always on the trailing side of each treatment tile (always visible, no hover required for mobile). We already use such button the the schedule screens.
+b) Create a new dedicated edit dialog similar in style but slightly more compact than SessionUpdateDialog since we're editing fewer fields.
+c) Keep popup open with updated data.
+8. a) Invalidate both weekSessionsProvider(weekStart) and dailyCacheProvider to ensure calendar dots, daily summaries, and popup data all refresh.
+b) Yes, use optimistic updates for instant feedback, but revert on error and show an error message.
+Can you confirm that we will also update the daily/weekly/monthly summaries accordingly after each edit or would this be too complicated ?
+Also, I really like this specific popup UI for the medication dose.
+Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development/Flutter best practices are extremely important. Please confirm that this follow industry standards, and if not explain why. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them (including the non critical ones). I will test only once we fixed the linting issues.
