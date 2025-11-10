@@ -990,19 +990,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Failed to update weekly summary setting. Please try again.';
 
   @override
-  String get notificationSettingsSnoozeLabel => 'Snooze Reminders';
-
-  @override
-  String get notificationSettingsSnoozeDescription =>
-      'Snooze reminders for 15 minutes';
-
-  @override
-  String get notificationSettingsSnoozeSuccess => 'Snooze enabled';
-
-  @override
-  String get notificationSettingsSnoozeDisabledSuccess => 'Snooze disabled';
-
-  @override
   String get notificationSettingsFeatureRequiresMasterToggle =>
       'Enable notifications above to use these features';
 

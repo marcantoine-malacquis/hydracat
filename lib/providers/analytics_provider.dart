@@ -134,9 +134,6 @@ class AnalyticsEvents {
   /// Weekly summary toggle event name
   static const String weeklySummaryToggled = 'weekly_summary_toggled';
 
-  /// Snooze toggle event name
-  static const String snoozeToggled = 'snooze_toggled';
-
   /// Privacy learn more event name
   static const String notificationPrivacyLearnMore =
       'notification_privacy_learn_more';
@@ -878,10 +875,8 @@ class AnalyticsService {
   ///
   /// Result values:
   /// - 'success': Snooze scheduled successfully
-  /// - 'snooze_disabled': User has snoozeEnabled=false in settings
   /// - 'invalid_payload': Malformed notification payload
   /// - 'invalid_kind': Attempted to snooze a 'snooze' notification
-  /// - 'settings_not_loaded': NotificationSettings provider unavailable
   /// - 'scheduling_failed': Plugin.showZoned threw exception
   /// - 'unknown_error': Unexpected error during snooze operation
   Future<void> trackReminderSnoozed({
@@ -1062,26 +1057,6 @@ class AnalyticsService {
         'enabled': enabled,
         'result': result,
         if (errorMessage != null) 'error_message': errorMessage,
-      },
-    );
-  }
-
-  /// Track snooze functionality toggle change.
-  ///
-  /// Tracks when user enables or disables snooze functionality
-  /// in the notification settings screen.
-  ///
-  /// Parameters:
-  /// - [enabled]: true if user enabled, false if disabled
-  Future<void> trackSnoozeToggled({
-    required bool enabled,
-  }) async {
-    if (!_isEnabled) return;
-
-    await _analytics.logEvent(
-      name: AnalyticsEvents.snoozeToggled,
-      parameters: {
-        'enabled': enabled,
       },
     );
   }

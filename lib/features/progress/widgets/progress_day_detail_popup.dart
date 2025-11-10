@@ -8,8 +8,12 @@ import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
+import 'package:hydracat/features/progress/widgets/fluid_edit_dialog.dart';
+import 'package:hydracat/features/progress/widgets/medication_edit_dialog.dart';
 import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
+import 'package:hydracat/providers/progress_edit_provider.dart';
 import 'package:hydracat/providers/progress_provider.dart';
 import 'package:hydracat/shared/widgets/fluid/fluid_daily_summary_card.dart';
 import 'package:intl/intl.dart';
@@ -463,6 +467,12 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
           sessions: medSessions,
         );
 
+        // Build map of reminder times to actual sessions
+        final reminderToSession = _mapRemindersToSessions(
+          reminders: medReminders,
+          sessions: medSessions,
+        );
+
         final hasAnyFluid = fluidSessions.isNotEmpty;
 
         final showFluidSection = hasAnyFluid || fluidReminders.isNotEmpty;
@@ -485,7 +495,13 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
               const SizedBox(height: AppSpacing.xs),
               _maybeSummaryCard(context, ref),
               const SizedBox(height: AppSpacing.sm),
+              // Show logged sessions
               ..._buildFluidSessionsList(fluidSessions),
+              // Show scheduled but unlogged reminders
+              if (fluidSessions.isEmpty && fluidReminders.isNotEmpty)
+                ...fluidReminders.map(
+                  (time) => _buildUnloggedFluidTile(fluidSchedule!, time),
+                ),
               const SizedBox(height: AppSpacing.md),
             ],
 
@@ -500,6 +516,7 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
                   r.$1,
                   r.$2,
                   completed: completedReminderTimes.contains(r.$2),
+                  session: reminderToSession[r.$2],
                 ),
               ),
             ],
@@ -627,8 +644,13 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
     Schedule schedule,
     DateTime time, {
     bool completed = false,
+    MedicationSession? session,
   }) {
     final timeStr = DateFormat.jm().format(time);
+    final day = AppDateUtils.startOfDay(widget.date);
+    final today = AppDateUtils.startOfDay(DateTime.now());
+    final isFuture = day.isAfter(today);
+    final canEdit = !isFuture; // Show edit for all past dates
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
@@ -645,16 +667,40 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
         '$timeStr • ${schedule.targetDosage} ${schedule.medicationUnit}',
         style: AppTextStyles.caption,
       ),
-      trailing: completed
-          ? Semantics(
-              label: 'Completed',
-              child: const Icon(
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (completed)
+            const Icon(
                 Icons.check_circle,
                 color: AppColors.primary,
                 size: 28,
-              ),
             )
-          : null,
+          else if (!isFuture)
+            const Icon(
+              Icons.cancel,
+              color: AppColors.textSecondary,
+              size: 28,
+            ),
+          if (canEdit) ...[
+            const SizedBox(width: AppSpacing.xs),
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, size: 20),
+              onPressed: () => _handleEditMedication(
+                session ?? _createTempMedicationSession(schedule, time),
+                schedule,
+              ),
+              tooltip: 'Edit',
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: 40,
+                minHeight: 40,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -704,9 +750,13 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
     final sorted = [...sessions]
       ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
 
-    return sorted.map((s) {
-      final timeStr = DateFormat.jm().format(s.dateTime);
-      final volumeStr = '${s.volumeGiven.toStringAsFixed(0)}ml';
+    final day = AppDateUtils.startOfDay(widget.date);
+    final today = AppDateUtils.startOfDay(DateTime.now());
+    final isFuture = day.isAfter(today);
+
+    return sorted.map((session) {
+      final timeStr = DateFormat.jm().format(session.dateTime);
+      final volumeStr = '${session.volumeGiven.toStringAsFixed(0)}ml';
 
       return ListTile(
         contentPadding: EdgeInsets.zero,
@@ -717,8 +767,62 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
         ),
         title: Text(volumeStr, style: AppTextStyles.body),
         subtitle: Text(timeStr, style: AppTextStyles.caption),
+        trailing: !isFuture
+            ? IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 20),
+                onPressed: () => _handleEditFluid(session),
+                tooltip: 'Edit',
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 40,
+                  minHeight: 40,
+                ),
+              )
+            : null,
       );
     }).toList();
+  }
+
+  /// Build tile for scheduled but unlogged fluid session
+  Widget _buildUnloggedFluidTile(Schedule schedule, DateTime time) {
+    final timeStr = DateFormat.jm().format(time);
+    final volumeStr = '${schedule.targetVolume}ml (scheduled)';
+
+    final day = AppDateUtils.startOfDay(widget.date);
+    final today = AppDateUtils.startOfDay(DateTime.now());
+    final isFuture = day.isAfter(today);
+
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: const Icon(
+        Icons.water_drop,
+        color: AppColors.textSecondary,
+        size: 24,
+      ),
+      title: Text(
+        volumeStr,
+        style: AppTextStyles.body.copyWith(
+          color: AppColors.textSecondary,
+        ),
+      ),
+      subtitle: Text(timeStr, style: AppTextStyles.caption),
+      trailing: !isFuture
+          ? IconButton(
+              icon: const Icon(Icons.edit_outlined, size: 20),
+              onPressed: () => _handleEditFluid(
+                _createTempFluidSession(schedule, time),
+              ),
+              tooltip: 'Log',
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: 40,
+                minHeight: 40,
+              ),
+            )
+          : null,
+    );
   }
 
   /// Builds the fluid summary card when data is available.
@@ -730,6 +834,277 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
     if (view == null) return const SizedBox.shrink();
 
     return FluidDailySummaryCard(summary: view);
+  }
+
+  /// Map reminder times to their actual sessions for edit button access.
+  ///
+  /// Uses the same greedy matching logic as
+  /// [_matchMedicationRemindersToSessions] but returns a map of reminder
+  /// DateTime → MedicationSession for passing to the tile builder.
+  Map<DateTime, MedicationSession> _mapRemindersToSessions({
+    required List<(Schedule, DateTime)> reminders,
+    required List<MedicationSession> sessions,
+  }) {
+    if (reminders.isEmpty || sessions.isEmpty) return {};
+
+    final day = AppDateUtils.startOfDay(widget.date);
+    final nextDay = AppDateUtils.endOfDay(widget.date);
+
+    // Split sessions by having scheduleId (preferred) vs not
+    final byScheduleId = <String, List<MedicationSession>>{};
+    final unnamedByMed = <String, List<MedicationSession>>{};
+
+    for (final s in sessions.where((s) => s.completed)) {
+      if (s.scheduleId != null) {
+        byScheduleId.putIfAbsent(s.scheduleId!, () => []).add(s);
+      } else {
+        final key = s.medicationName.trim().toLowerCase();
+        unnamedByMed.putIfAbsent(key, () => []).add(s);
+      }
+    }
+
+    // Sort each list by proximity to planned time to improve greedy match
+    for (final list in byScheduleId.values) {
+      list.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    }
+    for (final list in unnamedByMed.values) {
+      list.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    }
+
+    final map = <DateTime, MedicationSession>{};
+
+    // 1) scheduleId-first greedy match
+    for (final (schedule, plannedTime) in reminders) {
+      final list = byScheduleId[schedule.id];
+      if (list == null || list.isEmpty) continue;
+
+      // pick nearest unused session on the same day
+      MedicationSession? best;
+      var bestDelta = 1 << 30;
+      for (final s in list) {
+        if (s.dateTime.isBefore(day) || s.dateTime.isAfter(nextDay)) continue;
+        final delta = s.dateTime.difference(plannedTime).inSeconds.abs();
+        if (delta < bestDelta) {
+          best = s;
+          bestDelta = delta;
+        }
+      }
+      if (best != null) {
+        map[plannedTime] = best;
+        list.remove(best); // consume session
+      }
+    }
+
+    // 2) Fallback: name-based match for remaining
+    for (final (schedule, plannedTime) in reminders) {
+      if (map.containsKey(plannedTime)) continue;
+      final key = (schedule.medicationName ?? '').trim().toLowerCase();
+      final list = unnamedByMed[key];
+      if (list == null || list.isEmpty) continue;
+
+      MedicationSession? best;
+      var bestDelta = 1 << 30;
+      for (final s in list) {
+        if (s.dateTime.isBefore(day) || s.dateTime.isAfter(nextDay)) continue;
+        final delta = s.dateTime.difference(plannedTime).inSeconds.abs();
+        if (delta < bestDelta) {
+          best = s;
+          bestDelta = delta;
+        }
+      }
+      if (best != null) {
+        map[plannedTime] = best;
+        list.remove(best);
+      }
+    }
+
+    return map;
+  }
+
+  /// Create temporary medication session for unlogged past treatments
+  MedicationSession _createTempMedicationSession(
+    Schedule schedule,
+    DateTime scheduledTime,
+  ) {
+    final user = ref.read(currentUserProvider);
+    final pet = ref.read(primaryPetProvider);
+
+    return MedicationSession.create(
+      petId: pet!.id,
+      userId: user!.id,
+      dateTime: scheduledTime,
+      medicationName: schedule.medicationName!,
+      dosageGiven: 0,
+      dosageScheduled: schedule.targetDosage!,
+      medicationUnit: schedule.medicationUnit!,
+      completed: false,
+      medicationStrengthAmount: schedule.medicationStrengthAmount,
+      medicationStrengthUnit: schedule.medicationStrengthUnit,
+      customMedicationStrengthUnit: schedule.customMedicationStrengthUnit,
+      scheduleId: schedule.id,
+      scheduledTime: scheduledTime,
+    );
+  }
+
+  /// Create temporary fluid session for unlogged past treatments
+  FluidSession _createTempFluidSession(
+    Schedule schedule,
+    DateTime scheduledTime,
+  ) {
+    final user = ref.read(currentUserProvider);
+    final pet = ref.read(primaryPetProvider);
+
+    return FluidSession.create(
+      petId: pet!.id,
+      userId: user!.id,
+      dateTime: scheduledTime,
+      volumeGiven: 0,
+      scheduleId: schedule.id,
+      scheduledTime: scheduledTime,
+      dailyGoalMl: schedule.targetVolume,
+    );
+  }
+
+  /// Handle edit medication session
+  Future<void> _handleEditMedication(
+    MedicationSession session,
+    Schedule schedule,
+  ) async {
+    final result = await showDialog<MedicationSession>(
+      context: context,
+      builder: (context) => MedicationEditDialog(
+        session: session,
+        schedule: schedule,
+      ),
+    );
+
+    if (result != null && mounted) {
+      // Detect if new session by checking weekSessions
+      final weekStart = AppDateUtils.startOfWeekMonday(widget.date);
+      final weekSessionsAsync = ref.read(weekSessionsProvider(weekStart));
+      final isNewSession = weekSessionsAsync.whenOrNull(
+        data: (weekSessions) {
+          final normalizedDate = AppDateUtils.startOfDay(widget.date);
+          final (medSessions, _) = weekSessions[normalizedDate] ??
+              (<MedicationSession>[], <FluidSession>[]);
+          return !medSessions.any((s) => s.id == session.id);
+        },
+      ) ??
+          true;
+
+      final success = isNewSession
+          ? await _createMedicationSession(result, schedule)
+          : await _updateMedicationSession(session, result);
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isNewSession ? 'Treatment logged' : 'Medication updated',
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Create new medication session (retroactive logging)
+  Future<bool> _createMedicationSession(
+    MedicationSession session,
+    Schedule schedule,
+  ) async {
+    final user = ref.read(currentUserProvider);
+    final pet = ref.read(primaryPetProvider);
+
+    if (user == null || pet == null) return false;
+
+    final profileState = ref.read(profileProvider);
+    final todaysSchedules = profileState.medicationSchedules
+            ?.where((s) => s.isActive)
+            .toList() ??
+        <Schedule>[];
+
+    return ref.read(loggingProvider.notifier).logMedicationSession(
+      session: session,
+      todaysSchedules: todaysSchedules,
+    );
+  }
+
+  /// Update existing medication session
+  Future<bool> _updateMedicationSession(
+    MedicationSession oldSession,
+    MedicationSession newSession,
+  ) async {
+    return ref.read(progressEditProvider.notifier).updateMedicationSession(
+      oldSession: oldSession,
+      newSession: newSession,
+    );
+  }
+
+  /// Handle edit fluid session
+  Future<void> _handleEditFluid(FluidSession session) async {
+    final result = await showDialog<FluidSession>(
+      context: context,
+      builder: (context) => FluidEditDialog(session: session),
+    );
+
+    if (result != null && mounted) {
+      final weekStart = AppDateUtils.startOfWeekMonday(widget.date);
+      final weekSessionsAsync = ref.read(weekSessionsProvider(weekStart));
+      final isNewSession = weekSessionsAsync.whenOrNull(
+        data: (weekSessions) {
+          final normalizedDate = AppDateUtils.startOfDay(widget.date);
+          final (_, fluidSessions) = weekSessions[normalizedDate] ??
+              (<MedicationSession>[], <FluidSession>[]);
+          return !fluidSessions.any((s) => s.id == session.id);
+        },
+      ) ??
+          true;
+
+      final success = isNewSession
+          ? await _createFluidSession(result)
+          : await _updateFluidSession(session, result);
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isNewSession ? 'Fluid therapy logged' : 'Fluid therapy updated',
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Create new fluid session (retroactive logging)
+  Future<bool> _createFluidSession(FluidSession session) async {
+    final user = ref.read(currentUserProvider);
+    final pet = ref.read(primaryPetProvider);
+
+    if (user == null || pet == null) return false;
+
+    final fluidSchedule = ref.read(fluidScheduleProvider);
+
+    return ref.read(loggingProvider.notifier).logFluidSession(
+      session: session,
+      fluidSchedule: fluidSchedule,
+    );
+  }
+
+  /// Update existing fluid session
+  Future<bool> _updateFluidSession(
+    FluidSession oldSession,
+    FluidSession newSession,
+  ) async {
+    return ref.read(progressEditProvider.notifier).updateFluidSession(
+      oldSession: oldSession,
+      newSession: newSession,
+    );
   }
 
   /// Builds the semantic label for accessibility.

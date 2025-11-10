@@ -78,9 +78,8 @@ void main() {
     // Master toggle key should be present
     expect(find.byKey(const Key('notif_master_toggle')), findsOneWidget);
 
-    // Weekly and snooze toggle keys should be present
+    // Weekly toggle key should be present
     expect(find.byKey(const Key('notif_weekly_toggle')), findsOneWidget);
-    expect(find.byKey(const Key('notif_snooze_toggle')), findsOneWidget);
 
     // Privacy row validated in integration tests; core toggles present here
   });

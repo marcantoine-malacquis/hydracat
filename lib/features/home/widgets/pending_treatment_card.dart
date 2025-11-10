@@ -29,10 +29,13 @@ class PendingTreatmentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final strengthText = treatment.displayStrength != null
+        ? ' ${treatment.displayStrength}'
+        : '';
 
     return Semantics(
       label:
-          'Medication: ${treatment.displayName}, '
+          'Medication: ${treatment.displayName}$strengthText, '
           '${treatment.displayDosage}, '
           'scheduled at ${treatment.displayTime}'
           '${treatment.isOverdue ? ", overdue" : ""}',
@@ -73,11 +76,25 @@ class PendingTreatmentCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Medication name
-                    Text(
-                      treatment.displayName,
-                      style: AppTextStyles.h3.copyWith(
-                        color: theme.colorScheme.onSurface,
+                    // Medication name and strength on same line
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: treatment.displayName,
+                            style: AppTextStyles.h3.copyWith(
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                          if (treatment.displayStrength != null) ...[
+                            TextSpan(
+                              text: ' ${treatment.displayStrength}',
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -89,17 +106,6 @@ class PendingTreatmentCard extends StatelessWidget {
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
-
-                    // Strength (optional)
-                    if (treatment.displayStrength != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        treatment.displayStrength!,
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),

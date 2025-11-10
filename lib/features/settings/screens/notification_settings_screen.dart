@@ -17,7 +17,6 @@ import 'package:permission_handler/permission_handler.dart';
 /// Provides toggles for:
 /// - Master notification enable/disable
 /// - Weekly summary notifications
-/// - Snooze functionality for treatment reminders
 ///
 /// Includes proper error handling, loading states, and analytics tracking.
 class NotificationSettingsScreen extends ConsumerStatefulWidget {
@@ -218,25 +217,6 @@ class _NotificationSettingsScreenState
               value,
               currentUser.id,
               petId,
-            ),
-          ),
-
-          const SizedBox(height: AppSpacing.md),
-
-          // Snooze toggle section
-          _buildToggleSection(
-            context: context,
-            icon: Icons.snooze,
-            label: l10n.notificationSettingsSnoozeLabel,
-            description: l10n.notificationSettingsSnoozeDescription,
-            value: settings.snoozeEnabled,
-            isLoading: false,
-            isEnabled: canUseFeatures,
-            onChanged: (value) => _handleToggleSnooze(
-              context,
-              ref,
-              value,
-              currentUser.id,
             ),
           ),
 
@@ -703,43 +683,6 @@ class _NotificationSettingsScreenState
         });
       }
     }
-  }
-
-  /// Handles toggling the snooze functionality switch
-  Future<void> _handleToggleSnooze(
-    BuildContext context,
-    WidgetRef ref,
-    bool value,
-    String userId,
-  ) async {
-    // Capture context before async gap
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final localizations = AppLocalizations.of(context)!;
-
-    // Update settings (local only, no scheduling needed)
-    await ref
-        .read(notificationSettingsProvider(userId).notifier)
-        .setSnoozeEnabled(enabled: value);
-
-    // Show success feedback
-    if (!mounted) return;
-
-    final message = value
-        ? localizations.notificationSettingsSnoozeSuccess
-        : localizations.notificationSettingsSnoozeDisabledSuccess;
-
-    scaffoldMessenger.showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.success,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-
-    // Track analytics
-    await ref
-        .read(analyticsServiceDirectProvider)
-        .trackSnoozeToggled(enabled: value);
   }
 
   /// Handles toggling the enable notifications switch

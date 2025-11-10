@@ -812,22 +812,6 @@
   "@notificationSettingsWeeklySummaryError": {
     "description": "Error message when weekly summary toggle fails"
   },
-  "notificationSettingsSnoozeLabel": "Snooze Reminders",
-  "@notificationSettingsSnoozeLabel": {
-    "description": "Label for snooze functionality toggle"
-  },
-  "notificationSettingsSnoozeDescription": "Snooze reminders for 15 minutes",
-  "@notificationSettingsSnoozeDescription": {
-    "description": "Description text explaining snooze functionality"
-  },
-  "notificationSettingsSnoozeSuccess": "Snooze enabled",
-  "@notificationSettingsSnoozeSuccess": {
-    "description": "Success message when snooze is enabled"
-  },
-  "notificationSettingsSnoozeDisabledSuccess": "Snooze disabled",
-  "@notificationSettingsSnoozeDisabledSuccess": {
-    "description": "Success message when snooze is disabled"
-  },
   "notificationSettingsFeatureRequiresMasterToggle": "Enable notifications above to use these features",
   "@notificationSettingsFeatureRequiresMasterToggle": {
     "description": "Helper text shown when master toggle is disabled"

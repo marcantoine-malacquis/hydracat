@@ -1206,17 +1206,16 @@ class ReminderService {
   /// Algorithm:
   /// 1. Parse and validate payload (userId, petId, scheduleId, timeSlot, kind,
   ///    treatmentType)
-  /// 2. Check if snoozeEnabled in user notification settings
-  /// 3. Validate notification kind (only 'initial' or 'followup' can be
+  /// 2. Validate notification kind (only 'initial' or 'followup' can be
   ///    snoozed, not 'snooze')
-  /// 4. Cancel all notifications for this time slot (initial + followup) using
+  /// 3. Cancel all notifications for this time slot (initial + followup) using
   ///    cancelSlot
-  /// 5. Calculate snooze time (now + 15 minutes)
-  /// 6. Generate snooze notification content
-  /// 7. Schedule snooze notification via plugin with kind='snooze'
-  /// 8. Add snooze notification to index
-  /// 9. Track analytics event (reminder_snoozed)
-  /// 10. Return success/failure map
+  /// 4. Calculate snooze time (now + 15 minutes)
+  /// 5. Generate snooze notification content
+  /// 6. Schedule snooze notification via plugin with kind='snooze'
+  /// 7. Add snooze notification to index
+  /// 8. Track analytics event (reminder_snoozed)
+  /// 9. Return success/failure map
   ///
   /// Parameters:
   /// - [payload]: JSON string from notification with userId, petId, scheduleId,
@@ -1230,10 +1229,8 @@ class ReminderService {
   ///     success=true)
   ///
   /// Failure reasons:
-  /// - 'snooze_disabled': User has snoozeEnabled=false in settings
   /// - 'invalid_payload': Payload missing required fields or malformed JSON
   /// - 'invalid_kind': Notification kind is 'snooze' (can't snooze a snooze)
-  /// - 'settings_not_loaded': NotificationSettings provider unavailable
   /// - 'scheduling_failed': Plugin.showZoned threw exception
   ///
   /// Example usage:
@@ -1296,36 +1293,9 @@ class ReminderService {
       }
       _devLog('✅ All required fields present');
 
-      // Step 2: Check if snooze is enabled in user settings
+      // Step 2: Validate notification kind (only initial/followup can snooze)
       _devLog('');
-      _devLog('Step 2: Checking snooze settings...');
-      try {
-        final settings = ref.read(
-          notificationSettingsProvider(userId),
-        );
-        _devLog('  snoozeEnabled: ${settings.snoozeEnabled}');
-
-        if (!settings.snoozeEnabled) {
-          _devLog('❌ FAILED: Snooze is disabled in user settings');
-          _devLog('═══════════════════════════════════════════════════════');
-          return {
-            'success': false,
-            'reason': 'snooze_disabled',
-          };
-        }
-        _devLog('✅ Snooze is enabled');
-      } on Exception catch (e) {
-        _devLog('❌ FAILED: Could not read notification settings: $e');
-        _devLog('═══════════════════════════════════════════════════════');
-        return {
-          'success': false,
-          'reason': 'settings_not_loaded',
-        };
-      }
-
-      // Step 3: Validate notification kind (only initial/followup can snooze)
-      _devLog('');
-      _devLog('Step 3: Validating notification kind...');
+      _devLog('Step 2: Validating notification kind...');
       if (kind != 'initial' && kind != 'followup') {
         _devLog(
           "❌ FAILED: Invalid kind '$kind' - only 'initial' or 'followup' "
@@ -1339,9 +1309,9 @@ class ReminderService {
       }
       _devLog("✅ Kind '$kind' is valid for snoozing");
 
-      // Step 4: Cancel existing notifications for this time slot
+      // Step 3: Cancel existing notifications for this time slot
       _devLog('');
-      _devLog('Step 4: Canceling existing notifications for time slot...');
+      _devLog('Step 3: Canceling existing notifications for time slot...');
       final canceledCount = await cancelSlot(
         userId,
         petId,
@@ -1354,9 +1324,9 @@ class ReminderService {
         '(initial + followup if present)',
       );
 
-      // Step 5: Calculate snooze time
+      // Step 4: Calculate snooze time
       _devLog('');
-      _devLog('Step 5: Calculating snooze time...');
+      _devLog('Step 4: Calculating snooze time...');
       final now = DateTime.now();
       final snoozeTime = now.add(const Duration(minutes: 15));
       final snoozeTZ = tz.TZDateTime.from(snoozeTime, tz.local);
@@ -1364,9 +1334,9 @@ class ReminderService {
       _devLog('  Snooze time: ${snoozeTime.toIso8601String()}');
       _devLog('  Snooze TZ: $snoozeTZ');
 
-      // Step 6: Generate snooze notification content
+      // Step 5: Generate snooze notification content
       _devLog('');
-      _devLog('Step 6: Generating snooze notification content...');
+      _devLog('Step 5: Generating snooze notification content...');
       final profileState = ref.read(profileProvider);
       final petName = profileState.primaryPet?.name ?? 'your pet';
       _devLog('  Pet name: $petName');
@@ -1380,9 +1350,9 @@ class ReminderService {
       _devLog('  Body: ${content['body']}');
       _devLog('  Channel: ${content['channelId']}');
 
-      // Step 7: Generate snooze notification ID and payload
+      // Step 6: Generate snooze notification ID and payload
       _devLog('');
-      _devLog('Step 7: Generating snooze notification ID...');
+      _devLog('Step 6: Generating snooze notification ID...');
       final snoozeId = generateNotificationId(
         userId: userId,
         petId: petId,
@@ -1401,9 +1371,9 @@ class ReminderService {
         treatmentType: treatmentType,
       );
 
-      // Step 8: Schedule snooze notification
+      // Step 7: Schedule snooze notification
       _devLog('');
-      _devLog('Step 8: Scheduling snooze notification...');
+      _devLog('Step 7: Scheduling snooze notification...');
       final plugin = ref.read(reminderPluginProvider);
       final groupId = 'pet_$petId';
       final threadIdentifier = 'pet_$petId';
@@ -1429,9 +1399,9 @@ class ReminderService {
         };
       }
 
-      // Step 9: Add snooze notification to index
+      // Step 8: Add snooze notification to index
       _devLog('');
-      _devLog('Step 9: Adding snooze notification to index...');
+      _devLog('Step 8: Adding snooze notification to index...');
       final indexStore = ref.read(notificationIndexStoreProvider);
       await indexStore.putEntry(
         userId,
@@ -1446,9 +1416,9 @@ class ReminderService {
       );
       _devLog('✅ Snooze notification added to index');
 
-      // Step 10: Track analytics event
+      // Step 9: Track analytics event
       _devLog('');
-      _devLog('Step 10: Tracking analytics event...');
+      _devLog('Step 9: Tracking analytics event...');
       try {
         final analyticsService = ref.read(analyticsServiceDirectProvider);
         await analyticsService.trackReminderSnoozed(

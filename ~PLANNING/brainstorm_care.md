@@ -10,12 +10,11 @@ e.g., “You’ve logged care for 20 days — that’s wonderful dedication!”
     ✅ “Your dedication is making a difference.”
     🚫 “You completed 80% of treatments this month.”
 
-paw prints filling up instead of numbers:
-A paw horizontal for each week, that fills according to how the week is going. 5 paws total (except for Februaries that start on a Monday (4 paws))
 
 Home screen :
  Small banner
- 
+ paw prints filling up instead of numbers:
+A paw horizontal for each week, that fills according to how the week is going. 5 paws total (except for Februaries that start on a Monday (4 paws))
 
 
 Progress screen :

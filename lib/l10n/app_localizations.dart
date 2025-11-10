@@ -1744,30 +1744,6 @@ abstract class AppLocalizations {
   /// **'Failed to update weekly summary setting. Please try again.'**
   String get notificationSettingsWeeklySummaryError;
 
-  /// Label for snooze functionality toggle
-  ///
-  /// In en, this message translates to:
-  /// **'Snooze Reminders'**
-  String get notificationSettingsSnoozeLabel;
-
-  /// Description text explaining snooze functionality
-  ///
-  /// In en, this message translates to:
-  /// **'Snooze reminders for 15 minutes'**
-  String get notificationSettingsSnoozeDescription;
-
-  /// Success message when snooze is enabled
-  ///
-  /// In en, this message translates to:
-  /// **'Snooze enabled'**
-  String get notificationSettingsSnoozeSuccess;
-
-  /// Success message when snooze is disabled
-  ///
-  /// In en, this message translates to:
-  /// **'Snooze disabled'**
-  String get notificationSettingsSnoozeDisabledSuccess;
-
   /// Helper text shown when master toggle is disabled
   ///
   /// In en, this message translates to:

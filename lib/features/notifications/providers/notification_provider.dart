@@ -159,16 +159,6 @@ class NotificationSettingsNotifier
     await NotificationSettingsService.saveSettings(_userId, newSettings);
   }
 
-  /// Toggles snooze functionality for treatment reminders.
-  ///
-  /// When enabled, users can snooze reminders for 15 minutes.
-  /// Requires enableNotifications to be true.
-  Future<void> setSnoozeEnabled({required bool enabled}) async {
-    final newSettings = state.copyWith(snoozeEnabled: enabled);
-    state = newSettings;
-    await NotificationSettingsService.saveSettings(_userId, newSettings);
-  }
-
   /// Toggles end-of-day summary notifications.
   ///
   /// End-of-day summaries fire at the specified time and show outstanding

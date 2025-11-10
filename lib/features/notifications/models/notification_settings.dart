@@ -4,7 +4,7 @@ import 'package:hydracat/features/notifications/utils/time_validation.dart';
 /// Model representing user notification preferences.
 ///
 /// Stores all notification-related settings including master toggle,
-/// feature-specific toggles (weekly summary, end-of-day, snooze),
+/// feature-specific toggles (weekly summary, end-of-day),
 /// and privacy preferences (lock screen content).
 ///
 /// Settings are persisted locally in SharedPreferences, scoped by userId.
@@ -21,7 +21,6 @@ class NotificationSettings {
   const NotificationSettings({
     required this.enableNotifications,
     required this.weeklySummaryEnabled,
-    required this.snoozeEnabled,
     required this.endOfDayEnabled,
     required this.endOfDayTime,
   });
@@ -31,14 +30,12 @@ class NotificationSettings {
   /// Defaults align with medical app best practices:
   /// - Notifications enabled by default (core value proposition)
   /// - Weekly summary enabled (engagement)
-  /// - Snooze enabled (flexibility)
   /// - End-of-day disabled (opt-in to avoid notification fatigue)
   /// - Generic notification content (privacy-first, no medication details)
   factory NotificationSettings.defaults() {
     return const NotificationSettings(
       enableNotifications: true,
       weeklySummaryEnabled: true,
-      snoozeEnabled: true,
       endOfDayEnabled: false,
       endOfDayTime: '22:00',
     );
@@ -59,7 +56,6 @@ class NotificationSettings {
       return NotificationSettings(
         enableNotifications: json['enableNotifications'] as bool? ?? true,
         weeklySummaryEnabled: json['weeklySummaryEnabled'] as bool? ?? true,
-        snoozeEnabled: json['snoozeEnabled'] as bool? ?? true,
         endOfDayEnabled: json['endOfDayEnabled'] as bool? ?? false,
         endOfDayTime: json['endOfDayTime'] as String? ?? '22:00',
       );
@@ -81,12 +77,6 @@ class NotificationSettings {
   /// Weekly summaries fire on Monday at 09:00 and show treatment adherence
   /// statistics for the past week. Requires [enableNotifications] to be true.
   final bool weeklySummaryEnabled;
-
-  /// Whether snooze functionality is enabled for treatment reminders.
-  ///
-  /// When enabled, users can snooze reminders for 15 minutes from the
-  /// notification. Requires [enableNotifications] to be true.
-  final bool snoozeEnabled;
 
   /// Whether end-of-day summary notifications are enabled.
   ///
@@ -159,14 +149,12 @@ class NotificationSettings {
   NotificationSettings copyWith({
     bool? enableNotifications,
     bool? weeklySummaryEnabled,
-    bool? snoozeEnabled,
     bool? endOfDayEnabled,
     String? endOfDayTime,
   }) {
     return NotificationSettings(
       enableNotifications: enableNotifications ?? this.enableNotifications,
       weeklySummaryEnabled: weeklySummaryEnabled ?? this.weeklySummaryEnabled,
-      snoozeEnabled: snoozeEnabled ?? this.snoozeEnabled,
       endOfDayEnabled: endOfDayEnabled ?? this.endOfDayEnabled,
       endOfDayTime: endOfDayTime ?? this.endOfDayTime,
     );
@@ -179,7 +167,6 @@ class NotificationSettings {
     return {
       'enableNotifications': enableNotifications,
       'weeklySummaryEnabled': weeklySummaryEnabled,
-      'snoozeEnabled': snoozeEnabled,
       'endOfDayEnabled': endOfDayEnabled,
       'endOfDayTime': endOfDayTime,
     };
@@ -192,7 +179,6 @@ class NotificationSettings {
     return other is NotificationSettings &&
         other.enableNotifications == enableNotifications &&
         other.weeklySummaryEnabled == weeklySummaryEnabled &&
-        other.snoozeEnabled == snoozeEnabled &&
         other.endOfDayEnabled == endOfDayEnabled &&
         other.endOfDayTime == endOfDayTime;
   }
@@ -202,7 +188,6 @@ class NotificationSettings {
     return Object.hash(
       enableNotifications,
       weeklySummaryEnabled,
-      snoozeEnabled,
       endOfDayEnabled,
       endOfDayTime,
     );
@@ -213,7 +198,6 @@ class NotificationSettings {
     return 'NotificationSettings('
         'enableNotifications: $enableNotifications, '
         'weeklySummaryEnabled: $weeklySummaryEnabled, '
-        'snoozeEnabled: $snoozeEnabled, '
         'endOfDayEnabled: $endOfDayEnabled, '
         'endOfDayTime: $endOfDayTime'
         ')';
