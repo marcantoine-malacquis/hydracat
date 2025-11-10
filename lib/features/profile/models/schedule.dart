@@ -426,11 +426,44 @@ extension ScheduleDateHelpers on Schedule {
   Iterable<DateTime> reminderTimesOnDate(DateTime date) sync* {
     final targetDay = AppDateUtils.startOfDay(date);
     
-    for (final reminder in reminderTimes) {
-      final reminderDay = AppDateUtils.startOfDay(reminder);
-      if (reminderDay == targetDay) {
-        yield reminder;
-      }
+    switch (frequency) {
+      case TreatmentFrequency.onceDaily:
+      case TreatmentFrequency.twiceDaily:
+      case TreatmentFrequency.thriceDaily:
+        // Daily frequencies: extract time-of-day and apply to target date
+        for (final reminder in reminderTimes) {
+          yield DateTime(
+            targetDay.year,
+            targetDay.month,
+            targetDay.day,
+            reminder.hour,
+            reminder.minute,
+            reminder.second,
+            reminder.millisecond,
+          );
+        }
+        
+      case TreatmentFrequency.everyOtherDay:
+      case TreatmentFrequency.every3Days:
+        // Interval-based: check if target date falls on scheduled day
+        final daysSinceCreated = targetDay.difference(
+          AppDateUtils.startOfDay(createdAt)
+        ).inDays;
+        final interval = frequency == TreatmentFrequency.everyOtherDay ? 2 : 3;
+        
+        if (daysSinceCreated >= 0 && daysSinceCreated % interval == 0) {
+          for (final reminder in reminderTimes) {
+            yield DateTime(
+              targetDay.year,
+              targetDay.month,
+              targetDay.day,
+              reminder.hour,
+              reminder.minute,
+              reminder.second,
+              reminder.millisecond,
+            );
+          }
+        }
     }
   }
 
