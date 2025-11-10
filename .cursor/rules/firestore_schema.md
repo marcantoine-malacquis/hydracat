@@ -12,6 +12,7 @@ This schema supports comprehensive CKD management while maintaining strict cost 
 - `medicationSessions` - Medication logging
 - `treatmentSummaries` - Daily/weekly/monthly aggregations
 - `schedules` - Treatment scheduling
+- `schedules/history` - Schedule version history tracking for accurate historical data
 
 🚧 **Planned/Not Yet Implemented:**
 - `healthParameters` - Weight, appetite, symptoms tracking (UI placeholder exists)
@@ -275,8 +276,77 @@ users/
                               ├── reminderTimes: array       # ["08:00", "20:00"] - time strings in HH:MM format
                               ├── isActive: boolean
                               ├── createdAt: Timestamp
-                              └── updatedAt: Timestamp
+                              ├── updatedAt: Timestamp
+                              │
+                              └── history (subcollection)    # Schedule version history
+                                    │
+                                    └── {millisecondsSinceEpoch} (document ID is effectiveFrom timestamp)
+                                          ├── scheduleId: string              # parent schedule ID
+                                          ├── effectiveFrom: Timestamp        # when this version became active
+                                          ├── effectiveTo: Timestamp?         # when this version stopped (null if current)
+                                          ├── treatmentType: string           # "fluid", "medication"
+                                          ├── frequency: string               # treatment frequency
+                                          ├── reminderTimesIso: array         # ["09:00:00", "21:00:00"] - ISO time strings
+                                          │
+                                          # Medication History Fields
+                                          ├── medicationName: string?
+                                          ├── targetDosage: number?
+                                          ├── medicationUnit: string?
+                                          ├── medicationStrengthAmount: string?
+                                          ├── medicationStrengthUnit: string?
+                                          ├── customMedicationStrengthUnit: string?
+                                          │
+                                          # Fluid History Fields
+                                          ├── targetVolume: number?
+                                          ├── preferredLocation: string?
+                                          └── needleGauge: string?
 ```
+
+## Schedule History
+
+### Purpose
+The `history` subcollection under each schedule tracks all changes to the schedule over time, enabling accurate display of historical reminder times and treatment details. This solves the problem of showing incorrect schedule data when viewing past dates in the calendar after a schedule has been modified.
+
+### When History Entries Are Created
+- **On Schedule Creation**: Initial snapshot saved with `effectiveFrom = createdAt`, `effectiveTo = null`
+- **Before Schedule Update**: Current version saved with `effectiveTo = now`, new version saved with `effectiveFrom = now`
+- **Document ID**: Uses `millisecondsSinceEpoch` of `effectiveFrom` for efficient chronological ordering
+
+### Key Features
+- **Changelog Pattern**: Immutable snapshots preserve exact schedule state at any point in time
+- **Date Range Queries**: Each entry has `effectiveFrom` and `effectiveTo` timestamps defining validity period
+- **ISO Time Strings**: Reminder times stored as "HH:mm:ss" strings to avoid timezone complications
+- **Backward Compatible**: Falls back to current schedule if no history exists
+
+### Query Patterns
+```dart
+// Get schedule state as it was on a specific date
+Query historicalSchedule = schedule
+  .collection('history')
+  .where('effectiveFrom', isLessThanOrEqualTo: date)
+  .orderBy('effectiveFrom', descending: true)
+  .limit(1);
+
+// Get all history for audit/debugging
+Query allHistory = schedule
+  .collection('history')
+  .orderBy('effectiveFrom', descending: true);
+```
+
+### Example Timeline
+```
+Nov 1-10:  Benazepril 2.5mg twice daily (9am, 9pm)
+Nov 11-20: Benazepril 5mg once daily (10am)        ← Schedule updated
+Nov 21+:   Benazepril 5mg twice daily (8am, 8pm)   ← Schedule updated again
+
+History entries:
+├── {timestamp-nov-1}  → effectiveFrom: Nov 1,  effectiveTo: Nov 11
+├── {timestamp-nov-11} → effectiveFrom: Nov 11, effectiveTo: Nov 21
+└── {timestamp-nov-21} → effectiveFrom: Nov 21, effectiveTo: null (current)
+```
+
+When viewing calendar for Nov 5, query returns first entry showing 9am/9pm times.
+When viewing calendar for Nov 15, query returns second entry showing 10am time.
 
 ## Query Patterns for Cost Optimization
 

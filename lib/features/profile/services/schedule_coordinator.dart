@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/features/profile/exceptions/profile_exceptions.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
+import 'package:hydracat/features/profile/services/schedule_history_service.dart';
 import 'package:hydracat/features/profile/services/schedule_service.dart';
 
 /// Result returned by schedule operations
@@ -29,22 +30,27 @@ class ScheduleOperationResult {
 /// Coordinates schedule operations for ProfileNotifier
 ///
 /// This class handles all fluid and medication schedule CRUD operations,
-/// managing the coordination between ScheduleService and business logic.
-/// ProfileNotifier delegates to this coordinator for all schedule-related
-/// operations, maintaining sole responsibility for state management.
+/// managing the coordination between ScheduleService, ScheduleHistoryService,
+/// and business logic. ProfileNotifier delegates to this coordinator for all
+/// schedule-related operations, maintaining sole responsibility for state
+/// management.
 ///
 /// Design:
 /// - Returns structured results, doesn't manage state directly
 /// - Accepts state data as parameters (userId, petId)
 /// - Calls notification callbacks passed from ProfileNotifier
 /// - Maintains same error handling patterns as original ProfileNotifier
+/// - Tracks schedule history before updates for historical accuracy
 class ScheduleCoordinator {
   /// Creates a [ScheduleCoordinator] with required dependencies
   ScheduleCoordinator({
     required ScheduleService scheduleService,
-  }) : _scheduleService = scheduleService;
+    ScheduleHistoryService? historyService,
+  }) : _scheduleService = scheduleService,
+       _historyService = historyService ?? ScheduleHistoryService();
 
   final ScheduleService _scheduleService;
+  final ScheduleHistoryService _historyService;
 
   // ==========================================================================
   // FLUID SCHEDULE OPERATIONS
@@ -134,6 +140,8 @@ class ScheduleCoordinator {
 
   /// Create a new fluid schedule
   ///
+  /// Creates initial history entry for the new schedule.
+  ///
   /// [onSuccess] callback is called after successful creation with the new
   /// schedule (includes assigned ID). Use this for notification scheduling.
   ///
@@ -154,6 +162,23 @@ class ScheduleCoordinator {
 
       // Create the new schedule with the assigned ID
       final newSchedule = schedule.copyWith(id: scheduleId);
+
+      // Save initial history entry
+      try {
+        await _historyService.saveScheduleSnapshot(
+          userId: userId,
+          petId: petId,
+          schedule: newSchedule,
+          effectiveFrom: newSchedule.createdAt,
+        );
+      } on Exception catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            '[ScheduleCoordinator] Warning: Failed to save initial history: $e',
+          );
+        }
+        // Don't fail the create operation if history fails
+      }
 
       // Call success callback for notification scheduling
       if (onSuccess != null) {
@@ -177,6 +202,8 @@ class ScheduleCoordinator {
 
   /// Update an existing fluid schedule
   ///
+  /// Saves current schedule state to history before updating.
+  ///
   /// [oldSchedule] is used to check if schedule was deactivated for
   /// notification cancellation.
   ///
@@ -193,12 +220,51 @@ class ScheduleCoordinator {
     Future<void> Function(Schedule)? onActiveUpdate,
   }) async {
     try {
+      // STEP 1: Save current schedule to history (if exists)
+      if (oldSchedule != null) {
+        try {
+          await _historyService.saveScheduleSnapshot(
+            userId: userId,
+            petId: petId,
+            schedule: oldSchedule,
+            effectiveFrom: oldSchedule.createdAt,
+            effectiveTo: DateTime.now(),
+          );
+        } on Exception catch (e) {
+          if (kDebugMode) {
+            debugPrint(
+              '[ScheduleCoordinator] Warning: Failed to save old schedule '
+              'to history: $e',
+            );
+          }
+          // Don't fail the update if history fails
+        }
+      }
+
+      // STEP 2: Update schedule
       await _scheduleService.updateSchedule(
         userId: userId,
         petId: petId,
         scheduleId: schedule.id,
         updates: schedule.toJson(),
       );
+
+      // STEP 3: Create new history entry for updated schedule
+      try {
+        await _historyService.saveScheduleSnapshot(
+          userId: userId,
+          petId: petId,
+          schedule: schedule,
+          effectiveFrom: DateTime.now(),
+        );
+      } on Exception catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            '[ScheduleCoordinator] Warning: Failed to save new history: $e',
+          );
+        }
+        // Don't fail the update if history fails
+      }
 
       // Handle notification callbacks
       if (oldSchedule != null && oldSchedule.isActive && !schedule.isActive) {
@@ -322,6 +388,8 @@ class ScheduleCoordinator {
 
   /// Add a new medication schedule
   ///
+  /// Creates initial history entry for the new schedule.
+  ///
   /// [onSuccess] callback is called after successful creation with the new
   /// schedule (includes assigned ID). Use this for notification scheduling.
   ///
@@ -342,6 +410,23 @@ class ScheduleCoordinator {
 
       // Create the new schedule with the assigned ID
       final newSchedule = schedule.copyWith(id: scheduleId);
+
+      // Save initial history entry
+      try {
+        await _historyService.saveScheduleSnapshot(
+          userId: userId,
+          petId: petId,
+          schedule: newSchedule,
+          effectiveFrom: newSchedule.createdAt,
+        );
+      } on Exception catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            '[ScheduleCoordinator] Warning: Failed to save initial history: $e',
+          );
+        }
+        // Don't fail the create operation if history fails
+      }
 
       // Call success callback for notification scheduling
       if (onSuccess != null) {
@@ -367,6 +452,8 @@ class ScheduleCoordinator {
 
   /// Update an existing medication schedule
   ///
+  /// Saves current schedule state to history before updating.
+  ///
   /// [currentSchedules] is the list of all medication schedules before update.
   /// Used to find the old schedule for deactivation checking.
   ///
@@ -388,12 +475,51 @@ class ScheduleCoordinator {
           .where((s) => s.id == schedule.id)
           .firstOrNull;
 
+      // STEP 1: Save current schedule to history (if exists)
+      if (oldSchedule != null) {
+        try {
+          await _historyService.saveScheduleSnapshot(
+            userId: userId,
+            petId: petId,
+            schedule: oldSchedule,
+            effectiveFrom: oldSchedule.createdAt,
+            effectiveTo: DateTime.now(),
+          );
+        } on Exception catch (e) {
+          if (kDebugMode) {
+            debugPrint(
+              '[ScheduleCoordinator] Warning: Failed to save old schedule '
+              'to history: $e',
+            );
+          }
+          // Don't fail the update if history fails
+        }
+      }
+
+      // STEP 2: Update schedule
       await _scheduleService.updateSchedule(
         userId: userId,
         petId: petId,
         scheduleId: schedule.id,
         updates: schedule.toJson(),
       );
+
+      // STEP 3: Create new history entry for updated schedule
+      try {
+        await _historyService.saveScheduleSnapshot(
+          userId: userId,
+          petId: petId,
+          schedule: schedule,
+          effectiveFrom: DateTime.now(),
+        );
+      } on Exception catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            '[ScheduleCoordinator] Warning: Failed to save new history: $e',
+          );
+        }
+        // Don't fail the update if history fails
+      }
 
       // Handle notification callbacks
       if (oldSchedule != null && oldSchedule.isActive && !schedule.isActive) {

@@ -3,25 +3,119 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Deny by default - no access unless explicitly granted
+    // ─────────────────────────────
+    // DEFAULT: DENY EVERYTHING
+    // ─────────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }
-    
-    // User documents - only owner access
+
+    // ─────────────────────────────
+    // DEVICES COLLECTION
+    // ─────────────────────────────
+   match /devices/{deviceId} {
+    // Users can create device documents with their userId
+    allow create: if request.auth != null
+                  && request.resource.data.userId == request.auth.uid;
+
+    // Users can read their own device documents
+    allow read: if request.auth != null
+                && resource.data.userId == request.auth.uid;
+
+    // Users can update their own device documents
+    // (including setting userId to null on sign-out)
+    allow update: if request.auth != null
+                  && resource.data.userId == request.auth.uid;
+  }
+
+    // ─────────────────────────────
+    // USERS COLLECTION
+    // ─────────────────────────────
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      
-      // Pets subcollection - only owner access
+      // Only the authenticated owner can access their user doc
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+
+      // Helper function to check if user is premium
+      function isPremium() {
+        return resource.data.subscriptionStatus == 'active'
+               && resource.data.subscriptionExpiresAt > request.time;
+      }
+
+      // Cascade rule for all subcollections
+      match /{subCollection=**}/{docId} {
+        allow read, write: if request.auth != null
+                           && request.auth.uid == userId;
+      }
+
+      // ─────────────────────────────
+      // CROSS-PET SUMMARIES (Premium only)
+      // ─────────────────────────────
+      match /crossPetSummaries/{summaryId} {
+        allow read: if request.auth.uid == userId && isPremium();
+        allow write: if false; // only server/cloud functions should write
+      }
+
+      // ─────────────────────────────
+      // PETS SUBCOLLECTION
+      // ─────────────────────────────
       match /pets/{petId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if request.auth != null
+                           && request.auth.uid == userId;
+
+        // FLUID SESSIONS
+        match /fluidSessions/{sessionId} {
+          allow read, write: if request.auth.uid == userId;
+        }
+
+        // MEDICATION SESSIONS
+        match /medicationSessions/{sessionId} {
+          allow read, write: if request.auth.uid == userId;
+        }
+
+        // HEALTH PARAMETERS
+        match /healthParameters/{dateId} {
+          allow read, write: if request.auth.uid == userId;
+        }
+
+        // LAB RESULTS
+        match /labResults/{labId} {
+          allow read, write: if request.auth.uid == userId;
+        }
+
+        // DAILY TREATMENT SUMMARIES
+        match /treatmentSummaryDaily/{dayId} {
+          allow read: if request.auth.uid == userId;
+          allow write: if false; // only written by server
+        }
+
+        // WEEKLY TREATMENT SUMMARIES
+        match /treatmentSummaryWeekly/{weekId} {
+          allow read: if request.auth.uid == userId;
+          allow write: if false; // only written by server
+        }
+
+        // MONTHLY TREATMENT SUMMARIES
+        match /treatmentSummaryMonthly/{monthId} {
+          allow read: if request.auth.uid == userId;
+          allow write: if false; // only written by server
+        }
+
+        // SCHEDULES
+        match /schedules/{scheduleId} {
+          allow read, write: if request.auth.uid == userId;
+          
+          // SCHEDULE HISTORY SUBCOLLECTION
+          match /history/{historyId} {
+            allow read, write: if request.auth != null && request.auth.uid == userId;
+          }
+        }
       }
     }
-    
+  }
+}
     // TODO: Add specific rules for other collections as you develop your app
     // Example patterns:
     // - Public collections: allow read: if true; allow write: if request.auth != null;
     // - Owner-only collections: allow read, write: if request.auth != null && request.auth.uid == resource.data.ownerId;
     // - Shared collections: custom logic based on your app's requirements
-  }
-}

@@ -5,8 +5,8 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hydracat/features/profile/exceptions/profile_exceptions.dart';
+import 'package:hydracat/features/profile/services/schedule_coordinator.dart';
 import 'package:hydracat/features/profile/services/schedule_service.dart';
-import 'package:hydracat/providers/profile/schedule_coordinator.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../helpers/profile_test_data_builders.dart';

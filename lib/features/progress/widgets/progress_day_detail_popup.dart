@@ -9,11 +9,13 @@ import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
+import 'package:hydracat/features/profile/models/schedule_history_entry.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/progress_edit_provider.dart';
 import 'package:hydracat/providers/progress_provider.dart';
+import 'package:hydracat/providers/schedule_history_provider.dart';
 import 'package:hydracat/shared/widgets/fluid/fluid_daily_summary_card.dart';
 import 'package:intl/intl.dart';
 
@@ -485,6 +487,44 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
       return const Text('User or pet not found');
     }
 
+    final day = AppDateUtils.startOfDay(widget.date);
+    final today = AppDateUtils.startOfDay(DateTime.now());
+    final isFutureOrToday = day.isAfter(today) || day.isAtSameMomentAs(today);
+
+    // For today and future: use current schedules
+    if (isFutureOrToday) {
+      return _buildWithCurrentSchedules(context, ref);
+    }
+
+    // For past dates: use historical schedules
+    final historicalSchedulesAsync = ref.watch(
+      scheduleHistoryForDateProvider(widget.date),
+    );
+
+    return historicalSchedulesAsync.when(
+      data: (historicalMap) {
+        // If no history found, fall back to current schedules (backward compat)
+        if (historicalMap.isEmpty) {
+          return _buildWithCurrentSchedules(context, ref);
+        }
+
+        return _buildWithHistoricalData(context, ref, historicalMap);
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.lg),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (error, _) {
+        // On error, fall back to current schedules
+        return _buildWithCurrentSchedules(context, ref);
+      },
+    );
+  }
+
+  /// Build day view with current schedules (for today and future dates)
+  Widget _buildWithCurrentSchedules(BuildContext context, WidgetRef ref) {
     final medSchedules = ref.watch(medicationSchedulesProvider) ?? [];
     final fluidSchedule = ref.watch(fluidScheduleProvider);
 
@@ -699,6 +739,260 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
     }
 
     return completed;
+  }
+
+  /// Build day view with historical schedules (for past dates)
+  Widget _buildWithHistoricalData(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, ScheduleHistoryEntry> historicalMap,
+  ) {
+    final user = ref.watch(currentUserProvider);
+    final pet = ref.watch(primaryPetProvider);
+
+    if (user == null || pet == null) {
+      return const Text('User or pet not found');
+    }
+
+    // Build reminders from historical entries
+    final medReminders = <(ScheduleHistoryEntry, DateTime)>[];
+    ScheduleHistoryEntry? fluidHistoricalSchedule;
+
+    for (final entry in historicalMap.values) {
+      final reminderTimes = entry.getReminderTimesForDate(widget.date);
+
+      if (entry.treatmentType == TreatmentType.medication) {
+        for (final time in reminderTimes) {
+          medReminders.add((entry, time));
+        }
+      } else if (entry.treatmentType == TreatmentType.fluid) {
+        fluidHistoricalSchedule = entry;
+      }
+    }
+
+    final fluidReminders = fluidHistoricalSchedule != null
+        ? fluidHistoricalSchedule.getReminderTimesForDate(widget.date)
+        : <DateTime>[];
+
+    if (medReminders.isEmpty && fluidReminders.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(AppSpacing.md),
+        child: Text('No treatments scheduled for this day'),
+      );
+    }
+
+    // Fetch sessions for completion status
+    final weekStart = AppDateUtils.startOfWeekMonday(widget.date);
+    final weekSessionsAsync = ref.watch(weekSessionsProvider(weekStart));
+
+    return weekSessionsAsync.when(
+      data: (weekSessions) {
+        final normalizedDate = AppDateUtils.startOfDay(widget.date);
+        final (medSessions, fluidSessions) = weekSessions[normalizedDate] ??
+            (<MedicationSession>[], <FluidSession>[]);
+
+        // Match sessions to historical reminders
+        final completedReminderTimes = _matchHistoricalMedicationReminders(
+          reminders: medReminders,
+          sessions: medSessions,
+        );
+
+        final hasAnyFluid = fluidSessions.isNotEmpty;
+        final showFluidSection = hasAnyFluid || fluidReminders.isNotEmpty;
+
+        final scheduledFluidCount = fluidReminders.length;
+        final actualFluidCount = hasAnyFluid ? 1 : 0;
+        final scheduledMedCount = medReminders.length;
+        final actualMedCount = completedReminderTimes.length;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (showFluidSection) ...[
+              _buildSectionHeader(
+                'Fluid therapy',
+                '$actualFluidCount of $scheduledFluidCount sessions',
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              _maybeSummaryCard(context, ref),
+              if (fluidReminders.isNotEmpty &&
+                  fluidHistoricalSchedule != null) ...[
+                const SizedBox(height: AppSpacing.xs),
+                ...fluidReminders.map(
+                  (time) => _buildHistoricalFluidTile(
+                    fluidHistoricalSchedule!,
+                    time,
+                    completed: hasAnyFluid,
+                  ),
+                ),
+              ],
+              const SizedBox(height: AppSpacing.md),
+            ],
+            if (medReminders.isNotEmpty) ...[
+              _buildSectionHeader(
+                'Medications',
+                '$actualMedCount of $scheduledMedCount doses',
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              ...medReminders.map(
+                (r) => _buildHistoricalMedicationTile(
+                  r.$1,
+                  r.$2,
+                  completed: completedReminderTimes.contains(r.$2),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.lg),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (error, _) => Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Text(
+          'Error loading sessions: $error',
+          style: const TextStyle(color: AppColors.error),
+        ),
+      ),
+    );
+  }
+
+  /// Matcher for historical medication reminders
+  Set<DateTime> _matchHistoricalMedicationReminders({
+    required List<(ScheduleHistoryEntry, DateTime)> reminders,
+    required List<MedicationSession> sessions,
+  }) {
+    if (reminders.isEmpty || sessions.isEmpty) return <DateTime>{};
+
+    final day = AppDateUtils.startOfDay(widget.date);
+    final nextDay = AppDateUtils.endOfDay(widget.date);
+
+    // Group by medication name
+    final byMedName = <String, List<MedicationSession>>{};
+
+    for (final s in sessions.where((s) => s.completed)) {
+      final key = s.medicationName.trim().toLowerCase();
+      byMedName.putIfAbsent(key, () => []).add(s);
+    }
+
+    for (final list in byMedName.values) {
+      list.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    }
+
+    final completed = <DateTime>{};
+
+    for (final (entry, plannedTime) in reminders) {
+      final medName = entry.medicationName?.trim().toLowerCase();
+      if (medName == null) continue;
+
+      final list = byMedName[medName];
+      if (list == null || list.isEmpty) continue;
+
+      MedicationSession? best;
+      var bestDelta = 1 << 30;
+
+      for (final s in list) {
+        if (s.dateTime.isBefore(day) || s.dateTime.isAfter(nextDay)) continue;
+        final delta = s.dateTime.difference(plannedTime).inSeconds.abs();
+        if (delta < bestDelta) {
+          best = s;
+          bestDelta = delta;
+        }
+      }
+
+      if (best != null) {
+        completed.add(plannedTime);
+        list.remove(best);
+      }
+    }
+
+    return completed;
+  }
+
+  /// Builds a tile for historical medication data
+  Widget _buildHistoricalMedicationTile(
+    ScheduleHistoryEntry entry,
+    DateTime time, {
+    bool completed = false,
+  }) {
+    final timeStr = DateFormat.jm().format(time);
+    final day = AppDateUtils.startOfDay(widget.date);
+    final today = AppDateUtils.startOfDay(DateTime.now());
+    final isFuture = day.isAfter(today);
+
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: const Icon(
+        Icons.medication,
+        color: AppColors.textSecondary,
+        size: 24,
+      ),
+      title: Text(
+        entry.medicationName ?? 'Medication',
+        style: AppTextStyles.body,
+      ),
+      subtitle: Text(
+        '$timeStr • ${entry.targetDosage} ${entry.medicationUnit}',
+        style: AppTextStyles.caption,
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (completed)
+            const Icon(
+              Icons.check_circle,
+              color: AppColors.primary,
+              size: 28,
+            )
+          else if (!isFuture)
+            const Icon(
+              Icons.cancel,
+              color: AppColors.textSecondary,
+              size: 28,
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds a tile for historical fluid data
+  Widget _buildHistoricalFluidTile(
+    ScheduleHistoryEntry entry,
+    DateTime time, {
+    bool completed = false,
+  }) {
+    final timeStr = DateFormat.jm().format(time);
+
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: const Icon(
+        Icons.water_drop,
+        color: AppColors.textSecondary,
+        size: 24,
+      ),
+      title: Text(
+        '${entry.targetVolume}ml',
+        style: AppTextStyles.body,
+      ),
+      subtitle: Text(
+        timeStr,
+        style: AppTextStyles.caption,
+      ),
+      trailing: completed
+          ? Semantics(
+              label: 'Completed',
+              child: const Icon(
+                Icons.check_circle,
+                color: AppColors.primary,
+                size: 24,
+              ),
+            )
+          : null,
+    );
   }
 
   /// Builds a tile for a planned medication.

@@ -1,5 +1,3 @@
-Current Firestore ruleset integrated via the Firestore console
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -106,6 +104,11 @@ service cloud.firestore {
         // SCHEDULES
         match /schedules/{scheduleId} {
           allow read, write: if request.auth.uid == userId;
+          
+          // SCHEDULE HISTORY SUBCOLLECTION
+          match /history/{historyId} {
+            allow read, write: if request.auth != null && request.auth.uid == userId;
+          }
         }
       }
     }

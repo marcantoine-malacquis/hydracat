@@ -4,12 +4,12 @@ import 'package:hydracat/features/profile/exceptions/profile_exceptions.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/features/profile/services/pet_service.dart';
+import 'package:hydracat/features/profile/services/schedule_coordinator.dart';
 import 'package:hydracat/features/profile/services/schedule_service.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/connectivity_provider.dart';
 import 'package:hydracat/providers/profile/profile_cache_manager.dart';
-import 'package:hydracat/providers/profile/schedule_coordinator.dart';
 import 'package:hydracat/providers/profile/schedule_notification_handler.dart';
 
 /// Cache status enum to track data freshness
