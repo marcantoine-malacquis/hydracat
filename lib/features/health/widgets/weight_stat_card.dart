@@ -14,7 +14,14 @@ class WeightStatCard extends StatelessWidget {
     required this.unit,
     this.change,
     super.key,
-  });
+  }) : isEmpty = false;
+
+  /// Creates an empty placeholder [WeightStatCard] for consistent layout
+  const WeightStatCard.empty({super.key})
+      : weight = 0,
+        unit = '',
+        change = null,
+        isEmpty = true;
 
   /// Weight value in the display unit
   final double weight;
@@ -25,8 +32,36 @@ class WeightStatCard extends StatelessWidget {
   /// Weight change from previous measurement (optional)
   final double? change;
 
+  /// Whether this is an empty placeholder card
+  final bool isEmpty;
+
   @override
   Widget build(BuildContext context) {
+    // Return empty placeholder if isEmpty is true
+    if (isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(
+              '–',
+              style: AppTextStyles.h1.copyWith(
+                color: AppColors.textSecondary.withValues(alpha: 0.3),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     // Determine trend based on change
     String? trend;
     if (change != null) {

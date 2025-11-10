@@ -245,17 +245,7 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
           children: [
             // Weight change indicator at the top
             if (state.graphData.isEmpty)
-              SizedBox(
-                height: 200,
-                child: Center(
-                  child: Text(
-                    'Log more weights to see your trend',
-                    style: AppTextStyles.small.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              )
+              const WeightStatCard.empty()
             else if (state.graphData.length == 1)
               // Show stat card for single data point
               WeightStatCard(
@@ -290,8 +280,15 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
             const SizedBox(height: AppSpacing.sm),
             _buildGraphHeader(state),
             const SizedBox(height: AppSpacing.md),
-            if (state.graphData.isNotEmpty)
-              // Show line chart for data points
+            // Show chart - either empty state or with data
+            if (state.graphData.isEmpty)
+              WeightLineChart(
+                dataPoints: const [],
+                unit: currentUnit,
+                granularity: state.granularity,
+                showEmptyState: true,
+              )
+            else
               WeightLineChart(
                 dataPoints: state.graphData,
                 unit: currentUnit,

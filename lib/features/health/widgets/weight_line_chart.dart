@@ -19,12 +19,14 @@ const _ln10 = 2.302585092994046;
 /// - Touch interaction with tooltips
 /// - Responsive axis labels
 /// - Minimum 0.5kg Y-axis range for meaningful scale
+/// - Empty state with x-axis labels only
 class WeightLineChart extends StatelessWidget {
   /// Creates a [WeightLineChart]
   const WeightLineChart({
     required this.dataPoints,
     required this.unit,
     required this.granularity,
+    this.showEmptyState = false,
     super.key,
   });
 
@@ -36,6 +38,9 @@ class WeightLineChart extends StatelessWidget {
 
   /// Granularity for X-axis label formatting
   final WeightGranularity granularity;
+
+  /// Whether to show empty state with x-axis labels only
+  final bool showEmptyState;
 
   /// Gets X-axis interval based on data points and granularity
   double _getXAxisInterval(int pointCount) {
@@ -70,6 +75,11 @@ class WeightLineChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Handle empty state with x-axis labels
+    if (dataPoints.isEmpty && showEmptyState) {
+      return _buildEmptyChart(context);
+    }
+
     if (dataPoints.isEmpty) {
       return SizedBox(
         height: 200,
@@ -251,5 +261,121 @@ class WeightLineChart extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Builds an empty chart with only x-axis labels
+  Widget _buildEmptyChart(BuildContext context) {
+    // Get current date for reference
+    final now = DateTime.now();
+
+    // Generate x-axis labels based on granularity
+    final xLabels = _generateEmptyStateLabels(now);
+
+    return AspectRatio(
+      aspectRatio: 1.7,
+      child: LineChart(
+        LineChartData(
+          gridData: FlGridData(
+            drawVerticalLine: false,
+            horizontalInterval: 2,
+            getDrawingHorizontalLine: (value) {
+              return const FlLine(
+                color: AppColors.border,
+                strokeWidth: 1,
+              );
+            },
+          ),
+          titlesData: FlTitlesData(
+            // Show placeholder y-axis labels
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 50,
+                interval: 2,
+                getTitlesWidget: (value, meta) {
+                  return Text(
+                    value.toStringAsFixed(2),
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  );
+                },
+              ),
+            ),
+            // Show x-axis labels
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 30,
+                interval: 1,
+                getTitlesWidget: (value, meta) {
+                  final index = value.toInt();
+                  if (index < 0 || index >= xLabels.length) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      xLabels[index],
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            topTitles: const AxisTitles(),
+            rightTitles: const AxisTitles(),
+          ),
+          borderData: FlBorderData(
+            show: true,
+            border: const Border(
+              bottom: BorderSide(color: AppColors.border),
+              left: BorderSide(color: AppColors.border),
+            ),
+          ),
+          minX: 0,
+          maxX: (xLabels.length - 1).toDouble(),
+          minY: 2,
+          maxY: 8, // Typical cat weight range
+          lineBarsData: [], // No data lines
+        ),
+      ),
+    );
+  }
+
+  /// Generates x-axis labels for empty state based on granularity
+  List<String> _generateEmptyStateLabels(DateTime referenceDate) {
+    return switch (granularity) {
+      // Week: Show 7 day abbreviations
+      WeightGranularity.week => [
+        'Mon',
+        'Tue',
+        'Wed',
+        'Thu',
+        'Fri',
+        'Sat',
+        'Sun',
+      ],
+
+      // Month: Show 1, 15, and last day of month
+      WeightGranularity.month => () {
+        final lastDay = DateTime(
+          referenceDate.year,
+          referenceDate.month + 1,
+          0,
+        ).day;
+        return ['1', '15', lastDay.toString()];
+      }(),
+
+      // Year: Show Jan, Jun, Dec
+      WeightGranularity.year => [
+        'Jan',
+        'Jun',
+        'Dec',
+      ],
+    };
   }
 }
