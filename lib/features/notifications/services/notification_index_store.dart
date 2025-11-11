@@ -532,7 +532,7 @@ class NotificationIndexStore {
   /// Removes notification entries matching scheduleId, timeSlot, and kind.
   ///
   /// This is used when canceling specific notifications (e.g., when a
-  /// treatment is logged, cancel the initial + follow-up + snooze).
+  /// treatment is logged, cancel the initial + follow-up).
   ///
   /// Returns the number of entries removed.
   Future<int> removeEntryBy(

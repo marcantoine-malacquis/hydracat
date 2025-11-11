@@ -198,7 +198,7 @@ void main() {
         expect(id1, isNot(equals(id2)));
       });
 
-      test('all three kinds produce different IDs', () {
+      test('both kinds produce different IDs', () {
         final initialId = generateNotificationId(
           userId: 'user1',
           petId: 'pet1',
@@ -215,23 +215,13 @@ void main() {
           kind: 'followup',
         );
 
-        final snoozeId = generateNotificationId(
-          userId: 'user1',
-          petId: 'pet1',
-          scheduleId: 'sched1',
-          timeSlot: '08:00',
-          kind: 'snooze',
-        );
-
         expect(initialId, isNot(equals(followupId)));
-        expect(initialId, isNot(equals(snoozeId)));
-        expect(followupId, isNot(equals(snoozeId)));
       });
 
       test('realistic dataset has no collisions', () {
         // Test with realistic app usage:
-        // 10 users × 5 pets × 10 schedules × 24 time slots × 3 kinds
-        // = 36,000 unique IDs
+        // 10 users × 5 pets × 10 schedules × 24 time slots × 2 kinds
+        // = 24,000 unique IDs
         final ids = <int>{};
 
         final users = List.generate(10, (i) => 'user_$i');
@@ -241,7 +231,7 @@ void main() {
           final hour = i.toString().padLeft(2, '0');
           return '$hour:00';
         });
-        const kinds = ['initial', 'followup', 'snooze'];
+        const kinds = ['initial', 'followup'];
 
         var totalGenerated = 0;
 
@@ -269,7 +259,7 @@ void main() {
         expect(
           ids.length,
           equals(totalGenerated),
-          reason: 'All 36,000 IDs should be unique (no collisions)',
+          reason: 'All 24,000 IDs should be unique (no collisions)',
         );
       });
     });
@@ -289,7 +279,7 @@ void main() {
             petId: 'pet_very_long_id_67890',
             scheduleId: 'sched_very_long_id_abcdef',
             timeSlot: '23:59',
-            kind: 'snooze',
+            kind: 'followup',
           ),
           generateNotificationId(
             userId: 'u',
@@ -321,7 +311,7 @@ void main() {
         ];
 
         final timeSlots = ['00:00', '08:00', '12:30', '18:45', '23:59'];
-        const kinds = ['initial', 'followup', 'snooze'];
+        const kinds = ['initial', 'followup'];
 
         for (final testCase in testCases) {
           for (final timeSlot in timeSlots) {
@@ -352,7 +342,7 @@ void main() {
             petId: 'pet_${i * 2}',
             scheduleId: 'schedule_${i * 3}',
             timeSlot: '${(i % 24).toString().padLeft(2, '0')}:00',
-            kind: ['initial', 'followup', 'snooze'][i % 3],
+            kind: ['initial', 'followup'][i % 2],
           );
 
           expect(
@@ -495,6 +485,7 @@ void main() {
           'invalid',
           'reminder',
           'notification',
+          'snooze', // No longer valid
           'Initial', // Wrong case
         ];
 
@@ -511,7 +502,7 @@ void main() {
               isA<ArgumentError>().having(
                 (e) => e.message,
                 'message',
-                contains('kind must be "initial", "followup", or "snooze"'),
+                contains('kind must be "initial" or "followup"'),
               ),
             ),
             reason: 'Should reject invalid kind: "$kind"',
@@ -520,7 +511,7 @@ void main() {
       });
 
       test('accepts all valid kinds', () {
-        const validKinds = ['initial', 'followup', 'snooze'];
+        const validKinds = ['initial', 'followup'];
 
         for (final kind in validKinds) {
           expect(
@@ -648,7 +639,7 @@ void main() {
             petId: 'pet_${i % 5}',
             scheduleId: 'schedule_${i % 10}',
             timeSlot: '${(i % 24).toString().padLeft(2, '0')}:00',
-            kind: ['initial', 'followup', 'snooze'][i % 3],
+            kind: ['initial', 'followup'][i % 2],
           );
         }
 

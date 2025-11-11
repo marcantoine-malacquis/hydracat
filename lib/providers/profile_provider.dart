@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hydracat/features/notifications/providers/notification_provider.dart';
 import 'package:hydracat/features/profile/exceptions/profile_exceptions.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
@@ -10,7 +11,6 @@ import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/connectivity_provider.dart';
 import 'package:hydracat/providers/profile/profile_cache_manager.dart';
-import 'package:hydracat/providers/profile/schedule_notification_handler.dart';
 
 /// Cache status enum to track data freshness
 enum CacheStatus {
@@ -262,7 +262,6 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     : _scheduleCoordinator = ScheduleCoordinator(
         scheduleService: _scheduleService,
       ),
-      _notificationHandler = ScheduleNotificationHandler(_ref),
       _cacheManager = ProfileCacheManager(),
       super(const ProfileState.initial());
 
@@ -271,8 +270,44 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
   final ScheduleService _scheduleService;
   final Ref _ref;
   final ScheduleCoordinator _scheduleCoordinator;
-  final ScheduleNotificationHandler _notificationHandler;
   final ProfileCacheManager _cacheManager;
+
+  /// Refresh all notifications for the current user and pet.
+  ///
+  /// This is a convenience wrapper around
+  /// reminderService.refreshAllNotifications that handles null checks and
+  /// error logging. Safe to call after any schedule operation - failures
+  /// won't break the schedule CRUD operation.
+  Future<void> _refreshNotifications() async {
+    final user = _ref.read(currentUserProvider);
+    final pet = _ref.read(primaryPetProvider);
+
+    if (user == null || pet == null) {
+      if (kDebugMode) {
+        debugPrint(
+          '[ProfileProvider] Cannot refresh notifications: '
+          'user or pet is null',
+        );
+      }
+      return;
+    }
+
+    try {
+      await _ref.read(reminderServiceProvider).refreshAllNotifications(
+        user.id,
+        pet.id,
+        _ref as WidgetRef,
+      );
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[ProfileProvider] Failed to refresh notifications: $e',
+        );
+      }
+      // Don't rethrow - notification refresh shouldn't break schedule
+      // operations
+    }
+  }
 
   /// Load the primary pet profile
   Future<bool> loadPrimaryPet() async {
@@ -580,12 +615,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       onSuccess: (Schedule newSchedule) async {
         // Schedule notifications if online
         if (_ref.read(isConnectedProvider)) {
-          await _notificationHandler.scheduleForSchedule(
-            userId: currentUser.id,
-            petId: primaryPet.id,
-            schedule: newSchedule,
-            operationType: 'create',
-          );
+          await _refreshNotifications();
         }
       },
     );
@@ -626,26 +656,15 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       schedule: schedule,
       oldSchedule: oldSchedule,
       onDeactivated: (Schedule deactivatedSchedule) async {
-        // Handle notification cancellation if online
+        // Refresh all notifications if online
         if (_ref.read(isConnectedProvider)) {
-          await _notificationHandler.cancelForSchedule(
-            userId: currentUser.id,
-            petId: primaryPet.id,
-            scheduleId: deactivatedSchedule.id,
-            treatmentType: deactivatedSchedule.treatmentType.name,
-            operationType: 'deactivate',
-          );
+          await _refreshNotifications();
         }
       },
       onActiveUpdate: (Schedule activeSchedule) async {
         // Handle notification rescheduling if online
         if (_ref.read(isConnectedProvider)) {
-          await _notificationHandler.scheduleForSchedule(
-            userId: currentUser.id,
-            petId: primaryPet.id,
-            schedule: activeSchedule,
-            operationType: 'update',
-          );
+          await _refreshNotifications();
         }
       },
     );
@@ -763,26 +782,15 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       schedule: schedule,
       currentSchedules: currentSchedules,
       onDeactivated: (Schedule deactivatedSchedule) async {
-        // Handle notification cancellation if online
+        // Refresh all notifications if online
         if (_ref.read(isConnectedProvider)) {
-          await _notificationHandler.cancelForSchedule(
-            userId: currentUser.id,
-            petId: primaryPet.id,
-            scheduleId: deactivatedSchedule.id,
-            treatmentType: deactivatedSchedule.treatmentType.name,
-            operationType: 'deactivate',
-          );
+          await _refreshNotifications();
         }
       },
       onActiveUpdate: (Schedule activeSchedule) async {
         // Handle notification rescheduling if online
         if (_ref.read(isConnectedProvider)) {
-          await _notificationHandler.scheduleForSchedule(
-            userId: currentUser.id,
-            petId: primaryPet.id,
-            schedule: activeSchedule,
-            operationType: 'update',
-          );
+          await _refreshNotifications();
         }
       },
     );
@@ -825,12 +833,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       onSuccess: (Schedule newSchedule) async {
         // Schedule notifications if online
         if (_ref.read(isConnectedProvider)) {
-          await _notificationHandler.scheduleForSchedule(
-            userId: currentUser.id,
-            petId: primaryPet.id,
-            schedule: newSchedule,
-            operationType: 'create',
-          );
+          await _refreshNotifications();
         }
       },
     );
@@ -877,15 +880,9 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       scheduleId: scheduleId,
       scheduleToDelete: scheduleToDelete,
       onSuccess: (String deletedId, Schedule? deletedSchedule) async {
-        // Cancel notifications if online
-        if (_ref.read(isConnectedProvider) && deletedSchedule != null) {
-          await _notificationHandler.cancelForSchedule(
-            userId: currentUser.id,
-            petId: primaryPet.id,
-            scheduleId: deletedId,
-            treatmentType: deletedSchedule.treatmentType.name,
-            operationType: 'delete',
-          );
+        // Refresh all notifications if online
+        if (_ref.read(isConnectedProvider)) {
+          await _refreshNotifications();
         }
       },
     );

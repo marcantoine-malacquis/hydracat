@@ -111,7 +111,7 @@ class ScheduledNotificationEntry {
   /// Validates:
   /// - [treatmentType]: Must be 'medication' or 'fluid'
   /// - [timeSlotISO]: Must be valid "HH:mm" format (00:00 to 23:59)
-  /// - [kind]: Must be 'initial', 'followup', or 'snooze'
+  /// - [kind]: Must be 'initial' or 'followup'
   ///
   /// Throws [ArgumentError] if any validation fails.
   ///
@@ -156,7 +156,7 @@ class ScheduledNotificationEntry {
     if (!isValidKind(kind)) {
       throw ArgumentError(
         'Invalid kind: "$kind". '
-        'Must be "initial", "followup", or "snooze".',
+        'Must be "initial" or "followup".',
       );
     }
 
@@ -191,11 +191,10 @@ class ScheduledNotificationEntry {
   /// Must be valid time (00:00 to 23:59).
   final String timeSlotISO;
 
-  /// Notification kind: "initial", "followup", or "snooze".
+  /// Notification kind: "initial" or "followup".
   ///
   /// - "initial": First reminder at scheduled time
   /// - "followup": Follow-up reminder (e.g., +2h after initial)
-  /// - "snooze": User-triggered snooze (e.g., +15m)
   final String kind;
 
   /// Validates a treatment type string.
@@ -225,7 +224,7 @@ class ScheduledNotificationEntry {
 
   /// Validates a notification kind string.
   ///
-  /// Returns true if the kind is "initial", "followup", or "snooze".
+  /// Returns true if the kind is "initial" or "followup".
   ///
   /// Example:
   /// ```dart
@@ -233,7 +232,7 @@ class ScheduledNotificationEntry {
   /// ScheduledNotificationEntry.isValidKind('invalid') // false
   /// ```
   static bool isValidKind(String kind) {
-    return kind == 'initial' || kind == 'followup' || kind == 'snooze';
+    return kind == 'initial' || kind == 'followup';
   }
 
   /// Converts this entry to a JSON-serializable map.

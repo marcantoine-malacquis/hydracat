@@ -542,20 +542,6 @@
       }
     }
   },
-  "notificationSnoozeTitle": "Treatment reminder (snoozed)",
-  "@notificationSnoozeTitle": {
-    "description": "Title for snoozed reminder notifications"
-  },
-  "notificationSnoozeBody": "Time for {petName}'s treatment",
-  "@notificationSnoozeBody": {
-    "description": "Body text for snoozed reminder notifications",
-    "placeholders": {
-      "petName": {
-        "type": "String",
-        "example": "Fluffy"
-      }
-    }
-  },
 
   "@_NOTIFICATIONS_A11Y": {},
   "notificationMedicationTitleA11y": "Treatment reminder: Medication for {petName}",
@@ -618,26 +604,6 @@
       }
     }
   },
-  "notificationSnoozeTitleA11y": "Treatment reminder for {petName} (snoozed)",
-  "@notificationSnoozeTitleA11y": {
-    "description": "Accessible long-form title for snoozed reminders",
-    "placeholders": {
-      "petName": {
-        "type": "String",
-        "example": "Fluffy"
-      }
-    }
-  },
-  "notificationSnoozeBodyA11y": "It's time to give {petName} their treatment.",
-  "@notificationSnoozeBodyA11y": {
-    "description": "Accessible long-form body for snoozed reminders",
-    "placeholders": {
-      "petName": {
-        "type": "String",
-        "example": "Fluffy"
-      }
-    }
-  },
   "notificationWeeklySummaryTitle": "Your weekly summary is ready!",
   "@notificationWeeklySummaryTitle": {
     "description": "Title for weekly treatment summary notification (Monday 09:00)"
@@ -670,9 +636,52 @@
   "@notificationActionLogNow": {
     "description": "Text for notification action button to log treatment immediately. Used by screen readers (VoiceOver/TalkBack) to announce the action."
   },
-  "notificationActionSnooze": "Snooze for 15 minutes",
-  "@notificationActionSnooze": {
-    "description": "Text for notification action button to snooze reminder for 15 minutes. Used by screen readers (VoiceOver/TalkBack) to announce the action."
+
+  "@_NOTIFICATION_BUNDLED": {},
+  "notificationMultipleTreatmentsTitle": "Treatment reminder for {petName}",
+  "@notificationMultipleTreatmentsTitle": {
+    "description": "Title for bundled treatment notifications at same time",
+    "placeholders": {
+      "petName": {
+        "type": "String",
+        "example": "Fluffy"
+      }
+    }
+  },
+  "notificationMultipleTreatmentsBody": "It's time for {count} treatments",
+  "@notificationMultipleTreatmentsBody": {
+    "description": "Body for multiple treatments at same time",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "notificationMixedTreatmentsBody": "It's time for medication and fluid therapy",
+  "@notificationMixedTreatmentsBody": {
+    "description": "Body for mixed treatment types (medication + fluid) at same time"
+  },
+  "notificationMultipleFollowupTitle": "Treatment reminder for {petName}",
+  "@notificationMultipleFollowupTitle": {
+    "description": "Title for bundled follow-up notifications",
+    "placeholders": {
+      "petName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationMultipleFollowupBody": "{petName} may still need {count} treatments",
+  "@notificationMultipleFollowupBody": {
+    "description": "Body for multiple unlogged treatments follow-up",
+    "placeholders": {
+      "petName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
   },
 
   "@_NOTIFICATION_DEEP_LINK": {},
@@ -930,8 +939,6 @@
   "a11yNotifMasterHint": "Turns all notification features on or off",
   "a11yWeeklySummaryLabel": "Weekly summary notifications",
   "a11yWeeklySummaryHint": "Sends a summary every Monday at 9 a.m.",
-  "a11ySnoozeLabel": "Snooze reminders",
-  "a11ySnoozeHint": "Allows snoozing a reminder for 15 minutes",
   "a11yOpenSystemSettingsLabel": "Open system notification settings",
   "a11yOpenSystemSettingsHint": "Opens the device settings to manage notification permission",
   "a11ySettingsHeaderNotifications": "Notifications",

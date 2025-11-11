@@ -50,7 +50,6 @@ class _AppShellState extends ConsumerState<AppShell>
     with WidgetsBindingObserver {
   late final VoidCallback _overlayListener;
   late final VoidCallback _notificationTapListener;
-  late final VoidCallback _notificationSnoozeListener;
 
   // Track whether notifications have been scheduled this session
   bool _hasScheduledNotifications = false;
@@ -128,12 +127,6 @@ class _AppShellState extends ConsumerState<AppShell>
       _notificationTapListener,
     );
 
-    // Listen for notification snooze actions
-    _notificationSnoozeListener = _handleNotificationSnooze;
-    NotificationTapHandler.pendingSnoozePayload.addListener(
-      _notificationSnoozeListener,
-    );
-
     // Initialize Step 6.3 lifecycle management
     unawaited(_initSchedulerLifecycle());
   }
@@ -144,9 +137,6 @@ class _AppShellState extends ConsumerState<AppShell>
     OverlayService.isShowingNotifier.removeListener(_overlayListener);
     NotificationTapHandler.pendingTapPayload.removeListener(
       _notificationTapListener,
-    );
-    NotificationTapHandler.pendingSnoozePayload.removeListener(
-      _notificationSnoozeListener,
     );
     _rescheduleDebounce?.cancel();
     _nextMidnightTimer?.cancel();
@@ -655,107 +645,6 @@ class _AppShellState extends ConsumerState<AppShell>
           scheduleId: 'unknown',
           result: reason,
         );
-  }
-
-  /// Handle notification snooze action from NotificationTapHandler.
-  ///
-  /// This is triggered when the user taps the "Snooze 15 min" action button
-  /// on a notification. The payload is processed and passed to
-  /// ReminderService.snoozeCurrent() to schedule a new notification 15 minutes
-  /// from now.
-  ///
-  /// The snooze operation is silent (no UI feedback) and non-blocking.
-  /// Failures are logged but don't interrupt the user experience.
-  void _handleNotificationSnooze() {
-    _devLog('');
-    _devLog('═══════════════════════════════════════════════════════');
-    _devLog('👂 APPSHELL SNOOZE LISTENER TRIGGERED');
-    _devLog('═══════════════════════════════════════════════════════');
-    _devLog('Timestamp: ${DateTime.now().toIso8601String()}');
-
-    final payload = NotificationTapHandler.pendingSnoozePayload.value;
-
-    _devLog('Payload from NotificationTapHandler: $payload');
-
-    // Ignore if no payload
-    if (payload == null || payload.isEmpty) {
-      _devLog('❌ Payload is null or empty, ignoring');
-      _devLog('═══════════════════════════════════════════════════════');
-      return;
-    }
-
-    _devLog('✅ Valid payload detected, clearing and scheduling processing');
-
-    // Clear immediately to avoid re-triggering
-    NotificationTapHandler.clearPendingSnooze();
-
-    // Schedule handling after current frame
-    _devLog(
-      '📅 Scheduling _processNotificationSnooze via '
-      'addPostFrameCallback',
-    );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _processNotificationSnooze(payload);
-    });
-    _devLog('═══════════════════════════════════════════════════════');
-    _devLog('');
-  }
-
-  /// Process notification snooze action.
-  ///
-  /// Calls ReminderService.snoozeCurrent() to handle the snooze operation.
-  /// This is a silent operation - no navigation or UI changes occur.
-  Future<void> _processNotificationSnooze(String payload) async {
-    _devLog('');
-    _devLog('═══════════════════════════════════════════════════════');
-    _devLog('⏰ PROCESSING NOTIFICATION SNOOZE');
-    _devLog('═══════════════════════════════════════════════════════');
-    _devLog('Timestamp: ${DateTime.now().toIso8601String()}');
-    _devLog('Raw payload: $payload');
-    _devLog('');
-
-    try {
-      final reminderService = ref.read(reminderServiceProvider);
-
-      _devLog('Calling ReminderService.snoozeCurrent()...');
-      final result = await reminderService.snoozeCurrent(
-        payload,
-        ref,
-      );
-
-      _devLog('');
-      _devLog('Snooze result: $result');
-
-      if (result['success'] == true) {
-        _devLog('✅ SNOOZE SUCCESSFUL');
-        _devLog('  Snoozed until: ${result['snoozedUntil']}');
-        _devLog('  Snooze notification ID: ${result['snoozeId']}');
-      } else {
-        _devLog('❌ SNOOZE FAILED');
-        _devLog('  Reason: ${result['reason']}');
-        // Silent failure - no user-facing error message
-        // User can always tap notification again or use "Log now" action
-      }
-
-      _devLog('═══════════════════════════════════════════════════════');
-      _devLog('');
-    } on Exception catch (e, stackTrace) {
-      _devLog('');
-      _devLog('❌ ERROR processing notification snooze: $e');
-      _devLog('Stack trace: $stackTrace');
-      _devLog('═══════════════════════════════════════════════════════');
-      _devLog('');
-
-      // Log to Crashlytics in production
-      if (!FlavorConfig.isDevelopment) {
-        unawaited(
-          FirebaseService().crashlytics.recordError(
-            Exception('Notification snooze processing failed: $e'),
-            stackTrace,
-          ),
-        );
-      }
-    }
   }
 
   /// Process weekly summary notification tap.

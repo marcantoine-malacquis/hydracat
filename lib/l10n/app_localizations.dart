@@ -1468,18 +1468,6 @@ abstract class AppLocalizations {
   /// **'{petName} may still need their treatment'**
   String notificationFollowupBody(String petName);
 
-  /// Title for snoozed reminder notifications
-  ///
-  /// In en, this message translates to:
-  /// **'Treatment reminder (snoozed)'**
-  String get notificationSnoozeTitle;
-
-  /// Body text for snoozed reminder notifications
-  ///
-  /// In en, this message translates to:
-  /// **'Time for {petName}\'s treatment'**
-  String notificationSnoozeBody(String petName);
-
   /// Accessible long-form title for medication reminders
   ///
   /// In en, this message translates to:
@@ -1515,18 +1503,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{petName} may still need their treatment.'**
   String notificationFollowupBodyA11y(String petName);
-
-  /// Accessible long-form title for snoozed reminders
-  ///
-  /// In en, this message translates to:
-  /// **'Treatment reminder for {petName} (snoozed)'**
-  String notificationSnoozeTitleA11y(String petName);
-
-  /// Accessible long-form body for snoozed reminders
-  ///
-  /// In en, this message translates to:
-  /// **'It\'s time to give {petName} their treatment.'**
-  String notificationSnoozeBodyA11y(String petName);
 
   /// Title for weekly treatment summary notification (Monday 09:00)
   ///
@@ -1570,11 +1546,35 @@ abstract class AppLocalizations {
   /// **'Log treatment now'**
   String get notificationActionLogNow;
 
-  /// Text for notification action button to snooze reminder for 15 minutes. Used by screen readers (VoiceOver/TalkBack) to announce the action.
+  /// Title for bundled treatment notifications at same time
   ///
   /// In en, this message translates to:
-  /// **'Snooze for 15 minutes'**
-  String get notificationActionSnooze;
+  /// **'Treatment reminder for {petName}'**
+  String notificationMultipleTreatmentsTitle(String petName);
+
+  /// Body for multiple treatments at same time
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s time for {count} treatments'**
+  String notificationMultipleTreatmentsBody(int count);
+
+  /// Body for mixed treatment types (medication + fluid) at same time
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s time for medication and fluid therapy'**
+  String get notificationMixedTreatmentsBody;
+
+  /// Title for bundled follow-up notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Treatment reminder for {petName}'**
+  String notificationMultipleFollowupTitle(String petName);
+
+  /// Body for multiple unlogged treatments follow-up
+  ///
+  /// In en, this message translates to:
+  /// **'{petName} may still need {count} treatments'**
+  String notificationMultipleFollowupBody(String petName, int count);
 
   /// Message shown when user taps notification but is not authenticated
   ///
@@ -1917,18 +1917,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sends a summary every Monday at 9 a.m.'**
   String get a11yWeeklySummaryHint;
-
-  /// No description provided for @a11ySnoozeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Snooze reminders'**
-  String get a11ySnoozeLabel;
-
-  /// No description provided for @a11ySnoozeHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Allows snoozing a reminder for 15 minutes'**
-  String get a11ySnoozeHint;
 
   /// No description provided for @a11yOpenSystemSettingsLabel.
   ///

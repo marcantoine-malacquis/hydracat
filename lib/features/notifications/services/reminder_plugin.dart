@@ -129,7 +129,7 @@ class ReminderPlugin {
   /// - petId: Pet ID for the treatment
   /// - scheduleId: Schedule ID for the treatment
   /// - timeSlot: Time slot in "HH:mm" format
-  /// - kind: Notification kind (initial/followup/snooze)
+  /// - kind: Notification kind (initial/followup)
   /// - treatmentType: Type of treatment (medication/fluid)
   ///
   /// If the payload is missing or invalid, the tap is logged and ignored.
@@ -191,33 +191,18 @@ class ReminderPlugin {
       _devLog('Step 3: Routing based on action ID...');
       _devLog('Action ID: ${response.actionId}');
 
-      if (response.actionId == 'snooze') {
-        // User tapped "Snooze 15 min" action button
-        _devLog('');
-        _devLog(
-          '📤 SNOOZE ACTION: Calling NotificationTapHandler '
-          'notificationSnoozePayload setter...',
-        );
-        NotificationTapHandler.notificationSnoozePayload = response.payload!;
-        _devLog(
-          '✅ NotificationTapHandler '
-          'notificationSnoozePayload SET',
-        );
-        _devLog('This should trigger AppShell snooze listener...');
-      } else {
-        // User tapped notification body or "Log now" action button
-        _devLog('');
-        _devLog(
-          '📤 TAP/LOG NOW: Calling NotificationTapHandler '
-          'notificationTapPayload setter...',
-        );
-        NotificationTapHandler.notificationTapPayload = response.payload!;
-        _devLog(
-          '✅ NotificationTapHandler '
-          'notificationTapPayload SET',
-        );
-        _devLog('This should trigger AppShell tap listener...');
-      }
+      // User tapped notification body or "Log now" action button
+      _devLog('');
+      _devLog(
+        '📤 TAP/LOG NOW: Calling NotificationTapHandler '
+        'notificationTapPayload setter...',
+      );
+      NotificationTapHandler.notificationTapPayload = response.payload!;
+      _devLog(
+        '✅ NotificationTapHandler '
+        'notificationTapPayload SET',
+      );
+      _devLog('This should trigger AppShell tap listener...');
 
       _devLog('═══════════════════════════════════════════════════════');
       _devLog('');
@@ -292,7 +277,7 @@ class ReminderPlugin {
   ///
   /// Categories define the actions available when a user swipes or long-presses
   /// a notification on iOS. We create a single category for treatment reminders
-  /// with "Log now" and "Snooze 15 min" action buttons.
+  /// with a "Log now" action button.
   ///
   /// This is called once during initialization and allows us to add action
   /// buttons that appear on notifications.
@@ -313,21 +298,11 @@ class ReminderPlugin {
         },
       );
 
-      // Create "Snooze 15 min" action
-      final snoozeAction = DarwinNotificationAction.plain(
-        'snooze',
-        l10n.notificationActionSnooze,
-        options: <DarwinNotificationActionOption>{
-          // Brings app to foreground when tapped
-          DarwinNotificationActionOption.foreground,
-        },
-      );
-
       // Create notification category for treatment reminders
       // iOS supports up to 4 actions per category
       final treatmentCategory = DarwinNotificationCategory(
         iosCategoryId,
-        actions: <DarwinNotificationAction>[logNowAction, snoozeAction],
+        actions: <DarwinNotificationAction>[logNowAction],
         options: <DarwinNotificationCategoryOption>{
           // Allow custom dismiss action
           DarwinNotificationCategoryOption.customDismissAction,
@@ -409,11 +384,6 @@ class ReminderPlugin {
           'log_now',
           l10n.notificationActionLogNow,
           showsUserInterface: true, // Brings app to foreground
-        ),
-        AndroidNotificationAction(
-          'snooze',
-          l10n.notificationActionSnooze,
-          // showsUserInterface defaults to false (dismisses notification)
         ),
       ];
 

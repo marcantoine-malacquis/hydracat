@@ -201,7 +201,7 @@ void main() {
           scheduleId: _scheduleIdA,
           treatmentType: 'medication',
           time: '10:00',
-          kind: 'snooze',
+          kind: 'followup',
         ),
       ];
 

@@ -16,9 +16,8 @@ Hydracat helps users manage chronic kidney disease (CKD) treatments for their pe
 1. **User sets up a treatment schedule** (e.g., "Give medication at 8:00 AM and 6:00 PM daily")
 2. **System schedules reminders** automatically when the app opens
 3. **User gets notified** at the right times throughout the day
-4. **User can snooze** reminders if they're busy (15 minutes)
-5. **System sends follow-up** reminders if treatment wasn't logged (2 hours later)
-6. **Weekly summary** shows how well they're doing with their pet's care
+4. **System sends follow-up** reminders if treatment wasn't logged (2 hours later)
+5. **Weekly summary** shows how well they're doing with their pet's care
 
 ### Core principle: Privacy First
 
@@ -182,7 +181,7 @@ Can show notifications? = (System permission granted) AND (User enabled in setti
 **8:00 AM - Notification fires**
 - Phone buzzes
 - Shows: "Time for Luna's morning medication 💊"
-- User sees: Option to snooze (if enabled in settings)
+- User sees: "Log now" action button
 
 **User taps notification**
 - App opens to the treatment logging screen
@@ -318,15 +317,42 @@ When multi-pet support launches, the system just needs to loop through all pets 
 - Keeps storage small and system fast
 - Privacy: Less data = less privacy risk
 
-### How does snooze work?
+### How does notification bundling work?
 
-When user snoozes a notification:
-1. Original notification is canceled
-2. New notification scheduled for +15 minutes from now
-3. Recorded as "snooze" type in index
-4. After 15 minutes, notification fires again
+When multiple treatments are scheduled at the same time (e.g., Benazepril and
+Fluid Therapy both at 9:00 AM), the app creates a single bundled notification
+instead of multiple separate notifications.
 
-Users can snooze multiple times if needed. Each snooze just reschedules for another 15 minutes.
+**Bundling strategy**:
+- Notifications are grouped by time slot (HH:mm format)
+- ONE notification per time slot, regardless of number of schedules
+- Content adapts based on treatment count and types
+- "Refresh all" approach: cancel all + reschedule all on any state change
+
+**Examples**:
+
+Single treatment:
+- Title: "Treatment reminder: Medication for Fluffy"
+- Body: "It's time to give Fluffy their medication."
+
+Multiple same-type:
+- Title: "Treatment reminder for Fluffy"
+- Body: "It's time for 2 treatments"
+
+Mixed types:
+- Title: "Treatment reminder for Fluffy"
+- Body: "It's time for medication and fluid therapy"
+
+**Follow-ups**:
+Follow-up notifications are also bundled. Since we refresh all notifications
+after logging, follow-ups automatically reflect only unlogged treatments.
+
+**Refresh strategy**:
+Instead of complex rebundling logic, we use a simple "nuclear option":
+- After any schedule change → refresh all notifications
+- After any treatment logging → refresh all notifications (with 500ms throttle)
+- Performance: < 200ms typically
+- Benefits: Simple, robust, no edge cases
 
 ### What happens if the app is killed/force-closed?
 

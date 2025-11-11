@@ -55,7 +55,7 @@ import 'package:hydracat/features/notifications/models/scheduled_notification_en
 /// - [petId]: Pet ID (must be non-empty)
 /// - [scheduleId]: Schedule ID (must be non-empty)
 /// - [timeSlot]: Time in "HH:mm" format (00:00 to 23:59)
-/// - [kind]: Notification kind ("initial", "followup", or "snooze")
+/// - [kind]: Notification kind ("initial" or "followup")
 ///
 /// **Returns**: 31-bit positive integer suitable for Android/iOS notifications
 ///
@@ -131,7 +131,7 @@ int generateNotificationId({
   // Validate kind using existing validation
   if (!ScheduledNotificationEntry.isValidKind(kind)) {
     throw ArgumentError(
-      'kind must be "initial", "followup", or "snooze", got: "$kind"',
+      'kind must be "initial" or "followup", got: "$kind"',
     );
   }
 
@@ -227,6 +227,113 @@ int generateWeeklySummaryNotificationId({
   // Create composite string using pipe delimiter
   // Format: "weekly_summary|userId|petId|YYYY-MM-DD"
   final composite = 'weekly_summary|$userId|$petId|$mondayStr';
+
+  // Compute FNV-1a hash
+  final hash = _fnv1aHash32(composite);
+
+  // Mask to 31 bits to ensure positive integer
+  // Android notification IDs must be in range: 0 to 2,147,483,647
+  // 0x7FFFFFFF = 0111 1111 1111 1111 1111 1111 1111 1111 (31 bits set)
+  final notificationId = hash & 0x7FFFFFFF;
+
+  return notificationId;
+}
+
+/// Generates a deterministic notification ID for time-slot-based bundled
+/// notifications.
+///
+/// Unlike schedule-based IDs, this generates ONE ID per time slot regardless
+/// of how many schedules exist at that time. This enables bundling multiple
+/// treatments into a single notification when they occur at the same time.
+///
+/// **Use case**: When multiple treatments are scheduled at the same time (e.g.,
+/// Benazepril + Fluid Therapy at 9:00 AM), they should be bundled into a single
+/// notification rather than showing two separate notifications. This function
+/// ensures they share the same notification ID.
+///
+/// **Parameters**:
+/// - [userId]: User ID (for multi-user support)
+/// - [petId]: Pet ID (for multi-pet support)
+/// - [timeSlot]: Time slot in "HH:mm" format (e.g., "09:00")
+/// - [kind]: Notification kind ('initial' or 'followup')
+///
+/// **Returns**: 31-bit positive integer suitable for Android/iOS notifications
+///
+/// **Throws**:
+/// - [ArgumentError] if userId or petId is empty
+/// - [ArgumentError] if timeSlot is not in valid "HH:mm" format
+/// - [ArgumentError] if kind is not "initial" or "followup"
+///
+/// **Guarantees**:
+/// - Same (userId, petId, timeSlot, kind) → same ID (idempotent)
+/// - Different time slots → different IDs
+/// - Initial vs followup → different IDs (can coexist)
+///
+/// **Example**:
+/// ```dart
+/// // Both Benazepril and Fluid Therapy at 09:00 get same ID
+/// final id1 = generateTimeSlotNotificationId(
+///   userId: 'user123',
+///   petId: 'pet456',
+///   timeSlot: '09:00',
+///   kind: 'initial',
+/// );
+/// final id2 = generateTimeSlotNotificationId(
+///   userId: 'user123',
+///   petId: 'pet456',
+///   timeSlot: '09:00',
+///   kind: 'initial',
+/// );
+/// assert(id1 == id2); // Same ID = bundled notification
+///
+/// // Different time = different ID
+/// final id3 = generateTimeSlotNotificationId(
+///   userId: 'user123',
+///   petId: 'pet456',
+///   timeSlot: '21:00',
+///   kind: 'initial',
+/// );
+/// assert(id1 != id3);
+/// ```
+int generateTimeSlotNotificationId({
+  required String userId,
+  required String petId,
+  required String timeSlot,
+  required String kind,
+}) {
+  // Validate non-empty parameters
+  if (userId.isEmpty) {
+    throw ArgumentError('userId must not be empty');
+  }
+  if (petId.isEmpty) {
+    throw ArgumentError('petId must not be empty');
+  }
+  if (timeSlot.isEmpty) {
+    throw ArgumentError('timeSlot must not be empty');
+  }
+  if (kind.isEmpty) {
+    throw ArgumentError('kind must not be empty');
+  }
+
+  // Validate timeSlot format using existing validation
+  if (!ScheduledNotificationEntry.isValidTimeSlot(timeSlot)) {
+    throw ArgumentError(
+      'timeSlot must be in "HH:mm" format (00:00 to 23:59), got: "$timeSlot"',
+    );
+  }
+
+  // Validate kind using existing validation
+  if (!ScheduledNotificationEntry.isValidKind(kind)) {
+    throw ArgumentError(
+      'kind must be "initial" or "followup", got: "$kind"',
+    );
+  }
+
+  // Create composite string using pipe delimiter
+  // Format: "timeslot|userId|petId|HH:mm|kind"
+  // NOTE: No scheduleId - this is the key difference from
+  // generateNotificationId
+  final composite = 'timeslot|$userId|$petId|$timeSlot|$kind';
 
   // Compute FNV-1a hash
   final hash = _fnv1aHash32(composite);

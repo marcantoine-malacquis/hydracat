@@ -779,14 +779,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get notificationSnoozeTitle => 'Treatment reminder (snoozed)';
-
-  @override
-  String notificationSnoozeBody(String petName) {
-    return 'Time for $petName\'s treatment';
-  }
-
-  @override
   String notificationMedicationTitleA11y(String petName) {
     return 'Treatment reminder: Medication for $petName';
   }
@@ -814,16 +806,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String notificationFollowupBodyA11y(String petName) {
     return '$petName may still need their treatment.';
-  }
-
-  @override
-  String notificationSnoozeTitleA11y(String petName) {
-    return 'Treatment reminder for $petName (snoozed)';
-  }
-
-  @override
-  String notificationSnoozeBodyA11y(String petName) {
-    return 'It\'s time to give $petName their treatment.';
   }
 
   @override
@@ -881,7 +863,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationActionLogNow => 'Log treatment now';
 
   @override
-  String get notificationActionSnooze => 'Snooze for 15 minutes';
+  String notificationMultipleTreatmentsTitle(String petName) {
+    return 'Treatment reminder for $petName';
+  }
+
+  @override
+  String notificationMultipleTreatmentsBody(int count) {
+    return 'It\'s time for $count treatments';
+  }
+
+  @override
+  String get notificationMixedTreatmentsBody =>
+      'It\'s time for medication and fluid therapy';
+
+  @override
+  String notificationMultipleFollowupTitle(String petName) {
+    return 'Treatment reminder for $petName';
+  }
+
+  @override
+  String notificationMultipleFollowupBody(String petName, int count) {
+    return '$petName may still need $count treatments';
+  }
 
   @override
   String get notificationAuthRequired =>
@@ -1093,12 +1096,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get a11yWeeklySummaryHint => 'Sends a summary every Monday at 9 a.m.';
-
-  @override
-  String get a11ySnoozeLabel => 'Snooze reminders';
-
-  @override
-  String get a11ySnoozeHint => 'Allows snoozing a reminder for 15 minutes';
 
   @override
   String get a11yOpenSystemSettingsLabel => 'Open system notification settings';

@@ -187,18 +187,8 @@ void main() {
             kind: 'followup',
           );
 
-          final snoozeId = generateNotificationId(
-            userId: 'user123',
-            petId: 'pet456',
-            scheduleId: 'sched789',
-            timeSlot: '08:00',
-            kind: 'snooze',
-          );
-
-          // All should be different
+          // Both should be different
           expect(initialId, isNot(equals(followupId)));
-          expect(followupId, isNot(equals(snoozeId)));
-          expect(initialId, isNot(equals(snoozeId)));
         },
       );
 

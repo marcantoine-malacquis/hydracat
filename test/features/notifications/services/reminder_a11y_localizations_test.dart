@@ -33,15 +33,5 @@ void main() {
       expect(body, contains('Remy'));
       expect(body.toLowerCase(), contains('treatment'));
     });
-
-    test('snooze a11y title/body interpolate petName', () {
-      final l10n = lookupAppLocalizations(const Locale('en'));
-      final title = l10n.notificationSnoozeTitleA11y('Remy');
-      final body = l10n.notificationSnoozeBodyA11y('Remy');
-      expect(title, contains('Remy'));
-      expect(title.toLowerCase(), contains('snoozed'));
-      expect(body, contains('Remy'));
-      expect(body.toLowerCase(), contains("it's time"));
-    });
   });
 }

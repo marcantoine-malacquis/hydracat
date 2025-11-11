@@ -58,7 +58,6 @@ void main() {
     test('isValidKind accepts valid values', () {
       expect(ScheduledNotificationEntry.isValidKind('initial'), isTrue);
       expect(ScheduledNotificationEntry.isValidKind('followup'), isTrue);
-      expect(ScheduledNotificationEntry.isValidKind('snooze'), isTrue);
     });
 
     test('isValidKind rejects invalid values', () {
@@ -66,6 +65,7 @@ void main() {
       expect(ScheduledNotificationEntry.isValidKind('Initial'), isFalse);
       expect(ScheduledNotificationEntry.isValidKind('reminder'), isFalse);
       expect(ScheduledNotificationEntry.isValidKind('unknown'), isFalse);
+      expect(ScheduledNotificationEntry.isValidKind('snooze'), isFalse);
     });
   });
 

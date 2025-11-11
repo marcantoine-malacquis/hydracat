@@ -7,6 +7,7 @@
 /// - Integration with auth, profile, and analytics providers
 library;
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -110,6 +111,10 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
 
   // Prevent duplicate startup warming; ensures we only warm once
   bool _startupPreparationDone = false;
+
+  // Throttle notification refreshes when logging multiple treatments rapidly
+  Timer? _notificationRefreshTimer;
+  static const _notificationRefreshDelay = Duration(milliseconds: 500);
 
   // ============================================
   // Initialization & Cache Lifecycle
@@ -1054,6 +1059,44 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
   }
 
   // ============================================
+  // Notification Refresh Throttling
+  // ============================================
+
+  /// Throttle notification refresh to avoid rapid successive calls.
+  ///
+  /// When users log multiple treatments back-to-back (e.g., 2 medications +
+  /// fluid), we don't want to refresh 3 times. Instead, wait 500ms after the
+  /// last log before refreshing once.
+  void _throttleNotificationRefresh() {
+    // Cancel pending refresh if one is scheduled
+    _notificationRefreshTimer?.cancel();
+
+    // Schedule a new refresh after delay
+    _notificationRefreshTimer = Timer(_notificationRefreshDelay, () async {
+      final user = _ref.read(currentUserProvider);
+      final pet = _ref.read(primaryPetProvider);
+
+      if (user != null && pet != null) {
+        try {
+          await _ref.read(reminderServiceProvider).refreshAllNotifications(
+            user.id,
+            pet.id,
+            _ref as WidgetRef,
+          );
+        } on Exception catch (e) {
+          debugPrint('[LoggingProvider] Failed to refresh notifications: $e');
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificationRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  // ============================================
   // Manual Logging Methods
   // ============================================
 
@@ -1199,6 +1242,9 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         todaysSchedules: todaysSchedules,
         recentSessions: recentSessions,
       );
+
+      // STEP 4.5: Throttle notification refresh (waits 500ms after last log)
+      _throttleNotificationRefresh();
 
       // STEP 5: Update cache
       await _cacheService.updateCacheWithMedicationSession(
@@ -1475,6 +1521,9 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         todaysSchedules: fluidSchedule != null ? [fluidSchedule] : [],
         recentSessions: [], // Fluids don't need duplicate detection
       );
+
+      // STEP 3.5: Throttle notification refresh (waits 500ms after last log)
+      _throttleNotificationRefresh();
 
       // STEP 4: Update cache first (before invalidating providers)
       await _cacheService.updateCacheWithFluidSession(
