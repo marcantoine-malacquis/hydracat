@@ -15,6 +15,7 @@ lib/
 │   ├── constants/                   # App-wide constants
 │   │   ├── constants.dart           # General constants
 │   │   ├── app_accessibility.dart   # Accessibility standards
+│   │   ├── app_animations.dart      # Animation constants
 │   │   ├── app_colors.dart          # Color palette
 │   │   ├── app_icons.dart           # Icon definitions
 │   │   ├── app_strings.dart         # String constants
@@ -30,13 +31,19 @@ lib/
 │   │   ├── app_text_styles.dart     # Typography
 │   │   └── premium_theme.dart       # Premium styling
 │   ├── extensions/                  # Dart extensions
+│   │   ├── build_context_extensions.dart # Context utilities
 │   │   ├── string_extensions.dart   # String utilities
 │   │   ├── datetime_extensions.dart # Date utilities
 │   │   └── double_extensions.dart   # Number utilities
 │   ├── utils/                       # Helper utilities
 │   │   ├── date_utils.dart          # Date manipulation
+│   │   ├── dosage_text_utils.dart   # Dosage text formatting
+│   │   ├── dosage_utils.dart        # Dosage calculations
+│   │   ├── medication_unit_utils.dart # Medication unit conversions
+│   │   ├── number_input_utils.dart  # Number input handling
 │   │   ├── validation_utils.dart    # Input validation
 │   │   ├── streak_calculator.dart   # Streak logic
+│   │   ├── weight_utils.dart        # Weight conversions & formatting
 │   │   └── pdf_generator.dart       # PDF creation
 │   ├── validation/                  # Validation infrastructure
 │   │   └── models/                  # Validation data models
@@ -47,14 +54,29 @@ lib/
 │       └── validation_exception.dart # Validation errors
 │
 ├── providers/                       # Riverpod state providers
+│   ├── profile/                     # Profile-specific providers
+│   │   ├── profile_cache_manager.dart # Profile cache management
+│   │   └── schedule_notification_handler.dart # Schedule notification handling
+│   ├── analytics_provider.dart      # Usage analytics
 │   ├── auth_provider.dart           # Authentication state
+│   ├── cache_management_provider.dart # Cache management state
+│   ├── connectivity_provider.dart   # Connectivity state
+│   ├── dashboard_provider.dart      # Dashboard state
+│   ├── logging_provider.dart        # Logging state
+│   ├── logging_queue_provider.dart  # Logging queue state
+│   ├── onboarding_provider.dart     # Onboarding state
+│   ├── profile_provider.dart        # Profile state
+│   ├── progress_edit_provider.dart  # Progress edit state
+│   ├── progress_provider.dart       # Progress state
+│   ├── schedule_history_provider.dart # Schedule history state
+│   ├── sync_provider.dart           # Data synchronization
+│   ├── theme_provider.dart          # Theme state
+│   ├── weight_provider.dart         # Weight tracking state
+│   ├── weight_unit_provider.dart    # Weight unit preference
 │   ├── session_provider.dart        # Fluid session state
 │   ├── schedule_provider.dart       # Schedule management
 │   ├── streak_provider.dart         # Streak tracking
-│   ├── subscription_provider.dart   # Premium features
-│   ├── sync_provider.dart           # Data synchronization
-│   ├── connectivity_provider.dart   # Connectivity state
-│   └── analytics_provider.dart      # Usage analytics
+│   └── subscription_provider.dart   # Premium features
 │
 ├── features/                        # Feature modules
 │   ├── auth/                        # User authentication
@@ -76,23 +98,70 @@ lib/
 │   │   │   └── auth_exceptions.dart # Authentication errors
 │   │   └── services/                # Auth business logic
 │   │       └── auth_service.dart    # Authentication service
+│   ├── health/                      # Health tracking
+│   │   ├── models/                  # Health data models
+│   │   │   ├── health_parameter.dart # Health parameter definition
+│   │   │   ├── weight_data_point.dart # Weight data point
+│   │   │   └── weight_granularity.dart # Time granularity for weight data
+│   │   ├── screens/                 # Health UI screens
+│   │   │   └── weight_screen.dart   # Weight tracking screen
+│   │   ├── widgets/                 # Health UI components
+│   │   │   ├── weight_entry_dialog.dart # Weight entry dialog
+│   │   │   ├── weight_line_chart.dart # Weight visualization chart
+│   │   │   └── weight_stat_card.dart # Weight statistics card
+│   │   ├── services/                # Health business logic
+│   │   │   ├── weight_cache_service.dart # Weight data caching
+│   │   │   └── weight_service.dart  # Weight tracking service
+│   │   └── exceptions/              # Health-specific exceptions
+│   │       └── health_exceptions.dart # Health tracking errors
 │   ├── onboarding/                  # User onboarding
 │   │   ├── models/                  # Onboarding data
+│   │   │   ├── onboarding_data.dart # Onboarding data model
+│   │   │   ├── onboarding_progress.dart # Progress tracking
+│   │   │   ├── onboarding_step.dart # Step enumeration
+│   │   │   └── treatment_data.dart  # Treatment setup data
 │   │   ├── screens/                 # Onboarding flows
+│   │   │   ├── add_medication_screen.dart # Medication setup
+│   │   │   ├── ckd_medical_info_screen.dart # CKD medical info
+│   │   │   ├── onboarding_completion_screen.dart # Completion screen
+│   │   │   ├── pet_basics_screen.dart # Pet basic info
 │   │   │   ├── welcome_screen.dart  # Welcome intro
 │   │   │   ├── pet_setup_screen.dart # Pet configuration
 │   │   │   └── schedule_setup_screen.dart # Initial schedule
 │   │   ├── widgets/                 # Onboarding components
+│   │   │   ├── gender_selector.dart # Gender selection widget
+│   │   │   ├── iris_stage_selector.dart # IRIS stage selector
+│   │   │   ├── lab_values_input.dart # Lab values input
+│   │   │   ├── medication_overlay_wrapper.dart # Medication overlay
+│   │   │   ├── medication_summary_card.dart # Medication summary
+│   │   │   ├── onboarding_progress_indicator.dart # Progress indicator
+│   │   │   ├── onboarding_screen_wrapper.dart # Screen wrapper
+│   │   │   ├── rotating_wheel_picker.dart # Wheel picker widget
+│   │   │   ├── time_picker_group.dart # Time picker group
+│   │   │   ├── treatment_popup_wrapper.dart # Treatment popup
+│   │   │   └── weight_unit_selector.dart # Weight unit selector
 │   │   ├── services/                # Onboarding business logic
 │   │   │   ├── onboarding_service.dart # Onboarding flow service
 │   │   │   └── onboarding_validation_service.dart # Onboarding validation
 │   │   └── exceptions/              # Onboarding-specific exceptions
+│   │       └── onboarding_exceptions.dart # Onboarding errors
 │   ├── home/                        # Main dashboard
 │   │   ├── models/                  # Home data models
+│   │   │   ├── dashboard_state.dart # Dashboard state management
+│   │   │   ├── pending_fluid_treatment.dart # Pending fluid treatment data
+│   │   │   └── pending_treatment.dart # Pending treatment data
 │   │   ├── screens/                 # Home UI screens
 │   │   │   ├── home_screen.dart     # Main dashboard
 │   │   │   └── component_demo_screen.dart # UI showcase
 │   │   └── widgets/                 # Home components
+│   │       ├── dashboard_empty_state.dart # Empty state UI
+│   │       ├── dashboard_success_popup.dart # Success feedback
+│   │       ├── pending_fluid_card.dart # Fluid treatment card
+│   │       ├── pending_fluid_card_skeleton.dart # Loading skeleton
+│   │       ├── pending_treatment_card.dart # Treatment card
+│   │       ├── pending_treatment_card_skeleton.dart # Loading skeleton
+│   │       ├── treatment_confirmation_popup.dart # Treatment confirmation
+│   │       ├── widgets.dart         # Widget exports
 │   │       ├── streak_display.dart  # Streak counter
 │   │       ├── next_session_card.dart # Next session info
 │   │       └── quick_actions.dart   # Quick action buttons
@@ -103,28 +172,96 @@ lib/
 │   │   └── widgets/                 # Learn components
 │   ├── logging/                     # Session logging
 │   │   ├── models/                  # Logging data models
+│   │   │   ├── daily_summary_cache.dart # Daily summary caching
 │   │   │   ├── fluid_session.dart   # Fluid session data
-│   │   │   └── stress_level.dart    # Stress level enum
+│   │   │   ├── logging_mode.dart    # Logging mode enum
+│   │   │   ├── logging_operation.dart # Logging operation state
+│   │   │   ├── logging_state.dart   # Logging state management
+│   │   │   ├── medication_session.dart # Medication session data
+│   │   │   ├── stress_level.dart    # Stress level enum
+│   │   │   └── treatment_choice.dart # Treatment choice enum
 │   │   ├── screens/                 # Logging interfaces
+│   │   │   ├── fluid_logging_screen.dart # Fluid logging screen
+│   │   │   ├── medication_logging_screen.dart # Medication logging screen
 │   │   │   ├── logging_screen.dart  # Main logging screen
 │   │   │   ├── quick_log_screen.dart # Quick logging
 │   │   │   ├── detailed_log_screen.dart # Detailed entry
 │   │   │   └── session_history_screen.dart # History view
-│   │   └── widgets/                 # Logging components
-│   │       ├── volume_input.dart    # Volume selector
-│   │       ├── stress_selector.dart # Stress level picker
-│   │       └── injection_site_picker.dart # Site selector
+│   │   ├── widgets/                 # Logging components
+│   │   │   ├── injection_site_selector.dart # Injection site selector
+│   │   │   ├── logging_popup_wrapper.dart # Logging popup container
+│   │   │   ├── medication_dosage_input.dart # Medication dosage input
+│   │   │   ├── medication_selection_card.dart # Medication selection card
+│   │   │   ├── quick_log_success_popup.dart # Quick log success feedback
+│   │   │   ├── session_update_dialog.dart # Session update dialog
+│   │   │   ├── stress_level_selector.dart # Stress level selector
+│   │   │   ├── success_indicator.dart # Success indicator widget
+│   │   │   ├── treatment_choice_popup.dart # Treatment choice popup
+│   │   │   ├── volume_input.dart    # Volume selector
+│   │   │   ├── stress_selector.dart # Stress level picker
+│   │   │   └── injection_site_picker.dart # Site selector
+│   │   ├── services/                # Logging business logic
+│   │   │   ├── logging_service.dart # Core logging service
+│   │   │   ├── logging_validation_service.dart # Logging validation
+│   │   │   ├── offline_logging_service.dart # Offline logging queue
+│   │   │   ├── overlay_service.dart # Overlay management
+│   │   │   ├── session_read_service.dart # Session reading service
+│   │   │   ├── summary_cache_service.dart # Summary caching
+│   │   │   └── summary_service.dart # Summary calculations
+│   │   └── exceptions/              # Logging-specific exceptions
+│   │       ├── logging_error_handler.dart # Error handler
+│   │       └── logging_exceptions.dart # Logging errors
+│   ├── notifications/               # Notifications & reminders
+│   │   ├── models/                  # Notification data models
+│   │   │   ├── device_token.dart    # FCM device token
+│   │   │   ├── notification_settings.dart # Notification preferences
+│   │   │   └── scheduled_notification_entry.dart # Scheduled notification data
+│   │   ├── providers/               # Notification providers
+│   │   │   └── notification_provider.dart # Notification state provider
+│   │   ├── screens/                 # Notification screens
+│   │   ├── widgets/                 # Notification components
+│   │   │   ├── notification_status_widget.dart # Status indicator
+│   │   │   ├── permission_preprompt.dart # Permission pre-prompt
+│   │   │   └── privacy_details_bottom_sheet.dart # Privacy info sheet
+│   │   ├── services/                # Notification services
+│   │   │   ├── device_token_service.dart # Device token management
+│   │   │   ├── notification_cleanup_service.dart # Notification cleanup
+│   │   │   ├── notification_error_handler.dart # Error handling
+│   │   │   ├── notification_index_store.dart # Notification indexing
+│   │   │   ├── notification_settings_service.dart # Settings management
+│   │   │   ├── notification_tap_handler.dart # Tap handling
+│   │   │   ├── permission_prompt_service.dart # Permission prompts
+│   │   │   ├── reminder_plugin.dart # Local notification plugin
+│   │   │   └── reminder_service.dart # Reminder scheduling
+│   │   └── utils/                   # Notification utilities
+│   │       ├── notification_id.dart # ID generation
+│   │       ├── scheduling_helpers.dart # Scheduling utilities
+│   │       ├── time_slot_formatter.dart # Time formatting
+│   │       └── time_validation.dart # Time validation
 │   ├── profile/                     # Pet profile management
 │   │   ├── models/                  # Profile data models
 │   │   │   ├── cat_profile.dart     # Pet profile data
-│   │   │   └── medical_info.dart    # Medical information
+│   │   │   ├── medical_info.dart    # Medical information
+│   │   │   ├── schedule.dart        # Schedule model
+│   │   │   ├── schedule_dto.dart    # Schedule data transfer object
+│   │   │   └── schedule_history_entry.dart # Schedule history entry
 │   │   ├── screens/                 # Profile interfaces
+│   │   │   ├── ckd_profile_screen.dart # CKD profile screen
+│   │   │   ├── create_fluid_schedule_screen.dart # Create fluid schedule
+│   │   │   ├── fluid_schedule_screen.dart # Fluid schedule screen
+│   │   │   ├── medication_schedule_screen.dart # Medication schedule
 │   │   │   ├── profile_screen.dart  # Profile overview
 │   │   │   └── medical_details_screen.dart # Medical details
 │   │   ├── widgets/                 # Profile components
+│   │   │   ├── debug_panel.dart     # Debug information panel
+│   │   │   ├── editable_medical_field.dart # Editable medical field
+│   │   │   └── profile_navigation_tile.dart # Navigation tile
 │   │   ├── services/                # Profile business logic
 │   │   │   ├── pet_service.dart     # Pet profile service
-│   │   │   └── profile_validation_service.dart # Profile validation
+│   │   │   ├── profile_validation_service.dart # Profile validation
+│   │   │   ├── schedule_coordinator.dart # Schedule coordination
+│   │   │   ├── schedule_history_service.dart # Schedule history management
+│   │   │   └── schedule_service.dart # Schedule management service
 │   │   └── exceptions/              # Profile-specific exceptions
 │   │       └── profile_exceptions.dart # Profile errors
 │   ├── schedule/                    # Treatment scheduling
@@ -138,12 +275,22 @@ lib/
 │   │   └── services/                # Schedule services
 │   ├── progress/                    # Treatment progress
 │   │   ├── models/                  # Progress data models
+│   │   │   └── day_dot_status.dart  # Day status for calendar
 │   │   ├── screens/                 # Progress interfaces
 │   │   │   ├── progress_screen.dart # Progress overview
 │   │   │   └── detailed_analytics_screen.dart # Analytics (premium)
-│   │   └── widgets/                 # Progress components
-│   │       ├── adherence_chart.dart # Adherence visualization
-│   │       └── stress_trends.dart   # Stress trend charts
+│   │   ├── widgets/                 # Progress components
+│   │   │   ├── adherence_chart.dart # Adherence visualization
+│   │   │   ├── calendar_help_popup.dart # Calendar help dialog
+│   │   │   ├── fluid_edit_dialog.dart # Fluid editing dialog
+│   │   │   ├── medication_edit_dialog.dart # Medication editing dialog
+│   │   │   ├── progress_day_detail_popup.dart # Day detail popup
+│   │   │   ├── progress_week_calendar.dart # Weekly calendar widget
+│   │   │   └── stress_trends.dart   # Stress trend charts
+│   │   ├── services/                # Progress business logic
+│   │   │   └── week_status_calculator.dart # Week status calculation
+│   │   └── utils/                   # Progress utilities
+│   │       └── memoization.dart     # Memoization helpers
 │   ├── resources/                   # Educational content
 │   │   ├── models/                  # Resource data models
 │   │   ├── screens/                 # Resource interfaces
@@ -162,9 +309,11 @@ lib/
 │   ├── settings/                    # App settings
 │   │   ├── models/                  # Settings models
 │   │   ├── screens/                 # Settings interfaces
+│   │   │   ├── notification_settings_screen.dart # Notification settings
 │   │   │   ├── settings_screen.dart # Settings overview
 │   │   │   └── privacy_screen.dart  # Privacy settings
 │   │   └── widgets/                 # Settings components
+│   │       └── weight_unit_selector.dart # Weight unit selector
 │   ├── exports/ (premium)           # Data export features
 │   │   ├── models/                  # Export data models
 │   │   ├── screens/                 # Export interfaces
@@ -192,8 +341,14 @@ lib/
 │   │   ├── base_model.dart          # Base model class
 │   │   ├── app_user.dart            # Global user model
 │   │   ├── api_response.dart        # API response wrapper
+│   │   ├── daily_summary.dart       # Daily summary data
+│   │   ├── fluid_daily_summary_view.dart # Fluid daily summary view
+│   │   ├── login_attempt_data.dart  # Login attempt tracking
+│   │   ├── monthly_summary.dart     # Monthly summary data
+│   │   ├── summary_update_dto.dart  # Summary update DTO
 │   │   ├── sync_item.dart           # Sync data model
-│   │   └── login_attempt_data.dart  # Login attempt tracking
+│   │   ├── treatment_summary_base.dart # Treatment summary base
+│   │   └── weekly_summary.dart      # Weekly summary data
 │   ├── repositories/                # Data access layer
 │   │   ├── base_repository.dart     # Base repository
 │   │   ├── session_repository.dart  # Session data access
@@ -202,23 +357,28 @@ lib/
 │   │   ├── user_repository.dart     # User data access
 │   │   └── analytics_repository.dart # Analytics data
 │   ├── services/                    # Core services
+│   │   ├── cache_management_service.dart # Cache management
+│   │   ├── connectivity_service.dart # Network connectivity
+│   │   ├── fcm_background_handler.dart # FCM background handler
+│   │   ├── feature_gate_service.dart # Feature gating
 │   │   ├── firebase_service.dart    # Firebase integration
+│   │   ├── login_attempt_service.dart # Login attempt management
+│   │   ├── secure_preferences_service.dart # Secure storage
+│   │   ├── theme_service.dart       # Theme management
+│   │   ├── weight_unit_service.dart # Weight unit management
 │   │   ├── sync_service.dart        # Data synchronization
 │   │   ├── notification_service.dart # Push notifications
 │   │   ├── reminder_scheduler.dart  # Reminder scheduling
 │   │   ├── analytics_service.dart   # Usage analytics
 │   │   ├── privacy_service.dart     # Privacy management
 │   │   ├── validation_service.dart  # Data validation
-│   │   ├── backup_service.dart      # Data backup
-│   │   ├── feature_gate_service.dart # Feature gating
-│   │   ├── login_attempt_service.dart # Login attempt management
-│   │   ├── secure_preferences_service.dart # Secure storage
-│   │   └── connectivity_service.dart # Network connectivity
+│   │   └── backup_service.dart      # Data backup
 │   └── widgets/                     # Reusable UI components
 │       ├── accessibility/           # Accessibility components
 │       │   ├── accessibility.dart   # A11y exports
 │       │   ├── hydra_focus_indicator.dart # Focus indicator
-│       │   └── hydra_touch_target.dart # Touch target helper
+│       │   ├── hydra_touch_target.dart # Touch target helper
+│       │   └── touch_target_icon_button.dart # Touch target icon button
 │       ├── buttons/                 # Button components
 │       │   ├── buttons.dart         # Button exports
 │       │   ├── hydra_button.dart    # Primary button
@@ -229,9 +389,17 @@ lib/
 │       │   ├── hydra_card.dart      # Base card component
 │       │   ├── premium_card.dart    # Premium feature card
 │       │   └── medical_data_card.dart # Medical info card
+│       ├── dialogs/                 # Dialog components
+│       │   ├── dialogs.dart         # Dialog exports
+│       │   ├── no_schedules_dialog.dart # No schedules dialog
+│       │   └── unsaved_changes_dialog.dart # Unsaved changes dialog
+│       ├── empty_states/            # Empty state components
+│       │   └── onboarding_cta_empty_state.dart # Onboarding CTA empty state
+│       ├── fluid/                   # Fluid-specific components
+│       │   └── fluid_daily_summary_card.dart # Fluid daily summary card
 │       ├── icons/                   # Icon components
-│       │   ├── icons.dart           # Icon exports
-│       │   └── hydra_icon.dart      # Custom icon widget
+│       │   ├── hydra_icon.dart      # Custom icon widget
+│       │   └── icons.dart           # Icon exports
 │       ├── forms/                   # Form components
 │       │   ├── validated_text_field.dart # Input field
 │       │   ├── volume_slider.dart   # Volume selection
@@ -241,24 +409,35 @@ lib/
 │       │   ├── streak_celebration.dart # Streak milestone
 │       │   ├── offline_indicator.dart # Offline status
 │       │   └── validation_error_display.dart # Validation error UI
+│       ├── loading/                 # Loading components
+│       │   ├── loading.dart         # Loading exports
+│       │   └── loading_overlay.dart # Loading overlay
 │       ├── status/                  # Status components
 │       │   └── connection_status_widget.dart # Connection status
-│       ├── verification_gate.dart   # Feature verification gate
 │       ├── layout/                  # Layout components
-│       │   ├── layout.dart          # Layout exports
 │       │   ├── dev_banner.dart      # Development banner
+│       │   ├── layout.dart          # Layout exports
 │       │   ├── layout_wrapper.dart  # Main layout wrapper
 │       │   ├── screen_wrapper.dart  # Screen container
 │       │   ├── section_wrapper.dart # Content sections
 │       │   └── premium_wrapper.dart # Premium feature wrapper
 │       ├── navigation/              # Navigation components
-│       │   ├── navigation.dart      # Navigation exports
+│       │   ├── app_page_transitions.dart # Page transitions
 │       │   ├── hydra_navigation_bar.dart # Bottom navigation
+│       │   ├── navigation.dart      # Navigation exports
+│       │   ├── slide_transition_page.dart # Slide transition page
 │       │   └── pet_selector.dart    # Pet selection
+│       ├── pickers/                 # Picker components
+│       │   └── hydra_time_picker.dart # Time picker
+│       ├── custom_dropdown.dart     # Custom dropdown widget
+│       ├── selection_card.dart      # Selection card widget
+│       ├── validation_error_display.dart # Validation error display
+│       ├── verification_gate.dart   # Feature verification gate
 │       └── widgets.dart             # Widget exports
 │
 └── l10n/                            # Internationalization
     ├── app_localizations.dart       # Generated localizations
+    ├── app_localizations_en.dart    # English localizations (generated)
     ├── app_en.arb                   # English translations
     ├── app_fr.arb                   # French translations
     └── app_de.arb                   # German translations
