@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hydracat/features/notifications/services/reminder_service.dart';
 import 'package:hydracat/features/notifications/utils/scheduling_helpers.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -9,22 +8,6 @@ void main() {
     // Initialize timezone data for tests
     tz.initializeTimeZones();
     tz.setLocalLocation(tz.getLocation('America/New_York'));
-  });
-
-  group('ReminderService', () {
-    group('Singleton pattern', () {
-      test('returns same instance on multiple calls', () {
-        final instance1 = ReminderService();
-        final instance2 = ReminderService();
-
-        expect(instance1, same(instance2));
-      });
-    });
-
-    // Note: Full integration tests with mocked providers would require
-    // a more complex setup with Riverpod container and mocked dependencies.
-    // The following tests focus on the helper utilities that ReminderService
-    // depends on, which are testable in isolation.
   });
 
   group('schedulingHelpers - zonedDateTimeForToday', () {

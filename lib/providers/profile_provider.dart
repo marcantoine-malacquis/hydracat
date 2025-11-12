@@ -166,28 +166,28 @@ class ProfileState {
     Object? schedulesLoadedDate = _undefined,
   }) {
     return ProfileState(
-      primaryPet: primaryPet == _undefined 
-          ? this.primaryPet 
+      primaryPet: primaryPet == _undefined
+          ? this.primaryPet
           : primaryPet as CatProfile?,
-      fluidSchedule: fluidSchedule == _undefined 
-          ? this.fluidSchedule 
+      fluidSchedule: fluidSchedule == _undefined
+          ? this.fluidSchedule
           : fluidSchedule as Schedule?,
-      medicationSchedules: medicationSchedules == _undefined 
-          ? this.medicationSchedules 
+      medicationSchedules: medicationSchedules == _undefined
+          ? this.medicationSchedules
           : medicationSchedules as List<Schedule>?,
       isLoading: isLoading ?? this.isLoading,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       scheduleIsLoading: scheduleIsLoading ?? this.scheduleIsLoading,
       error: error == _undefined ? this.error : error as ProfileException?,
-      lastUpdated: lastUpdated == _undefined 
-          ? this.lastUpdated 
+      lastUpdated: lastUpdated == _undefined
+          ? this.lastUpdated
           : lastUpdated as DateTime?,
       cacheStatus: cacheStatus ?? this.cacheStatus,
-      schedulesLoadedAt: schedulesLoadedAt == _undefined 
-          ? this.schedulesLoadedAt 
+      schedulesLoadedAt: schedulesLoadedAt == _undefined
+          ? this.schedulesLoadedAt
           : schedulesLoadedAt as DateTime?,
-      schedulesLoadedDate: schedulesLoadedDate == _undefined 
-          ? this.schedulesLoadedDate 
+      schedulesLoadedDate: schedulesLoadedDate == _undefined
+          ? this.schedulesLoadedDate
           : schedulesLoadedDate as String?,
     );
   }
@@ -274,38 +274,20 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 
   /// Refresh all notifications for the current user and pet.
   ///
-  /// This is a convenience wrapper around
-  /// reminderService.refreshAllNotifications that handles null checks and
-  /// error logging. Safe to call after any schedule operation - failures
-  /// won't break the schedule CRUD operation.
+  /// This is a convenience wrapper around NotificationCoordinator.refreshAll
+  /// that handles error logging. Safe to call after any schedule operation -
+  /// failures won't break the schedule CRUD operation.
   Future<void> _refreshNotifications() async {
-    final user = _ref.read(currentUserProvider);
-    final pet = _ref.read(primaryPetProvider);
-
-    if (user == null || pet == null) {
-      if (kDebugMode) {
-        debugPrint(
-          '[ProfileProvider] Cannot refresh notifications: '
-          'user or pet is null',
-        );
-      }
-      return;
-    }
-
     try {
-      await _ref.read(reminderServiceProvider).refreshAllNotifications(
-        user.id,
-        pet.id,
-        _ref as WidgetRef,
-      );
+      await _ref.read(notificationCoordinatorProvider).refreshAll();
+      if (kDebugMode) {
+        debugPrint('[ProfileProvider] Notifications refreshed successfully');
+      }
     } on Exception catch (e) {
       if (kDebugMode) {
-        debugPrint(
-          '[ProfileProvider] Failed to refresh notifications: $e',
-        );
+        debugPrint('[ProfileProvider] Notification refresh failed: $e');
       }
-      // Don't rethrow - notification refresh shouldn't break schedule
-      // operations
+      // Don't rethrow - shouldn't break schedule operations
     }
   }
 

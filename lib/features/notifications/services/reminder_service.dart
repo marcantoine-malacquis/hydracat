@@ -16,18 +16,24 @@ import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:timezone/timezone.dart' as tz;
 
-/// Service for orchestrating treatment reminder notifications.
+/// @deprecated This service has been replaced by NotificationCoordinator.
 ///
-/// Responsibilities:
-/// - Schedule notifications for today's active schedules
-/// - Cancel notifications when treatments logged or schedules deleted
-/// - Reschedule all notifications (idempotent recovery)
-/// - Generate notification content (generic, privacy-first)
-/// - Maintain notification index for reconciliation
+/// All business logic for notification scheduling has been moved to
+/// [NotificationCoordinator] which provides a cleaner API that works
+/// with both Ref and WidgetRef without type casting issues.
 ///
-/// Offline-first: Only reads from cached schedules, never triggers Firestore.
-/// Idempotent: Safe to call schedule methods multiple times.
-/// Timezone-aware: Handles DST transitions correctly.
+/// Use [notificationCoordinatorProvider] instead:
+/// ```dart
+/// // Old (deprecated):
+/// final service = ref.read(reminderServiceProvider);
+/// await service.scheduleAllForToday(userId, petId, ref);
+///
+/// // New (recommended):
+/// final coordinator = ref.read(notificationCoordinatorProvider);
+/// await coordinator.scheduleAllForToday();
+/// ```
+///
+/// This class is kept for backward compatibility with existing tests only.
 ///
 /// ## PRIVACY DESIGN PRINCIPLE
 ///
@@ -73,16 +79,18 @@ import 'package:timezone/timezone.dart' as tz;
 /// ❌ Bad:  "Administer 150ml subcutaneous fluids to Max's left shoulder"
 /// ```
 ///
-/// Example usage:
-/// ```dart
-/// final service = ref.read(reminderServiceProvider);
-/// final result = await service.scheduleAllForToday(userId, petId, ref);
-/// ```
+/// See [NotificationCoordinator] for the replacement implementation.
+@Deprecated(
+  'Use NotificationCoordinator instead. '
+  'Access via notificationCoordinatorProvider.',
+)
 class ReminderService {
   /// Factory constructor to get the singleton instance
+  @Deprecated('Use notificationCoordinatorProvider instead')
   factory ReminderService() => _instance ??= ReminderService._();
 
   /// Private unnamed constructor
+  @Deprecated('Use notificationCoordinatorProvider instead')
   ReminderService._();
 
   static ReminderService? _instance;

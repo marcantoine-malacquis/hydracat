@@ -1045,9 +1045,8 @@ class _AppShellState extends ConsumerState<AppShell>
     _isRescheduling = true;
     try {
       _devLog('Running rescheduleAll() due to $reason');
-      final result = await ref
-          .read(reminderServiceProvider)
-          .rescheduleAll(userId, petId, ref);
+      final result =
+          await ref.read(notificationCoordinatorProvider).rescheduleAll();
       _devLog('Reschedule result: $result');
 
       // Persist new state
@@ -1062,9 +1061,8 @@ class _AppShellState extends ConsumerState<AppShell>
       await Future<void>.delayed(const Duration(seconds: 3));
       try {
         _devLog('Retrying rescheduleAll()');
-        final result = await ref
-            .read(reminderServiceProvider)
-            .rescheduleAll(userId, petId, ref);
+        final result =
+            await ref.read(notificationCoordinatorProvider).rescheduleAll();
         _devLog('Reschedule retry result: $result');
         final today = DateTime.now();
         await _saveSchedulerState(
@@ -1215,22 +1213,14 @@ class _AppShellState extends ConsumerState<AppShell>
         });
 
         debugPrint('[AppShell] Scheduling notifications for today');
-        final reminderService = ref.read(reminderServiceProvider);
+        final coordinator = ref.read(notificationCoordinatorProvider);
 
         // Schedule treatment reminders for today (medication + fluid)
-        await reminderService.scheduleAllForToday(
-          currentUser.id,
-          primaryPet.id,
-          ref,
-        );
+        await coordinator.scheduleAllForToday();
 
         // Schedule weekly summary notification
         debugPrint('[AppShell] Scheduling weekly summary notification');
-        await reminderService.scheduleWeeklySummary(
-          currentUser.id,
-          primaryPet.id,
-          ref,
-        );
+        await coordinator.scheduleWeeklySummary();
 
         debugPrint('[AppShell] Notification scheduling complete');
       });

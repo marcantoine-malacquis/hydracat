@@ -1073,18 +1073,14 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
 
     // Schedule a new refresh after delay
     _notificationRefreshTimer = Timer(_notificationRefreshDelay, () async {
-      final user = _ref.read(currentUserProvider);
-      final pet = _ref.read(primaryPetProvider);
-
-      if (user != null && pet != null) {
-        try {
-          await _ref.read(reminderServiceProvider).refreshAllNotifications(
-            user.id,
-            pet.id,
-            _ref as WidgetRef,
-          );
-        } on Exception catch (e) {
-          debugPrint('[LoggingProvider] Failed to refresh notifications: $e');
+      try {
+        await _ref.read(notificationCoordinatorProvider).refreshAll();
+        if (kDebugMode) {
+          debugPrint('[LoggingProvider] Notifications refreshed successfully');
+        }
+      } on Exception catch (e) {
+        if (kDebugMode) {
+          debugPrint('[LoggingProvider] Notification refresh failed: $e');
         }
       }
     });
@@ -1300,8 +1296,9 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
                 reminder.hour,
                 reminder.minute,
               );
-              final difference =
-                  session.dateTime.difference(reminderDateTime).abs();
+              final difference = session.dateTime
+                  .difference(reminderDateTime)
+                  .abs();
 
               if (difference <= const Duration(hours: 2) &&
                   (smallestDifference == null ||
@@ -1564,8 +1561,9 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
             reminder.hour,
             reminder.minute,
           );
-          final difference =
-              session.dateTime.difference(reminderDateTime).abs();
+          final difference = session.dateTime
+              .difference(reminderDateTime)
+              .abs();
 
           if (difference <= const Duration(hours: 2) &&
               (smallestDifference == null || difference < smallestDifference)) {

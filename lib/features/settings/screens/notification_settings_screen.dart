@@ -591,21 +591,12 @@ class _NotificationSettingsScreenState
           .setWeeklySummaryEnabled(enabled: value);
 
       // Schedule or cancel weekly summary notification
-      final reminderService = ref.read(reminderServiceProvider);
-      final result = value
-          ? await reminderService.scheduleWeeklySummary(
-              userId,
-              petId,
-              ref,
-            )
-          : await reminderService.cancelWeeklySummary(
-              userId,
-              petId,
-              ref,
-            );
-
-      // Cast to Map for type safety
-      final resultMap = result as Map<String, dynamic>;
+      final coordinator = ref.read(notificationCoordinatorProvider);
+      final resultMap = value
+          ? await coordinator.scheduleWeeklySummary()
+          : (await coordinator.cancelWeeklySummary()
+              ? {'success': true}
+              : {'success': false});
 
       // Check if operation was successful
       if (resultMap['success'] != true && resultMap['success'] != false) {

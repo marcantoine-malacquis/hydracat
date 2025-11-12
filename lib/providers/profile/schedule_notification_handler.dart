@@ -57,45 +57,34 @@ class ScheduleNotificationHandler {
         );
       }
 
-      // Get ReminderService
-      final reminderService = _ref.read(reminderServiceProvider);
-
-      // Schedule notifications (idempotent - cancels old ones first)
-      // Note: We cast Ref to WidgetRef. This is safe because
-      // ReminderService only uses ref.read() which is available on both
-      // Ref and WidgetRef.
-      // ignore: argument_type_not_assignable, cast_from_null_always_fails
-      final result = await reminderService.scheduleForSchedule(
-        userId,
-        petId,
-        schedule,
-        _ref as WidgetRef, // Safe cast: only uses ref.read()
-      );
+      // Use NotificationCoordinator to refresh all notifications
+      // (includes the new/updated schedule)
+      final result =
+          await _ref.read(notificationCoordinatorProvider).refreshAll();
+      final reminderCount = result['scheduled'] as int? ?? 0;
 
       if (kDebugMode) {
         debugPrint(
-          '[ScheduleNotificationHandler] Notification scheduling result: '
-          'scheduled=${result['scheduled']}, '
-          'immediate=${result['immediate']}, '
-          'missed=${result['missed']}',
+          '[ScheduleNotificationHandler] Notifications refreshed: '
+          '$reminderCount scheduled',
         );
       }
 
-      // Track analytics event for schedule create/update notification scheduling
+      // Track analytics event
       try {
         final analyticsService = _ref.read(analyticsServiceDirectProvider);
         if (operationType == 'create') {
           await analyticsService.trackScheduleCreatedRemindersScheduled(
             treatmentType: schedule.treatmentType.name,
             scheduleId: schedule.id,
-            reminderCount: result['scheduled'] as int? ?? 0,
+            reminderCount: reminderCount,
             result: 'success',
           );
         } else {
           await analyticsService.trackScheduleUpdatedRemindersRescheduled(
             treatmentType: schedule.treatmentType.name,
             scheduleId: schedule.id,
-            reminderCount: result['scheduled'] as int? ?? 0,
+            reminderCount: reminderCount,
             result: 'success',
           );
         }
@@ -191,20 +180,10 @@ class ScheduleNotificationHandler {
         );
       }
 
-      // Get ReminderService
-      final reminderService = _ref.read(reminderServiceProvider);
-
-      // Cancel notifications
-      // Note: We cast Ref to WidgetRef. This is safe because
-      // ReminderService only uses ref.read() which is available on both
-      // Ref and WidgetRef.
-      // ignore: argument_type_not_assignable, cast_from_null_always_fails
-      final canceledCount = await reminderService.cancelForSchedule(
-        userId,
-        petId,
-        scheduleId,
-        _ref as WidgetRef, // Safe cast: only uses ref.read()
-      );
+      // Use NotificationCoordinator to cancel notifications for this schedule
+      final canceledCount = await _ref
+          .read(notificationCoordinatorProvider)
+          .cancelForSchedule(scheduleId);
 
       if (kDebugMode) {
         debugPrint(
@@ -213,23 +192,22 @@ class ScheduleNotificationHandler {
         );
       }
 
-      // Track analytics event for schedule delete/deactivate cancellation
+      // Track analytics event
       try {
         final analyticsService = _ref.read(analyticsServiceDirectProvider);
-        final resultStr = canceledCount > 0 ? 'success' : 'none_found';
         if (operationType == 'delete') {
           await analyticsService.trackScheduleDeletedRemindersCanceled(
             treatmentType: treatmentType,
             scheduleId: scheduleId,
             canceledCount: canceledCount,
-            result: resultStr,
+            result: 'success',
           );
         } else {
           await analyticsService.trackScheduleDeactivatedRemindersCanceled(
             treatmentType: treatmentType,
             scheduleId: scheduleId,
             canceledCount: canceledCount,
-            result: resultStr,
+            result: 'success',
           );
         }
       } on Exception catch (e) {

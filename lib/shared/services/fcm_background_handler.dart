@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/features/notifications/providers/notification_provider.dart';
 import 'package:hydracat/features/notifications/services/reminder_plugin.dart';
-import 'package:hydracat/features/notifications/services/reminder_service.dart';
 import 'package:hydracat/firebase_options.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
@@ -117,11 +116,10 @@ Future<void> firebaseMessagingBackgroundHandler(
 
       try {
         _devLog('Calling scheduleAllForToday()...');
-        final reminderService = ReminderService();
 
         // Set 25-second timeout (iOS gives ~30 seconds max)
         final result = await Future.any([
-          _scheduleWithContainer(reminderService, userId, petId, container),
+          _scheduleWithContainer(container),
           Future.delayed(const Duration(seconds: 25), () {
             throw TimeoutException('Scheduling timed out after 25 seconds');
           }),
@@ -177,22 +175,27 @@ Future<void> firebaseMessagingBackgroundHandler(
 
 /// Wrapper to call scheduleAllForToday with ProviderContainer.
 ///
-/// Uses a FutureProvider to bridge between ProviderContainer and WidgetRef.
-/// Note: The ref parameter is technically a different type, but at runtime
-/// it provides the same interface for reading providers.
+/// Uses NotificationCoordinator which can work with ProviderContainer
+/// since it uses Ref (not WidgetRef).
 Future<Map<String, dynamic>> _scheduleWithContainer(
-  ReminderService service,
-  String userId,
-  String petId,
   ProviderContainer container,
 ) async {
-  // Create an auto-dispose provider that executes the scheduling
-  final schedulingProvider = FutureProvider.autoDispose<Map<String, dynamic>>(
-    (ref) => service.scheduleAllForToday(userId, petId, ref as WidgetRef),
-  );
+  try {
+    // NotificationCoordinator can access ProviderContainer via its Ref
+    final coordinator = container.read(notificationCoordinatorProvider);
+    final result = await coordinator.scheduleAllForToday();
 
-  // Await the future directly
-  return container.read(schedulingProvider.future);
+    _devLog('Background notification scheduling completed successfully');
+    return result;
+  } on Exception catch (e) {
+    _devLog('Background notification scheduling failed: $e');
+    return {
+      'scheduled': 0,
+      'immediate': 0,
+      'missed': 0,
+      'errors': [e.toString()],
+    };
+  }
 }
 
 /// Helper: Get cached user ID from SharedPreferences.

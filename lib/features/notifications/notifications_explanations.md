@@ -36,13 +36,16 @@ Think of the notification system like a restaurant kitchen:
    - Do they want weekly summaries?
    - What time for end-of-day reminders?
 
-2. **The Head Chef (ReminderService)**: Orchestrates everything
-   - Reads the treatment schedules (the recipes)
+2. **The Head Chef (NotificationCoordinator)**: Orchestrates everything
+   - Reads the treatment schedules (the recipes) via Riverpod providers
    - Decides when to schedule notifications (timing the dishes)
-   - Handles special cases (grace periods, follow-ups)
+   - Handles special cases (grace periods, follow-ups, bundling)
+   - Lives in the business logic layer (Provider-based)
 
-3. **The Kitchen Timer (ReminderPlugin)**: Actually triggers notifications
-   - Interfaces with the phone's native notification system
+3. **The Kitchen Staff (ReminderPlugin)**: Platform wrapper
+   - Thin layer over flutter_local_notifications
+   - Executes platform-specific notification APIs (iOS/Android)
+   - No business logic, just API calls
    - Makes the phone buzz and show the notification
 
 4. **The Recipe Book (NotificationIndexStore)**: Keeps track of what's scheduled
@@ -53,18 +56,22 @@ Think of the notification system like a restaurant kitchen:
 ### How data flows through the system
 
 ```
-User's treatment schedules (stored in profile)
+User's treatment schedules (stored in profileProvider)
     ↓
-ReminderService reads the schedules
+NotificationCoordinator reads schedules via ref.read(profileProvider)
     ↓
 For each scheduled time, it asks: "Should I remind them?"
     ↓
-If yes → Creates a notification via ReminderPlugin
+If yes → Calls ReminderPlugin to schedule the notification
+    ↓
+ReminderPlugin interfaces with flutter_local_notifications
     ↓
 Records it in NotificationIndexStore
     ↓
 Phone's system triggers the notification at the right time
 ```
+
+**Key architectural benefit**: NotificationCoordinator is a Provider with native `Ref` access, so it can be called from any context (Widgets, StateNotifiers, other Providers) without type casting errors.
 
 ---
 
@@ -141,7 +148,21 @@ Phone's system triggers the notification at the right time
 
 **Real-world analogy**: Like a barcode generated from product information. Scan the same product twice, get the same barcode.
 
-### 7. Data Integrity with Checksums
+### 7. Provider-Based Coordinator Pattern
+
+**Decision**: Business logic lives in NotificationCoordinator (a Provider), not in a service class with Ref parameters.
+
+**Why**:
+- **Type safety**: Provider has native `Ref` access - no casting between `Ref` and `WidgetRef`
+- **Works everywhere**: Can be called from Widgets (WidgetRef), StateNotifiers (Ref), or other Providers (Ref)
+- **Separation of concerns**: Coordinator has business logic, ReminderPlugin is just platform wrapper
+- **Follows Riverpod best practices**: "Fat providers, thin services" pattern
+
+**The problem it solved**: Previously, StateNotifiers couldn't refresh notifications because ReminderService required `WidgetRef` parameters, but StateNotifiers only have `Ref`. Riverpod 2.6.1 doesn't allow casting between these types.
+
+**Real-world analogy**: Like having a restaurant manager (coordinator) who can talk to both the wait staff (widgets) and the kitchen staff (state notifiers) directly, instead of needing different managers for each area.
+
+### 8. Data Integrity with Checksums
 
 **Decision**: The notification index (list of scheduled notifications) includes a checksum to detect corruption.
 
@@ -152,7 +173,7 @@ Phone's system triggers the notification at the right time
 
 **How it works**: Like a receipt total. Add up all the scheduled notifications, generate a unique fingerprint. Later, regenerate the fingerprint and compare. If they match, data is intact.
 
-### 8. User Permissions & Settings
+### 9. User Permissions & Settings
 
 **Decision**: Two separate gates: system permission AND user setting must both be enabled.
 
@@ -173,9 +194,10 @@ Can show notifications? = (System permission granted) AND (User enabled in setti
 ### Scenario: Morning medication reminder at 8:00 AM
 
 **7:55 AM - User is using the app**
-- ReminderService checks: "Are there any schedules for today?"
+- NotificationCoordinator checks: "Are there any schedules for today?"
+- Reads from profileProvider via ref.read()
 - Finds: "8:00 AM - Medication for Luna"
-- Creates notification entry and schedules it
+- Delegates to ReminderPlugin to schedule it
 - Records in NotificationIndexStore
 
 **8:00 AM - Notification fires**
@@ -186,7 +208,8 @@ Can show notifications? = (System permission granted) AND (User enabled in setti
 **User taps notification**
 - App opens to the treatment logging screen
 - User logs the treatment
-- ReminderService cancels any follow-up reminders for this treatment
+- LoggingProvider triggers throttled notification refresh
+- NotificationCoordinator.refreshAll() cancels and reschedules all notifications
 
 ### Scenario: User opens app at 8:20 AM (20 minutes late)
 
@@ -373,10 +396,10 @@ When the app reopens, it reconciles (checks what should be scheduled vs what act
 - Data integrity with checksums
 
 **Main components**:
-- `ReminderService`: Orchestrator (schedules everything)
-- `ReminderPlugin`: Interface to phone's notification system
-- `NotificationIndexStore`: Tracks what's scheduled
-- `NotificationSettings`: User preferences
+- `NotificationCoordinator`: Business logic orchestrator (Provider with native Ref access)
+- `ReminderPlugin`: Platform wrapper (thin layer over flutter_local_notifications)
+- `NotificationIndexStore`: Tracks what's scheduled (local storage)
+- `NotificationSettings`: User preferences (SharedPreferences)
 - Permission system: Manages iOS/Android permissions
 
 **When to schedule**:
@@ -389,9 +412,18 @@ When the app reopens, it reconciles (checks what should be scheduled vs what act
 - Index → SharedPreferences (local, per-day)
 - Schedules → Come from profile cache (already loaded)
 
-**Testing tip**: Most services use singletons but are exposed via Riverpod providers, making them easy to mock in tests.
+**Testing tips**: 
+- NotificationCoordinator is a Provider - easy to test by overriding the provider in ProviderContainer
+- ReminderPlugin is a singleton - can be mocked with mocktail
+- Works from any Riverpod context (Widget, StateNotifier, Provider) without type casting
+- See `test/features/notifications/providers/notification_coordinator_test.dart` for examples
 
 ---
 
-**Last updated**: 2025-11-01
-**Status**: Production-ready (9.5/10 according to code review)
+**Last updated**: 2025-11-12
+**Status**: Production-ready with NotificationCoordinator pattern (architectural improvement completed)
+**Recent changes**: 
+- Implemented NotificationCoordinator pattern (Phases 1-3 of autorefresh_notif.md)
+- Solved Ref vs WidgetRef type incompatibility issue
+- Notifications now refresh properly from all contexts (Widgets, StateNotifiers, Providers)
+- Comprehensive unit tests added (17/23 passing, 6 require Flutter binding initialization)

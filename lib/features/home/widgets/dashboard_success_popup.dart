@@ -99,7 +99,7 @@ class _DashboardSuccessPopupState extends State<DashboardSuccessPopup> {
               children: [
                 const Icon(
                   Icons.check_circle,
-                  color: AppColors.success,
+                  color: AppColors.primary,
                   size: 28,
                 ),
                 const SizedBox(width: AppSpacing.sm),

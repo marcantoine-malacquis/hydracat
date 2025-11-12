@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/features/notifications/models/notification_settings.dart'
     as app_settings;
+import 'package:hydracat/features/notifications/providers/notification_coordinator.dart';
 import 'package:hydracat/features/notifications/services/device_token_service.dart';
 import 'package:hydracat/features/notifications/services/notification_index_store.dart';
 import 'package:hydracat/features/notifications/services/notification_settings_service.dart';
@@ -11,6 +12,10 @@ import 'package:hydracat/features/notifications/services/permission_prompt_servi
 import 'package:hydracat/features/notifications/services/reminder_plugin.dart';
 import 'package:hydracat/features/notifications/services/reminder_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+
+// Export the coordinator provider for convenience
+export 'notification_coordinator.dart'
+    show NotificationCoordinator, notificationCoordinatorProvider;
 
 /// Provider for the ReminderPlugin singleton instance.
 ///
@@ -90,20 +95,24 @@ final notificationIndexStoreProvider = Provider<NotificationIndexStore>((ref) {
 
 /// Provider for the ReminderService singleton instance.
 ///
-/// This provides access to the reminder scheduling service throughout the app
-/// via Riverpod dependency injection.
+/// @deprecated Use [notificationCoordinatorProvider] instead.
 ///
-/// The service handles:
-/// - Scheduling notifications for today's active schedules
-/// - Canceling notifications when treatments logged or schedules deleted
-/// - Idempotent rescheduling for recovery scenarios
-/// - Generating privacy-first notification content
+/// This provider is kept for backward compatibility with existing tests only.
+/// All notification scheduling functionality has been moved to
+/// [NotificationCoordinator] which provides a cleaner API.
 ///
-/// Example usage:
+/// Old usage:
 /// ```dart
 /// final service = ref.read(reminderServiceProvider);
 /// final result = await service.scheduleAllForToday(userId, petId, ref);
 /// ```
+///
+/// New usage:
+/// ```dart
+/// final coordinator = ref.read(notificationCoordinatorProvider);
+/// final result = await coordinator.scheduleAllForToday();
+/// ```
+@Deprecated('Use notificationCoordinatorProvider instead')
 final reminderServiceProvider = Provider<ReminderService>((ref) {
   return ReminderService();
 });
