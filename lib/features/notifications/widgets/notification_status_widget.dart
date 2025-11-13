@@ -30,16 +30,28 @@ class NotificationStatusWidget extends ConsumerWidget {
 
     // If no user, show disabled icon (shouldn't happen in normal flow)
     if (currentUser == null) {
-      return const IconButton(
-        icon: Icon(
-          Icons.notifications_off,
-          size: 20,
-          color: AppColors.textSecondary,
+      return IconButton(
+        icon: Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryDark.withValues(alpha: 0.4),
+                blurRadius: 3,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.notifications_off,
+            size: 20,
+            color: AppColors.textSecondary,
+          ),
         ),
         tooltip: 'Notifications disabled',
         onPressed: null, // Disabled when no user
-        constraints: BoxConstraints(minWidth: 40, minHeight: 40),
-        padding: EdgeInsets.all(8),
+        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+        padding: const EdgeInsets.all(8),
       );
     }
 
@@ -75,34 +87,70 @@ class NotificationStatusWidget extends ConsumerWidget {
 
         return IconButton(
           key: const Key('notif_bell'),
-          icon: Icon(icon, size: 20, color: iconColor),
+          icon: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primaryDark.withValues(alpha: 0.4),
+                  blurRadius: 3,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Icon(icon, size: 20, color: iconColor),
+          ),
           tooltip: tooltip,
           onPressed: () => _handleTap(context, ref, isEnabled),
           constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
           padding: const EdgeInsets.all(8),
         );
       },
-      loading: () => const IconButton(
-        icon: Icon(
-          Icons.notifications_off,
-          size: 20,
-          color: AppColors.textSecondary,
+      loading: () => IconButton(
+        icon: Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryDark.withValues(alpha: 0.4),
+                blurRadius: 3,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.notifications_off,
+            size: 20,
+            color: AppColors.textSecondary,
+          ),
         ),
         tooltip: 'Loading...',
         onPressed: null, // Disabled while loading
-        constraints: BoxConstraints(minWidth: 40, minHeight: 40),
-        padding: EdgeInsets.all(8),
+        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+        padding: const EdgeInsets.all(8),
       ),
-      error: (error, stackTrace) => const IconButton(
-        icon: Icon(
-          Icons.notifications_off,
-          size: 20,
-          color: AppColors.textSecondary,
+      error: (error, stackTrace) => IconButton(
+        icon: Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryDark.withValues(alpha: 0.4),
+                blurRadius: 3,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.notifications_off,
+            size: 20,
+            color: AppColors.textSecondary,
+          ),
         ),
         tooltip: 'Unable to check notification status',
         onPressed: null, // Disabled on error
-        constraints: BoxConstraints(minWidth: 40, minHeight: 40),
-        padding: EdgeInsets.all(8),
+        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+        padding: const EdgeInsets.all(8),
       ),
     );
   }
