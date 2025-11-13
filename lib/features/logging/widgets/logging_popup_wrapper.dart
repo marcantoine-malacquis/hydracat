@@ -30,6 +30,7 @@ class LoggingPopupWrapper extends StatelessWidget {
   const LoggingPopupWrapper({
     required this.title,
     required this.child,
+    this.leading,
     this.onDismiss,
     this.showCloseButton = true,
     super.key,
@@ -40,6 +41,9 @@ class LoggingPopupWrapper extends StatelessWidget {
 
   /// Content widget displayed in the scrollable area.
   final Widget child;
+
+  /// Optional widget displayed before the title (e.g., back button).
+  final Widget? leading;
 
   /// Callback when the popup is dismissed.
   ///
@@ -145,6 +149,7 @@ class LoggingPopupWrapper extends StatelessWidget {
       ),
       child: Row(
         children: [
+          if (leading != null) leading!,
           Expanded(
             child: Text(
               title,

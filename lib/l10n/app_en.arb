@@ -328,6 +328,45 @@
   "fluidLogButtonLabel": "Log fluid session button",
   "fluidLogButtonHint": "Logs fluid therapy session and updates treatment records",
 
+  "@_LOGGING_WEIGHT_CALCULATOR": {},
+  "calculateFromWeight": "Calculate from weight",
+  "weightCalculatorTitle": "Calculate Fluid Volume from Weight",
+  "continueFromSameBag": "Continue from same bag?",
+  "useThisWeight": "Use This Weight",
+  "beforeFluidTherapy": "Before fluid therapy:",
+  "initialWeightLabel": "Initial weight",
+  "afterFluidTherapy": "After fluid therapy:",
+  "finalWeightLabel": "Final weight",
+  "fluidAdministered": "Fluid administered: ~{volume} mL",
+  "@fluidAdministered": {
+    "placeholders": {
+      "volume": {
+        "type": "String"
+      }
+    }
+  },
+  "ringersDensityNote": "(1g Ringer's ≈ 1mL)",
+  "importantTipsTitle": "⚠️ Important tips:",
+  "weightTip1": "Weigh same components both times",
+  "weightTip2": "Use stable surface & calibrate scale",
+  "useThisVolume": "Use This Volume",
+  "remainingWeight": "{weight}g remaining",
+  "@remainingWeight": {
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      }
+    }
+  },
+  "lastUsedDate": "Last used {date}",
+  "@lastUsedDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+
   "@_LOGGING_MEDICATION": {},
   "medicationLoggingTitle": "Log Medication",
   "medicationLoggingLoadingMessage": "Logging medication session",

@@ -1042,6 +1042,102 @@ abstract class AppLocalizations {
   /// **'Logs fluid therapy session and updates treatment records'**
   String get fluidLogButtonHint;
 
+  /// No description provided for @calculateFromWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculate from weight'**
+  String get calculateFromWeight;
+
+  /// No description provided for @weightCalculatorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculate Fluid Volume from Weight'**
+  String get weightCalculatorTitle;
+
+  /// No description provided for @continueFromSameBag.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue from same bag?'**
+  String get continueFromSameBag;
+
+  /// No description provided for @useThisWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Use This Weight'**
+  String get useThisWeight;
+
+  /// No description provided for @beforeFluidTherapy.
+  ///
+  /// In en, this message translates to:
+  /// **'Before fluid therapy:'**
+  String get beforeFluidTherapy;
+
+  /// No description provided for @initialWeightLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Initial weight'**
+  String get initialWeightLabel;
+
+  /// No description provided for @afterFluidTherapy.
+  ///
+  /// In en, this message translates to:
+  /// **'After fluid therapy:'**
+  String get afterFluidTherapy;
+
+  /// No description provided for @finalWeightLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Final weight'**
+  String get finalWeightLabel;
+
+  /// No description provided for @fluidAdministered.
+  ///
+  /// In en, this message translates to:
+  /// **'Fluid administered: ~{volume} mL'**
+  String fluidAdministered(String volume);
+
+  /// No description provided for @ringersDensityNote.
+  ///
+  /// In en, this message translates to:
+  /// **'(1g Ringer\'s ≈ 1mL)'**
+  String get ringersDensityNote;
+
+  /// No description provided for @importantTipsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'⚠️ Important tips:'**
+  String get importantTipsTitle;
+
+  /// No description provided for @weightTip1.
+  ///
+  /// In en, this message translates to:
+  /// **'Weigh same components both times'**
+  String get weightTip1;
+
+  /// No description provided for @weightTip2.
+  ///
+  /// In en, this message translates to:
+  /// **'Use stable surface & calibrate scale'**
+  String get weightTip2;
+
+  /// No description provided for @useThisVolume.
+  ///
+  /// In en, this message translates to:
+  /// **'Use This Volume'**
+  String get useThisVolume;
+
+  /// No description provided for @remainingWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'{weight}g remaining'**
+  String remainingWeight(String weight);
+
+  /// No description provided for @lastUsedDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Last used {date}'**
+  String lastUsedDate(String date);
+
   /// No description provided for @medicationLoggingTitle.
   ///
   /// In en, this message translates to:

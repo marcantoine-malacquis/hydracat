@@ -22,7 +22,8 @@ We could also track :
 
 - Gentle reminders instead of loss aversion. Instead of “You lost your streak,” say “No log today? Remember to update when you can 💛.”
 - Weekly view: Focus on overall week rather than daily perfection
-- Flexible tracking: Allow owners to log retroactively or mark days as “no treatment needed.”
+- Flexible tracking: Allow owners to log retroactively or mark days as “no treatment needed.” (prevent abuse by soft limiting backfill up to 7 days). 
+Idea : Label entries as "added later" ? not sure if this could be a useful information to track/use for something else
 - Positive framing: Highlight care quality and compassion over quantity — “You’re doing an amazing job supporting Muffin’s health.”
 - Use warm, affirming language that celebrates compassion, not compliance.
     ✅ “Your dedication is making a difference.”
@@ -45,22 +46,20 @@ Alternative : something like a plant/tree (Starts as a small sprout, Grows with 
 
  Add a “Milestones” summary panel above the calendar:
  “💖 50 total care days logged”
- “🌼 10 full weeks of treatment completed”
- “🕊️ 1 month since diagnosis — thank you for being there for her.”
+ “🌼 10 full weeks of treatment completed"
 
 Include a timeline or journey visualization: a simple horizontal progress bar or timeline with icons at milestones (pawprints, hearts, drops, etc.).
 
 UX benefits:
 This screen becomes the emotional anchor — a place to see the long-term journey.
 Encourages reflection without daily pressure.
-You can add an optional “Share with vet” or “Download report” feature here for clinical collaboration.
 
 # Celebration Moments
 
   ┌──────────────────────────────────┐
   │         🌟 Milestone 🌟           │
   │                                  │
-  │   50 days of caring for Muffin   │
+  │   30 days of caring for Muffin   │
   │                                  │
   │  Your dedication is making a     │
   │  real difference in her health.  │

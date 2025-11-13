@@ -26,6 +26,7 @@ import 'package:hydracat/features/logging/services/logging_service.dart';
 import 'package:hydracat/features/logging/services/logging_validation_service.dart';
 import 'package:hydracat/features/logging/services/summary_cache_service.dart';
 import 'package:hydracat/features/logging/services/summary_service.dart';
+import 'package:hydracat/features/logging/services/weight_calculator_service.dart';
 import 'package:hydracat/features/notifications/providers/notification_provider.dart';
 import 'package:hydracat/features/notifications/utils/time_slot_formatter.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
@@ -77,6 +78,17 @@ final summaryCacheServiceProvider = Provider<SummaryCacheService>((ref) {
 final summaryServiceProvider = Provider<SummaryService>((ref) {
   final firestore = FirebaseFirestore.instance;
   return SummaryService(firestore);
+});
+
+/// Provider for WeightCalculatorService instance
+///
+/// Uses existing sharedPreferencesProvider for dependency injection.
+/// Enables weight-based fluid volume calculation feature.
+final weightCalculatorServiceProvider = Provider<WeightCalculatorService>((
+  ref,
+) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return WeightCalculatorService(prefs);
 });
 
 // ============================================

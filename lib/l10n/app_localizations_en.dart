@@ -518,6 +518,60 @@ class AppLocalizationsEn extends AppLocalizations {
       'Logs fluid therapy session and updates treatment records';
 
   @override
+  String get calculateFromWeight => 'Calculate from weight';
+
+  @override
+  String get weightCalculatorTitle => 'Calculate Fluid Volume from Weight';
+
+  @override
+  String get continueFromSameBag => 'Continue from same bag?';
+
+  @override
+  String get useThisWeight => 'Use This Weight';
+
+  @override
+  String get beforeFluidTherapy => 'Before fluid therapy:';
+
+  @override
+  String get initialWeightLabel => 'Initial weight';
+
+  @override
+  String get afterFluidTherapy => 'After fluid therapy:';
+
+  @override
+  String get finalWeightLabel => 'Final weight';
+
+  @override
+  String fluidAdministered(String volume) {
+    return 'Fluid administered: ~$volume mL';
+  }
+
+  @override
+  String get ringersDensityNote => '(1g Ringer\'s ≈ 1mL)';
+
+  @override
+  String get importantTipsTitle => '⚠️ Important tips:';
+
+  @override
+  String get weightTip1 => 'Weigh same components both times';
+
+  @override
+  String get weightTip2 => 'Use stable surface & calibrate scale';
+
+  @override
+  String get useThisVolume => 'Use This Volume';
+
+  @override
+  String remainingWeight(String weight) {
+    return '${weight}g remaining';
+  }
+
+  @override
+  String lastUsedDate(String date) {
+    return 'Last used $date';
+  }
+
+  @override
   String get medicationLoggingTitle => 'Log Medication';
 
   @override

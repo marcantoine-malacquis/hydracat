@@ -30,6 +30,9 @@ class FluidSession {
     this.scheduledTime,
     this.updatedAt,
     this.dailyGoalMl,
+    this.calculatedFromWeight,
+    this.initialBagWeightG,
+    this.finalBagWeightG,
   });
 
   /// Factory constructor to create a new fluid session
@@ -47,6 +50,9 @@ class FluidSession {
     String? scheduleId,
     DateTime? scheduledTime,
     double? dailyGoalMl,
+    bool? calculatedFromWeight,
+    double? initialBagWeightG,
+    double? finalBagWeightG,
   }) {
     const uuid = Uuid();
     return FluidSession(
@@ -62,6 +68,9 @@ class FluidSession {
       scheduledTime: scheduledTime,
       createdAt: DateTime.now(),
       dailyGoalMl: dailyGoalMl,
+      calculatedFromWeight: calculatedFromWeight,
+      initialBagWeightG: initialBagWeightG,
+      finalBagWeightG: finalBagWeightG,
     );
   }
 
@@ -80,6 +89,9 @@ class FluidSession {
     String? stressLevel,
     String? notes,
     double? dailyGoalMl,
+    bool? calculatedFromWeight,
+    double? initialBagWeightG,
+    double? finalBagWeightG,
   }) {
     const uuid = Uuid();
     return FluidSession(
@@ -95,6 +107,9 @@ class FluidSession {
       scheduledTime: scheduledTime,
       createdAt: DateTime.now(),
       dailyGoalMl: dailyGoalMl,
+      calculatedFromWeight: calculatedFromWeight,
+      initialBagWeightG: initialBagWeightG,
+      finalBagWeightG: finalBagWeightG,
     );
   }
 
@@ -124,6 +139,13 @@ class FluidSession {
           : null,
       dailyGoalMl: json['dailyGoalMl'] != null
           ? (json['dailyGoalMl'] as num).toDouble()
+          : null,
+      calculatedFromWeight: json['calculatedFromWeight'] as bool?,
+      initialBagWeightG: json['initialBagWeightG'] != null
+          ? (json['initialBagWeightG'] as num).toDouble()
+          : null,
+      finalBagWeightG: json['finalBagWeightG'] != null
+          ? (json['finalBagWeightG'] as num).toDouble()
           : null,
     );
   }
@@ -188,6 +210,24 @@ class FluidSession {
   /// when schedules change. Nullable for backward compatibility with old data.
   final double? dailyGoalMl;
 
+  /// Whether this volume was calculated from weight measurements
+  ///
+  /// When true, indicates the user used the weight calculator feature to
+  /// determine the volume instead of manual estimation.
+  final bool? calculatedFromWeight;
+
+  /// Initial bag weight in grams (before fluid administration)
+  ///
+  /// Stored when weight calculator is used. Enables analytics and audit trail
+  /// for weight-based volume calculations.
+  final double? initialBagWeightG;
+
+  /// Final bag weight in grams (after fluid administration)
+  ///
+  /// Stored when weight calculator is used. Used for "continue from same bag"
+  /// feature in subsequent sessions.
+  final double? finalBagWeightG;
+
   // Sync helpers
 
   /// Whether this session has been modified after creation
@@ -251,6 +291,9 @@ class FluidSession {
       'createdAt': createdAt,
       'updatedAt': updatedAt,
       'dailyGoalMl': dailyGoalMl,
+      'calculatedFromWeight': calculatedFromWeight,
+      'initialBagWeightG': initialBagWeightG,
+      'finalBagWeightG': finalBagWeightG,
     };
   }
 
@@ -269,6 +312,9 @@ class FluidSession {
     DateTime? createdAt,
     Object? updatedAt = _undefined,
     Object? dailyGoalMl = _undefined,
+    Object? calculatedFromWeight = _undefined,
+    Object? initialBagWeightG = _undefined,
+    Object? finalBagWeightG = _undefined,
   }) {
     return FluidSession(
       id: id ?? this.id,
@@ -276,26 +322,35 @@ class FluidSession {
       userId: userId ?? this.userId,
       dateTime: dateTime ?? this.dateTime,
       volumeGiven: volumeGiven ?? this.volumeGiven,
-      injectionSite: injectionSite == _undefined 
-          ? this.injectionSite 
+      injectionSite: injectionSite == _undefined
+          ? this.injectionSite
           : injectionSite as FluidLocation?,
-      stressLevel: stressLevel == _undefined 
-          ? this.stressLevel 
+      stressLevel: stressLevel == _undefined
+          ? this.stressLevel
           : stressLevel as String?,
       notes: notes == _undefined ? this.notes : notes as String?,
-      scheduleId: scheduleId == _undefined 
-          ? this.scheduleId 
+      scheduleId: scheduleId == _undefined
+          ? this.scheduleId
           : scheduleId as String?,
-      scheduledTime: scheduledTime == _undefined 
-          ? this.scheduledTime 
+      scheduledTime: scheduledTime == _undefined
+          ? this.scheduledTime
           : scheduledTime as DateTime?,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt == _undefined 
-          ? this.updatedAt 
+      updatedAt: updatedAt == _undefined
+          ? this.updatedAt
           : updatedAt as DateTime?,
-      dailyGoalMl: dailyGoalMl == _undefined 
-          ? this.dailyGoalMl 
+      dailyGoalMl: dailyGoalMl == _undefined
+          ? this.dailyGoalMl
           : dailyGoalMl as double?,
+      calculatedFromWeight: calculatedFromWeight == _undefined
+          ? this.calculatedFromWeight
+          : calculatedFromWeight as bool?,
+      initialBagWeightG: initialBagWeightG == _undefined
+          ? this.initialBagWeightG
+          : initialBagWeightG as double?,
+      finalBagWeightG: finalBagWeightG == _undefined
+          ? this.finalBagWeightG
+          : finalBagWeightG as double?,
     );
   }
 
@@ -316,7 +371,10 @@ class FluidSession {
         other.scheduledTime == scheduledTime &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt &&
-        other.dailyGoalMl == dailyGoalMl;
+        other.dailyGoalMl == dailyGoalMl &&
+        other.calculatedFromWeight == calculatedFromWeight &&
+        other.initialBagWeightG == initialBagWeightG &&
+        other.finalBagWeightG == finalBagWeightG;
   }
 
   @override
@@ -334,7 +392,12 @@ class FluidSession {
       scheduledTime,
       createdAt,
       updatedAt,
-      dailyGoalMl,
+      Object.hash(
+        dailyGoalMl,
+        calculatedFromWeight,
+        initialBagWeightG,
+        finalBagWeightG,
+      ),
     );
   }
 
@@ -353,7 +416,10 @@ class FluidSession {
         'scheduledTime: $scheduledTime, '
         'createdAt: $createdAt, '
         'updatedAt: $updatedAt, '
-        'dailyGoalMl: $dailyGoalMl'
+        'dailyGoalMl: $dailyGoalMl, '
+        'calculatedFromWeight: $calculatedFromWeight, '
+        'initialBagWeightG: $initialBagWeightG, '
+        'finalBagWeightG: $finalBagWeightG'
         ')';
   }
 }
