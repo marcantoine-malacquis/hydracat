@@ -153,6 +153,7 @@ class LoggingPopupWrapper extends StatelessWidget {
           Expanded(
             child: Text(
               title,
+              textAlign: TextAlign.center,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: theme.colorScheme.onSurface,

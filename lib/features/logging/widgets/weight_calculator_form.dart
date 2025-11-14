@@ -339,7 +339,7 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: AppColors.background,
+              color: AppColors.primaryLight,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: AppColors.border),
             ),

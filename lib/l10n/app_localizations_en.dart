@@ -518,10 +518,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Logs fluid therapy session and updates treatment records';
 
   @override
-  String get calculateFromWeight => 'Calculate from weight';
+  String get calculateFromWeight => 'Calculate fluid volume from weight';
 
   @override
-  String get weightCalculatorTitle => 'Calculate Fluid Volume from Weight';
+  String get weightCalculatorTitle => 'Fluid Volume Calculator';
 
   @override
   String get continueFromSameBag => 'Continue from same bag?';

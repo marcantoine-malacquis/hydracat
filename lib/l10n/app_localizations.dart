@@ -1045,13 +1045,13 @@ abstract class AppLocalizations {
   /// No description provided for @calculateFromWeight.
   ///
   /// In en, this message translates to:
-  /// **'Calculate from weight'**
+  /// **'Calculate fluid volume from weight'**
   String get calculateFromWeight;
 
   /// No description provided for @weightCalculatorTitle.
   ///
   /// In en, this message translates to:
-  /// **'Calculate Fluid Volume from Weight'**
+  /// **'Fluid Volume Calculator'**
   String get weightCalculatorTitle;
 
   /// No description provided for @continueFromSameBag.

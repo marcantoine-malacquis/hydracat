@@ -329,8 +329,8 @@
   "fluidLogButtonHint": "Logs fluid therapy session and updates treatment records",
 
   "@_LOGGING_WEIGHT_CALCULATOR": {},
-  "calculateFromWeight": "Calculate from weight",
-  "weightCalculatorTitle": "Calculate Fluid Volume from Weight",
+  "calculateFromWeight": "Calculate fluid volume from weight",
+  "weightCalculatorTitle": "Fluid Volume Calculator",
   "continueFromSameBag": "Continue from same bag?",
   "useThisWeight": "Use This Weight",
   "beforeFluidTherapy": "Before fluid therapy:",
