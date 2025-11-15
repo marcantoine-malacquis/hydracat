@@ -42,6 +42,11 @@ lib/
 - **Services**: Auth, Firestore, Analytics, Crashlytics, Messaging, Storage
 - **Config**: Environment-specific via `lib/firebase_options.dart` with `FlavorConfig`
 
+### Analytics
+- **Reference Documentation**: `.cursor/reference/analytics_list.md` - **MUST be updated** when adding/modifying/removing analytics events
+- **Service Location**: `lib/providers/analytics_provider.dart`
+- **Privacy**: No PII, sanitize sensitive data
+
 ## Code Standards
 
 ### Naming Conventions
