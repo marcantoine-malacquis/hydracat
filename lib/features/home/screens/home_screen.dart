@@ -12,6 +12,7 @@ import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/dashboard_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/widgets/empty_states/onboarding_cta_empty_state.dart';
+import 'package:hydracat/shared/widgets/fluid/water_drop_progress_card.dart';
 import 'package:hydracat/shared/widgets/selection_card.dart';
 import 'package:hydracat/shared/widgets/status/connection_status_widget.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
@@ -162,6 +163,12 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
+
+              // Weekly progress card (only show if has fluid schedule)
+              if (hasFluid) ...[
+                const WaterDropProgressCard(),
+                const SizedBox(height: AppSpacing.lg),
+              ],
 
               // Error state
               if (dashboardState.errorMessage != null) ...[

@@ -10,6 +10,7 @@ import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/logging_validation_service.dart';
 import 'package:hydracat/features/logging/services/summary_cache_service.dart';
+import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/shared/models/summary_update_dto.dart';
@@ -534,15 +535,54 @@ class LoggingService {
         );
       }
 
-      // STEP 6: Build 4-write batch
+      // STEP 5A: Calculate weekly goal (only if first session of week)
+      final weeklyGoal = await _calculateWeeklyGoalFromSchedules(
+        userId,
+        petId,
+        todaysSchedules,
+        session.dateTime,
+      );
+
+      if (kDebugMode && weeklyGoal != null) {
+        debugPrint(
+          '[LoggingService] Calculated weekly goal: ${weeklyGoal}ml',
+        );
+      }
+
+      // STEP 6: Build 5-write batch (session + 3 summaries + pet doc)
       final batch = _firestore.batch();
+
+      // Add fluid session writes
       _addFluidSessionToBatch(
         batch: batch,
         session: sessionWithSchedule,
         userId: userId,
         petId: petId,
         scheduledSessionsCount: scheduledSessionsCount,
+        weeklyGoalMl: weeklyGoal,
       );
+
+      // STEP 6A: Update pet document with last injection site
+      if (session.injectionSite != null) {
+        final petRef = _firestore
+            .collection('users')
+            .doc(userId)
+            .collection('pets')
+            .doc(petId);
+
+        batch.update(petRef, {
+          'lastFluidInjectionSite': session.injectionSite!.name,
+          'lastFluidSessionDate': session.dateTime,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        if (kDebugMode) {
+          debugPrint(
+            '[LoggingService] Updating pet injection site: '
+            '${session.injectionSite!.name}',
+          );
+        }
+      }
 
       // STEP 7: Commit batch
       await _executeBatchWrite(
@@ -1334,6 +1374,66 @@ class LoggingService {
     return targetVolume * reminderCount;
   }
 
+  /// Calculates the weekly fluid goal from active schedules for a given date
+  ///
+  /// Formula: Daily volume × sessions per day × appropriate days per week
+  /// - Once daily: volume × 1 × 7 = volume × 7
+  /// - Twice daily: volume × 2 × 7 = volume × 14
+  /// - Thrice daily: volume × 3 × 7 = volume × 21
+  /// - Every other day: volume × 1 × 3.5 = volume × 3.5
+  /// - Every 3 days: volume × 1 × 2.33 = volume × 2.33
+  ///
+  /// Returns null if:
+  /// - No active fluid schedules found
+  /// - Schedule has no target volume
+  /// - This week already has a goal stored (prevents recalculation)
+  ///
+  /// This goal is stored in the weekly summary document for historical accuracy
+  /// when schedules change mid-week.
+  Future<int?> _calculateWeeklyGoalFromSchedules(
+    String userId,
+    String petId,
+    List<Schedule> todaysSchedules,
+    DateTime date,
+  ) async {
+    // Check if weekly summary already has goal stored
+    final weeklyRef = _getWeeklySummaryRef(userId, petId, date);
+    final weeklySnapshot = await weeklyRef.get();
+
+    if (weeklySnapshot.exists) {
+      final data = weeklySnapshot.data() as Map<String, dynamic>?;
+      final existingGoal = (data?['fluidScheduledVolume'] as num?)?.toInt();
+      if (existingGoal != null) {
+        // Goal already calculated for this week, don't recalculate
+        return null;
+      }
+    }
+
+    // Find active fluid schedule
+    final fluidSchedule = todaysSchedules
+        .where((s) => s.treatmentType == TreatmentType.fluid)
+        .where((s) => s.isActive)
+        .firstOrNull;
+
+    if (fluidSchedule == null || fluidSchedule.targetVolume == null) {
+      return null;
+    }
+
+    final dailyVolume = fluidSchedule.targetVolume!;
+    final frequency = fluidSchedule.frequency;
+
+    // Calculate weekly multiplier based on frequency
+    final weeklyMultiplier = switch (frequency) {
+      TreatmentFrequency.onceDaily => 7.0,
+      TreatmentFrequency.twiceDaily => 14.0,
+      TreatmentFrequency.thriceDaily => 21.0,
+      TreatmentFrequency.everyOtherDay => 3.5,
+      TreatmentFrequency.every3Days => 2.33,
+    };
+
+    return (dailyVolume * weeklyMultiplier).round();
+  }
+
   // ============================================
   // PRIVATE HELPERS - Schedule Matching
   // ============================================
@@ -1525,6 +1625,7 @@ class LoggingService {
     required String userId,
     required String petId,
     required int scheduledSessionsCount,
+    int? weeklyGoalMl,
   }) {
     final sessionRef = _getFluidSessionRef(userId, petId, session.id);
     final date = AppDateUtils.startOfDay(session.dateTime);
@@ -1551,7 +1652,7 @@ class LoggingService {
     final weeklyRef = _getWeeklySummaryRef(userId, petId, date);
     batch.set(
       weeklyRef,
-      _buildWeeklySummaryWithIncrements(date, dto),
+      _buildWeeklySummaryWithIncrements(date, dto, weeklyGoalMl: weeklyGoalMl),
       SetOptions(merge: true),
     );
 
@@ -1645,8 +1746,9 @@ class LoggingService {
   /// FieldValue.increment() works on non-existent fields (treats as 0).
   Map<String, dynamic> _buildWeeklySummaryWithIncrements(
     DateTime date,
-    SummaryUpdateDto dto,
-  ) {
+    SummaryUpdateDto dto, {
+    int? weeklyGoalMl,
+  }) {
     final map =
         <String, dynamic>{
             'weekId': AppDateUtils.formatWeekForSummary(date), // "2025-W40"
@@ -1655,6 +1757,11 @@ class LoggingService {
           }
           // Add DTO increments (will create or increment existing fields)
           ..addAll(dto.toFirestoreUpdate());
+
+    // Add weekly goal if provided (only on first session of week)
+    if (weeklyGoalMl != null) {
+      map['fluidScheduledVolume'] = weeklyGoalMl;
+    }
 
     return map;
   }

@@ -203,6 +203,16 @@ class AnalyticsEvents {
   /// Index rebuild failed event name
   static const String notificationIndexRebuildFailed =
       'notification_index_rebuild_failed';
+
+  // Weekly progress events
+  /// Weekly progress card viewed event name
+  static const String weeklyProgressViewed = 'weekly_progress_viewed';
+
+  /// Weekly goal achieved event name
+  static const String weeklyGoalAchieved = 'weekly_goal_achieved';
+
+  /// Weekly progress card tapped event name (future enhancement)
+  static const String weeklyCardTapped = 'weekly_card_tapped';
 }
 
 /// Analytics parameters
@@ -338,6 +348,25 @@ class AnalyticsParams {
 
   /// Result parameter name
   static const String result = 'result';
+
+  // Weekly progress params
+  /// Weekly progress fill percentage parameter (0.0 to 2.0, where 1.0 = 100%)
+  static const String weeklyFillPercentage = 'weekly_fill_percentage';
+
+  /// Weekly current volume parameter (ml)
+  static const String weeklyCurrentVolume = 'weekly_current_volume';
+
+  /// Weekly goal volume parameter (ml)
+  static const String weeklyGoalVolume = 'weekly_goal_volume';
+
+  /// Days remaining in week parameter (0-6)
+  static const String daysRemainingInWeek = 'days_remaining_in_week';
+
+  /// Achieved early flag parameter (completed before Sunday)
+  static const String achievedEarly = 'achieved_early';
+
+  /// Last injection site parameter
+  static const String lastInjectionSite = 'last_injection_site';
 }
 
 /// Standardized error type constants for analytics tracking
@@ -1421,6 +1450,87 @@ class AnalyticsService {
     } on Exception catch (e) {
       if (kDebugMode) {
         debugPrint('[Analytics] Failed to track FCM wake-up: $e');
+      }
+    }
+  }
+
+  /// Track weekly progress card view.
+  ///
+  /// Tracks when the weekly progress card is displayed to the user with data.
+  /// Helps understand engagement with the weekly progress feature.
+  ///
+  /// Parameters:
+  /// - [fillPercentage]: Current progress (0.0 to 2.0, where 1.0 = 100%)
+  /// - [currentVolume]: Volume given this week (ml)
+  /// - [goalVolume]: Weekly goal volume (ml)
+  /// - [daysRemainingInWeek]: Days left in current week (0-6)
+  /// - [lastInjectionSite]: Last injection site used (optional)
+  /// - [petId]: Pet identifier (optional)
+  Future<void> trackWeeklyProgressViewed({
+    required double fillPercentage,
+    required double currentVolume,
+    required int goalVolume,
+    required int daysRemainingInWeek,
+    String? lastInjectionSite,
+    String? petId,
+  }) async {
+    if (!_isEnabled) return;
+
+    try {
+      await _analytics.logEvent(
+        name: AnalyticsEvents.weeklyProgressViewed,
+        parameters: {
+          AnalyticsParams.weeklyFillPercentage: fillPercentage,
+          AnalyticsParams.weeklyCurrentVolume: currentVolume,
+          AnalyticsParams.weeklyGoalVolume: goalVolume,
+          AnalyticsParams.daysRemainingInWeek: daysRemainingInWeek,
+          if (lastInjectionSite != null)
+            AnalyticsParams.lastInjectionSite: lastInjectionSite,
+          if (petId != null) AnalyticsParams.petId: petId,
+        },
+      );
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Analytics] Failed to track weekly progress viewed: $e');
+      }
+    }
+  }
+
+  /// Track weekly goal achievement.
+  ///
+  /// Tracks when user completes their weekly fluid therapy goal
+  /// (fillPercentage >= 1.0). Fires once per week when threshold is crossed,
+  /// celebrating the milestone.
+  ///
+  /// Parameters:
+  /// - [finalVolume]: Total volume given when goal achieved (ml)
+  /// - [goalVolume]: Weekly goal volume (ml)
+  /// - [daysRemainingInWeek]: Days left in week when achieved (0-6)
+  /// - [achievedEarly]: true if completed before Sunday
+  /// - [petId]: Pet identifier (optional)
+  Future<void> trackWeeklyGoalAchieved({
+    required double finalVolume,
+    required int goalVolume,
+    required int daysRemainingInWeek,
+    required bool achievedEarly,
+    String? petId,
+  }) async {
+    if (!_isEnabled) return;
+
+    try {
+      await _analytics.logEvent(
+        name: AnalyticsEvents.weeklyGoalAchieved,
+        parameters: {
+          AnalyticsParams.weeklyCurrentVolume: finalVolume,
+          AnalyticsParams.weeklyGoalVolume: goalVolume,
+          AnalyticsParams.daysRemainingInWeek: daysRemainingInWeek,
+          AnalyticsParams.achievedEarly: achievedEarly,
+          if (petId != null) AnalyticsParams.petId: petId,
+        },
+      );
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Analytics] Failed to track weekly goal achieved: $e');
       }
     }
   }

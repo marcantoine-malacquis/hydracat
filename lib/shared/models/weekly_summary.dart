@@ -21,8 +21,6 @@ const _undefined = Object();
 class WeeklySummary extends TreatmentSummaryBase {
   /// Creates a [WeeklySummary] instance
   const WeeklySummary({
-    required this.startDate,
-    required this.endDate,
     required this.fluidTreatmentDays,
     required this.fluidMissedDays,
     required this.medicationAvgAdherence,
@@ -37,7 +35,10 @@ class WeeklySummary extends TreatmentSummaryBase {
     required super.fluidScheduledSessions,
     required super.overallTreatmentDone,
     required super.createdAt,
+    this.startDate,
+    this.endDate,
     super.updatedAt,
+    this.fluidScheduledVolume,
   });
 
   /// Factory constructor to create an empty weekly summary
@@ -56,8 +57,6 @@ class WeeklySummary extends TreatmentSummaryBase {
     final now = DateTime.now();
 
     return WeeklySummary(
-      startDate: weekDates['start']!,
-      endDate: weekDates['end']!,
       fluidTreatmentDays: 0,
       fluidMissedDays: 0,
       medicationAvgAdherence: 0,
@@ -72,6 +71,8 @@ class WeeklySummary extends TreatmentSummaryBase {
       fluidScheduledSessions: 0,
       overallTreatmentDone: false,
       createdAt: now,
+      startDate: weekDates['start'],
+      endDate: weekDates['end'],
     );
   }
 
@@ -91,8 +92,6 @@ class WeeklySummary extends TreatmentSummaryBase {
     }
 
     return WeeklySummary(
-      startDate: TreatmentSummaryBase.parseDateTime(json['startDate']),
-      endDate: TreatmentSummaryBase.parseDateTime(json['endDate']),
       fluidTreatmentDays: (json['fluidTreatmentDays'] as num?)?.toInt() ?? 0,
       fluidMissedDays: (json['fluidMissedDays'] as num?)?.toInt() ?? 0,
       medicationAvgAdherence:
@@ -115,15 +114,24 @@ class WeeklySummary extends TreatmentSummaryBase {
       createdAt:
           TreatmentSummaryBase.parseDateTimeNullable(json['createdAt']) ??
           DateTime.now(),
+      startDate: TreatmentSummaryBase.parseDateTimeNullable(json['startDate']),
+      endDate: TreatmentSummaryBase.parseDateTimeNullable(json['endDate']),
       updatedAt: TreatmentSummaryBase.parseDateTimeNullable(json['updatedAt']),
+      fluidScheduledVolume: (json['fluidScheduledVolume'] as num?)?.toInt(),
     );
   }
 
   /// First day of the week (Monday 00:00:00)
-  final DateTime startDate;
+  ///
+  /// Nullable for backward compatibility with legacy data that may not have
+  /// this field. New summaries should always include start and end dates.
+  final DateTime? startDate;
 
   /// Last day of the week (Sunday 23:59:59)
-  final DateTime endDate;
+  ///
+  /// Nullable for backward compatibility with legacy data that may not have
+  /// this field. New summaries should always include start and end dates.
+  final DateTime? endDate;
 
   /// Number of days with at least one fluid session
   ///
@@ -151,13 +159,22 @@ class WeeklySummary extends TreatmentSummaryBase {
   /// Incremented from daily summaries where `overallTreatmentDone == false`.
   final int overallMissedDays;
 
+  /// Weekly scheduled fluid volume in ml
+  ///
+  /// Calculated from active schedules at the time of first session in the week.
+  /// Stores the weekly goal for historical accuracy when schedules change.
+  /// Null if no sessions have been logged this week yet.
+  final int? fluidScheduledVolume;
+
   @override
-  String get documentId => AppDateUtils.formatWeekForSummary(startDate);
+  String get documentId =>
+      AppDateUtils.formatWeekForSummary(startDate ?? DateTime.now());
 
   /// Whether this week is the current week
   bool get isCurrentWeek {
+    if (startDate == null || endDate == null) return false;
     final now = DateTime.now();
-    return now.isAfter(startDate) && now.isBefore(endDate);
+    return now.isAfter(startDate!) && now.isBefore(endDate!);
   }
 
   /// Average medication adherence as percentage (0-100)
@@ -176,13 +193,14 @@ class WeeklySummary extends TreatmentSummaryBase {
   @override
   Map<String, dynamic> toJson() {
     return {
-      'startDate': startDate.toIso8601String(),
-      'endDate': endDate.toIso8601String(),
+      'startDate': startDate?.toIso8601String(),
+      'endDate': endDate?.toIso8601String(),
       'fluidTreatmentDays': fluidTreatmentDays,
       'fluidMissedDays': fluidMissedDays,
       'medicationAvgAdherence': medicationAvgAdherence,
       'overallTreatmentDays': overallTreatmentDays,
       'overallMissedDays': overallMissedDays,
+      'fluidScheduledVolume': fluidScheduledVolume,
       'medicationTotalDoses': medicationTotalDoses,
       'medicationScheduledDoses': medicationScheduledDoses,
       'medicationMissedCount': medicationMissedCount,
@@ -200,16 +218,18 @@ class WeeklySummary extends TreatmentSummaryBase {
   List<String> validate() {
     final errors = validateBase();
 
-    // Date validation
-    if (endDate.isBefore(startDate)) {
-      errors.add('End date must be after start date');
-    }
+    // Date validation (only if both dates present)
+    if (startDate != null && endDate != null) {
+      if (endDate!.isBefore(startDate!)) {
+        errors.add('End date must be after start date');
+      }
 
-    // Week span validation (should be exactly 7 days)
-    final daysDifference = endDate.difference(startDate).inDays;
-    if (daysDifference != 6) {
-      // 6 because we count inclusive (Mon-Sun = 7 days but diff = 6)
-      errors.add('Week span must be exactly 7 days (Monday-Sunday)');
+      // Week span validation (should be exactly 7 days)
+      final daysDifference = endDate!.difference(startDate!).inDays;
+      if (daysDifference != 6) {
+        // 6 because we count inclusive (Mon-Sun = 7 days but diff = 6)
+        errors.add('Week span must be exactly 7 days (Monday-Sunday)');
+      }
     }
 
     // Day counts validation
@@ -244,8 +264,6 @@ class WeeklySummary extends TreatmentSummaryBase {
 
   /// Creates a copy of this [WeeklySummary] with the given fields replaced
   WeeklySummary copyWith({
-    DateTime? startDate,
-    DateTime? endDate,
     int? fluidTreatmentDays,
     int? fluidMissedDays,
     double? medicationAvgAdherence,
@@ -260,11 +278,12 @@ class WeeklySummary extends TreatmentSummaryBase {
     int? fluidScheduledSessions,
     bool? overallTreatmentDone,
     DateTime? createdAt,
+    Object? startDate = _undefined,
+    Object? endDate = _undefined,
     Object? updatedAt = _undefined,
+    Object? fluidScheduledVolume = _undefined,
   }) {
     return WeeklySummary(
-      startDate: startDate ?? this.startDate,
-      endDate: endDate ?? this.endDate,
       fluidTreatmentDays: fluidTreatmentDays ?? this.fluidTreatmentDays,
       fluidMissedDays: fluidMissedDays ?? this.fluidMissedDays,
       medicationAvgAdherence:
@@ -283,9 +302,18 @@ class WeeklySummary extends TreatmentSummaryBase {
           fluidScheduledSessions ?? this.fluidScheduledSessions,
       overallTreatmentDone: overallTreatmentDone ?? this.overallTreatmentDone,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt == _undefined 
-          ? this.updatedAt 
+      startDate: startDate == _undefined
+          ? this.startDate
+          : startDate as DateTime?,
+      endDate: endDate == _undefined
+          ? this.endDate
+          : endDate as DateTime?,
+      updatedAt: updatedAt == _undefined
+          ? this.updatedAt
           : updatedAt as DateTime?,
+      fluidScheduledVolume: fluidScheduledVolume == _undefined
+          ? this.fluidScheduledVolume
+          : fluidScheduledVolume as int?,
     );
   }
 
@@ -301,6 +329,7 @@ class WeeklySummary extends TreatmentSummaryBase {
         other.medicationAvgAdherence == medicationAvgAdherence &&
         other.overallTreatmentDays == overallTreatmentDays &&
         other.overallMissedDays == overallMissedDays &&
+        other.fluidScheduledVolume == fluidScheduledVolume &&
         super == other;
   }
 
@@ -315,6 +344,7 @@ class WeeklySummary extends TreatmentSummaryBase {
       medicationAvgAdherence,
       overallTreatmentDays,
       overallMissedDays,
+      fluidScheduledVolume,
     );
   }
 
@@ -328,6 +358,7 @@ class WeeklySummary extends TreatmentSummaryBase {
         'medicationAvgAdherence: $medicationAvgAdherence, '
         'overallTreatmentDays: $overallTreatmentDays, '
         'overallMissedDays: $overallMissedDays, '
+        'fluidScheduledVolume: $fluidScheduledVolume, '
         'medicationTotalDoses: $medicationTotalDoses, '
         'medicationScheduledDoses: $medicationScheduledDoses, '
         'medicationMissedCount: $medicationMissedCount, '

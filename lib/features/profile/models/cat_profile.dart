@@ -24,6 +24,8 @@ class CatProfile {
     this.photoUrl,
     this.breed,
     this.gender,
+    this.lastFluidInjectionSite,
+    this.lastFluidSessionDate,
   });
 
   /// Creates a [CatProfile] from JSON data
@@ -44,6 +46,10 @@ class CatProfile {
       photoUrl: json['photoUrl'] as String?,
       breed: json['breed'] as String?,
       gender: json['gender'] as String?,
+      lastFluidInjectionSite: json['lastFluidInjectionSite'] as String?,
+      lastFluidSessionDate: json['lastFluidSessionDate'] != null
+          ? _parseDateTime(json['lastFluidSessionDate'])
+          : null,
     );
   }
 
@@ -91,6 +97,18 @@ class CatProfile {
   /// Pet's gender (optional)
   final String? gender;
 
+  /// Last injection site used for fluid therapy
+  ///
+  /// Stored as the FluidLocation enum name (e.g., "shoulderBladeLeft").
+  /// Used for continuous injection site rotation tracking across weeks.
+  final String? lastFluidInjectionSite;
+
+  /// Date/time of last fluid therapy session
+  ///
+  /// Updated each time a fluid session is logged.
+  /// Used with lastFluidInjectionSite for site rotation tracking.
+  final DateTime? lastFluidSessionDate;
+
   /// Pet's weight in pounds (converted from kg)
   double? get weightLbs =>
       weightKg != null ? WeightUtils.convertKgToLbs(weightKg!) : null;
@@ -119,6 +137,8 @@ class CatProfile {
       'photoUrl': photoUrl,
       'breed': breed,
       'gender': gender,
+      'lastFluidInjectionSite': lastFluidInjectionSite,
+      'lastFluidSessionDate': lastFluidSessionDate?.toIso8601String(),
     };
   }
 
@@ -135,6 +155,8 @@ class CatProfile {
     Object? photoUrl = _undefined,
     Object? breed = _undefined,
     Object? gender = _undefined,
+    Object? lastFluidInjectionSite = _undefined,
+    Object? lastFluidSessionDate = _undefined,
   }) {
     return CatProfile(
       id: id ?? this.id,
@@ -148,6 +170,12 @@ class CatProfile {
       photoUrl: photoUrl == _undefined ? this.photoUrl : photoUrl as String?,
       breed: breed == _undefined ? this.breed : breed as String?,
       gender: gender == _undefined ? this.gender : gender as String?,
+      lastFluidInjectionSite: lastFluidInjectionSite == _undefined
+          ? this.lastFluidInjectionSite
+          : lastFluidInjectionSite as String?,
+      lastFluidSessionDate: lastFluidSessionDate == _undefined
+          ? this.lastFluidSessionDate
+          : lastFluidSessionDate as DateTime?,
     );
   }
 
@@ -229,7 +257,9 @@ class CatProfile {
         other.updatedAt == updatedAt &&
         other.photoUrl == photoUrl &&
         other.breed == breed &&
-        other.gender == gender;
+        other.gender == gender &&
+        other.lastFluidInjectionSite == lastFluidInjectionSite &&
+        other.lastFluidSessionDate == lastFluidSessionDate;
   }
 
   @override
@@ -246,6 +276,8 @@ class CatProfile {
       photoUrl,
       breed,
       gender,
+      lastFluidInjectionSite,
+      lastFluidSessionDate,
     );
   }
 
@@ -262,7 +294,9 @@ class CatProfile {
         'updatedAt: $updatedAt, '
         'photoUrl: $photoUrl, '
         'breed: $breed, '
-        'gender: $gender'
+        'gender: $gender, '
+        'lastFluidInjectionSite: $lastFluidInjectionSite, '
+        'lastFluidSessionDate: $lastFluidSessionDate'
         ')';
   }
 }

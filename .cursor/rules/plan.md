@@ -42,3 +42,8 @@ I already did something similar in @onboarding_code_review_report.md . I don't n
 
 Please update logging_plan.md to take into consideration what we just implemented in this step for future reference. Particularily add things we would need to remember for future use or implementation. Don't include information related to linting. Keep it as short as possible.
 
+1. 10 particles feel right yes
+2. stay all week 
+3. keep water teal (badge + golden % is enough color)
+4. we can have a medium haptic feedback (this happen only once a week)
+5. self-contained in WaterDropWidget (simpler)
