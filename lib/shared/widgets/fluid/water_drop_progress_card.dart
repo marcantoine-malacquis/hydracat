@@ -137,33 +137,51 @@ class _WaterDropProgressCardState
             ),
           ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Left: Water drop (60% space)
-            Flexible(
-              flex: 6,
-              child: WaterDropWidget(
-                fillPercentage: fillPercentage,
-                height: 220,
-                onGoalAchieved: () => _trackWeeklyGoalAchieved(vm),
-              ),
+            // Main content: Water drop + stats
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // Left: Water drop (60% space)
+                Flexible(
+                  flex: 6,
+                  child: WaterDropWidget(
+                    fillPercentage: fillPercentage,
+                    height: 220,
+                    onGoalAchieved: () => _trackWeeklyGoalAchieved(vm),
+                  ),
+                ),
+
+                const SizedBox(width: 24),
+
+                // Right: Text stats (40% space)
+                Flexible(
+                  flex: 4,
+                  child: _buildTextStats(
+                    context,
+                    currentMl: currentMl,
+                    goalMl: goalMl,
+                    percentageDisplay: percentageDisplay,
+                    fillPercentage: fillPercentage,
+                  ),
+                ),
+              ],
             ),
 
-            const SizedBox(width: 24),
+            const SizedBox(height: 16),
 
-            // Right: Text stats (40% space)
-            Flexible(
-              flex: 4,
-              child: _buildTextStats(
-                context,
-                currentMl: currentMl,
-                goalMl: goalMl,
-                percentageDisplay: percentageDisplay,
-                fillPercentage: fillPercentage,
-                lastSiteDisplay: lastSiteDisplay,
-              ),
+            // Full-width separator
+            Container(
+              height: 1,
+              color: AppColors.border,
             ),
+
+            const SizedBox(height: 12),
+
+            // Injection site (centered, full-width)
+            _buildInjectionSite(lastSiteDisplay),
           ],
         ),
       ),
@@ -176,7 +194,6 @@ class _WaterDropProgressCardState
     required int goalMl,
     required int percentageDisplay,
     required double fillPercentage,
-    required String lastSiteDisplay,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,73 +205,53 @@ class _WaterDropProgressCardState
           style: AppTextStyles.display, // 32px, semi-bold
         ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
 
-        // Goal Volume (Medium, secondary color for hierarchy)
-        Row(
-          children: [
-            Text(
-              'Goal: ',
-              style: AppTextStyles.h2.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            Expanded(
-              child: Text(
-                _formatMl(goalMl),
-                style: AppTextStyles.h2, // 20px, medium
-              ),
-            ),
-          ],
+        // Goal Volume with slash separator (Medium, secondary color)
+        Text(
+          '/${_formatMl(goalMl)}',
+          style: AppTextStyles.h2.copyWith(
+            // 20px, medium
+            color: AppColors.textSecondary,
+          ),
         ),
 
         const SizedBox(height: 16),
 
-        // Separator line
-        Container(
-          width: 120,
-          height: 1,
-          color: AppColors.border,
-        ),
-
-        const SizedBox(height: 12),
-
-        // Last Injection Site (Small, supplementary)
-        Row(
-          children: [
-            const Icon(
-              Icons.location_on,
-              size: 14,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              'Last: ',
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            Expanded(
-              child: Text(
-                lastSiteDisplay,
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 8),
-
-        // Percentage (Medium-large, color-coded status)
+        // Percentage with descriptive text (same size and color as goal)
         Text(
-          '$percentageDisplay%',
-          style: AppTextStyles.h1.copyWith(
-            // 24px, semi-bold
-            color: _getPercentageColor(fillPercentage),
+          '$percentageDisplay% of your goal',
+          style: AppTextStyles.h2.copyWith(
+            // 20px, medium - matches "/1.4L"
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Build injection site display (centered, full-width)
+  Widget _buildInjectionSite(String lastSiteDisplay) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(
+          Icons.location_on,
+          size: 14,
+          color: AppColors.textSecondary,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          'Last: ',
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+        Text(
+          lastSiteDisplay,
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -326,18 +323,5 @@ class _WaterDropProgressCardState
       return '${liters.toStringAsFixed(liters >= 10 ? 0 : 1)} L';
     }
     return '${ml.round()} ml';
-  }
-
-  /// Get percentage color based on progress (4-tier system)
-  Color _getPercentageColor(double percentage) {
-    if (percentage >= 1.0) {
-      return AppColors.success; // Week complete! (golden)
-    } else if (percentage >= 0.7) {
-      return AppColors.primary; // On track (teal)
-    } else if (percentage >= 0.5) {
-      return AppColors.warning; // Okay pace (coral)
-    } else {
-      return AppColors.error; // Behind schedule (red)
-    }
   }
 }
