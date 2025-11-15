@@ -8,12 +8,12 @@ This document provides a comprehensive index of all test files in the HydraCat p
 
 **Test Run Results**: `00:24 +596 ~26 -192: Some tests failed.`
 
-- **Total Tests Captured**: 323 individual tests documented
-- **Passing**: 241 ✅ (74.6%)
-- **Failing**: 82 ❌ (25.4%)
-- **Skipped**: 0 ⊘
+- **Total Tests**: 814 tests
+  - **Passing**: 596 ✅ (73.2%)
+  - **Failing**: 192 ❌ (23.6%)
+  - **Skipped**: 26 ⊘ (3.2%)
 
-**Note**: The test runner reports 814 total assertions (596 passing + 192 failing + 26 skipped). This index documents 323 unique test cases with their individual status.
+**Test Cases Documented Below**: 323 unique test case descriptions identified (some test cases contain multiple assertions, setup/teardown operations, or parameterized variations that contribute to the 814 total)
 
 ---
 
