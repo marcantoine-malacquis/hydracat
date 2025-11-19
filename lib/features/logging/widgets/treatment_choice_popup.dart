@@ -77,9 +77,6 @@ class TreatmentChoicePopup extends ConsumerWidget {
                     AppSpacing.sm, // Reduced from md to sm
               ),
               padding: const EdgeInsets.only(
-                top: AppSpacing.lg,
-                left: AppSpacing.lg,
-                right: AppSpacing.lg,
                 bottom: AppSpacing.sm, // Reduced from lg to sm
               ),
               decoration: BoxDecoration(
@@ -97,87 +94,114 @@ class TreatmentChoicePopup extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  // Title with teal background
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.only(
+                      top: AppSpacing.lg,
+                      left: AppSpacing.lg,
+                      right: AppSpacing.lg,
+                      bottom: AppSpacing.md,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      ),
+                    ),
                     child: Text(
                       l10n.treatmentChoiceTitle,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: theme.colorScheme.onPrimary,
                       ),
                     ),
                   ),
 
-                  // Medication button
-                  Semantics(
-                    label: l10n.treatmentChoiceMedicationLabel,
-                    hint: l10n.treatmentChoiceMedicationHint,
-                    button: true,
-                    child: _TreatmentChoiceButton(
-                      icon: AppIcons.medication,
-                      label: TreatmentChoice.medication.displayName,
-                      onTap: () {
-                        ref
-                            .read(loggingProvider.notifier)
-                            .setTreatmentChoice(TreatmentChoice.medication);
-
-                        // Track choice selection
-                        ref
-                            .read(analyticsServiceDirectProvider)
-                            .trackTreatmentChoiceSelected(
-                              choice: 'medication',
-                            );
-
-                        onMedicationSelected();
-                      },
+                  // Buttons section with horizontal padding
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
                     ),
-                  ),
-                  Divider(
-                    height: 1,
-                    thickness: 1,
-                    color: theme.colorScheme.outlineVariant.withValues(
-                      alpha: 0.3,
-                    ),
-                  ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Medication button
+                        Semantics(
+                          label: l10n.treatmentChoiceMedicationLabel,
+                          hint: l10n.treatmentChoiceMedicationHint,
+                          button: true,
+                          child: _TreatmentChoiceButton(
+                            icon: AppIcons.medication,
+                            label: TreatmentChoice.medication.displayName,
+                            onTap: () {
+                              ref
+                                  .read(loggingProvider.notifier)
+                                  .setTreatmentChoice(
+                                    TreatmentChoice.medication,
+                                  );
 
-                  // Fluid therapy button
-                  Semantics(
-                    label: l10n.treatmentChoiceFluidLabel,
-                    hint: l10n.treatmentChoiceFluidHint,
-                    button: true,
-                    child: _TreatmentChoiceButton(
-                      icon: AppIcons.fluidTherapy,
-                      label: TreatmentChoice.fluid.displayName,
-                      onTap: () {
-                        ref
-                            .read(loggingProvider.notifier)
-                            .setTreatmentChoice(TreatmentChoice.fluid);
+                              // Track choice selection
+                              ref
+                                  .read(analyticsServiceDirectProvider)
+                                  .trackTreatmentChoiceSelected(
+                                    choice: 'medication',
+                                  );
 
-                        // Track choice selection
-                        ref
-                            .read(analyticsServiceDirectProvider)
-                            .trackTreatmentChoiceSelected(
-                              choice: 'fluid',
-                            );
+                              onMedicationSelected();
+                            },
+                          ),
+                        ),
+                        Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: theme.colorScheme.outlineVariant.withValues(
+                            alpha: 0.3,
+                          ),
+                        ),
 
-                        onFluidSelected();
-                      },
-                    ),
-                  ),
+                        // Fluid therapy button
+                        Semantics(
+                          label: l10n.treatmentChoiceFluidLabel,
+                          hint: l10n.treatmentChoiceFluidHint,
+                          button: true,
+                          child: _TreatmentChoiceButton(
+                            icon: AppIcons.fluidTherapy,
+                            label: TreatmentChoice.fluid.displayName,
+                            onTap: () {
+                              ref
+                                  .read(loggingProvider.notifier)
+                                  .setTreatmentChoice(TreatmentChoice.fluid);
 
-                  // Visual separation
-                  const SizedBox(height: AppSpacing.md),
+                              // Track choice selection
+                              ref
+                                  .read(analyticsServiceDirectProvider)
+                                  .trackTreatmentChoiceSelected(
+                                    choice: 'fluid',
+                                  );
 
-                  // Cancel button
-                  Semantics(
-                    label: l10n.cancel,
-                    hint: l10n.treatmentChoiceCancelSemantic,
-                    button: true,
-                    child: _CancelButton(
-                      onTap: () {
-                        ref.read(loggingProvider.notifier).reset();
-                        OverlayService.hide();
-                      },
+                              onFluidSelected();
+                            },
+                          ),
+                        ),
+
+                        // Visual separation
+                        const SizedBox(height: AppSpacing.md),
+
+                        // Cancel button
+                        Semantics(
+                          label: l10n.cancel,
+                          hint: l10n.treatmentChoiceCancelSemantic,
+                          button: true,
+                          child: _CancelButton(
+                            onTap: () {
+                              ref.read(loggingProvider.notifier).reset();
+                              OverlayService.hide();
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

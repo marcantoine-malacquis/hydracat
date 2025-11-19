@@ -4,7 +4,6 @@ import 'package:hydracat/core/constants/app_accessibility.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/core/theme/app_layout.dart';
-import 'package:hydracat/core/theme/app_shadows.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/shared/widgets/accessibility/hydra_touch_target.dart';
 import 'package:hydracat/shared/widgets/buttons/hydra_fab.dart';
@@ -12,7 +11,8 @@ import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
 
 // Indicator visual constants (kept local to avoid ripple across themes)
 const double _indicatorHeight = 3;
-const double _indicatorWidth = 48;
+// Edge spacing for full-width indicators
+const double _indicatorHorizontalPadding = 4;
 const double _indicatorRadius = 12;
 const int _indicatorAnimMs = 160;
 
@@ -60,12 +60,7 @@ class HydraNavigationBar extends StatefulWidget {
 }
 
 class _HydraNavigationBarState extends State<HydraNavigationBar> {
-  int? _pressedIndex;
   int? _lastAnnouncedIndex;
-
-  void _setPressedIndex(int? index) {
-    setState(() => _pressedIndex = index);
-  }
 
   Duration _indicatorDuration(BuildContext context) {
     final mq = MediaQuery.maybeOf(context);
@@ -181,24 +176,24 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
               final index = widget.items.indexOf(item);
               final isSelected = index == widget.currentIndex;
               return Expanded(
-                child: Center(
-                  child: AnimatedOpacity(
+                child: AnimatedOpacity(
+                  duration: _indicatorDuration(context),
+                  opacity: isSelected ? 1.0 : 0.0,
+                  child: AnimatedScale(
                     duration: _indicatorDuration(context),
-                    opacity: isSelected ? 1.0 : 0.0,
-                    child: AnimatedScale(
-                      duration: _indicatorDuration(context),
-                      scale: isSelected ? 1.0 : 0.9,
-                      curve: Curves.easeInOut,
-                      child: SizedBox(
-                        width: _indicatorWidth,
+                    scale: isSelected ? 1.0 : 0.9,
+                    curve: Curves.easeInOut,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: _indicatorHorizontalPadding,
+                      ),
+                      child: Container(
+                        key: Key('navTopIndicator-$index'),
                         height: _indicatorHeight,
-                        child: Container(
-                          key: Key('navTopIndicator-$index'),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(
-                              _indicatorRadius,
-                            ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(
+                            _indicatorRadius,
                           ),
                         ),
                       ),
@@ -223,24 +218,24 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
               final index = widget.items.indexOf(item);
               final isSelected = index == widget.currentIndex;
               return Expanded(
-                child: Center(
-                  child: AnimatedOpacity(
+                child: AnimatedOpacity(
+                  duration: _indicatorDuration(context),
+                  opacity: isSelected ? 1.0 : 0.0,
+                  child: AnimatedScale(
                     duration: _indicatorDuration(context),
-                    opacity: isSelected ? 1.0 : 0.0,
-                    child: AnimatedScale(
-                      duration: _indicatorDuration(context),
-                      scale: isSelected ? 1.0 : 0.9,
-                      curve: Curves.easeInOut,
-                      child: SizedBox(
-                        width: _indicatorWidth,
+                    scale: isSelected ? 1.0 : 0.9,
+                    curve: Curves.easeInOut,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: _indicatorHorizontalPadding,
+                      ),
+                      child: Container(
+                        key: Key('navTopIndicator-$index'),
                         height: _indicatorHeight,
-                        child: Container(
-                          key: Key('navTopIndicator-$index'),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(
-                              _indicatorRadius,
-                            ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(
+                            _indicatorRadius,
                           ),
                         ),
                       ),
@@ -261,18 +256,9 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
     int index,
   ) {
     final isSelected = widget.currentIndex >= 0 && index == widget.currentIndex;
-    final isPressed = _pressedIndex == index;
     final color = isSelected ? AppColors.primary : AppColors.textSecondary;
 
     return GestureDetector(
-      onTapDown: (_) => _setPressedIndex(index),
-      onTapUp: (_) {
-        // Add delay to make the effect visible
-        Future.delayed(const Duration(milliseconds: 120), () {
-          if (mounted) _setPressedIndex(null);
-        });
-      },
-      onTapCancel: () => _setPressedIndex(null),
       onTap: () => widget.onTap(index),
       child: Semantics(
         button: true,
@@ -286,43 +272,34 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
               left: 2,
               right: 2,
             ),
-            decoration: BoxDecoration(
-              boxShadow: isPressed ? [AppShadows.navigationIconPressed] : null,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: AnimatedScale(
-              duration: const Duration(milliseconds: 150),
-              curve: Curves.easeInOut,
-              scale: isPressed ? 0.95 : 1.0,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  HydraIcon(
-                    icon: item.icon,
-                    color: color,
-                    semanticLabel: item.label,
-                    size: 26,
-                  ),
-                  const SizedBox(height: 2),
-                  Flexible(
-                    child: Text(
-                      item.label,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: color,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.w400,
-                        fontSize: 10,
-                        height: 1,
-                      ),
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                HydraIcon(
+                  icon: item.icon,
+                  color: color,
+                  semanticLabel: item.label,
+                  size: 26,
+                ),
+                const SizedBox(height: 2),
+                Flexible(
+                  child: Text(
+                    item.label,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: color,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                      fontSize: 10,
+                      height: 1,
                     ),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

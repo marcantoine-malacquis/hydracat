@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
@@ -7,6 +8,8 @@ import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
+import 'package:hydracat/features/logging/widgets/injection_site_selector.dart';
+import 'package:hydracat/features/logging/widgets/stress_level_selector.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/features/profile/models/schedule_history_entry.dart';
@@ -1594,6 +1597,7 @@ class _MedicationEditInlineFormState
     extends State<_MedicationEditInlineForm> {
   late bool _completed;
   late double _dosageGiven;
+  double? _previousDosage; // Store dosage when switching to missed
   late TextEditingController _notesController;
   bool _notesExpanded = false;
   final FocusNode _notesFocusNode = FocusNode();
@@ -1747,7 +1751,19 @@ class _MedicationEditInlineFormState
                 label: 'Completed',
                 icon: Icons.check_circle,
                 isSelected: _completed,
-                onTap: () => setState(() => _completed = true),
+                onTap: () {
+                  setState(() {
+                    _completed = true;
+                    // Restore previous dosage if available,
+                    // otherwise use scheduled dosage
+                    if (_previousDosage != null) {
+                      _dosageGiven = _previousDosage!;
+                      _previousDosage = null;
+                    } else if (_dosageGiven == 0) {
+                      _dosageGiven = widget.schedule.targetDosage ?? 1;
+                    }
+                  });
+                },
                 theme: theme,
               ),
             ),
@@ -1757,7 +1773,16 @@ class _MedicationEditInlineFormState
                 label: 'Missed',
                 icon: Icons.cancel,
                 isSelected: !_completed,
-                onTap: () => setState(() => _completed = false),
+                onTap: () {
+                  setState(() {
+                    _completed = false;
+                    // Store current dosage and set to 0
+                    if (_dosageGiven > 0) {
+                      _previousDosage = _dosageGiven;
+                      _dosageGiven = 0;
+                    }
+                  });
+                },
                 theme: theme,
               ),
             ),
@@ -1824,6 +1849,7 @@ class _MedicationEditInlineFormState
     final displayDosage = _dosageGiven == _dosageGiven.toInt()
         ? _dosageGiven.toInt().toString()
         : _dosageGiven.toStringAsFixed(1);
+    final isDisabled = !_completed;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1836,47 +1862,52 @@ class _MedicationEditInlineFormState
           ),
         ),
         const SizedBox(height: AppSpacing.md),
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: AppColors.background,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildCircularButton(
-                icon: Icons.remove,
-                onPressed: _decrementDosage,
-                enabled: _dosageGiven > 0,
-              ),
-              const SizedBox(width: AppSpacing.lg),
-              Column(
-                children: [
-                  Text(
-                    displayDosage,
-                    style: AppTextStyles.display.copyWith(
-                      color: theme.colorScheme.onSurface,
-                      fontSize: 40,
+        Opacity(
+          opacity: isDisabled ? 0.5 : 1.0,
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildCircularButton(
+                  icon: Icons.remove,
+                  onPressed: _decrementDosage,
+                  enabled: !isDisabled && _dosageGiven > 0,
+                ),
+                const SizedBox(width: AppSpacing.lg),
+                Column(
+                  children: [
+                    Text(
+                      displayDosage,
+                      style: AppTextStyles.display.copyWith(
+                        color: isDisabled
+                            ? AppColors.textSecondary
+                            : theme.colorScheme.onSurface,
+                        fontSize: 40,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    unit,
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textSecondary,
+                    const SizedBox(height: 4),
+                    Text(
+                      unit,
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: AppSpacing.lg),
-              _buildCircularButton(
-                icon: Icons.add,
-                onPressed: _incrementDosage,
-                enabled: _dosageGiven < 100,
-              ),
-            ],
+                  ],
+                ),
+                const SizedBox(width: AppSpacing.lg),
+                _buildCircularButton(
+                  icon: Icons.add,
+                  onPressed: _incrementDosage,
+                  enabled: !isDisabled && _dosageGiven < 100,
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -2023,11 +2054,11 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
   late double _volumeGiven;
   late FluidLocation? _injectionSite;
   late String? _stressLevel;
+  late TextEditingController _volumeController;
   late TextEditingController _notesController;
   bool _notesExpanded = false;
+  final FocusNode _volumeFocusNode = FocusNode();
   final FocusNode _notesFocusNode = FocusNode();
-
-  static const List<String> _stressLevels = ['low', 'medium', 'high'];
 
   @override
   void initState() {
@@ -2035,11 +2066,36 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
     _volumeGiven = widget.session.volumeGiven;
     _injectionSite = widget.session.injectionSite;
     _stressLevel = widget.session.stressLevel;
+
+    // Initialize volume controller with formatted value
+    final initialVolume = _volumeGiven == _volumeGiven.toInt()
+        ? _volumeGiven.toInt().toString()
+        : _volumeGiven.toStringAsFixed(1);
+    _volumeController = TextEditingController(text: initialVolume);
+
+    // Sync controller changes back to _volumeGiven state
+    _volumeController.addListener(() {
+      final text = _volumeController.text;
+      if (text.isEmpty) {
+        setState(() {
+          _volumeGiven = 0;
+        });
+        return;
+      }
+
+      final value = double.tryParse(text);
+      if (value != null) {
+        setState(() {
+          _volumeGiven = value.clamp(0, 500);
+        });
+      }
+    });
+
     _notesController = TextEditingController(text: widget.session.notes ?? '');
-    
+
     // Expand notes if already has content
     _notesExpanded = widget.session.notes?.isNotEmpty ?? false;
-    
+
     // Expand on focus, collapse on unfocus if empty
     _notesFocusNode.addListener(() {
       if (_notesFocusNode.hasFocus && !_notesExpanded) {
@@ -2058,6 +2114,8 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
 
   @override
   void dispose() {
+    _volumeFocusNode.dispose();
+    _volumeController.dispose();
     _notesFocusNode.dispose();
     _notesController.dispose();
     super.dispose();
@@ -2070,19 +2128,31 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
       _notesController.text != (widget.session.notes ?? '');
 
   void _incrementVolume() {
-    setState(() {
-      if (_volumeGiven < 500) {
-        _volumeGiven = (_volumeGiven + 10).clamp(0, 500);
-      }
-    });
+    if (_volumeGiven < 500) {
+      final newVolume = (_volumeGiven + 10).clamp(0.0, 500.0);
+      final displayVolume = newVolume == newVolume.toInt()
+          ? newVolume.toInt().toString()
+          : newVolume.toStringAsFixed(1);
+
+      setState(() {
+        _volumeGiven = newVolume;
+        _volumeController.text = displayVolume;
+      });
+    }
   }
 
   void _decrementVolume() {
-    setState(() {
-      if (_volumeGiven > 0) {
-        _volumeGiven = (_volumeGiven - 10).clamp(0, 500);
-      }
-    });
+    if (_volumeGiven > 0) {
+      final newVolume = (_volumeGiven - 10).clamp(0.0, 500.0);
+      final displayVolume = newVolume == newVolume.toInt()
+          ? newVolume.toInt().toString()
+          : newVolume.toStringAsFixed(1);
+
+      setState(() {
+        _volumeGiven = newVolume;
+        _volumeController.text = displayVolume;
+      });
+    }
   }
 
   void _handleSave() {
@@ -2147,10 +2217,6 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
   }
 
   Widget _buildVolumeAdjuster(ThemeData theme) {
-    final displayVolume = _volumeGiven == _volumeGiven.toInt()
-        ? _volumeGiven.toInt().toString()
-        : _volumeGiven.toStringAsFixed(1);
-
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -2167,23 +2233,59 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
             enabled: _volumeGiven > 0,
           ),
           const SizedBox(width: AppSpacing.lg),
-          Column(
-            children: [
-              Text(
-                displayVolume,
-                style: AppTextStyles.display.copyWith(
-                  color: theme.colorScheme.onSurface,
-                  fontSize: 40,
+          Expanded(
+            child: Column(
+              children: [
+                TextField(
+                  controller: _volumeController,
+                  focusNode: _volumeFocusNode,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.display.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: 40,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                    LengthLimitingTextInputFormatter(5),
+                  ],
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: AppSpacing.xs,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: AppColors.border,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: AppColors.border,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: AppColors.primary,
+                        width: 2,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'ml',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textSecondary,
+                const SizedBox(height: 4),
+                Text(
+                  'ml',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(width: AppSpacing.lg),
           _buildCircularButton(
@@ -2224,59 +2326,13 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
   }
 
   Widget _buildInjectionSiteSelector(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Injection Site (optional)',
-          style: AppTextStyles.body.copyWith(
-            fontWeight: FontWeight.w500,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        DropdownButtonFormField<FluidLocation?>(
-          initialValue: _injectionSite,
-          decoration: InputDecoration(
-            hintText: 'Select location',
-            hintStyle: AppTextStyles.body.copyWith(
-              color: AppColors.textTertiary,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.primary, width: 2),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
-          ),
-          items: [
-            const DropdownMenuItem<FluidLocation?>(
-              child: Text('None'),
-            ),
-            ...FluidLocation.values.map(
-              (location) => DropdownMenuItem<FluidLocation?>(
-                value: location,
-                child: Text(location.displayName),
-              ),
-            ),
-          ],
-          onChanged: (value) {
-            setState(() {
-              _injectionSite = value;
-            });
-          },
-        ),
-      ],
+    return InjectionSiteSelector(
+      value: _injectionSite,
+      onChanged: (FluidLocation? value) {
+        setState(() {
+          _injectionSite = value;
+        });
+      },
     );
   }
 
@@ -2285,49 +2341,16 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Stress Level (optional)',
+          'Stress Level (optional):',
           style: AppTextStyles.body.copyWith(
             fontWeight: FontWeight.w500,
             color: theme.colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
-        DropdownButtonFormField<String?>(
-          initialValue: _stressLevel,
-          decoration: InputDecoration(
-            hintText: 'Select stress level',
-            hintStyle: AppTextStyles.body.copyWith(
-              color: AppColors.textTertiary,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.border),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.primary, width: 2),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
-          ),
-          items: [
-            const DropdownMenuItem<String?>(
-              child: Text('None'),
-            ),
-            ..._stressLevels.map(
-              (level) => DropdownMenuItem<String?>(
-                value: level,
-                child: Text(level[0].toUpperCase() + level.substring(1)),
-              ),
-            ),
-          ],
-          onChanged: (value) {
+        StressLevelSelector(
+          value: _stressLevel,
+          onChanged: (String? value) {
             setState(() {
               _stressLevel = value;
             });
