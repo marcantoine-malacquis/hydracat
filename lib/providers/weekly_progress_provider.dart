@@ -58,7 +58,7 @@ final AutoDisposeFutureProvider<WeeklyProgressViewModel?>
   ref.watch(dailyCacheProvider);
 
   final user = ref.read(currentUserProvider);
-  final pet = ref.read(primaryPetProvider);
+  final pet = ref.watch(primaryPetProvider);
 
   if (kDebugMode) {
     debugPrint('[WeeklyProgressProvider] User: ${user?.id ?? "null"}');

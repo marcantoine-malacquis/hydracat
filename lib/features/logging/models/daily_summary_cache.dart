@@ -21,7 +21,9 @@ class DailySummaryCache {
     required this.totalMedicationDosesGiven,
     required this.totalFluidVolumeGiven,
     Map<String, List<String>>? medicationRecentTimes,
-  }) : medicationRecentTimes = medicationRecentTimes ?? const {};
+    Map<String, List<String>>? medicationCompletedTimes,
+  })  : medicationRecentTimes = medicationRecentTimes ?? const {},
+        medicationCompletedTimes = medicationCompletedTimes ?? const {};
 
   /// Creates an empty cache for the given date
   ///
@@ -36,6 +38,7 @@ class DailySummaryCache {
       totalMedicationDosesGiven: 0,
       totalFluidVolumeGiven: 0,
       medicationRecentTimes: const {},
+      medicationCompletedTimes: const {},
     );
   }
 
@@ -53,6 +56,14 @@ class DailySummaryCache {
       totalFluidVolumeGiven: (json['totalFluidVolumeGiven'] as num).toDouble(),
       medicationRecentTimes:
           (json['medicationRecentTimes'] as Map<String, dynamic>?)?.map(
+            (key, value) => MapEntry(
+              key,
+              (value as List).map((e) => e as String).toList(),
+            ),
+          ) ??
+          const {},
+      medicationCompletedTimes:
+          (json['medicationCompletedTimes'] as Map<String, dynamic>?)?.map(
             (key, value) => MapEntry(
               key,
               (value as List).map((e) => e as String).toList(),
@@ -107,6 +118,14 @@ class DailySummaryCache {
   /// Used for zero-read duplicate detection. This is an ephemeral cache for
   /// the current day only and is pruned at midnight by the cache service.
   final Map<String, List<String>> medicationRecentTimes;
+
+  /// Completed medication log times per medication name for today (ISO strings)
+  ///
+  /// Similar to medicationRecentTimes but only contains timestamps for
+  /// sessions where completed == true. Used by dashboard to accurately
+  /// determine if a scheduled medication has been successfully completed
+  /// within the ±2h window.
+  final Map<String, List<String>> medicationCompletedTimes;
 
   // Domain validation and queries
 
@@ -191,6 +210,53 @@ class DailySummaryCache {
     return false;
   }
 
+  /// Check if medication has been COMPLETED within time window of scheduled
+  /// time.
+  ///
+  /// Used for dashboard completion detection with ±2h window.
+  /// Returns true ONLY if a COMPLETED session (completed == true) for this
+  /// medication exists within ±2h of the target scheduled time.
+  ///
+  /// This differs from hasMedicationLoggedNear which checks all sessions
+  /// regardless of completion status.
+  ///
+  /// Example:
+  /// ```dart
+  /// final cache = DailySummaryCache(...);
+  /// final scheduledTime = DateTime(2025, 10, 13, 8, 0); // 8:00 AM
+  /// cache.hasMedicationCompletedNear('Amlodipine', scheduledTime);
+  /// // Returns true only if a completed session exists between 6:00 AM - 10:00 AM
+  /// ```
+  bool hasMedicationCompletedNear(
+    String medicationName,
+    DateTime scheduledTime,
+  ) {
+    // Check if medication logged today at all
+    if (!medicationNames.contains(medicationName)) {
+      return false;
+    }
+
+    // Check completed times for this medication
+    final completedTimes = medicationCompletedTimes[medicationName];
+    if (completedTimes == null || completedTimes.isEmpty) {
+      return false;
+    }
+
+    // Check if any completed time is within ±2 hours of scheduled time
+    const timeWindow = Duration(hours: 2);
+
+    for (final timeStr in completedTimes) {
+      final loggedTime = DateTime.parse(timeStr);
+      final difference = loggedTime.difference(scheduledTime).abs();
+
+      if (difference <= timeWindow) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   // Immutability support
 
   /// Creates a copy with updated session data
@@ -237,6 +303,7 @@ class DailySummaryCache {
       // CRITICAL: preserve recent times map across updates so dashboard
       // completion checks remain accurate after fluid logs.
       medicationRecentTimes: medicationRecentTimes,
+      medicationCompletedTimes: medicationCompletedTimes,
     );
   }
 
@@ -252,6 +319,7 @@ class DailySummaryCache {
     double? totalMedicationDosesGiven,
     double? totalFluidVolumeGiven,
     Map<String, List<String>>? medicationRecentTimes,
+    Map<String, List<String>>? medicationCompletedTimes,
   }) {
     return DailySummaryCache(
       date: date ?? this.date,
@@ -265,6 +333,8 @@ class DailySummaryCache {
           totalFluidVolumeGiven ?? this.totalFluidVolumeGiven,
       medicationRecentTimes:
           medicationRecentTimes ?? this.medicationRecentTimes,
+      medicationCompletedTimes:
+          medicationCompletedTimes ?? this.medicationCompletedTimes,
     );
   }
 
@@ -279,6 +349,7 @@ class DailySummaryCache {
     'totalMedicationDosesGiven': totalMedicationDosesGiven,
     'totalFluidVolumeGiven': totalFluidVolumeGiven,
     'medicationRecentTimes': medicationRecentTimes,
+    'medicationCompletedTimes': medicationCompletedTimes,
   };
 
   @override

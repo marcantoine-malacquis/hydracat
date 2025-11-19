@@ -8,7 +8,7 @@ import 'package:hydracat/core/constants/app_colors.dart';
 /// Animated water drop widget with organic wave motion
 ///
 /// Shows fill percentage (0.0 to 1.0) with animated waves.
-/// Automatically transitions to subtle pulse after 10 seconds to save battery.
+/// Uses subtle pulse animation for battery efficiency.
 ///
 /// Usage:
 /// ```dart
@@ -43,8 +43,6 @@ class WaterDropWidget extends StatefulWidget {
 class _WaterDropWidgetState extends State<WaterDropWidget>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late AnimationController _waveController;
-  Timer? _pulseTransitionTimer;
-  bool _isSubtlePulse = false;
 
   // Celebration state
   bool _hasShownCelebration = false;
@@ -58,8 +56,9 @@ class _WaterDropWidgetState extends State<WaterDropWidget>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
+    // Start with subtle pulse speed (4 seconds) for battery efficiency
     _waveController = AnimationController(
-      duration: const Duration(milliseconds: 2500),
+      duration: const Duration(milliseconds: 4000),
       vsync: this,
     );
   }
@@ -75,48 +74,8 @@ class _WaterDropWidgetState extends State<WaterDropWidget>
       // Start animation if motion is not reduced
       if (!AppAnimations.shouldReduceMotion(context)) {
         _waveController.repeat();
-
-        // Transition to subtle pulse after 10 seconds
-        _pulseTransitionTimer = Timer(
-          const Duration(seconds: 10),
-          _transitionToSubtlePulse,
-        );
       }
     }
-  }
-
-  /// Transition to slower, less intense wave animation
-  void _transitionToSubtlePulse() {
-    if (!mounted || _isSubtlePulse) return;
-
-    setState(() {
-      _isSubtlePulse = true;
-    });
-
-    // Slower animation (4 seconds instead of 2.5)
-    _waveController.duration = const Duration(milliseconds: 4000);
-    _waveController.repeat();
-  }
-
-  /// Called when session is logged - re-energize animation
-  void refreshAfterLog() {
-    if (!mounted || AppAnimations.shouldReduceMotion(context)) return;
-
-    _pulseTransitionTimer?.cancel();
-
-    setState(() {
-      _isSubtlePulse = false;
-    });
-
-    // Reset to normal speed
-    _waveController.duration = const Duration(milliseconds: 2500);
-    _waveController.repeat();
-
-    // Resume subtle pulse after 5 seconds
-    _pulseTransitionTimer = Timer(
-      const Duration(seconds: 5),
-      _transitionToSubtlePulse,
-    );
   }
 
   @override
@@ -161,7 +120,6 @@ class _WaterDropWidgetState extends State<WaterDropWidget>
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
       _waveController.stop();
-      _pulseTransitionTimer?.cancel();
     } else if (state == AppLifecycleState.resumed) {
       if (mounted && !AppAnimations.shouldReduceMotion(context)) {
         _waveController.repeat();
@@ -173,7 +131,6 @@ class _WaterDropWidgetState extends State<WaterDropWidget>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _waveController.dispose();
-    _pulseTransitionTimer?.cancel();
     super.dispose();
   }
 
@@ -200,7 +157,6 @@ class _WaterDropWidgetState extends State<WaterDropWidget>
                     fillLevel: widget.fillPercentage,
                     wavePhase: _waveController.value * 2 * pi,
                     enableWaves: !AppAnimations.shouldReduceMotion(context),
-                    isSubtlePulse: _isSubtlePulse,
                   ),
                 );
               },
@@ -238,7 +194,6 @@ class WaterDropPainter extends CustomPainter {
     required this.fillLevel,
     required this.wavePhase,
     required this.enableWaves,
-    required this.isSubtlePulse,
   });
 
   /// Fill level from 0.0 (empty) to 1.0 (full)
@@ -249,9 +204,6 @@ class WaterDropPainter extends CustomPainter {
 
   /// Whether to draw animated waves
   final bool enableWaves;
-
-  /// Whether animation is in subtle pulse mode
-  final bool isSubtlePulse;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -272,9 +224,17 @@ class WaterDropPainter extends CustomPainter {
       _drawStaticGradientFill(canvas, width, height);
     }
 
-    // Draw drop border
+    // Draw drop shadow (subtle depth) and border
     canvas
       ..restore()
+      ..drawPath(
+        dropPath,
+        Paint()
+          ..color = Colors.black.withValues(alpha: 0.15)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.0
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+      )
       ..drawPath(
         dropPath,
         Paint()
@@ -316,24 +276,24 @@ class WaterDropPainter extends CustomPainter {
   void _drawWaveFill(Canvas canvas, double width, double height) {
     final waterLevel = height * (1 - fillLevel);
 
-    // Adjust amplitudes for subtle pulse mode
-    final amplitudeMultiplier = isSubtlePulse ? 0.5 : 1.0;
+    // Use subtle pulse amplitudes (50% of original) for battery efficiency
+    const amplitudeMultiplier = 0.5;
 
     // Optimized wave parameters (organic, not mechanical)
     // Fast shimmer (surface detail)
-    final amplitude1 = 2.5 * amplitudeMultiplier;
+    const amplitude1 = 2.5 * amplitudeMultiplier;
     // Medium swell (main motion)
-    final amplitude2 = 6.0 * amplitudeMultiplier;
+    const amplitude2 = 6.0 * amplitudeMultiplier;
     // Slow base (foundation)
-    final amplitude3 = 4.0 * amplitudeMultiplier;
+    const amplitude3 = 4.0 * amplitudeMultiplier;
 
-    const frequency1 = 3.0; // Finer ripples
-    const frequency2 = 1.5; // Broader waves
-    const frequency3 = 0.8; // Very broad
+    const frequency1 = 4.0; // Finer ripples
+    const frequency2 = 2.0; // Broader waves
+    const frequency3 = 1.0; // Very broad
 
     const speed1 = 1.0;
-    const speed2 = 0.6; // Calmer
-    const speed3 = 0.4; // Very slow
+    const speed2 = 1.0; // Synchronized for seamless loop
+    const speed3 = 1.0; // Synchronized for seamless loop
 
     // Build wave path
     final wavePath = Path()..moveTo(0, height);
@@ -357,11 +317,24 @@ class WaterDropPainter extends CustomPainter {
       ..lineTo(width, height)
       ..close();
 
-    // Draw base water fill
+    // Create gradient for base water fill (darker at bottom, lighter at top)
+    final fillRect = Rect.fromLTWH(0, waterLevel, width, height - waterLevel);
+    final gradient = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        AppColors.primaryLight.withValues(alpha: 0.9),
+        AppColors.primary,
+        AppColors.primaryDark,
+      ],
+      stops: const [0.0, 0.5, 1.0],
+    );
+
+    // Draw base water fill with gradient
     canvas
       ..drawPath(
         wavePath,
-        Paint()..color = AppColors.primary,
+        Paint()..shader = gradient.createShader(fillRect),
       )
       // Draw wave highlights (lighter, translucent)
       ..drawPath(
@@ -405,8 +378,7 @@ class WaterDropPainter extends CustomPainter {
   bool shouldRepaint(WaterDropPainter oldDelegate) {
     return oldDelegate.fillLevel != fillLevel ||
         oldDelegate.wavePhase != wavePhase ||
-        oldDelegate.enableWaves != enableWaves ||
-        oldDelegate.isSubtlePulse != isSubtlePulse;
+        oldDelegate.enableWaves != enableWaves;
   }
 }
 

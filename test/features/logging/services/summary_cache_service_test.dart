@@ -116,6 +116,7 @@ void main() {
           petId: testPetId,
           medicationName: medicationName,
           dosageGiven: dosageGiven,
+          completed: true,
         );
 
         // Assert: Cache should be created
@@ -138,6 +139,7 @@ void main() {
           petId: testPetId,
           medicationName: firstMed,
           dosageGiven: firstDosage,
+          completed: true,
         );
 
         // Act: Add second medication
@@ -148,6 +150,7 @@ void main() {
           petId: testPetId,
           medicationName: secondMed,
           dosageGiven: secondDosage,
+          completed: true,
         );
 
         // Assert: Cache should have 2 medications
@@ -171,12 +174,14 @@ void main() {
           petId: testPetId,
           medicationName: medicationName,
           dosageGiven: 2.5,
+          completed: true,
         );
         await cacheService.updateCacheWithMedicationSession(
           userId: testUserId,
           petId: testPetId,
           medicationName: medicationName,
           dosageGiven: 2.5,
+          completed: true,
         );
 
         // Assert: Medication name should appear only once

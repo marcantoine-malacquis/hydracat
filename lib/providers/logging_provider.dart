@@ -519,11 +519,15 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         var medicationRecentTimes = Map<String, List<String>>.from(
           existing?.medicationRecentTimes ?? const {},
         );
+        var medicationCompletedTimes = Map<String, List<String>>.from(
+          existing?.medicationCompletedTimes ?? const {},
+        );
         var medicationNames = List<String>.from(
           existing?.medicationNames ?? const [],
         );
 
-        if (medicationNames.isEmpty && (summary.medicationTotalDoses > 0)) {
+        if ((medicationNames.isEmpty || medicationCompletedTimes.isEmpty) &&
+            (summary.medicationTotalDoses > 0)) {
           final sessions = await _loggingService.getTodaysMedicationSessionsAll(
             userId: user.id,
             petId: pet.id,
@@ -554,6 +558,28 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
                 trimmed.map((t) => t.toIso8601String()).toList(),
               );
             });
+
+            // Derive completed times per name (keep latest 8)
+            // Only include sessions where completed == true for accurate
+            // dashboard filtering
+            final completedTmp = <String, List<DateTime>>{};
+            for (final s in sessions) {
+              if (s.completed) {
+                // Prefer scheduledTime for consistent window matching
+                final t = s.scheduledTime ?? s.dateTime;
+                completedTmp.putIfAbsent(s.medicationName, () => []).add(t);
+              }
+            }
+            medicationCompletedTimes = completedTmp.map((name, list) {
+              list.sort((a, b) => a.compareTo(b));
+              final trimmed = list.length <= 8
+                  ? list
+                  : list.sublist(list.length - 8, list.length);
+              return MapEntry(
+                name,
+                trimmed.map((t) => t.toIso8601String()).toList(),
+              );
+            });
           }
         }
 
@@ -566,6 +592,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
           totalMedicationDosesGiven: summary.medicationTotalDoses.toDouble(),
           totalFluidVolumeGiven: summary.fluidTotalVolume,
           medicationRecentTimes: medicationRecentTimes,
+          medicationCompletedTimes: medicationCompletedTimes,
         );
 
         // Write to SharedPreferences
@@ -883,7 +910,13 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       }
 
       // Invalidate in-memory TTL cache to ensure calendar updates immediately
-      _ref.read(summaryServiceProvider).invalidateTodaysCache(user.id, pet.id);
+      _ref.read(summaryServiceProvider).clearAllCaches();
+
+      // Refresh pet profile if fluid sessions were logged
+      // (updates lastFluidInjectionSite)
+      if (result.fluidSessionCount > 0) {
+        await _ref.read(profileProvider.notifier).refreshPrimaryPet();
+      }
 
       // No manual invalidation: progress providers rebuild
       // via dailyCacheProvider
@@ -1175,6 +1208,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
             petId: pet.id,
             medicationName: session.medicationName,
             dosageGiven: session.dosageGiven,
+            completed: session.completed,
             // Use scheduledTime when available so dashboard window matching
             // works
             dateTime: session.scheduledTime ?? session.dateTime,
@@ -1196,6 +1230,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
             petId: pet.id,
             medicationName: session.medicationName,
             dosageGiven: session.dosageGiven,
+            completed: session.completed,
             // Use scheduledTime when available so dashboard window matching
             // works
             dateTime: session.scheduledTime ?? session.dateTime,
@@ -1260,6 +1295,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         petId: pet.id,
         medicationName: session.medicationName,
         dosageGiven: session.dosageGiven,
+        completed: session.completed,
         // Use scheduledTime when available so dashboard window matching works
         dateTime: session.scheduledTime ?? session.dateTime,
       );
@@ -1268,7 +1304,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       await loadTodaysCache();
 
       // Invalidate in-memory TTL cache to ensure calendar updates immediately
-      _ref.read(summaryServiceProvider).invalidateTodaysCache(user.id, pet.id);
+      _ref.read(summaryServiceProvider).clearAllCaches();
 
       // No manual invalidation: progress providers rebuild
       // via dailyCacheProvider
@@ -1545,7 +1581,10 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       await loadTodaysCache();
 
       // Invalidate in-memory TTL cache to ensure calendar updates immediately
-      _ref.read(summaryServiceProvider).invalidateTodaysCache(user.id, pet.id);
+      _ref.read(summaryServiceProvider).clearAllCaches();
+
+      // Refresh pet profile to update lastFluidInjectionSite in UI
+      await _ref.read(profileProvider.notifier).refreshPrimaryPet();
 
       // No manual invalidation: progress providers rebuild
       // via dailyCacheProvider

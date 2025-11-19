@@ -141,7 +141,8 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
   /// Check if a medication has been completed for the given reminder time
   ///
   /// Uses the DailySummaryCache with ±2h time window matching to determine
-  /// if this medication has been logged near the scheduled time.
+  /// if this medication has been successfully completed (completed == true)
+  /// near the scheduled time.
   bool _isMedicationCompleted(
     Schedule schedule,
     DateTime reminderTime,
@@ -150,7 +151,9 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
     if (cache == null) return false;
 
     // Use cache's built-in time-window matching (±2h)
-    return cache.hasMedicationLoggedNear(
+    // IMPORTANT: Use hasMedicationCompletedNear to check only
+    // completed sessions
+    return cache.hasMedicationCompletedNear(
       schedule.medicationName!,
       reminderTime,
     );

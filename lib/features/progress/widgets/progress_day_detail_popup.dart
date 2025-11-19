@@ -364,34 +364,43 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
     }
 
     return switch (_mode) {
-      _PopupMode.dayView => SingleChildScrollView(
-          key: const ValueKey('dayView'),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context),
-              const SizedBox(height: AppSpacing.md),
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: Theme.of(context)
-                    .colorScheme
-                    .outlineVariant
-                    .withValues(alpha: 0.3),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _buildContent(context, ref, isFuture),
-            ],
+      _PopupMode.dayView => Align(
+          alignment: Alignment.topCenter,
+          child: SingleChildScrollView(
+            key: const ValueKey('dayView'),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context),
+                const SizedBox(height: AppSpacing.md),
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .outlineVariant
+                      .withValues(alpha: 0.3),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _buildContent(context, ref, isFuture),
+              ],
+            ),
           ),
         ),
-      _PopupMode.editMedication => SingleChildScrollView(
-          key: const ValueKey('editMedication'),
-          child: _buildMedicationEditContent(context),
+      _PopupMode.editMedication => Align(
+          alignment: Alignment.topCenter,
+          child: SingleChildScrollView(
+            key: const ValueKey('editMedication'),
+            child: _buildMedicationEditContent(context),
+          ),
         ),
-      _PopupMode.editFluid => SingleChildScrollView(
-          key: const ValueKey('editFluid'),
-          child: _buildFluidEditContent(context),
+      _PopupMode.editFluid => Align(
+          alignment: Alignment.topCenter,
+          child: SingleChildScrollView(
+            key: const ValueKey('editFluid'),
+            child: _buildFluidEditContent(context),
+          ),
         ),
     };
   }

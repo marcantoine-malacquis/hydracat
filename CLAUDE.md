@@ -62,6 +62,7 @@ lib/
 - Run `flutter analyze` before committing
 - **Widget Tests**: Located in `test/`
 - **Test Command**: `flutter test`
+- **Important**: Update `test/tests_index.md` when creating new tests
 
 ### Data Models
 - **Standard Dart Classes**: Manual data classes with optional JSON serialization

@@ -205,25 +205,26 @@ class _WaterDropProgressCardState
           style: AppTextStyles.display, // 32px, semi-bold
         ),
 
-        const SizedBox(height: 4),
+        const SizedBox(height: 8),
 
-        // Goal Volume with slash separator (Medium, secondary color)
+        // Goal Volume with slash separator (Small, muted)
         Text(
           '/${_formatMl(goalMl)}',
           style: AppTextStyles.h2.copyWith(
-            // 20px, medium
+            fontSize: 14, // Reduced from 20px for clearer hierarchy
             color: AppColors.textSecondary,
           ),
         ),
 
         const SizedBox(height: 16),
 
-        // Percentage with descriptive text (same size and color as goal)
+        // Percentage with descriptive text
+        // (Medium size, brand color for emphasis)
         Text(
           '$percentageDisplay% of your goal',
           style: AppTextStyles.h2.copyWith(
-            // 20px, medium - matches "/1.4L"
-            color: AppColors.textSecondary,
+            fontSize: 16, // Medium size between goal and main number
+            color: AppColors.primary, // Brand color for visual interest
           ),
         ),
       ],
@@ -238,7 +239,7 @@ class _WaterDropProgressCardState
         const Icon(
           Icons.location_on,
           size: 14,
-          color: AppColors.textSecondary,
+          color: AppColors.primary,
         ),
         const SizedBox(width: 4),
         Text(

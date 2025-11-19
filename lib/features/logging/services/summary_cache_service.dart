@@ -137,6 +137,7 @@ class SummaryCacheService {
     required String petId,
     required String medicationName,
     required double dosageGiven,
+    required bool completed,
     DateTime? dateTime,
   }) async {
     try {
@@ -163,8 +164,28 @@ class SummaryCacheService {
           ? entries
           : entries.sublist(entries.length - 8, entries.length);
       times[medicationName] = trimmed;
+
+      // Update completed times (only if session was completed)
+      final completedTimes = Map<String, List<String>>.from(
+        cache.medicationCompletedTimes,
+      );
+      if (completed) {
+        final completedEntries = List<String>.from(
+          completedTimes[medicationName] ?? const [],
+        )..add(iso);
+        // Keep latest 8 only
+        final trimmedCompleted = completedEntries.length <= 8
+            ? completedEntries
+            : completedEntries.sublist(
+                completedEntries.length - 8,
+                completedEntries.length,
+              );
+        completedTimes[medicationName] = trimmedCompleted;
+      }
+
       final updatedWithTimes = updatedCache.copyWith(
         medicationRecentTimes: times,
+        medicationCompletedTimes: completedTimes,
       );
 
       // Write to SharedPreferences

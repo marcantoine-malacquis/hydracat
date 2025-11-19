@@ -150,6 +150,7 @@ void main() {
         petId: 'test-pet-id',
         medicationName: session.medicationName,
         dosageGiven: session.dosageGiven,
+        completed: session.completed,
       );
 
       // Assert: Cache updated
@@ -374,6 +375,7 @@ void main() {
         petId: 'test-pet-id',
         medicationName: 'Amlodipine',
         dosageGiven: 1,
+        completed: true,
       );
 
       // Act: Check cache

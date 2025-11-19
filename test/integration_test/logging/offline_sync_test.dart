@@ -95,6 +95,7 @@ void main() {
         petId: 'test-pet-id',
         medicationName: session.medicationName,
         dosageGiven: session.dosageGiven,
+        completed: session.completed,
       );
 
       // Assert: Cache updated immediately (no network needed)
