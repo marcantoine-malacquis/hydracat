@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:hydracat/core/constants/app_colors.dart';
-import 'package:hydracat/core/constants/app_icons.dart';
-import 'package:hydracat/core/theme/app_spacing.dart';
-import 'package:hydracat/core/theme/app_text_styles.dart';
+import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/home/models/pending_treatment.dart';
 import 'package:hydracat/shared/widgets/cards/hydra_card.dart';
-import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
+import 'package:hydracat/shared/widgets/icons/icon_container.dart';
 
 /// Card widget displaying a pending medication treatment on the dashboard.
 ///
@@ -45,8 +42,7 @@ class PendingTreatmentCard extends StatelessWidget {
         onTap: onTap,
         borderColor: treatment.isOverdue ? AppColors.success : AppColors.border,
         margin: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.xs,
+          vertical: CardConstants.cardMarginVertical,
         ),
         child: Container(
           decoration: treatment.isOverdue
@@ -64,12 +60,12 @@ class PendingTreatmentCard extends StatelessWidget {
               : null,
           child: Row(
             children: [
-              // Medication icon
-              HydraIcon(
-                icon: AppIcons.medication,
+              // Medication icon with background circle
+              IconContainer(
+                icon: Icons.medication,
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
-              const SizedBox(width: AppSpacing.sm),
+              const SizedBox(width: AppSpacing.md),
 
               // Medication info
               Expanded(

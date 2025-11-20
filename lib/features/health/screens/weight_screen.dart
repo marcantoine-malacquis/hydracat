@@ -5,6 +5,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/core/utils/weight_utils.dart';
 import 'package:hydracat/features/health/models/health_parameter.dart';
@@ -119,8 +120,10 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
         title: const Text('Weight'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
+          icon: const Icon(Icons.arrow_back_ios),
+          iconSize: 20,
+          color: AppColors.textSecondary,
           tooltip: 'Back',
         ),
       ),

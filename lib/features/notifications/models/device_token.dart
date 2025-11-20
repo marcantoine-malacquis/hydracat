@@ -37,8 +37,8 @@ class DeviceToken {
 
   /// Current authenticated user ID
   ///
-  /// Null if device is not associated with a user (after sign-out).
-  /// Updated on sign-in and cleared on sign-out.
+  /// Tracks the last authenticated user who used this device.
+  /// Updated on sign-in and persists after sign-out for analytics/debugging.
   final String? userId;
 
   /// Firebase Cloud Messaging token

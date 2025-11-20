@@ -3,7 +3,12 @@ import 'package:hydracat/core/theme/theme.dart';
 
 /// Card component for HydraCat with water theme styling.
 /// Implements the card design specifications from the UI guidelines.
-class HydraCard extends StatelessWidget {
+///
+/// When [onTap] is provided, the card includes press feedback with:
+/// - Scale animation (0.95x)
+/// - Subtle teal shadow
+/// - 150ms smooth transition
+class HydraCard extends StatefulWidget {
   /// Creates a HydraCard.
   const HydraCard({
     required this.child,
@@ -42,32 +47,139 @@ class HydraCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
+  State<HydraCard> createState() => _HydraCardState();
+}
+
+class _HydraCardState extends State<HydraCard>
+    with SingleTickerProviderStateMixin {
+  AnimationController? _animationController;
+  Animation<double>? _scaleAnimation;
+  Animation<double>? _shadowOpacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeAnimations();
+  }
+
+  @override
+  void didUpdateWidget(HydraCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reinitialize animations if onTap changes
+    if ((widget.onTap == null) != (oldWidget.onTap == null)) {
+      _disposeAnimations();
+      _initializeAnimations();
+    }
+  }
+
+  void _initializeAnimations() {
+    if (widget.onTap != null) {
+      _animationController = AnimationController(
+        duration: const Duration(milliseconds: 150),
+        vsync: this,
+      );
+
+      // Scale animation (1.0 -> 0.95 for press feedback)
+      _scaleAnimation = Tween<double>(
+        begin: 1,
+        end: 0.95,
+      ).animate(
+        CurvedAnimation(
+          parent: _animationController!,
+          curve: Curves.easeOut,
+        ),
+      );
+
+      // Shadow opacity animation (0 -> 1 for press feedback)
+      _shadowOpacityAnimation = Tween<double>(
+        begin: 0,
+        end: 1,
+      ).animate(
+        CurvedAnimation(
+          parent: _animationController!,
+          curve: Curves.easeOut,
+        ),
+      );
+    }
+  }
+
+  void _disposeAnimations() {
+    _animationController?.dispose();
+    _animationController = null;
+    _scaleAnimation = null;
+    _shadowOpacityAnimation = null;
+  }
+
+  @override
+  void dispose() {
+    _disposeAnimations();
+    super.dispose();
+  }
+
+  void _onTapDown(TapDownDetails details) {
+    _animationController?.forward();
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    _animationController?.reverse();
+  }
+
+  void _onTapCancel() {
+    _animationController?.reverse();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final card = Card(
-      elevation: elevation ?? 0,
-      color: backgroundColor ?? AppColors.surface,
+      elevation: widget.elevation ?? 0,
+      color: widget.backgroundColor ?? AppColors.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(borderRadius ?? 12),
+        borderRadius: BorderRadius.circular(widget.borderRadius ?? 12),
         side: BorderSide(
-          color: borderColor ?? AppColors.border,
+          color: widget.borderColor ?? AppColors.border,
         ),
       ),
-      margin: margin ?? const EdgeInsets.all(AppSpacing.sm),
+      margin: widget.margin ?? const EdgeInsets.all(AppSpacing.sm),
       child: Padding(
-        padding: padding ?? const EdgeInsets.all(AppSpacing.md),
-        child: child,
+        padding: widget.padding ?? const EdgeInsets.all(AppSpacing.md),
+        child: widget.child,
       ),
     );
 
-    if (onTap != null) {
-      return InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(borderRadius ?? 12),
-        child: card,
-      );
+    // Non-interactive card (no animations)
+    if (widget.onTap == null) {
+      return card;
     }
 
-    return card;
+    // Interactive card with press feedback
+    return AnimatedBuilder(
+      animation: _animationController!,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation!.value,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(widget.borderRadius ?? 12),
+              boxShadow: [
+                AppShadows.navigationIconPressed.copyWith(
+                  color: AppShadows.navigationIconPressed.color.withValues(
+                    alpha: AppShadows.navigationIconPressed.color.a *
+                        _shadowOpacityAnimation!.value,
+                  ),
+                ),
+              ],
+            ),
+            child: GestureDetector(
+              onTap: widget.onTap,
+              onTapDown: _onTapDown,
+              onTapUp: _onTapUp,
+              onTapCancel: _onTapCancel,
+              child: card,
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 

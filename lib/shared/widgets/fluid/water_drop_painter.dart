@@ -272,9 +272,19 @@ class WaterDropPainter extends CustomPainter {
       ..close();
   }
 
+  /// Calculate the actual bottom point of the drop shape
+  /// (accounting for the arc that extends beyond the canvas height)
+  double _getDropBottom(double width, double height) {
+    // Bottom arc center is at height * 0.7
+    // Arc radius is width * 0.4
+    // So the lowest point is: centerY + radius
+    return (height * 0.7) + (width * 0.4);
+  }
+
   /// Draw animated wave fill
   void _drawWaveFill(Canvas canvas, double width, double height) {
     final waterLevel = height * (1 - fillLevel);
+    final actualBottom = _getDropBottom(width, height);
 
     // Use subtle pulse amplitudes (50% of original) for battery efficiency
     const amplitudeMultiplier = 0.5;
@@ -295,8 +305,8 @@ class WaterDropPainter extends CustomPainter {
     const speed2 = 1.0; // Synchronized for seamless loop
     const speed3 = 1.0; // Synchronized for seamless loop
 
-    // Build wave path
-    final wavePath = Path()..moveTo(0, height);
+    // Build wave path (extend to actual bottom of drop shape)
+    final wavePath = Path()..moveTo(0, actualBottom);
 
     for (double x = 0; x <= width; x += 1) {
       final normalizedX = x / width;
@@ -314,11 +324,12 @@ class WaterDropPainter extends CustomPainter {
     }
 
     wavePath
-      ..lineTo(width, height)
+      ..lineTo(width, actualBottom)
       ..close();
 
     // Create gradient for base water fill (darker at bottom, lighter at top)
-    final fillRect = Rect.fromLTWH(0, waterLevel, width, height - waterLevel);
+    final fillRect =
+        Rect.fromLTWH(0, waterLevel, width, actualBottom - waterLevel);
     final gradient = LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
@@ -355,8 +366,10 @@ class WaterDropPainter extends CustomPainter {
   /// Draw static gradient fill (reduced motion mode)
   void _drawStaticGradientFill(Canvas canvas, double width, double height) {
     final waterLevel = height * (1 - fillLevel);
+    final actualBottom = _getDropBottom(width, height);
 
-    final fillRect = Rect.fromLTWH(0, waterLevel, width, height - waterLevel);
+    final fillRect =
+        Rect.fromLTWH(0, waterLevel, width, actualBottom - waterLevel);
 
     final gradient = LinearGradient(
       begin: Alignment.topCenter,

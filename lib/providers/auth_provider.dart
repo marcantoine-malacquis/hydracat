@@ -352,15 +352,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     // Clear cached IDs for background handler
     await _clearCachedUserId();
 
-    // Unregister device token (non-blocking)
-    try {
-      await DeviceTokenService().unregisterDevice();
-    } on Exception catch (e) {
-      // Log error but don't block sign-out
-      if (kDebugMode) {
-        debugPrint('Failed to unregister device token: $e');
-      }
-    }
+    // Note: Device token is intentionally NOT unregistered on signout.
+    // The device document keeps the last userId for analytics and debugging.
+    // This follows industry standard practices and avoids permission issues.
 
     // Clear notification data on logout (preserve settings)
     // Note: This is a best-effort cleanup. If it fails, it won't block logout.

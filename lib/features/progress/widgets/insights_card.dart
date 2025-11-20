@@ -7,6 +7,13 @@ import 'package:hydracat/core/theme/theme.dart';
 /// on the Progress screen. Supports icon, title, subtitle, and custom
 /// trailing widgets.
 ///
+/// **DEPRECATED:** Use NavigationCard from shared/widgets/cards instead.
+/// This component has been replaced with a unified NavigationCard that
+/// provides:
+/// - Consistent icon treatment with background circles
+/// - Support for metadata/subtitle
+/// - Standardized spacing and styling
+///
 /// Example:
 /// ```dart
 /// InsightsCard(
@@ -16,8 +23,16 @@ import 'package:hydracat/core/theme/theme.dart';
 ///   onTap: () => context.push('/progress/injection-sites'),
 /// )
 /// ```
+@Deprecated(
+  'Use NavigationCard from shared/widgets/cards instead. '
+  'Will be removed in a future version.',
+)
 class InsightsCard extends StatelessWidget {
   /// Creates an [InsightsCard]
+  @Deprecated(
+    'Use NavigationCard from shared/widgets/cards instead. '
+    'Will be removed in a future version.',
+  )
   const InsightsCard({
     required this.title,
     required this.onTap,

@@ -3,8 +3,23 @@ import 'package:hydracat/core/theme/theme.dart';
 
 /// A reusable profile navigation tile component using Material 3 ListTile
 /// Follows UI guidelines and provides consistent navigation experience
+///
+/// **DEPRECATED:** Use NavigationCard from shared/widgets/cards instead.
+/// This component has been replaced with a unified NavigationCard that
+/// provides:
+/// - Consistent icon treatment with background circles
+/// - Support for metadata/subtitle
+/// - Standardized spacing and styling
+@Deprecated(
+  'Use NavigationCard from shared/widgets/cards instead. '
+  'Will be removed in a future version.',
+)
 class ProfileNavigationTile extends StatelessWidget {
   /// Creates a [ProfileNavigationTile]
+  @Deprecated(
+    'Use NavigationCard from shared/widgets/cards instead. '
+    'Will be removed in a future version.',
+  )
   const ProfileNavigationTile({
     required this.title,
     required this.onTap,

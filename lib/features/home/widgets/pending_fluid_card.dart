@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:hydracat/core/constants/app_colors.dart';
-import 'package:hydracat/core/constants/app_icons.dart';
-import 'package:hydracat/core/theme/app_spacing.dart';
-import 'package:hydracat/core/theme/app_text_styles.dart';
+import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/home/models/pending_fluid_treatment.dart';
 import 'package:hydracat/shared/widgets/cards/hydra_card.dart';
-import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
+import 'package:hydracat/shared/widgets/icons/icon_container.dart';
 
 /// Card widget displaying pending fluid therapy status on the dashboard.
 ///
@@ -43,8 +40,7 @@ class PendingFluidCard extends StatelessWidget {
             ? AppColors.success
             : AppColors.border,
         margin: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.xs,
+          vertical: CardConstants.cardMarginVertical,
         ),
         child: Container(
           decoration: fluidTreatment.hasOverdueTimes
@@ -62,12 +58,12 @@ class PendingFluidCard extends StatelessWidget {
               : null,
           child: Row(
             children: [
-              // Fluid therapy icon
-              HydraIcon(
-                icon: AppIcons.fluidTherapy,
+              // Fluid therapy icon with background circle
+              IconContainer(
+                icon: Icons.water_drop,
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
-              const SizedBox(width: AppSpacing.sm),
+              const SizedBox(width: AppSpacing.md),
 
               // Fluid info
               Expanded(

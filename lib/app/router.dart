@@ -289,6 +289,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   key: state.pageKey,
                 ),
               ),
+              GoRoute(
+                path: 'weight',
+                name: 'progress-weight',
+                pageBuilder: (context, state) =>
+                    AppPageTransitions.bidirectionalSlide(
+                  child: const WeightScreen(),
+                  key: state.pageKey,
+                ),
+              ),
             ],
           ),
           GoRoute(

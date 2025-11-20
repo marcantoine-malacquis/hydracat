@@ -123,7 +123,7 @@ class _WaterDropProgressCardState
       container: true,
       label: 'Weekly fluid intake progress card',
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: const EdgeInsets.symmetric(vertical: 12),
         padding: widget.padding ?? const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
@@ -261,7 +261,7 @@ class _WaterDropProgressCardState
 
   Widget _buildLoadingCard(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.symmetric(vertical: 12),
       padding: const EdgeInsets.all(20),
       height: 260, // Fixed height (220 + padding)
       decoration: BoxDecoration(
@@ -284,7 +284,7 @@ class _WaterDropProgressCardState
 
   Widget _buildErrorCard(BuildContext context, Object error) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.symmetric(vertical: 12),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,

@@ -7,7 +7,6 @@ import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/core/utils/weight_utils.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/widgets/debug_panel.dart';
-import 'package:hydracat/features/profile/widgets/profile_navigation_tile.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/weight_unit_provider.dart';
@@ -671,66 +670,100 @@ class ProfileScreen extends ConsumerWidget {
 
   /// Builds the profile sections list
   Widget _buildProfileSections(BuildContext context, WidgetRef ref) {
-    final primaryPet = ref.watch(primaryPetProvider);
     final profileState = ref.watch(profileProvider);
-    final petName = primaryPet?.name ?? 'Your Cat';
+    final primaryPet = ref.watch(primaryPetProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // CKD Profile section
-        ProfileNavigationTile(
-          title: "$petName's CKD Profile",
+        // CKD Profile section with IRIS stage metadata
+        NavigationCard(
+          title: 'CKD Profile',
           icon: Icons.medical_information,
+          metadata: primaryPet?.medicalInfo.irisStage?.displayName,
           onTap: () => context.go('/profile/ckd'),
+          margin: EdgeInsets.zero,
         ),
 
         // Fluid Schedule section (only if user has fluid schedule)
         if (profileState.hasFluidSchedule) ...[
           const SizedBox(height: AppSpacing.sm),
-          ProfileNavigationTile(
-            title: "$petName's Fluid Schedule",
-            icon: Icons.water_drop,
-            onTap: () => context.go('/profile/fluid'),
+          Consumer(
+            builder: (context, ref, _) {
+              final fluidSchedule = profileState.fluidSchedule;
+              String? metadata;
+              if (fluidSchedule != null) {
+                final volume = fluidSchedule.targetVolume?.toInt() ?? 0;
+                final frequency = fluidSchedule.frequency.displayName;
+                metadata = '${volume}ml, $frequency';
+              }
+              return NavigationCard(
+                title: 'Fluid Schedule',
+                icon: Icons.water_drop,
+                metadata: metadata,
+                onTap: () => context.go('/profile/fluid'),
+                margin: EdgeInsets.zero,
+              );
+            },
           ),
         ],
 
         // Add Fluid Therapy button (if no fluid schedule exists)
         if (!profileState.hasFluidSchedule) ...[
           const SizedBox(height: AppSpacing.sm),
-          ProfileNavigationTile(
+          NavigationCard(
             title: 'Add Fluid Therapy Tracking',
             icon: Icons.add_circle_outline,
             onTap: () => context.push('/profile/fluid/create'),
+            margin: EdgeInsets.zero,
           ),
         ],
 
         // Medication Schedule section (only if user has medication schedules)
         if (profileState.hasMedicationSchedules) ...[
           const SizedBox(height: AppSpacing.sm),
-          ProfileNavigationTile(
-            title: "$petName's Medication Schedule",
-            icon: Icons.medication,
-            onTap: () => context.go('/profile/medication'),
+          Consumer(
+            builder: (context, ref, _) {
+              final count = ref.watch(medicationScheduleCountProvider);
+              final metadata =
+                  '$count ${count == 1 ? 'medication' : 'medications'}';
+              return NavigationCard(
+                title: 'Medication Schedule',
+                icon: Icons.medication,
+                metadata: metadata,
+                onTap: () => context.go('/profile/medication'),
+                margin: EdgeInsets.zero,
+              );
+            },
           ),
         ],
 
         // Add Medication button (if no medication schedules exist)
         if (!profileState.hasMedicationSchedules) ...[
           const SizedBox(height: AppSpacing.sm),
-          ProfileNavigationTile(
+          NavigationCard(
             title: 'Add Medication Tracking',
             icon: Icons.add_circle_outline,
             onTap: () => context.push('/profile/medication'),
+            margin: EdgeInsets.zero,
           ),
         ],
 
-        // Weight section - always shown
+        // Weight section - always shown with current weight
         const SizedBox(height: AppSpacing.sm),
-        ProfileNavigationTile(
-          title: 'Weight',
-          icon: Icons.scale,
-          onTap: () => context.push('/profile/weight'),
+        Consumer(
+          builder: (context, ref, _) {
+            final weightUnit = ref.watch(weightUnitProvider);
+            final metadata =
+                WeightUtils.formatWeight(primaryPet?.weightKg, weightUnit);
+            return NavigationCard(
+              title: 'Weight',
+              icon: Icons.scale,
+              metadata: metadata,
+              onTap: () => context.push('/profile/weight'),
+              margin: EdgeInsets.zero,
+            );
+          },
         ),
 
         // Future sections will be added here

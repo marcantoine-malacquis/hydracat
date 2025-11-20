@@ -2,3 +2,4 @@
 library;
 
 export 'hydra_icon.dart';
+export 'icon_container.dart';

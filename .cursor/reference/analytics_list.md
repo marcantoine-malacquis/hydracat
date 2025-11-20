@@ -846,6 +846,16 @@ Generic error tracking for notification operations:
 **Parameters:**
 - `screen_name`: `'injection_sites_analytics'`
 
+##### `weight_tracking`
+**When:** User navigates to weight tracking screen
+**Purpose:** Track usage of weight tracking and analytics
+**Navigation Paths:**
+- From Profile: `/profile/weight` (route: `'profile-weight'`)
+- From Progress/Insights: `/progress/weight` (route: `'progress-weight'`)
+**Location:** `lib/features/health/screens/weight_screen.dart`
+**Parameters:**
+- `screen_name`: `'weight_tracking'`
+
 ---
 
 ## User Properties
