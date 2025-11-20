@@ -206,14 +206,27 @@ int _calculateWeeklyGoalFromSchedule(Schedule? fluidSchedule) {
 
 /// Format injection site enum value for display
 ///
-/// Converts values like "left_flank" or "leftFlank" to "Left Flank"
+/// Converts enum names like "shoulderBladeLeft" to human-readable
+/// format using the FluidLocation enum's displayName property
+/// (e.g., "Shoulder blade - left")
 String _formatInjectionSite(String siteValue) {
-  // Convert "left_flank" or "leftFlank" to "Left Flank"
+  // Try to parse as FluidLocation enum
+  final location = FluidLocation.values.cast<FluidLocation?>().firstWhere(
+        (e) => e?.name == siteValue,
+        orElse: () => null,
+      );
+
+  if (location != null) {
+    return location.displayName;
+  }
+
+  // Fallback for invalid/unknown values: basic formatting
   return siteValue
       .replaceAll('_', ' ')
       .split(' ')
-      .map((word) => word.isEmpty
-          ? ''
-          : word[0].toUpperCase() + word.substring(1))
+      .map(
+        (word) =>
+            word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1),
+      )
       .join(' ');
 }

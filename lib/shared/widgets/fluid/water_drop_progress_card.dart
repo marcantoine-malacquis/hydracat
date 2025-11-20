@@ -209,7 +209,7 @@ class _WaterDropProgressCardState
 
         // Goal Volume with slash separator (Small, muted)
         Text(
-          '/${_formatMl(goalMl)}',
+          '/$goalMl mL',
           style: AppTextStyles.h2.copyWith(
             fontSize: 14, // Reduced from 20px for clearer hierarchy
             color: AppColors.textSecondary,
@@ -221,7 +221,7 @@ class _WaterDropProgressCardState
         // Percentage with descriptive text
         // (Medium size, brand color for emphasis)
         Text(
-          '$percentageDisplay% of your goal',
+          '$percentageDisplay% of your weekly goal',
           style: AppTextStyles.h2.copyWith(
             fontSize: 16, // Medium size between goal and main number
             color: AppColors.primary, // Brand color for visual interest
@@ -243,7 +243,7 @@ class _WaterDropProgressCardState
         ),
         const SizedBox(width: 4),
         Text(
-          'Last: ',
+          'Last site: ',
           style: AppTextStyles.caption.copyWith(
             color: AppColors.textSecondary,
           ),

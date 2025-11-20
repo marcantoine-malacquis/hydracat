@@ -1,0 +1,380 @@
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hydracat/core/constants/app_colors.dart';
+import 'package:hydracat/core/theme/app_text_styles.dart';
+import 'package:hydracat/features/progress/models/fluid_chart_data.dart';
+import 'package:hydracat/features/progress/providers/fluid_chart_provider.dart';
+import 'package:hydracat/providers/progress_provider.dart';
+import 'package:intl/intl.dart';
+
+/// Weekly fluid volume bar chart aligned with calendar columns
+///
+/// Displays 7 bars (Monday-Sunday) showing daily fluid therapy volumes
+/// with visual feedback for goal achievement, missed sessions, and progress.
+///
+/// Features:
+/// - Pixel-perfect alignment with calendar day columns
+/// - Dashed amber goal line for daily target (when goals are consistent)
+/// - Smart touch tooltips with left/right positioning
+/// - Rising animation with staggered wave effect on data load
+/// - Opacity-based progress indication (darker = better adherence)
+/// - Tiny coral bars for missed scheduled sessions
+/// - Haptic feedback on touch for native feel
+///
+/// Cost: 0 Firestore reads (uses weeklyFluidChartDataProvider)
+///
+/// Example:
+/// ```dart
+/// // Automatically integrates with focused week
+/// const FluidVolumeBarChart()
+/// ```
+class FluidVolumeBarChart extends ConsumerStatefulWidget {
+  /// Creates a [FluidVolumeBarChart]
+  const FluidVolumeBarChart({super.key});
+
+  @override
+  ConsumerState<FluidVolumeBarChart> createState() =>
+      _FluidVolumeBarChartState();
+}
+
+class _FluidVolumeBarChartState extends ConsumerState<FluidVolumeBarChart>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+  int? _touchedBarIndex;
+  Offset? _touchPosition;
+  DateTime? _lastAnimatedWeek;
+
+  static const double _chartHeight = 200;
+  static const double _barBorderRadius = 4;
+  static const double _missedBarHeightPercent = 0.015; // 1.5% of Y-axis
+  static const double _barWidth = 46; // Matches calendar cell (57.4px × 80%)
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Setup rising animation (600ms with easeOutCubic)
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _animation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final weekStart = ref.watch(focusedWeekStartProvider);
+    final chartData = ref.watch(weeklyFluidChartDataProvider(weekStart));
+
+    // Hide chart if no data or no scheduled sessions
+    if (chartData == null || !chartData.shouldShowChart) {
+      return const SizedBox.shrink();
+    }
+
+    // Trigger animation only when week changes (not on every rebuild)
+    if (_lastAnimatedWeek != weekStart) {
+      _animationController
+        ..reset()
+        ..forward();
+      _lastAnimatedWeek = weekStart;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: SizedBox(
+        height: _chartHeight,
+        child: Stack(
+          children: [
+            // Main bar chart
+            _buildBarChart(chartData),
+
+            // Touch tooltip overlay
+            if (_touchedBarIndex != null && _touchPosition != null)
+              _buildTooltip(
+                chartData.days[_touchedBarIndex!],
+                _touchedBarIndex!,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Builds the main bar chart with animation and accessibility support
+  Widget _buildBarChart(FluidChartData chartData) {
+    return Semantics(
+      label: 'Weekly fluid therapy chart showing volumes for '
+          '${_formatWeekRange()}',
+      child: AnimatedBuilder(
+        animation: _animation,
+        builder: (context, child) {
+          return BarChart(
+            BarChartData(
+              // CRITICAL: Use spaceEvenly to center bars within columns
+              // This matches how TableCalendar centers day numbers in cells
+              alignment: BarChartAlignment.spaceEvenly,
+              groupsSpace: 0, // No extra group spacing (alignment handles it)
+              maxY: chartData.maxVolume,
+              minY: 0,
+              barTouchData: _buildTouchData(),
+              titlesData: const FlTitlesData(show: false), // No Y-axis labels
+              gridData: const FlGridData(show: false), // No grid lines
+              borderData: FlBorderData(show: false), // No border
+              barGroups: _buildBarGroups(chartData),
+              extraLinesData: _buildGoalLine(chartData),
+            ),
+            duration: Duration.zero, // Use custom animation
+          );
+        },
+      ),
+    );
+  }
+
+  /// Configures touch interaction behavior
+  BarTouchData _buildTouchData() {
+    return BarTouchData(
+      enabled: true,
+      handleBuiltInTouches: false, // Custom touch handling
+      touchCallback: (FlTouchEvent event, BarTouchResponse? response) {
+        setState(() {
+          if (event is FlTapDownEvent && response?.spot != null) {
+            HapticFeedback.selectionClick(); // Gentle tap feedback
+            _touchedBarIndex = response!.spot!.touchedBarGroupIndex;
+            _touchPosition = event.localPosition; // Actual pixel position
+          } else if (event is FlTapUpEvent || event is FlTapCancelEvent) {
+            _touchedBarIndex = null;
+            _touchPosition = null;
+          }
+        });
+      },
+    );
+  }
+
+  /// Builds all 7 bar groups with staggered animation
+  List<BarChartGroupData> _buildBarGroups(FluidChartData chartData) {
+    return List.generate(7, (index) {
+      final day = chartData.days[index];
+
+      // Staggered animation: each bar starts 50ms after previous
+      final staggerDelay = index * 50;
+      final staggeredProgress =
+          (_animation.value * 600 - staggerDelay).clamp(0.0, 600.0) / 600.0;
+
+      return BarChartGroupData(
+        x: index,
+        barRods: [
+          _buildBarRod(day, staggeredProgress, chartData.maxVolume),
+        ],
+      );
+    });
+  }
+
+  /// Builds a single bar rod with appropriate styling
+  BarChartRodData _buildBarRod(
+    FluidDayData day,
+    double animationProgress,
+    double maxVolume,
+  ) {
+    // Missed session: tiny coral bar (1.5% of Y-axis for consistent visibility)
+    if (day.isMissed) {
+      return BarChartRodData(
+        toY: maxVolume * _missedBarHeightPercent,
+        color: AppColors.warning,
+        width: _barWidth,
+        borderRadius: BorderRadius.zero,
+      );
+    }
+
+    // No bar for future days or unscheduled past days
+    if (!day.shouldShowBar) {
+      return BarChartRodData(
+        toY: 0,
+        color: Colors.transparent,
+        width: _barWidth,
+      );
+    }
+
+    // Regular bar with animation
+    final animatedHeight = day.volumeMl * animationProgress;
+
+    return BarChartRodData(
+      toY: animatedHeight,
+      color: AppColors.primary.withValues(alpha: day.barOpacity),
+      width: _barWidth,
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(_barBorderRadius),
+      ),
+    );
+  }
+
+  /// Builds goal line(s) based on goal consistency
+  ///
+  /// Returns:
+  /// - Unified goal: Single bold amber dashed line (all days same goal)
+  /// - Varying goals: Subtle markers for each unique goal value
+  /// - No goals: Empty (no lines)
+  ExtraLinesData _buildGoalLine(FluidChartData chartData) {
+    // Unified goal: show single prominent dashed line
+    if (chartData.goalLineY != null) {
+      return ExtraLinesData(
+        horizontalLines: [
+          HorizontalLine(
+            y: chartData.goalLineY!,
+            color: Colors.amber[600],
+            dashArray: const [8, 4], // Prominent: 8px dash, 4px gap
+          ),
+        ],
+      );
+    }
+
+    // Varying goals: show subtle markers for each unique goal value
+    final uniqueGoals = chartData.days
+        .where((d) => d.goalMl > 0) // Only days with goals
+        .map((d) => d.goalMl) // Extract goal values
+        .toSet() // Remove duplicates
+        .toList();
+
+    // If no goals exist, return empty
+    if (uniqueGoals.isEmpty) {
+      return const ExtraLinesData();
+    }
+
+    // Create subtle marker for each unique goal
+    return ExtraLinesData(
+      horizontalLines: uniqueGoals.map((goalMl) {
+        return HorizontalLine(
+          y: goalMl,
+          color: Colors.amber[600]!.withValues(alpha: 0.3), // 30% opacity
+          strokeWidth: 1, // Thinner than unified line
+          dashArray: const [4, 4], // Shorter dashes: 4px dash, 4px gap
+        );
+      }).toList(),
+    );
+  }
+
+  /// Builds tooltip positioned based on bar index and touch location
+  Widget _buildTooltip(FluidDayData day, int barIndex) {
+    if (_touchPosition == null) return const SizedBox.shrink();
+
+    // Smart positioning: Mon-Thu (0-3) right, Fri-Sun (4-6) left
+    final showOnRight = barIndex <= 3;
+
+    // Use actual touch position from fl_chart (no approximations!)
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    return Positioned(
+      left: showOnRight ? _touchPosition!.dx + 8 : null,
+      right: !showOnRight ? screenWidth - _touchPosition!.dx + 8 : null,
+      top: _touchPosition!.dy - 40, // Position above touch point
+      child: _TooltipCard(
+        volumeMl: day.volumeMl,
+        goalMl: day.goalMl,
+        percentage: day.percentage,
+        pointsLeft: showOnRight,
+      ),
+    );
+  }
+
+  /// Formats the current week range for accessibility labels
+  ///
+  /// Returns date range in "MMM d to MMM d" format (e.g., "Jan 1 to Jan 7")
+  /// for screen reader users to understand the temporal context of the chart.
+  ///
+  /// Example outputs:
+  /// - "Jan 15 to Jan 21" (same month)
+  /// - "Dec 26 to Jan 1" (spanning months)
+  /// - "Feb 29 to Mar 6" (leap year)
+  String _formatWeekRange() {
+    final weekStart = ref.read(focusedWeekStartProvider);
+    final weekEnd = weekStart.add(const Duration(days: 6));
+    final startFormatted = DateFormat.MMMd().format(weekStart);
+    final endFormatted = DateFormat.MMMd().format(weekEnd);
+    return '$startFormatted to $endFormatted';
+  }
+}
+
+/// Compact 2-line tooltip card with shadow
+///
+/// Displays fluid volume data when user taps a bar.
+/// Format:
+/// ```text
+/// 85ml / 100ml
+///     (85%)
+/// ```
+class _TooltipCard extends StatelessWidget {
+  /// Creates a [_TooltipCard]
+  const _TooltipCard({
+    required this.volumeMl,
+    required this.goalMl,
+    required this.percentage,
+    required this.pointsLeft,
+  });
+
+  /// Volume administered in milliliters
+  final double volumeMl;
+
+  /// Daily goal in milliliters
+  final double goalMl;
+
+  /// Goal achievement percentage
+  final double percentage;
+
+  /// Whether the tooltip arrow points left (tooltip appears on right side)
+  final bool pointsLeft;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Line 1: "85ml / 100ml"
+          Text(
+            '${volumeMl.toStringAsFixed(0)}ml / ${goalMl.toStringAsFixed(0)}ml',
+            style: AppTextStyles.body.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 2),
+          // Line 2: "(85%)"
+          Text(
+            '(${percentage.toStringAsFixed(0)}%)',
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textSecondary,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

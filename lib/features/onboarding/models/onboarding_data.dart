@@ -411,6 +411,7 @@ class OnboardingData {
       updatedAt: now,
       gender: petGender,
       breed: petBreed,
+      dateOfBirth: petDateOfBirth,
     );
   }
 

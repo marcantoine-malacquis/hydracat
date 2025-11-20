@@ -7,6 +7,7 @@ import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/progress/models/day_dot_status.dart';
+import 'package:hydracat/features/progress/widgets/fluid_volume_bar_chart.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/progress_provider.dart';
 import 'package:intl/intl.dart';
@@ -89,6 +90,9 @@ class ProgressWeekCalendar extends ConsumerWidget {
             },
           ),
         ),
+
+        // Fluid volume bar chart (week view only)
+        if (format == CalendarFormat.week) const FluidVolumeBarChart(),
       ],
     );
   }

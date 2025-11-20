@@ -189,6 +189,31 @@ class AppDateUtils {
     }
   }
 
+  /// Format age with birthdate for display
+  ///
+  /// Returns formatted string with age and optional birthdate.
+  /// - With birthdate: "10y • Born May 2015"
+  /// - Without birthdate: "10y"
+  ///
+  /// Example:
+  /// ```dart
+  /// final birthdate = DateTime(2015, 5, 15);
+  /// final formatted = formatAgeWithBirthdate(10, birthdate);
+  /// // Returns: "10y • Born May 2015"
+  /// ```
+  static String formatAgeWithBirthdate(int ageYears, DateTime? dateOfBirth) {
+    final ageText = '${ageYears}y';
+
+    if (dateOfBirth == null) {
+      return ageText;
+    }
+
+    final birthFormatter = DateFormat('MMMM yyyy');
+    final birthText = birthFormatter.format(dateOfBirth);
+
+    return '$ageText • Born $birthText';
+  }
+
   /// Format duration for display
   static String formatDuration(Duration duration) {
     if (duration.inHours > 0) {

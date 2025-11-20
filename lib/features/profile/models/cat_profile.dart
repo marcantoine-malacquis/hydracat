@@ -24,6 +24,7 @@ class CatProfile {
     this.photoUrl,
     this.breed,
     this.gender,
+    this.dateOfBirth,
     this.lastFluidInjectionSite,
     this.lastFluidSessionDate,
   });
@@ -46,6 +47,9 @@ class CatProfile {
       photoUrl: json['photoUrl'] as String?,
       breed: json['breed'] as String?,
       gender: json['gender'] as String?,
+      dateOfBirth: json['dateOfBirth'] != null
+          ? _parseDateTime(json['dateOfBirth'])
+          : null,
       lastFluidInjectionSite: json['lastFluidInjectionSite'] as String?,
       lastFluidSessionDate: json['lastFluidSessionDate'] != null
           ? _parseDateTime(json['lastFluidSessionDate'])
@@ -97,6 +101,9 @@ class CatProfile {
   /// Pet's gender (optional)
   final String? gender;
 
+  /// Pet's date of birth (optional)
+  final DateTime? dateOfBirth;
+
   /// Last injection site used for fluid therapy
   ///
   /// Stored as the FluidLocation enum name (e.g., "shoulderBladeLeft").
@@ -137,6 +144,7 @@ class CatProfile {
       'photoUrl': photoUrl,
       'breed': breed,
       'gender': gender,
+      'dateOfBirth': dateOfBirth?.toIso8601String(),
       'lastFluidInjectionSite': lastFluidInjectionSite,
       'lastFluidSessionDate': lastFluidSessionDate?.toIso8601String(),
     };
@@ -155,6 +163,7 @@ class CatProfile {
     Object? photoUrl = _undefined,
     Object? breed = _undefined,
     Object? gender = _undefined,
+    Object? dateOfBirth = _undefined,
     Object? lastFluidInjectionSite = _undefined,
     Object? lastFluidSessionDate = _undefined,
   }) {
@@ -170,6 +179,9 @@ class CatProfile {
       photoUrl: photoUrl == _undefined ? this.photoUrl : photoUrl as String?,
       breed: breed == _undefined ? this.breed : breed as String?,
       gender: gender == _undefined ? this.gender : gender as String?,
+      dateOfBirth: dateOfBirth == _undefined
+          ? this.dateOfBirth
+          : dateOfBirth as DateTime?,
       lastFluidInjectionSite: lastFluidInjectionSite == _undefined
           ? this.lastFluidInjectionSite
           : lastFluidInjectionSite as String?,
@@ -258,6 +270,7 @@ class CatProfile {
         other.photoUrl == photoUrl &&
         other.breed == breed &&
         other.gender == gender &&
+        other.dateOfBirth == dateOfBirth &&
         other.lastFluidInjectionSite == lastFluidInjectionSite &&
         other.lastFluidSessionDate == lastFluidSessionDate;
   }
@@ -276,6 +289,7 @@ class CatProfile {
       photoUrl,
       breed,
       gender,
+      dateOfBirth,
       lastFluidInjectionSite,
       lastFluidSessionDate,
     );
@@ -295,6 +309,7 @@ class CatProfile {
         'photoUrl: $photoUrl, '
         'breed: $breed, '
         'gender: $gender, '
+        'dateOfBirth: $dateOfBirth, '
         'lastFluidInjectionSite: $lastFluidInjectionSite, '
         'lastFluidSessionDate: $lastFluidSessionDate'
         ')';

@@ -48,35 +48,67 @@ In this new injection sites analytics screen, for now, there would only be the a
 Please create a detailed plan of how you will achieve and implement this new screen. Don't hesitate to let me know if you think of any meaningful and realistic improvements I might have overlooked.
 Before you create the plan, please ask any and all questions you have in order to provide the most robust solution to handle edge cases and/or additional context that you might need to feel confident in proceeding with the implementation. When you do use clarifying questions, please do not use bullet points but rather letters within each numbered question if number requires bullet points. Before you ask me questions, please already have a look at all the existing files you would need, as well as previously implemented steps, to already have the context, use existing systems, ensure coherence and in case you already find the answer to your questions. Suggest for each question your recommended solution. Keep in mind that I want to have the best suited solution for my project while being in line with industry standards and app development best practices as much as possible. Please follow Firebase and Flutter best practices and use built-in solutions whenever possible instead of more complex custom/hacky workarounds. Also, keep in mind the CRUD rules file (.cursor/rules/firebase_CRUDrules.md) to make sure to keep firebase costs to a minimum. Regarding database, I don't need to worry about backward compatibility since I will regularily delete the database anyway for testing.
 
+Let's redesign the pet information card. There should be on the right, for now, a placeholder circle (where the user will have the option to add their cat's photo in the futurer). On the right :
+- first line (pet name, symbole for the gender)
+- second line (age)
+- third line (breed, current weight)
+Remove IRIS stage here so it doesn't feel as scary
 
-I would actually like for the injection site to be a mandatory field (like the volume) when logging a fluid session. I think this is already the case as it default to one in any case. Please have a look at what is currently implemented.
-1. a) let's use dateTime (when treatment
-  actually occurred)
-  b) query only sessions that have a non-null injectionSite value
-c) yes, create a new provider with offline caching to minimize reads.
-2. a) show whatever sessions exist with a
-  subtitle like "Based on the last X sessions" instead of waiting for 20.
-b) Let's just show "Start tracking injection sites to see your rotation pattern" for now. No need for CTA.
-c) yes, showing the chart with
-   any number of sessions ≥1, as even 1-2 data points provide value.
-3. a) yes, let's go with "25%" in the
-  pie sections (cleaner look) and "Shoulder blade - left: 5 sessions (25%)"
-  in the legend for full context.
-b) show only used sites to keep the legend concise and focused.
-c) 50-60% (centerSpaceRadius), which creates a clean donut appearance without making the sections too thin.
-4. a) 4 distinct pastel colors for better visual
-  differentiation while maintaining the empathetic tone.
-b) consistent mapping for predictability and easier pattern recognition.
-5. a) create a reusable widget to save refactoring time later.
-b) the same scroll view for a unified
-  experience.
-c) "Insights" as a header
-6. a) /progress/injection_sites 
-b) yes, let's only track screen_view for now
-7. a) no need to reserve space for now
+1. yes, let's use the actual gender symbol. No color-code to avoid stereotypical. It can simply be the app teal color.
+2. Yes, let's use "10y • Born May 2015"
+3. weight tracking will be a premium feature so let's keep "6.00 kg"
+4. The breed field is optional during onbarding. Instead of unknown, simply don't display it if it has not been field during onboarding (instead of "Unknown")
+5. yes, show a paw icon inside the circle. Make it subtly tappable (with a small camera icon overlay) for future photo upload.
+6. No health indicator, this is simply the pet information so let's not make it scary
+Please create a detailed plan of how you will achieve and implement this new screen. Don't hesitate to let me know if you think of any meaningful and realistic improvements I might have overlooked.
+Before you create the plan, please ask any and all questions you have in order to provide the most robust solution to handle edge cases and/or additional context that you might need to feel confident in proceeding with the implementation. When you do use clarifying questions, please do not use bullet points but rather letters within each numbered question if number requires bullet points. Before you ask me questions, please already have a look at all the existing files you would need, as well as previously implemented steps, to already have the context, use existing systems, ensure coherence and in case you already find the answer to your questions. Suggest for each question your recommended solution. Keep in mind that I want to have the best suited solution for my project while being in line with industry standards and app development best practices as much as possible. Please follow Firebase and Flutter best practices and use built-in solutions whenever possible instead of more complex custom/hacky workarounds. Also, keep in mind the CRUD rules file (.cursor/rules/firebase_CRUDrules.md) to make sure to keep firebase costs to a minimum. Regarding database, I don't need to worry about backward compatibility since I will regularily delete the database anyway for testing.
+
+1. Option (a) - Add dateOfBirth: DateTime? to CatProfile,
+  update the toCatProfile() conversion, and persist it. This gives accurate
+  age calculations and better UX. Since you don't care about backward
+  compatibility, this is clean.
+2. b) Show month + year: "10y • Born May 2015"
+3. b) Do nothing (purely visual for now)
+4. Option (a) - Extract to
+  lib/features/profile/widgets/pet_info_card.dart. Keeps profile_screen.dart
+   cleaner and makes the component more maintainable.
+5. c) No analytics needed for this change
+6. a) Show only weight: "6.0 kg"
 Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development/Flutter best practices are extremely important. Please confirm that this follow industry standards, and if not explain why. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them (including the non critical ones). I will test only once we fixed the linting issues.
-Once, we I have confirmed that we both align on all of the necessary details, let's create the detailed implementation plan in /Users/marc-antoinemalacquis/Development/projects/hydracat/~PLANNING/injSites_analytics_plan.md
 
-Perfect, please include in the plan a phase to make injection site properly tracking mandatory for logging.
-Yes, let's use /progress/injection-sites to follow Flutter routing conventions.
-Please the detailed implementation plan.
+
+I was thinking of adding a bar chart showing the volume administered each day of the week with an horizontal bar representing the scheduled session goal. The thing is that I was thinking of adding it right below the calendar so each bar could be perfectly aligned with each day of the week in the calendar. But I just realised that this might need some expensive firestore costs (even with the existing preagregated summaries) if this is displayed every time the user navigate to the progress screen (easily accessible from the navigation bar) so it might be better in a separate screen but we would lose that calendar visual alignement. What do you think I should do ?
+
+Awesome ! I would like to implement this bar chart (using fl_chart package) showing the volume administered each day of the week with an overall horizontal bar representing the scheduled goal. I would like for the bars to align exactly with each day of the calendar. Considering the available space on the left, this would mean no Y axis/axis legend (for volume units) if I am not mistaken but let me know if you see another option. Therefore, the bars would need to be interactible : on press, it would display a small dialog showing the volume number.
+Please create a detailed plan of how you will achieve and implement this step. Don't hesitate to let me know if you think of any meaningful and realistic improvements I might have overlooked.
+Before you create the plan, please ask any and all questions you have in order to provide the most robust solution to handle edge cases and/or additional context that you might need to feel confident in proceeding with the implementation. When you do use clarifying questions, please do not use bullet points but rather letters within each numbered question if number requires bullet points. Before you ask me questions, please already have a look at all the existing files you would need, as well as previously implemented steps, to already have the context, use existing systems, ensure coherence and in case you already find the answer to your questions. Suggest for each question your recommended solution. Keep in mind that I want to have the best suited solution for my project while being in line with industry standards and app development best practices as much as possible. Please follow Firebase and Flutter best practices and use built-in solutions whenever possible instead of more complex custom/hacky workarounds. Also, keep in mind the CRUD rules file (.cursor/rules/firebase_CRUDrules.md) to make sure to keep firebase costs to a minimum. Regarding database, I don't need to worry about backward compatibility since I will regularily delete the database anyway for testing.
+
+1. a) No Y-axis at all - Just bars and the goal line, rely entirely on tap interaction to see numbers (cleanest, aligns best with calendar)
+2. Option (a) tap + option (c) tooltip style. Show a
+  compact tooltip directly above the bar showing "85ml / 100ml (85%)" -
+  quick, contextual, doesn't block the view. This matches mobile app best practices for chart interactions. I like this idea but above the bar will be the calendar, so it would overlap with the calendar ?
+3. c) Different for past vs future - No bar for future dates, ghost bar for past dates with zero (shows missed opportunities)
+4. - Colors: Single primary teal color with varying opacity (0-50% = light
+  teal 40% opacity, 50-100% = medium teal 70% opacity, >100% = full teal
+  100% opacity) - keeps it simple and focused on volume
+  - Corners: Rounded top corners (4px radius) - friendlier and matches your
+  app's design language
+  - Goal line: Dashed horizontal line in amber (matches "today" color,
+  clearly distinguishable)
+  - Width: 80% of column width - easy to tap, leaves small visual margin
+5. b) Week view only - Hidden in month view to avoid cramped visualization
+6. Option (a) with 12px padding - tight enough to feel
+  integrated, enough breathing room to be distinct.
+7. Actually, I would like to have a loading spinner in the middle of the chart. And once we have the date, it would be beautiful to have a very short animation of the bars "rising" to their final level. Would this be possible ? Do we need/should use another existing flutter package for that ?
+8. b) Show tiny bar - 2-3px tall bar in coral/warning color
+9. Option (b) daily total goal - most intuitive for users
+  ("Did I hit my goal FOR THIS DAY?"). This aligns with the fluidDailyGoalMl
+   field already in your DailySummary model.
+10. b) Taller for visibility - 100-120px. I am not sure what this represent, but I would like this chart to fill about 1/4 of the total screen.
+Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules or existing code. Coherence and app development/Flutter best practices are extremely important. Please confirm that this follow industry standards, and if not explain why. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them (including the non critical ones). I will test only once we fixed the linting issues. We will create the plan in /Users/marc-antoinemalacquis/Development/projects/hydracat/~PLANNING/progessBar_fluid.md
+
+
+- Would it be possible to have a smart position but rather left/right. So basically for monday, tuesday, wednesday, thursday, the info box would be to the right of the bar overlapping the right side of the chart. For friday, saturday, sunday, the info box would be to the left of the bar overlapping the left side of the chart. This would be even better if the info box only shows while the user is tapping on the bar and disappear once the user remove his finger from the bar (very reactive for great UX). Would this be realistic ?
+The small info box would show on line 1 "85ml / 100ml" and line 2 "(85%)" to keep it compact. No need for "Mon:" since it will be already on the X axis.
+- Let's go with 200px for the char height
+- perfect rising Animation
