@@ -4,6 +4,7 @@ import 'package:hydracat/features/logging/exceptions/logging_exceptions.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/logging_validation_service.dart';
+import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 
 void main() {
   group('LoggingValidationService', () {
@@ -297,6 +298,7 @@ void main() {
           userId: 'user-456',
           dateTime: DateTime.now().subtract(const Duration(hours: 1)),
           volumeGiven: 100,
+          injectionSite: FluidLocation.shoulderBladeLeft,
         );
 
         final result = service.validateFluidSession(session);
@@ -311,6 +313,7 @@ void main() {
           userId: 'user-456',
           dateTime: DateTime.now().add(const Duration(hours: 1)), // Future
           volumeGiven: 100,
+          injectionSite: FluidLocation.shoulderBladeLeft,
         );
 
         final result = service.validateFluidSession(session);
@@ -327,6 +330,7 @@ void main() {
           userId: 'user-456',
           dateTime: DateTime.now(),
           volumeGiven: 0, // Invalid
+          injectionSite: FluidLocation.shoulderBladeLeft,
         );
 
         final result = service.validateFluidSession(session);

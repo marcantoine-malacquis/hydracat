@@ -14,6 +14,7 @@ void main() {
           userId: 'user-456',
           dateTime: DateTime(2024, 1, 15, 8),
           volumeGiven: 100,
+          injectionSite: FluidLocation.shoulderBladeLeft,
         );
 
         expect(session.id, isNotEmpty);
@@ -207,14 +208,6 @@ void main() {
         final json = session.toJson();
 
         expect(json['injectionSite'], 'shoulderBladeLeft');
-      });
-
-      test('toJson() handles null injectionSite', () {
-        final session = FluidSessionBuilder().withInjectionSite(null).build();
-
-        final json = session.toJson();
-
-        expect(json['injectionSite'], null);
       });
 
       test('fromJson() converts string to FluidLocation enum', () {

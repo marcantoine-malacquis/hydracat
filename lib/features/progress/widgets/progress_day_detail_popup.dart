@@ -1354,6 +1354,8 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
       userId: user!.id,
       dateTime: scheduledTime,
       volumeGiven: 0,
+      injectionSite:
+          schedule.preferredLocation ?? FluidLocation.shoulderBladeLeft,
       scheduleId: schedule.id,
       scheduledTime: scheduledTime,
       dailyGoalMl: schedule.targetVolume,
@@ -2052,7 +2054,7 @@ class _FluidEditInlineForm extends StatefulWidget {
 
 class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
   late double _volumeGiven;
-  late FluidLocation? _injectionSite;
+  late FluidLocation _injectionSite;
   late String? _stressLevel;
   late TextEditingController _volumeController;
   late TextEditingController _notesController;
@@ -2328,7 +2330,7 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
   Widget _buildInjectionSiteSelector(ThemeData theme) {
     return InjectionSiteSelector(
       value: _injectionSite,
-      onChanged: (FluidLocation? value) {
+      onChanged: (FluidLocation value) {
         setState(() {
           _injectionSite = value;
         });

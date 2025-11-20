@@ -709,6 +709,40 @@ This document provides a comprehensive index of all test files in the HydraCat p
 
 ---
 
+### `test/features/progress/injection_sites_provider_test.dart` ⏳
+
+**Type**: Provider Test
+**Purpose**: Tests injection sites stats provider
+**Stats**: PENDING - Test not yet implemented
+
+**Planned Coverage**:
+- Provider fetches last 20 fluid sessions from Firestore
+- Aggregates injection site usage statistics
+- Handles error states gracefully
+- Caches results efficiently
+- Auto-invalidates on fluid session changes
+
+**Status**: Future implementation - test file pending
+
+---
+
+### `test/features/progress/injection_sites_donut_chart_test.dart` ⏳
+
+**Type**: Widget Test
+**Purpose**: Tests InjectionSitesDonutChart widget
+**Stats**: PENDING - Test not yet implemented
+
+**Planned Coverage**:
+- Renders donut chart with correct percentages
+- Displays legend with site names and counts
+- Shows empty state when no sessions
+- Uses correct color mapping for sites
+- Provides accessibility semantics
+
+**Status**: Future implementation - test file pending
+
+---
+
 ## Provider Tests
 
 ### `test/providers/analytics_provider_logging_hooks_test.dart` ❌

@@ -37,10 +37,10 @@ class InjectionSiteSelector extends StatefulWidget {
   });
 
   /// Currently selected injection site
-  final FluidLocation? value;
+  final FluidLocation value;
 
   /// Callback when selection changes
-  final ValueChanged<FluidLocation?> onChanged;
+  final ValueChanged<FluidLocation> onChanged;
 
   /// Whether the selector is enabled
   final bool enabled;
@@ -125,7 +125,7 @@ class _InjectionSiteSelectorState extends State<InjectionSiteSelector> {
                                   const SizedBox(width: AppSpacing.sm),
                                 Expanded(
                                   child: Text(
-                                    location.displayName,
+                                    location.getLocalizedName(context),
                                     style: Theme.of(
                                       context,
                                     ).textTheme.bodyLarge,
@@ -167,9 +167,9 @@ class _InjectionSiteSelectorState extends State<InjectionSiteSelector> {
       link: _layerLink,
       child: Semantics(
         label: l10n.injectionSiteSelectorSemantic,
-        hint: widget.value != null
-            ? l10n.injectionSiteCurrentSelection(widget.value!.displayName)
-            : l10n.injectionSiteNoSelection,
+        hint: l10n.injectionSiteCurrentSelection(
+          widget.value.getLocalizedName(context),
+        ),
         button: true,
         child: Material(
           color: Colors.transparent,
@@ -194,11 +194,9 @@ class _InjectionSiteSelectorState extends State<InjectionSiteSelector> {
                 ),
               ),
               child: Text(
-                widget.value?.displayName ?? '',
+                widget.value.getLocalizedName(context),
                 style: theme.textTheme.bodyLarge?.copyWith(
-                  color: widget.value != null
-                      ? theme.colorScheme.onSurface
-                      : theme.colorScheme.onSurfaceVariant,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ),

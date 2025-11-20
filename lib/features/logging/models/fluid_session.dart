@@ -23,7 +23,7 @@ class FluidSession {
     required this.dateTime,
     required this.volumeGiven,
     required this.createdAt,
-    this.injectionSite,
+    required this.injectionSite,
     this.stressLevel,
     this.notes,
     this.scheduleId,
@@ -44,7 +44,7 @@ class FluidSession {
     required String userId,
     required DateTime dateTime,
     required double volumeGiven,
-    FluidLocation? injectionSite,
+    required FluidLocation injectionSite,
     String? stressLevel,
     String? notes,
     String? scheduleId,
@@ -77,7 +77,8 @@ class FluidSession {
   /// Factory constructor to create a session from a schedule
   ///
   /// Pre-fills fluid details from the schedule. Actual volume defaults to
-  /// the target volume from the schedule.
+  /// the target volume from the schedule. Injection site defaults to schedule's
+  /// preferred location if not explicitly provided.
   factory FluidSession.fromSchedule({
     required Schedule schedule,
     required DateTime scheduledTime,
@@ -94,13 +95,17 @@ class FluidSession {
     double? finalBagWeightG,
   }) {
     const uuid = Uuid();
+    final injectionSite = actualInjectionSite ??
+        schedule.preferredLocation ??
+        FluidLocation.shoulderBladeLeft;
+
     return FluidSession(
       id: uuid.v4(),
       petId: petId,
       userId: userId,
       dateTime: actualDateTime ?? scheduledTime,
       volumeGiven: actualVolume ?? schedule.targetVolume!,
-      injectionSite: actualInjectionSite ?? schedule.preferredLocation,
+      injectionSite: injectionSite,
       stressLevel: stressLevel,
       notes: notes,
       scheduleId: schedule.id,
@@ -116,17 +121,20 @@ class FluidSession {
   /// Creates a [FluidSession] from JSON data
   ///
   /// Handles Firestore Timestamp conversion for all DateTime fields and
-  /// FluidLocation enum conversion from string.
+  /// FluidLocation enum conversion from string. Defaults to shoulderBladeLeft
+  /// for backward compatibility with old data.
   factory FluidSession.fromJson(Map<String, dynamic> json) {
+    final injectionSite = json['injectionSite'] != null
+        ? FluidLocation.fromString(json['injectionSite'] as String)
+        : null;
+
     return FluidSession(
       id: json['id'] as String,
       petId: json['petId'] as String,
       userId: json['userId'] as String,
       dateTime: _parseDateTime(json['dateTime']),
       volumeGiven: (json['volumeGiven'] as num).toDouble(),
-      injectionSite: json['injectionSite'] != null
-          ? FluidLocation.fromString(json['injectionSite'] as String)
-          : null,
+      injectionSite: injectionSite ?? FluidLocation.shoulderBladeLeft,
       stressLevel: json['stressLevel'] as String?,
       notes: json['notes'] as String?,
       scheduleId: json['scheduleId'] as String?,
@@ -183,8 +191,8 @@ class FluidSession {
   /// Volume of fluids administered (in milliliters)
   final double volumeGiven;
 
-  /// Injection site location (enum for type safety)
-  final FluidLocation? injectionSite;
+  /// Injection site location (required for proper rotation tracking)
+  final FluidLocation injectionSite;
 
   /// Stress level during administration ("low", "medium", "high")
   final String? stressLevel;
@@ -265,6 +273,11 @@ class FluidSession {
       errors.add('Stress level must be "low", "medium", or "high"');
     }
 
+    // Injection site validation
+    // Note: injectionSite is required (non-nullable) for proper rotation
+    // tracking. Type system ensures it's always present, so no runtime
+    // check needed.
+
     // DateTime validation
     if (dateTime.isAfter(DateTime.now())) {
       errors.add('Treatment time cannot be in the future');
@@ -283,7 +296,7 @@ class FluidSession {
       'userId': userId,
       'dateTime': dateTime,
       'volumeGiven': volumeGiven,
-      'injectionSite': injectionSite?.name,
+      'injectionSite': injectionSite.name,
       'stressLevel': stressLevel,
       'notes': notes,
       'scheduleId': scheduleId,
@@ -304,7 +317,7 @@ class FluidSession {
     String? userId,
     DateTime? dateTime,
     double? volumeGiven,
-    Object? injectionSite = _undefined,
+    FluidLocation? injectionSite,
     Object? stressLevel = _undefined,
     Object? notes = _undefined,
     Object? scheduleId = _undefined,
@@ -322,9 +335,7 @@ class FluidSession {
       userId: userId ?? this.userId,
       dateTime: dateTime ?? this.dateTime,
       volumeGiven: volumeGiven ?? this.volumeGiven,
-      injectionSite: injectionSite == _undefined
-          ? this.injectionSite
-          : injectionSite as FluidLocation?,
+      injectionSite: injectionSite ?? this.injectionSite,
       stressLevel: stressLevel == _undefined
           ? this.stressLevel
           : stressLevel as String?,

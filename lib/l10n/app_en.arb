@@ -482,6 +482,56 @@
     }
   },
   "injectionSiteNoSelection": "No injection site selected",
+  "injectionSiteRequired": "Injection site is required for proper rotation tracking",
+  "@injectionSiteRequired": {
+    "description": "Error message when injection site is not selected"
+  },
+  "injectionSiteShoulderBladeLeft": "Shoulder blade - left",
+  "@injectionSiteShoulderBladeLeft": {
+    "description": "Display name for left shoulder blade injection site"
+  },
+  "injectionSiteShoulderBladeRight": "Shoulder blade - right",
+  "@injectionSiteShoulderBladeRight": {
+    "description": "Display name for right shoulder blade injection site"
+  },
+  "injectionSiteHipBonesLeft": "Hip bones - left",
+  "@injectionSiteHipBonesLeft": {
+    "description": "Display name for left hip bones injection site"
+  },
+  "injectionSiteHipBonesRight": "Hip bones - right",
+  "@injectionSiteHipBonesRight": {
+    "description": "Display name for right hip bones injection site"
+  },
+  "injectionSitesAnalyticsTitle": "Injection Sites",
+  "@injectionSitesAnalyticsTitle": {
+    "description": "Title for injection sites analytics screen"
+  },
+  "injectionSitesRotationPattern": "Rotation Pattern",
+  "@injectionSitesRotationPattern": {
+    "description": "Header for injection site rotation pattern section"
+  },
+  "injectionSitesBasedOnSessions": "Based on the last {count} {count, plural, =1{session} other{sessions}}",
+  "@injectionSitesBasedOnSessions": {
+    "description": "Subtitle showing session count for analytics",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "20"
+      }
+    }
+  },
+  "injectionSitesNoSessionsYet": "No sessions tracked yet",
+  "@injectionSitesNoSessionsYet": {
+    "description": "Subtitle when no sessions are available"
+  },
+  "injectionSitesErrorLoading": "Error loading injection site data",
+  "@injectionSitesErrorLoading": {
+    "description": "Error message when injection site data fails to load"
+  },
+  "injectionSitesEmptyStateMessage": "Start tracking injection sites\nto see your rotation pattern",
+  "@injectionSitesEmptyStateMessage": {
+    "description": "Empty state message when no injection sites have been tracked"
+  },
 
   "@_LOGGING_STRESS": {},
   "stressLevelSelectorSemantic": "Stress level selector",

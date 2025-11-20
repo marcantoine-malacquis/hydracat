@@ -563,25 +563,23 @@ class LoggingService {
       );
 
       // STEP 6A: Update pet document with last injection site
-      if (session.injectionSite != null) {
-        final petRef = _firestore
-            .collection('users')
-            .doc(userId)
-            .collection('pets')
-            .doc(petId);
+      final petRef = _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('pets')
+          .doc(petId);
 
-        batch.update(petRef, {
-          'lastFluidInjectionSite': session.injectionSite!.name,
-          'lastFluidSessionDate': session.dateTime,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+      batch.update(petRef, {
+        'lastFluidInjectionSite': session.injectionSite.name,
+        'lastFluidSessionDate': session.dateTime,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
-        if (kDebugMode) {
-          debugPrint(
-            '[LoggingService] Updating pet injection site: '
-            '${session.injectionSite!.name}',
-          );
-        }
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingService] Updating pet injection site: '
+          '${session.injectionSite.name}',
+        );
       }
 
       // STEP 7: Commit batch

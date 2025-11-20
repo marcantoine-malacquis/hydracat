@@ -12,6 +12,7 @@ import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/logging_operation.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
+import 'package:hydracat/features/progress/providers/injection_sites_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/connectivity_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
@@ -271,7 +272,8 @@ class ProgressEditNotifier extends StateNotifier<ProgressEditState> {
     final weekStart = AppDateUtils.startOfWeekMonday(sessionDate);
     _ref
       ..invalidate(weekSessionsProvider(weekStart))
-      ..invalidate(weekSummariesProvider(weekStart));
+      ..invalidate(weekSummariesProvider(weekStart))
+      ..invalidate(injectionSitesStatsProvider);
 
     if (kDebugMode) {
       debugPrint('[ProgressEdit] Cache invalidation complete');

@@ -275,18 +275,25 @@ lib/
 │   │   └── services/                # Schedule services
 │   ├── progress/                    # Treatment progress
 │   │   ├── models/                  # Progress data models
-│   │   │   └── day_dot_status.dart  # Day status for calendar
+│   │   │   ├── day_dot_status.dart  # Day status for calendar
+│   │   │   └── injection_site_stats.dart # Injection site statistics
+│   │   ├── providers/               # Progress providers
+│   │   │   └── injection_sites_provider.dart # Injection sites data provider
 │   │   ├── screens/                 # Progress interfaces
 │   │   │   ├── progress_screen.dart # Progress overview
+│   │   │   ├── injection_sites_analytics_screen.dart # Injection sites analytics
 │   │   │   └── detailed_analytics_screen.dart # Analytics (premium)
 │   │   ├── widgets/                 # Progress components
 │   │   │   ├── adherence_chart.dart # Adherence visualization
 │   │   │   ├── calendar_help_popup.dart # Calendar help dialog
 │   │   │   ├── fluid_edit_dialog.dart # Fluid editing dialog
+│   │   │   ├── injection_sites_donut_chart.dart # Injection sites chart
+│   │   │   ├── insights_card.dart   # Reusable analytics card
 │   │   │   ├── medication_edit_dialog.dart # Medication editing dialog
 │   │   │   ├── progress_day_detail_popup.dart # Day detail popup
 │   │   │   ├── progress_week_calendar.dart # Weekly calendar widget
-│   │   │   └── stress_trends.dart   # Stress trend charts
+│   │   │   ├── stress_trends.dart   # Stress trend charts
+│   │   │   └── water_drop_progress_card.dart # Weekly fluid progress card
 │   │   ├── services/                # Progress business logic
 │   │   │   └── week_status_calculator.dart # Week status calculation
 │   │   └── utils/                   # Progress utilities

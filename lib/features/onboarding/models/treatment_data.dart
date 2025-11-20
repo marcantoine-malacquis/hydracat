@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/core/utils/dosage_text_utils.dart';
 import 'package:hydracat/features/profile/models/schedule_dto.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 
 /// Sentinel value for [MedicationData.copyWith] to distinguish between
 /// "not provided" and "explicitly set to null"
@@ -212,6 +214,17 @@ enum FluidLocation {
     FluidLocation.hipBonesLeft => 'Hip bones - left',
     FluidLocation.hipBonesRight => 'Hip bones - right',
   };
+
+  /// Get localized display name for the location
+  String getLocalizedName(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return switch (this) {
+      FluidLocation.shoulderBladeLeft => l10n.injectionSiteShoulderBladeLeft,
+      FluidLocation.shoulderBladeRight => l10n.injectionSiteShoulderBladeRight,
+      FluidLocation.hipBonesLeft => l10n.injectionSiteHipBonesLeft,
+      FluidLocation.hipBonesRight => l10n.injectionSiteHipBonesRight,
+    };
+  }
 
   /// Creates a FluidLocation from a string value
   static FluidLocation? fromString(String value) {

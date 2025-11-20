@@ -5,6 +5,7 @@ import 'package:hydracat/features/logging/models/daily_summary_cache.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/session_read_service.dart';
+import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/features/progress/widgets/progress_day_detail_popup.dart';
 import 'package:hydracat/providers/auth_provider.dart';
@@ -58,6 +59,7 @@ void main() {
         userId: 'test-user-id',
         dateTime: pastDate.add(const Duration(hours: 9)),
         volumeGiven: 150,
+        injectionSite: FluidLocation.shoulderBladeLeft,
       );
 
       await tester.pumpWidget(
@@ -97,6 +99,7 @@ void main() {
         userId: 'test-user-id',
         dateTime: pastDate.add(const Duration(hours: 9)),
         volumeGiven: 100,
+        injectionSite: FluidLocation.shoulderBladeLeft,
       );
 
       await tester.pumpWidget(
@@ -253,6 +256,7 @@ void main() {
         userId: 'test-user-id',
         dateTime: pastDate.add(const Duration(hours: 9)),
         volumeGiven: 100,
+        injectionSite: FluidLocation.shoulderBladeLeft,
       );
 
       final summary = DailySummary.empty(pastDate).copyWith(

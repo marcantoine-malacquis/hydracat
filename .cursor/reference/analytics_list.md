@@ -1,6 +1,6 @@
 # Hydracat Analytics Implementation Reference
 
-**Last Updated:** 2025-11-15
+**Last Updated:** 2025-11-19
 **Status:**  Verified and Documented
 
 ---
@@ -26,7 +26,7 @@ This document provides a comprehensive reference for all Google Analytics (Fireb
 - **Total Event Types:** 53
 - **Total User Properties:** 2
 - **Total Parameters:** 30+
-- **Files with Analytics Calls:** 12
+- **Files with Analytics Calls:** 13
 - **Implementation Status:**  Production-ready
 
 ---
@@ -830,13 +830,21 @@ Generic error tracking for notification operations:
 ---
 
 #### `screen_view`
-**Trigger:** Screen navigation (uses Firebase's logScreenView)
+**Trigger:** Screen navigation (uses Firebase's trackScreenView)
 **Parameters:**
 - `screen_name` (string): Screen identifier
 - `screen_class` (string): Screen class name (optional)
 
 **Implementation:** `analytics_provider.dart:583-594`
-**Note:** Currently defined but not actively used
+
+**Active Usages:**
+
+##### `injection_sites_analytics`
+**When:** User navigates to injection sites analytics screen
+**Purpose:** Track usage of injection site rotation insights
+**Location:** `lib/features/progress/screens/injection_sites_analytics_screen.dart:29-32`
+**Parameters:**
+- `screen_name`: `'injection_sites_analytics'`
 
 ---
 
@@ -847,8 +855,8 @@ User properties are persistent attributes set at the user level (vs. per-event p
 ### `user_type`
 **Values:** `'anonymous'`, `'unverified'`, `'verified'`
 **Set when:**
-- User logs in ’ `'unverified'` or `'verified'` (based on email verification)
-- User logs out ’ `'anonymous'`
+- User logs in ï¿½ `'unverified'` or `'verified'` (based on email verification)
+- User logs out ï¿½ `'anonymous'`
 
 **Implementation:** `analytics_provider.dart:1592-1606`
 
@@ -906,7 +914,7 @@ User properties are persistent attributes set at the user level (vs. per-event p
    - Constants for error types (`AnalyticsErrorTypes`)
    - Reduces typos and improves maintainability
 
-###   Areas for Improvement
+### ï¿½ Areas for Improvement
 
 1. **Incomplete Event Usage**
    - Several events defined but not actively used:
@@ -1054,6 +1062,7 @@ Future<void> trackEvent() async {
 | `water_drop_progress_card.dart` | Weekly progress | 72, 100 |
 | `treatment_confirmation_popup.dart` | Popup opened | 56 |
 | `weight_provider.dart` | Weight features | 280, 339, 409, 493, 564, 622 |
+| `injection_sites_analytics_screen.dart` | Screen view | 29-32 |
 
 ---
 

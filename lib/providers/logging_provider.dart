@@ -30,6 +30,7 @@ import 'package:hydracat/features/logging/services/weight_calculator_service.dar
 import 'package:hydracat/features/notifications/providers/notification_provider.dart';
 import 'package:hydracat/features/notifications/utils/time_slot_formatter.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
+import 'package:hydracat/features/progress/providers/injection_sites_provider.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/connectivity_provider.dart';
@@ -916,6 +917,9 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       // (updates lastFluidInjectionSite)
       if (result.fluidSessionCount > 0) {
         await _ref.read(profileProvider.notifier).refreshPrimaryPet();
+
+        // Invalidate injection sites stats (fluid sessions logged)
+        _ref.invalidate(injectionSitesStatsProvider);
       }
 
       // No manual invalidation: progress providers rebuild
@@ -1588,6 +1592,9 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
 
       // No manual invalidation: progress providers rebuild
       // via dailyCacheProvider
+
+      // Invalidate injection sites stats (new fluid session added)
+      _ref.invalidate(injectionSitesStatsProvider);
 
       if (kDebugMode) {
         debugPrint(

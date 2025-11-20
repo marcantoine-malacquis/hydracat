@@ -86,32 +86,33 @@ class _AppShellState extends ConsumerState<AppShell>
     ),
   ];
 
-  // Pre-computed route-to-index mapping for O(1) lookup performance
-  static const Map<String, int> _routeToIndexMap = {
-    '/': 0,
-    '/progress': 1,
-    '/learn': 2,
-    '/profile': 3,
-  };
-
   int get _currentIndex {
     final currentLocation = GoRouterState.of(context).uri.path;
 
-    // Use O(1) map lookup instead of O(n) linear search
-    final index = _routeToIndexMap[currentLocation];
-    if (index != null) return index;
-
-    // If on logging screen, don't highlight any nav item
-    if (currentLocation == '/logging') {
+    // Check for special routes that should not highlight any tab
+    if (currentLocation == '/logging' ||
+        currentLocation.startsWith('/onboarding')) {
       return -1;
     }
 
-    // If in onboarding flow, don't highlight any nav item
-    if (currentLocation.startsWith('/onboarding')) {
-      return -1;
+    // Check nested routes using prefix matching (order matters)
+    if (currentLocation.startsWith('/progress')) {
+      return 1;
+    }
+    if (currentLocation.startsWith('/profile')) {
+      return 3;
+    }
+    if (currentLocation.startsWith('/learn')) {
+      return 2;
     }
 
-    return 0; // Default to home
+    // Home route (exact match)
+    if (currentLocation == '/') {
+      return 0;
+    }
+
+    // Default fallback
+    return 0;
   }
 
   @override

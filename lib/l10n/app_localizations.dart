@@ -1390,6 +1390,72 @@ abstract class AppLocalizations {
   /// **'No injection site selected'**
   String get injectionSiteNoSelection;
 
+  /// Error message when injection site is not selected
+  ///
+  /// In en, this message translates to:
+  /// **'Injection site is required for proper rotation tracking'**
+  String get injectionSiteRequired;
+
+  /// Display name for left shoulder blade injection site
+  ///
+  /// In en, this message translates to:
+  /// **'Shoulder blade - left'**
+  String get injectionSiteShoulderBladeLeft;
+
+  /// Display name for right shoulder blade injection site
+  ///
+  /// In en, this message translates to:
+  /// **'Shoulder blade - right'**
+  String get injectionSiteShoulderBladeRight;
+
+  /// Display name for left hip bones injection site
+  ///
+  /// In en, this message translates to:
+  /// **'Hip bones - left'**
+  String get injectionSiteHipBonesLeft;
+
+  /// Display name for right hip bones injection site
+  ///
+  /// In en, this message translates to:
+  /// **'Hip bones - right'**
+  String get injectionSiteHipBonesRight;
+
+  /// Title for injection sites analytics screen
+  ///
+  /// In en, this message translates to:
+  /// **'Injection Sites'**
+  String get injectionSitesAnalyticsTitle;
+
+  /// Header for injection site rotation pattern section
+  ///
+  /// In en, this message translates to:
+  /// **'Rotation Pattern'**
+  String get injectionSitesRotationPattern;
+
+  /// Subtitle showing session count for analytics
+  ///
+  /// In en, this message translates to:
+  /// **'Based on the last {count} {count, plural, =1{session} other{sessions}}'**
+  String injectionSitesBasedOnSessions(int count);
+
+  /// Subtitle when no sessions are available
+  ///
+  /// In en, this message translates to:
+  /// **'No sessions tracked yet'**
+  String get injectionSitesNoSessionsYet;
+
+  /// Error message when injection site data fails to load
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading injection site data'**
+  String get injectionSitesErrorLoading;
+
+  /// Empty state message when no injection sites have been tracked
+  ///
+  /// In en, this message translates to:
+  /// **'Start tracking injection sites\nto see your rotation pattern'**
+  String get injectionSitesEmptyStateMessage;
+
   /// No description provided for @stressLevelSelectorSemantic.
   ///
   /// In en, this message translates to:

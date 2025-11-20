@@ -203,6 +203,7 @@ class FluidSessionBuilder {
     _dateTime = DateTime(2024, 1, 15, 8);
     _volumeGiven = 100.0;
     _createdAt = DateTime(2024, 1, 15, 8);
+    _injectionSite = FluidLocation.shoulderBladeLeft;
   }
 
   /// Creates a builder with high volume
@@ -221,7 +222,7 @@ class FluidSessionBuilder {
   late DateTime _dateTime;
   late double _volumeGiven;
   late DateTime _createdAt;
-  FluidLocation? _injectionSite;
+  late FluidLocation _injectionSite;
   String? _stressLevel;
   String? _notes;
   String? _scheduleId;
@@ -259,7 +260,7 @@ class FluidSessionBuilder {
   }
 
   /// Sets the injection site
-  FluidSessionBuilder withInjectionSite(FluidLocation? site) {
+  FluidSessionBuilder withInjectionSite(FluidLocation site) {
     _injectionSite = site;
     return this;
   }

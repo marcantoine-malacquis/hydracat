@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -73,7 +74,7 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
   final TextEditingController _notesController = TextEditingController();
 
   // Selection state
-  FluidLocation? _selectedInjectionSite;
+  FluidLocation _selectedInjectionSite = FluidLocation.shoulderBladeLeft;
   String? _selectedStressLevel;
 
   // UI state
@@ -178,42 +179,85 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
     super.dispose();
   }
 
-  /// Pre-fill form from schedule (if available) or use defaults
-  void _prefillFromSchedule() {
+  /// Get the last used injection site from recent sessions
+  Future<FluidLocation?> _getLastUsedInjectionSite() async {
+    final user = ref.read(currentUserProvider);
+    final pet = ref.read(primaryPetProvider);
+
+    if (user == null || pet == null) return null;
+
+    try {
+      final firestore = FirebaseFirestore.instance;
+
+      // Query most recent session with injection site
+      final query = await firestore
+          .collection('users')
+          .doc(user.id)
+          .collection('pets')
+          .doc(pet.id)
+          .collection('fluidSessions')
+          .orderBy('dateTime', descending: true)
+          .limit(1)
+          .get();
+
+      if (query.docs.isEmpty) return null;
+
+      final session = FluidSession.fromJson(query.docs.first.data());
+      return session.injectionSite;
+    } on FirebaseException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[FluidLoggingScreen] Error fetching last injection site: $e',
+        );
+      }
+      return null;
+    }
+  }
+
+  /// Pre-fill form from schedule (if available) or use smart defaults
+  Future<void> _prefillFromSchedule() async {
     final fluidSchedule = ref.read(fluidScheduleProvider);
 
     if (fluidSchedule != null) {
       // Pre-fill from schedule - always use the latest data
       final newVolume = fluidSchedule.targetVolume?.toInt().toString() ?? '100';
 
-      // Only update if the value has actually changed to
-      // avoid unnecessary rebuilds
       if (_volumeController.text != newVolume) {
         _volumeController.text = newVolume;
       }
 
       setState(() {
-        _selectedInjectionSite = fluidSchedule.preferredLocation;
+        _selectedInjectionSite =
+            fluidSchedule.preferredLocation ?? FluidLocation.shoulderBladeLeft;
       });
 
       if (kDebugMode) {
         debugPrint(
           '[FluidLoggingScreen] Pre-filled from schedule: '
-          'volume=${fluidSchedule.targetVolume}ml',
+          'volume=${fluidSchedule.targetVolume}ml, '
+          'site=${_selectedInjectionSite.displayName}',
         );
       }
     } else {
-      // Manual logging - use defaults
+      // Manual logging - try to use last used injection site
       if (_volumeController.text != '100') {
         _volumeController.text = '100';
       }
 
+      // Fetch last used injection site for smart defaults
+      final lastUsedSite = await _getLastUsedInjectionSite();
+
       setState(() {
-        _selectedInjectionSite = FluidLocation.shoulderBladeLeft;
+        _selectedInjectionSite =
+            lastUsedSite ?? FluidLocation.shoulderBladeLeft;
       });
 
       if (kDebugMode) {
-        debugPrint('[FluidLoggingScreen] Using default values (no schedule)');
+        debugPrint(
+          '[FluidLoggingScreen] Using smart defaults: '
+          'volume=100ml, site=${_selectedInjectionSite.displayName} '
+          '${lastUsedSite != null ? "(last used)" : "(default)"}',
+        );
       }
     }
 
@@ -491,7 +535,7 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
         // Injection site selector
         InjectionSiteSelector(
           value: _selectedInjectionSite,
-          onChanged: (FluidLocation? newValue) {
+          onChanged: (FluidLocation newValue) {
             if (_loadingState == LoadingOverlayState.none) {
               setState(() {
                 _selectedInjectionSite = newValue;

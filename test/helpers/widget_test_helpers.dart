@@ -411,6 +411,7 @@ void registerFallbackValues() {
       userId: 'test-user-id',
       dateTime: DateTime.now(),
       volumeGiven: 100,
+      injectionSite: FluidLocation.shoulderBladeLeft,
     ),
   );
 

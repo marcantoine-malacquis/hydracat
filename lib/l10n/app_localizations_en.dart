@@ -718,6 +718,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String get injectionSiteNoSelection => 'No injection site selected';
 
   @override
+  String get injectionSiteRequired =>
+      'Injection site is required for proper rotation tracking';
+
+  @override
+  String get injectionSiteShoulderBladeLeft => 'Shoulder blade - left';
+
+  @override
+  String get injectionSiteShoulderBladeRight => 'Shoulder blade - right';
+
+  @override
+  String get injectionSiteHipBonesLeft => 'Hip bones - left';
+
+  @override
+  String get injectionSiteHipBonesRight => 'Hip bones - right';
+
+  @override
+  String get injectionSitesAnalyticsTitle => 'Injection Sites';
+
+  @override
+  String get injectionSitesRotationPattern => 'Rotation Pattern';
+
+  @override
+  String injectionSitesBasedOnSessions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'sessions',
+      one: 'session',
+    );
+    return 'Based on the last $count $_temp0';
+  }
+
+  @override
+  String get injectionSitesNoSessionsYet => 'No sessions tracked yet';
+
+  @override
+  String get injectionSitesErrorLoading => 'Error loading injection site data';
+
+  @override
+  String get injectionSitesEmptyStateMessage =>
+      'Start tracking injection sites\nto see your rotation pattern';
+
+  @override
   String get stressLevelSelectorSemantic => 'Stress level selector';
 
   @override

@@ -7,6 +7,7 @@ import 'package:hydracat/features/home/models/pending_treatment.dart';
 import 'package:hydracat/features/logging/models/daily_summary_cache.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
+import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
@@ -368,6 +369,7 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
         userId: user.id,
         dateTime: DateTime.now(),
         volumeGiven: fluid.remainingVolume,
+        injectionSite: FluidLocation.shoulderBladeLeft,
       );
 
       // 3. Log via LoggingProvider
