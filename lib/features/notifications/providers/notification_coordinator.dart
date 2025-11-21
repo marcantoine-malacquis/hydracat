@@ -9,7 +9,6 @@ import 'package:hydracat/features/notifications/services/notification_error_hand
 import 'package:hydracat/features/notifications/services/notification_index_store.dart';
 import 'package:hydracat/features/notifications/services/reminder_plugin.dart';
 import 'package:hydracat/features/notifications/utils/notification_id.dart';
-import 'package:hydracat/features/notifications/utils/scheduling_helpers.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
@@ -55,6 +54,9 @@ class NotificationCoordinator {
   // Constants for follow-up scheduling
   static const int _defaultFollowupOffsetHours = 2;
 
+  // Multi-day scheduling constant
+  static const int _schedulingWindowDays = 3; // Today + 2 days
+
   // Platform and storage dependencies (no Ref needed in method signatures)
   ReminderPlugin get _plugin => _ref.read(reminderPluginProvider);
   NotificationIndexStore get _indexStore =>
@@ -62,12 +64,33 @@ class NotificationCoordinator {
 
   /// Schedule all notifications for today based on active schedules.
   ///
-  /// Reads schedules from profile provider and creates bundled notifications
-  /// grouped by time slot. This is the main entry point for scheduling.
+  /// **Updated behavior**: Now schedules for the next 3 days to ensure
+  /// notifications fire even if user doesn't open app daily.
   ///
   /// Returns: Map with scheduling results (scheduled, immediate, missed counts)
   Future<Map<String, dynamic>> scheduleAllForToday() async {
-    // Read current user and pet from providers
+    // Delegate to multi-day scheduler
+    return scheduleForNext3Days();
+  }
+
+  /// Schedule notifications for the next 3 days.
+  ///
+  /// This ensures notifications fire even if user doesn't open app daily.
+  /// Follow-ups are only scheduled for today to conserve notification quota.
+  ///
+  /// **Scheduling window:**
+  /// - Day 0 (today): Initial + follow-up notifications
+  /// - Day 1: Initial notifications only
+  /// - Day 2: Initial notifications only
+  ///
+  /// **Returns**: Map with scheduling results:
+  /// - `scheduled`: Number of notifications scheduled
+  /// - `immediate`: Number of notifications fired immediately (grace period)
+  /// - `missed`: Number of notifications skipped (too far in past)
+  /// - `daysScheduled`: Number of days successfully scheduled
+  /// - `dailyResults`: Per-day breakdown
+  /// - `errors`: List of error messages
+  Future<Map<String, dynamic>> scheduleForNext3Days() async {
     final user = _ref.read(currentUserProvider);
     final pet = _ref.read(primaryPetProvider);
 
@@ -75,10 +98,80 @@ class NotificationCoordinator {
       return _emptyResult(reason: 'no_user_or_pet');
     }
 
-    return _scheduleAllForTodayImpl(
+    _devLog(
+      '═══ Scheduling notifications for next $_schedulingWindowDays days...',
+    );
+
+    var totalScheduled = 0;
+    var totalImmediate = 0;
+    var totalMissed = 0;
+    final allErrors = <String>[];
+    final dailyResults = <String, Map<String, dynamic>>{};
+
+    // Get pet name for notifications
+    final profileState = _ref.read(profileProvider);
+    final petName = profileState.primaryPet?.name ?? 'your pet';
+
+    // Schedule for each day
+    for (var dayOffset = 0; dayOffset < _schedulingWindowDays; dayOffset++) {
+      final targetDate = DateTime.now().add(Duration(days: dayOffset));
+      final dateKey = _formatDate(targetDate);
+
+      try {
+        final result = await _scheduleForSpecificDate(
+          date: targetDate,
+          userId: user.id,
+          petId: pet.id,
+          petName: petName,
+          includeFollowups: dayOffset == 0, // Only today gets follow-ups
+        );
+
+        dailyResults[dateKey] = result;
+        totalScheduled += result['scheduled'] as int;
+        totalImmediate += result['immediate'] as int;
+        totalMissed += result['missed'] as int;
+
+        final errors = result['errors'] as List<dynamic>?;
+        if (errors != null && errors.isNotEmpty) {
+          allErrors.addAll(errors.cast<String>());
+        }
+      } on Exception catch (e) {
+        final error = 'Day $dayOffset ($dateKey): $e';
+        allErrors.add(error);
+        _devLog('❌ Failed to schedule day $dayOffset: $e');
+      }
+    }
+
+    _devLog(
+      '✅ Multi-day scheduling complete: $totalScheduled scheduled, '
+      '$totalImmediate immediate, $totalMissed missed',
+    );
+
+    // Update group summary for today
+    await _updateGroupSummary(
       userId: user.id,
       petId: pet.id,
+      petName: petName,
     );
+
+    // Track analytics
+    try {
+      await _ref.read(analyticsServiceDirectProvider).trackMultiDayScheduling(
+        daysScheduled: dailyResults.length,
+        totalNotifications: totalScheduled,
+      );
+    } on Exception catch (e) {
+      _devLog('Analytics tracking failed: $e');
+    }
+
+    return {
+      'scheduled': totalScheduled,
+      'immediate': totalImmediate,
+      'missed': totalMissed,
+      'daysScheduled': dailyResults.length,
+      'dailyResults': dailyResults,
+      'errors': allErrors,
+    };
   }
 
   /// Refresh all notifications by canceling and rescheduling everything.
@@ -175,8 +268,19 @@ class NotificationCoordinator {
 
   /// Schedule notifications for a single schedule.
   ///
-  /// This method is idempotent: it first cancels any existing notifications
-  /// for this schedule, then schedules new ones.
+  /// This method is called when:
+  /// - A new schedule is created
+  /// - An existing schedule is updated
+  ///
+  /// **Strategy (Option B: Surgical updates with fallback):**
+  /// 1. Check if schedule shares time slots with other schedules (bundling)
+  /// 2. If bundling detected → use refreshAll() (safe, ensures correctness)
+  /// 3. If no bundling → surgical update:
+  ///    a. Cancel old notifications (next 3 days)
+  ///    b. Schedule new notifications (next 3 days)
+  ///
+  /// This approach is more efficient than always using refreshAll() while
+  /// still being safe for bundled notifications.
   Future<Map<String, dynamic>> scheduleForSchedule(Schedule schedule) async {
     final user = _ref.read(currentUserProvider);
     final pet = _ref.read(primaryPetProvider);
@@ -187,18 +291,63 @@ class NotificationCoordinator {
 
     _devLog('scheduleForSchedule called for schedule ${schedule.id}');
 
-    // Validation checks
+    // Validation
     if (!schedule.isActive) {
-      _devLog('Schedule ${schedule.id} is inactive, skipping scheduling');
-      return _emptyResult();
+      _devLog(
+        'Schedule ${schedule.id} is inactive, canceling its notifications',
+      );
+      await cancelFutureNotificationsForSchedule(schedule.id);
+      return _emptyResult(reason: 'inactive_schedule');
     }
 
-    // Simple approach: refresh all notifications
-    // This ensures correct bundling without complex logic
-    return refreshAll();
+    try {
+      // Check if this schedule shares time slots with other schedules
+      final profileState = _ref.read(profileProvider);
+      final allSchedules = <Schedule>[
+        if (profileState.fluidSchedule != null) profileState.fluidSchedule!,
+        ...profileState.medicationSchedules ?? [],
+      ];
+
+      final hasSharedTimeSlots = _hasSharedTimeSlots(schedule, allSchedules);
+
+      if (hasSharedTimeSlots) {
+        // Bundling detected - use nuclear option to ensure correctness
+        _devLog(
+          'Schedule ${schedule.id} shares time slots with others, '
+          'using refreshAll()',
+        );
+        return await refreshAll();
+      }
+
+      // No bundling - safe to do surgical update
+      final canceledCount =
+          await cancelFutureNotificationsForSchedule(schedule.id);
+      _devLog(
+        'Canceled $canceledCount old notifications for schedule ${schedule.id}',
+      );
+
+      final result = await scheduleForSingleSchedule(schedule);
+      _devLog(
+        'Rescheduled ${result['scheduled']} notifications for '
+        'schedule ${schedule.id}',
+      );
+
+      return result;
+    } on Exception catch (e, stackTrace) {
+      _devLog('ERROR in scheduleForSchedule: $e');
+      _devLog('Stack trace: $stackTrace');
+      return {
+        'scheduled': 0,
+        'immediate': 0,
+        'missed': 0,
+        'errors': [e.toString()],
+      };
+    }
   }
 
   /// Cancel all notifications for a schedule.
+  ///
+  /// Used when a schedule is deleted. Cancels for the next 3 days.
   Future<int> cancelForSchedule(String scheduleId) async {
     final user = _ref.read(currentUserProvider);
     final pet = _ref.read(primaryPetProvider);
@@ -207,7 +356,21 @@ class NotificationCoordinator {
       return 0;
     }
 
-    return _cancelForScheduleImpl(user.id, pet.id, scheduleId);
+    _devLog('cancelForSchedule called for schedule $scheduleId');
+
+    final canceledCount =
+        await cancelFutureNotificationsForSchedule(scheduleId);
+
+    // Update group summary
+    final profileState = _ref.read(profileProvider);
+    final petName = profileState.primaryPet?.name ?? 'your pet';
+    await _updateGroupSummary(
+      userId: user.id,
+      petId: pet.id,
+      petName: petName,
+    );
+
+    return canceledCount;
   }
 
   /// Cancel notifications for a specific time slot.
@@ -226,14 +389,25 @@ class NotificationCoordinator {
   // PRIVATE IMPLEMENTATION METHODS
   // ==========================================================================
 
-  /// Internal implementation of scheduleAllForToday with explicit parameters.
-  Future<Map<String, dynamic>> _scheduleAllForTodayImpl({
+  /// Schedule notifications for a specific date.
+  ///
+  /// Internal method used by [scheduleForNext3Days].
+  ///
+  /// **Parameters:**
+  /// - [date]: Target date to schedule for
+  /// - [userId]: User identifier
+  /// - [petId]: Pet identifier
+  /// - [petName]: Pet name for notification content
+  /// - [includeFollowups]: Whether to schedule follow-up notifications
+  ///
+  /// **Returns**: Map with counts (scheduled, immediate, missed, errors)
+  Future<Map<String, dynamic>> _scheduleForSpecificDate({
+    required DateTime date,
     required String userId,
     required String petId,
+    required String petName,
+    required bool includeFollowups,
   }) async {
-    _devLog('scheduleAllForToday called for userId=$userId, petId=$petId');
-
-    final now = DateTime.now();
     var scheduledCount = 0;
     var immediateCount = 0;
     var missedCount = 0;
@@ -242,48 +416,39 @@ class NotificationCoordinator {
     try {
       // Get cached schedules from profileProvider
       final profileState = _ref.read(profileProvider);
-      final fluidSchedule = profileState.fluidSchedule;
-      final medicationSchedules = profileState.medicationSchedules ?? [];
+      final allSchedules = <Schedule>[
+        if (profileState.fluidSchedule != null) profileState.fluidSchedule!,
+        ...profileState.medicationSchedules ?? [],
+      ];
 
-      // Check if cache is empty
-      if (fluidSchedule == null && medicationSchedules.isEmpty) {
-        _devLog(
-          'No schedules in cache. Skipping scheduling (cache-only policy).',
-        );
+      if (allSchedules.isEmpty) {
         return {
           'scheduled': 0,
           'immediate': 0,
           'missed': 0,
           'errors': <String>[],
-          'cacheEmpty': true,
         };
       }
 
-      // Get pet name for notification content
-      final petName = profileState.primaryPet?.name ?? 'your pet';
-
-      // Combine all schedules
-      final allSchedules = <Schedule>[
-        if (fluidSchedule != null) fluidSchedule,
-        ...medicationSchedules,
-      ];
-
-      _devLog('Found ${allSchedules.length} total schedules in cache');
-
-      // Filter to active schedules for today
-      final activeSchedulesForToday = allSchedules.where((schedule) {
-        return schedule.isActive && schedule.hasReminderTimeToday(now);
+      // Filter to schedules active on this date
+      final activeSchedules = allSchedules.where((schedule) {
+        return schedule.isActive && schedule.hasReminderOnDate(date);
       }).toList();
 
-      _devLog(
-        '${activeSchedulesForToday.length} active schedules for today',
-      );
+      if (activeSchedules.isEmpty) {
+        return {
+          'scheduled': 0,
+          'immediate': 0,
+          'missed': 0,
+          'errors': <String>[],
+        };
+      }
 
-      // Group schedules by time slot for bundling
+      // Group by time slot for bundling
       final schedulesByTimeSlot = <String, List<Schedule>>{};
 
-      for (final schedule in activeSchedulesForToday) {
-        final reminderTimes = schedule.todaysReminderTimes(now).toList();
+      for (final schedule in activeSchedules) {
+        final reminderTimes = schedule.reminderTimesOnDate(date);
 
         for (final reminderTime in reminderTimes) {
           final timeSlot = '${reminderTime.hour.toString().padLeft(2, '0')}:'
@@ -293,51 +458,30 @@ class NotificationCoordinator {
         }
       }
 
-      _devLog('Grouped into ${schedulesByTimeSlot.length} time slots');
-
-      // Schedule one bundled notification per time slot
+      // Schedule bundled notifications for each time slot
       for (final entry in schedulesByTimeSlot.entries) {
         final timeSlot = entry.key;
         final schedules = entry.value;
 
-        _devLog(
-          'Time slot $timeSlot has ${schedules.length} schedule(s): '
-          '${schedules.map((s) => s.id).join(", ")}',
-        );
-
         try {
-          final result = await _scheduleNotificationForTimeSlot(
+          final result = await _scheduleNotificationForDateAndTimeSlot(
             userId: userId,
             petId: petId,
             schedules: schedules,
             timeSlot: timeSlot,
+            date: date,
             petName: petName,
-            now: now,
+            includeFollowup: includeFollowups,
           );
 
           scheduledCount += result['scheduled'] as int;
           immediateCount += result['immediate'] as int;
           missedCount += result['missed'] as int;
         } on Exception catch (e) {
-          final error = 'Failed to schedule time slot $timeSlot: $e';
-          errors.add(error);
-          _devLog('ERROR: $error');
-          // Continue processing other time slots
+          errors.add('Failed to schedule $timeSlot: $e');
+          _devLog('❌ Error scheduling $timeSlot on ${_formatDate(date)}: $e');
         }
       }
-
-      _devLog(
-        'Scheduling complete: $scheduledCount scheduled, '
-        '$immediateCount immediate, $missedCount missed, '
-        '${errors.length} errors',
-      );
-
-      // Update group summary to reflect current notification state
-      await _updateGroupSummary(
-        userId: userId,
-        petId: petId,
-        petName: petName,
-      );
 
       return {
         'scheduled': scheduledCount,
@@ -346,233 +490,92 @@ class NotificationCoordinator {
         'errors': errors,
       };
     } on Exception catch (e, stackTrace) {
-      _devLog('ERROR in scheduleAllForToday: $e');
+      _devLog('❌ ERROR in _scheduleForSpecificDate: $e');
       _devLog('Stack trace: $stackTrace');
       return {
-        'scheduled': scheduledCount,
-        'immediate': immediateCount,
-        'missed': missedCount,
-        'errors': [...errors, e.toString()],
+        'scheduled': 0,
+        'immediate': 0,
+        'missed': 0,
+        'errors': [e.toString()],
       };
     }
   }
 
-  /// Schedule a bundled notification for a time slot with one or more
-  /// schedules.
-  Future<Map<String, dynamic>> _scheduleNotificationForTimeSlot({
+  /// Schedule notification for specific date and time slot.
+  ///
+  /// Handles both initial notification and optional follow-up.
+  /// Uses date-aware ID generation to prevent collisions across days.
+  ///
+  /// **Parameters:**
+  /// - [userId]: User identifier
+  /// - [petId]: Pet identifier
+  /// - [schedules]: List of schedules bundled at this time slot
+  /// - [timeSlot]: Time in "HH:mm" format
+  /// - [date]: Target date
+  /// - [petName]: Pet name for notification content
+  /// - [includeFollowup]: Whether to schedule follow-up notification
+  ///
+  /// **Returns**: Map with counts (scheduled, immediate, missed)
+  Future<Map<String, dynamic>> _scheduleNotificationForDateAndTimeSlot({
     required String userId,
     required String petId,
     required List<Schedule> schedules,
     required String timeSlot,
+    required DateTime date,
     required String petName,
-    required DateTime now,
+    required bool includeFollowup,
   }) async {
     var scheduledCount = 0;
     var immediateCount = 0;
     var missedCount = 0;
 
     if (schedules.isEmpty) {
-      _devLog(
-        'WARNING: _scheduleNotificationForTimeSlot called with empty schedules',
-      );
-      return {
-        'scheduled': 0,
-        'immediate': 0,
-        'missed': 0,
-      };
+      return {'scheduled': 0, 'immediate': 0, 'missed': 0};
     }
 
     try {
-      // Convert timeSlot to TZDateTime for today
-      final scheduledTime = zonedDateTimeForToday(timeSlot, now);
+      // Parse time slot
+      final timeParts = timeSlot.split(':');
+      final hour = int.parse(timeParts[0]);
+      final minute = int.parse(timeParts[1]);
 
-      // Evaluate grace period
-      final decision = evaluateGracePeriod(
-        scheduledTime: scheduledTime,
-        now: now,
+      // Create TZDateTime for this specific date and time
+      final scheduledTime = tz.TZDateTime(
+        tz.local,
+        date.year,
+        date.month,
+        date.day,
+        hour,
+        minute,
       );
 
-      // Generate bundled notification content
-      final content = _generateBundledNotificationContent(
-        schedules: schedules,
-        kind: 'initial',
-        petName: petName,
-      );
+      // Check if this is in the past
+      final now = tz.TZDateTime.now(tz.local);
+      final isPast = scheduledTime.isBefore(now);
+      final isWithinGracePeriod =
+          isPast && now.difference(scheduledTime).inMinutes <= 30;
 
-      // Generate notification ID based on time slot (not schedule)
-      final notificationId = generateTimeSlotNotificationId(
-        userId: userId,
-        petId: petId,
-        timeSlot: timeSlot,
-        kind: 'initial',
-      );
-
-      // Build payload with all schedule IDs (comma-separated)
-      final scheduleIds = schedules.map((s) => s.id).join(',');
-      final payload = jsonEncode({
-        'type': 'treatment_reminder',
-        'userId': userId,
-        'petId': petId,
-        'scheduleIds': scheduleIds, // Multiple schedules
-        'timeSlot': timeSlot,
-        'kind': 'initial',
-        'treatmentTypes': schedules.map((s) => s.treatmentType.name).join(','),
-      });
-
-      // Generate group ID and thread identifier for pet grouping
-      final groupId = 'pet_$petId';
-      final threadIdentifier = 'pet_$petId';
-
-      // Schedule or fire based on grace period decision
-      if (decision == NotificationSchedulingDecision.scheduled) {
-        // Schedule for future time
-        try {
-          await _plugin.showZoned(
-            id: notificationId,
-            title: content['title']!,
-            body: content['body']!,
-            scheduledDate: scheduledTime,
-            channelId: content['channelId']!,
-            payload: payload,
-            groupId: groupId,
-            threadIdentifier: threadIdentifier,
-          );
-          scheduledCount++;
-          _devLog(
-            'Scheduled bundled notification $notificationId for $timeSlot '
-            '(${schedules.length} schedule(s))',
-          );
-
-          // Record in index - ONE ENTRY per time slot
-          await _indexStore.putEntry(
-            userId,
-            petId,
-            ScheduledNotificationEntry.create(
-              notificationId: notificationId,
-              scheduleId: schedules.first.id, // Representative
-              treatmentType: schedules.first.treatmentType.name,
-              timeSlotISO: timeSlot,
-              kind: 'initial',
-            ),
-          );
-        } on Exception catch (e) {
-          NotificationErrorHandler.handleSchedulingError(
-            context: null,
-            operation: 'schedule_bundled_notification',
-            error: e,
-            userId: userId,
-            petId: petId,
-            scheduleId: schedules.first.id,
-          );
-          return {
-            'scheduled': 0,
-            'immediate': 0,
-            'missed': 0,
-          };
-        }
-      } else if (decision == NotificationSchedulingDecision.immediate) {
-        // Fire immediately (within grace period)
-        try {
-          await _plugin.showZoned(
-            id: notificationId,
-            title: content['title']!,
-            body: content['body']!,
-            scheduledDate: tz.TZDateTime.now(tz.local),
-            channelId: content['channelId']!,
-            payload: payload,
-            groupId: groupId,
-            threadIdentifier: threadIdentifier,
-          );
-          immediateCount++;
-          _devLog(
-            'Fired immediate bundled notification for $timeSlot (grace period)',
-          );
-
-          // Record in index
-          await _indexStore.putEntry(
-            userId,
-            petId,
-            ScheduledNotificationEntry.create(
-              notificationId: notificationId,
-              scheduleId: schedules.first.id,
-              treatmentType: schedules.first.treatmentType.name,
-              timeSlotISO: timeSlot,
-              kind: 'initial',
-            ),
-          );
-        } on Exception catch (e) {
-          _devLog('ERROR firing immediate bundled notification: $e');
-        }
-      } else {
-        // missed - skip
+      // Decide action
+      if (isPast && !isWithinGracePeriod) {
+        // Too far in past, skip
         missedCount++;
-        _devLog('Skipped time slot $timeSlot (missed)');
+        return {'scheduled': 0, 'immediate': 0, 'missed': 1};
       }
 
-      // Schedule follow-up notifications (also bundled)
-      if (decision == NotificationSchedulingDecision.scheduled ||
-          decision == NotificationSchedulingDecision.immediate) {
-        try {
-          final followupResult = await _scheduleFollowupForTimeSlot(
-            userId: userId,
-            petId: petId,
-            schedules: schedules,
-            timeSlot: timeSlot,
-            petName: petName,
-            initialScheduledTime: scheduledTime,
-          );
-          scheduledCount += followupResult['scheduled'] as int;
-        } on Exception catch (e) {
-          _devLog('ERROR scheduling bundled follow-up: $e');
-        }
-      }
-
-      return {
-        'scheduled': scheduledCount,
-        'immediate': immediateCount,
-        'missed': missedCount,
-      };
-    } on Exception catch (e, stackTrace) {
-      _devLog('ERROR in _scheduleNotificationForTimeSlot: $e');
-      _devLog('Stack trace: $stackTrace');
-      return {
-        'scheduled': 0,
-        'immediate': 0,
-        'missed': 0,
-      };
-    }
-  }
-
-  /// Schedule a bundled follow-up notification for multiple schedules at a
-  /// time slot.
-  Future<Map<String, dynamic>> _scheduleFollowupForTimeSlot({
-    required String userId,
-    required String petId,
-    required List<Schedule> schedules,
-    required String timeSlot,
-    required String petName,
-    required tz.TZDateTime initialScheduledTime,
-  }) async {
-    var scheduledCount = 0;
-
-    try {
-      // Calculate follow-up time
-      final followupTime = initialScheduledTime
-          .add(const Duration(hours: _defaultFollowupOffsetHours));
-
-      // Generate bundled follow-up content
+      // Generate notification content
       final content = _generateBundledNotificationContent(
         schedules: schedules,
-        kind: 'followup',
+        kind: 'initial',
         petName: petName,
       );
 
-      // Generate follow-up notification ID
-      final followupId = generateTimeSlotNotificationId(
+      // Generate unique notification ID including date
+      final notificationId = generateTimeSlotNotificationIdForDate(
         userId: userId,
         petId: petId,
         timeSlot: timeSlot,
-        kind: 'followup',
+        kind: 'initial',
+        date: date,
       );
 
       // Build payload
@@ -583,15 +586,154 @@ class NotificationCoordinator {
         'petId': petId,
         'scheduleIds': scheduleIds,
         'timeSlot': timeSlot,
-        'kind': 'followup',
+        'kind': 'initial',
         'treatmentTypes': schedules.map((s) => s.treatmentType.name).join(','),
+        'scheduledFor': scheduledTime.toIso8601String(),
+        'date': _formatDate(date),
       });
 
-      // Generate group ID
       final groupId = 'pet_$petId';
       final threadIdentifier = 'pet_$petId';
 
-      // Schedule follow-up
+      // Schedule notification
+      final actualScheduledTime =
+          isWithinGracePeriod ? tz.TZDateTime.now(tz.local) : scheduledTime;
+
+      await _plugin.showZoned(
+        id: notificationId,
+        title: content['title']!,
+        body: content['body']!,
+        scheduledDate: actualScheduledTime,
+        channelId: content['channelId']!,
+        payload: payload,
+        groupId: groupId,
+        threadIdentifier: threadIdentifier,
+      );
+
+      if (isWithinGracePeriod) {
+        immediateCount++;
+        _devLog(
+          'Fired immediate notification for $timeSlot on ${_formatDate(date)}',
+        );
+      } else {
+        scheduledCount++;
+        _devLog('Scheduled notification for $timeSlot on ${_formatDate(date)}');
+      }
+
+      // Record in index (only if today)
+      if (_isSameDay(date, DateTime.now())) {
+        await _indexStore.putEntry(
+          userId,
+          petId,
+          ScheduledNotificationEntry.create(
+            notificationId: notificationId,
+            scheduleId: schedules.first.id,
+            treatmentType: schedules.first.treatmentType.name,
+            timeSlotISO: timeSlot,
+            kind: 'initial',
+          ),
+        );
+      }
+
+      // Schedule follow-up if requested
+      if (includeFollowup && !isPast) {
+        try {
+          final followupResult = await _scheduleFollowupForDateAndTimeSlot(
+            userId: userId,
+            petId: petId,
+            schedules: schedules,
+            timeSlot: timeSlot,
+            date: date,
+            petName: petName,
+            initialScheduledTime: scheduledTime,
+          );
+          scheduledCount += followupResult['scheduled'] as int;
+        } on Exception catch (e) {
+          _devLog('⚠️ Failed to schedule follow-up: $e');
+        }
+      }
+
+      return {
+        'scheduled': scheduledCount,
+        'immediate': immediateCount,
+        'missed': missedCount,
+      };
+    } on Exception catch (e, stackTrace) {
+      _devLog('❌ ERROR in _scheduleNotificationForDateAndTimeSlot: $e');
+      _devLog('Stack trace: $stackTrace');
+      return {
+        'scheduled': 0,
+        'immediate': 0,
+        'missed': missedCount,
+      };
+    }
+  }
+
+  /// Schedule follow-up for specific date.
+  ///
+  /// Follow-ups are only scheduled for today to conserve notification quota.
+  ///
+  /// **Parameters:**
+  /// - [userId]: User identifier
+  /// - [petId]: Pet identifier
+  /// - [schedules]: List of schedules bundled at this time slot
+  /// - [timeSlot]: Time in "HH:mm" format
+  /// - [date]: Target date
+  /// - [petName]: Pet name for notification content
+  /// - [initialScheduledTime]: When the initial notification was scheduled
+  ///
+  /// **Returns**: Map with count (scheduled)
+  Future<Map<String, dynamic>> _scheduleFollowupForDateAndTimeSlot({
+    required String userId,
+    required String petId,
+    required List<Schedule> schedules,
+    required String timeSlot,
+    required DateTime date,
+    required String petName,
+    required tz.TZDateTime initialScheduledTime,
+  }) async {
+    var scheduledCount = 0;
+
+    try {
+      final followupTime = initialScheduledTime.add(
+        const Duration(hours: _defaultFollowupOffsetHours),
+      );
+
+      // Skip if in the past
+      if (followupTime.isBefore(tz.TZDateTime.now(tz.local))) {
+        return {'scheduled': 0};
+      }
+
+      final content = _generateBundledNotificationContent(
+        schedules: schedules,
+        kind: 'followup',
+        petName: petName,
+      );
+
+      final followupId = generateTimeSlotNotificationIdForDate(
+        userId: userId,
+        petId: petId,
+        timeSlot: timeSlot,
+        kind: 'followup',
+        date: date,
+      );
+
+      final scheduleIds = schedules.map((s) => s.id).join(',');
+      final payload = jsonEncode({
+        'type': 'treatment_reminder',
+        'userId': userId,
+        'petId': petId,
+        'scheduleIds': scheduleIds,
+        'timeSlot': timeSlot,
+        'kind': 'followup',
+        'treatmentTypes': schedules.map((s) => s.treatmentType.name).join(','),
+        'scheduledFor': followupTime.toIso8601String(),
+        'date': _formatDate(date),
+      });
+
+      final groupId = 'pet_$petId';
+      final threadIdentifier = 'pet_$petId';
+
       await _plugin.showZoned(
         id: followupId,
         title: content['title']!,
@@ -603,30 +745,277 @@ class NotificationCoordinator {
         threadIdentifier: threadIdentifier,
       );
       scheduledCount++;
-      _devLog(
-        'Scheduled bundled follow-up $followupId for $timeSlot at '
-        '${followupTime.hour}:'
-        '${followupTime.minute.toString().padLeft(2, '0')}',
-      );
 
-      // Record in index - one entry per time slot
-      await _indexStore.putEntry(
-        userId,
-        petId,
-        ScheduledNotificationEntry.create(
-          notificationId: followupId,
-          scheduleId: schedules.first.id, // Representative
-          treatmentType: schedules.first.treatmentType.name,
-          timeSlotISO: timeSlot,
-          kind: 'followup',
-        ),
-      );
+      // Record in index (only if today)
+      if (_isSameDay(date, DateTime.now())) {
+        await _indexStore.putEntry(
+          userId,
+          petId,
+          ScheduledNotificationEntry.create(
+            notificationId: followupId,
+            scheduleId: schedules.first.id,
+            treatmentType: schedules.first.treatmentType.name,
+            timeSlotISO: timeSlot,
+            kind: 'followup',
+          ),
+        );
+      }
 
       return {'scheduled': scheduledCount};
     } on Exception catch (e) {
-      _devLog('ERROR scheduling bundled follow-up: $e');
+      _devLog('❌ ERROR scheduling follow-up: $e');
       return {'scheduled': 0};
     }
+  }
+
+  /// Cancel all future notifications for a specific schedule.
+  ///
+  /// Used when schedule is deleted or modified. Cancels notifications
+  /// for the next 3 days.
+  ///
+  /// **Strategy:**
+  /// 1. Get schedule from cache to find its time slots
+  /// 2. For each of next 3 days:
+  ///    - Cancel initial notification at each time slot
+  ///    - Cancel follow-up notification (only exists for today)
+  /// 3. Remove from today's index
+  ///
+  /// **Note**: This method tries to cancel notifications but doesn't validate
+  /// if they actually exist. Platform cancel() is idempotent.
+  ///
+  /// **Returns**: Number of cancel operations performed (not necessarily
+  /// successful)
+  Future<int> cancelFutureNotificationsForSchedule(String scheduleId) async {
+    final user = _ref.read(currentUserProvider);
+    final pet = _ref.read(primaryPetProvider);
+
+    if (user == null || pet == null) return 0;
+
+    _devLog('Canceling future notifications for schedule $scheduleId');
+
+    var canceledCount = 0;
+
+    // Cancel for each of the next 3 days
+    for (var dayOffset = 0; dayOffset < _schedulingWindowDays; dayOffset++) {
+      final date = DateTime.now().add(Duration(days: dayOffset));
+
+      try {
+        // Get the schedule to find its time slots
+        final profileState = _ref.read(profileProvider);
+        final allSchedules = <Schedule>[
+          if (profileState.fluidSchedule?.id == scheduleId)
+            profileState.fluidSchedule!,
+          ...profileState.medicationSchedules
+                  ?.where((s) => s.id == scheduleId) ??
+              [],
+        ];
+
+        if (allSchedules.isEmpty) {
+          _devLog('Schedule $scheduleId not found in cache');
+          continue;
+        }
+
+        final schedule = allSchedules.first;
+
+        // Get reminder times for this date
+        final reminderTimes = schedule.reminderTimesOnDate(date);
+
+        for (final reminderTime in reminderTimes) {
+          final timeSlot = '${reminderTime.hour.toString().padLeft(2, '0')}:'
+              '${reminderTime.minute.toString().padLeft(2, '0')}';
+
+          // Cancel initial notification
+          final initialId = generateTimeSlotNotificationIdForDate(
+            userId: user.id,
+            petId: pet.id,
+            timeSlot: timeSlot,
+            kind: 'initial',
+            date: date,
+          );
+
+          try {
+            await _plugin.cancel(initialId);
+            canceledCount++;
+            _devLog(
+              'Canceled notification $initialId for ${_formatDate(date)} '
+              '$timeSlot',
+            );
+          } on Exception catch (e) {
+            _devLog('Failed to cancel notification $initialId: $e');
+          }
+
+          // Cancel follow-up notification (only exists for today)
+          if (dayOffset == 0) {
+            final followupId = generateTimeSlotNotificationIdForDate(
+              userId: user.id,
+              petId: pet.id,
+              timeSlot: timeSlot,
+              kind: 'followup',
+              date: date,
+            );
+
+            try {
+              await _plugin.cancel(followupId);
+              canceledCount++;
+              _devLog('Canceled follow-up $followupId');
+            } on Exception catch (e) {
+              _devLog('Failed to cancel follow-up $followupId: $e');
+            }
+          }
+        }
+
+        // Remove from index (only for today)
+        if (dayOffset == 0) {
+          await _indexStore.removeAllForSchedule(user.id, pet.id, scheduleId);
+        }
+      } on Exception catch (e) {
+        _devLog('Error canceling notifications for day $dayOffset: $e');
+      }
+    }
+
+    _devLog('✅ Canceled $canceledCount notifications for schedule $scheduleId');
+    return canceledCount;
+  }
+
+  /// Schedule notifications for a single schedule for the next 3 days.
+  ///
+  /// Used when a new schedule is created.
+  ///
+  /// **Parameters:**
+  /// - [schedule]: The schedule to schedule notifications for
+  ///
+  /// **Returns**: Map with scheduling results
+  Future<Map<String, dynamic>> scheduleForSingleSchedule(
+    Schedule schedule,
+  ) async {
+    final user = _ref.read(currentUserProvider);
+    final pet = _ref.read(primaryPetProvider);
+
+    if (user == null || pet == null) {
+      return _emptyResult(reason: 'no_user_or_pet');
+    }
+
+    if (!schedule.isActive) {
+      _devLog('Schedule ${schedule.id} is inactive, skipping');
+      return _emptyResult(reason: 'inactive_schedule');
+    }
+
+    _devLog(
+      'Scheduling single schedule ${schedule.id} for next '
+      '$_schedulingWindowDays days',
+    );
+
+    var totalScheduled = 0;
+    var totalImmediate = 0;
+    var totalMissed = 0;
+    final errors = <String>[];
+
+    final profileState = _ref.read(profileProvider);
+    final petName = profileState.primaryPet?.name ?? 'your pet';
+
+    // Schedule for each of the next 3 days
+    for (var dayOffset = 0; dayOffset < _schedulingWindowDays; dayOffset++) {
+      final date = DateTime.now().add(Duration(days: dayOffset));
+
+      // Check if schedule has reminders on this date
+      if (!schedule.hasReminderOnDate(date)) {
+        continue;
+      }
+
+      // Get reminder times for this date
+      final reminderTimes = schedule.reminderTimesOnDate(date);
+
+      for (final reminderTime in reminderTimes) {
+        final timeSlot = '${reminderTime.hour.toString().padLeft(2, '0')}:'
+            '${reminderTime.minute.toString().padLeft(2, '0')}';
+
+        try {
+          // Schedule notification for this time slot
+          final result = await _scheduleNotificationForDateAndTimeSlot(
+            userId: user.id,
+            petId: pet.id,
+            schedules: [schedule], // Single schedule
+            timeSlot: timeSlot,
+            date: date,
+            petName: petName,
+            includeFollowup: dayOffset == 0, // Only today gets follow-ups
+          );
+
+          totalScheduled += result['scheduled'] as int;
+          totalImmediate += result['immediate'] as int;
+          totalMissed += result['missed'] as int;
+        } on Exception catch (e) {
+          final error =
+              'Failed to schedule ${schedule.id} on ${_formatDate(date)} '
+              'at $timeSlot: $e';
+          errors.add(error);
+          _devLog('❌ $error');
+        }
+      }
+    }
+
+    _devLog(
+      '✅ Scheduled $totalScheduled notifications for schedule ${schedule.id}',
+    );
+
+    // Update group summary
+    await _updateGroupSummary(
+      userId: user.id,
+      petId: pet.id,
+      petName: petName,
+    );
+
+    return {
+      'scheduled': totalScheduled,
+      'immediate': totalImmediate,
+      'missed': totalMissed,
+      'errors': errors,
+    };
+  }
+
+  /// Check if schedule shares time slots with any other active schedule.
+  ///
+  /// Used to detect bundling conflicts. If a schedule shares time slots with
+  /// other schedules, we need to use refreshAll() instead of surgical updates
+  /// to ensure bundled notifications are correct.
+  ///
+  /// **Example:**
+  /// - Schedule A: Benazepril at 9AM
+  /// - Schedule B: Fluid Therapy at 9AM
+  /// - These are bundled into one notification
+  /// - If we update Schedule A, we need to update Schedule B's notification too
+  ///
+  /// **Parameters:**
+  /// - [schedule]: The schedule to check
+  /// - [allSchedules]: All schedules to compare against
+  ///
+  /// **Returns**: true if any shared time slots found, false otherwise
+  bool _hasSharedTimeSlots(Schedule schedule, List<Schedule> allSchedules) {
+    final scheduleTimeSlots = schedule.reminderTimes
+        .map(
+          (t) =>
+              '${t.hour.toString().padLeft(2, '0')}:'
+              '${t.minute.toString().padLeft(2, '0')}',
+        )
+        .toSet();
+
+    for (final other in allSchedules) {
+      if (other.id == schedule.id || !other.isActive) continue;
+
+      final otherTimeSlots = other.reminderTimes
+          .map(
+            (t) =>
+                '${t.hour.toString().padLeft(2, '0')}:'
+                '${t.minute.toString().padLeft(2, '0')}',
+          )
+          .toSet();
+
+      if (scheduleTimeSlots.intersection(otherTimeSlots).isNotEmpty) {
+        return true; // Found shared time slot
+      }
+    }
+
+    return false;
   }
 
   /// Generate notification content for single or bundled treatments.
@@ -955,9 +1344,50 @@ class NotificationCoordinator {
     try {
       // Get pending notifications from plugin
       final pendingNotifications = await _plugin.pendingNotificationRequests();
-      final pendingIds = pendingNotifications.map((n) => n.id).toSet();
 
-      _devLog('Found ${pendingNotifications.length} pending notifications');
+      // Limit reconciliation to today's treatment reminders only.
+      // Multi-day notifications for future dates must NOT be treated
+      // as orphans.
+      final todayStr = _formatDate(DateTime.now());
+
+      final pendingToday = pendingNotifications.where((n) {
+        final payload = n.payload;
+        if (payload == null) {
+          // Legacy notifications without payload – treat as "today"
+          return true;
+        }
+
+        try {
+          final data = jsonDecode(payload) as Map<String, dynamic>;
+
+          // Only reconcile treatment reminders here; weekly summaries and
+          // other types are handled separately.
+          if (data['type'] != 'treatment_reminder') {
+            return false;
+          }
+
+          // Multi-day payloads include an explicit date field.
+          final dateStr = data['date'] as String?;
+          if (dateStr == null) {
+            // Backwards compatibility: payloads without `date` are treated
+            // as today.
+            return true;
+          }
+
+          return dateStr == todayStr;
+        } on Exception catch (_) {
+          // On parsing errors, fail-open and treat as today so we don't
+          // accidentally cancel valid future-day notifications.
+          return true;
+        }
+      }).toList();
+
+      final pendingIds = pendingToday.map((n) => n.id).toSet();
+
+      _devLog(
+        'Found ${pendingNotifications.length} pending notifications '
+        "(${pendingToday.length} for today's treatment reminders)",
+      );
 
       // Get index entries for today
       final analyticsService = _ref.read(analyticsServiceDirectProvider);
@@ -993,10 +1423,7 @@ class NotificationCoordinator {
       await _indexStore.clearForDate(userId, petId, DateTime.now());
 
       // Reschedule all treatment reminders from cached schedules
-      final scheduleResult = await _scheduleAllForTodayImpl(
-        userId: userId,
-        petId: petId,
-      );
+      final scheduleResult = await scheduleAllForToday();
 
       // Cancel and reschedule weekly summary notification
       await _cancelWeeklySummaryImpl(userId, petId);
@@ -1034,74 +1461,6 @@ class NotificationCoordinator {
         'missingCount': 0,
         'errors': [e.toString()],
       };
-    }
-  }
-
-  /// Internal implementation of cancelForSchedule.
-  Future<int> _cancelForScheduleImpl(
-    String userId,
-    String petId,
-    String scheduleId,
-  ) async {
-    _devLog('cancelForSchedule called for schedule $scheduleId');
-
-    try {
-      // Get all index entries for this schedule today
-      final entries = await _indexStore.getForToday(userId, petId);
-      final scheduleEntries = entries
-          .where((e) => e.scheduleId == scheduleId)
-          .toList();
-
-      _devLog('Found ${scheduleEntries.length} notifications to cancel');
-
-      var canceledCount = 0;
-
-      // Cancel each notification
-      for (final entry in scheduleEntries) {
-        try {
-          await _plugin.cancel(entry.notificationId);
-          await _indexStore.removeEntryBy(
-            userId,
-            petId,
-            scheduleId,
-            entry.timeSlotISO,
-            entry.kind,
-          );
-          canceledCount++;
-        } on Exception catch (e) {
-          _devLog(
-            'ERROR canceling notification ${entry.notificationId}: $e',
-          );
-          // Continue canceling other notifications
-        }
-      }
-
-      _devLog('Canceled $canceledCount notifications for schedule $scheduleId');
-
-      // Update group summary to reflect current notification state
-      final profileState = _ref.read(profileProvider);
-      final petName = profileState.primaryPet?.name ?? 'your pet';
-      await _updateGroupSummary(
-        userId: userId,
-        petId: petId,
-        petName: petName,
-      );
-
-      return canceledCount;
-    } on Exception catch (e, stackTrace) {
-      _devLog('ERROR in cancelForSchedule: $e');
-      _devLog('Stack trace: $stackTrace');
-
-      NotificationErrorHandler.handleSchedulingError(
-        context: null,
-        operation: 'cancel_for_schedule',
-        error: e,
-        userId: userId,
-        petId: petId,
-        scheduleId: scheduleId,
-      );
-
-      return 0;
     }
   }
 
@@ -1223,6 +1582,17 @@ class NotificationCoordinator {
       'errors': <String>[],
       if (reason != null) 'reason': reason,
     };
+  }
+
+  /// Format date as YYYY-MM-DD
+  String _formatDate(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Check if two dates are the same day
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   /// Log messages only in development flavor.

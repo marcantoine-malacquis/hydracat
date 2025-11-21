@@ -90,9 +90,11 @@ class ProgressWeekCalendar extends ConsumerWidget {
             },
           ),
         ),
-
         // Fluid volume bar chart (week view only)
-        if (format == CalendarFormat.week) const FluidVolumeBarChart(),
+        if (format == CalendarFormat.week) ...[
+          const SizedBox(height: 8),
+          const FluidVolumeBarChart(),
+        ],
       ],
     );
   }
@@ -109,44 +111,66 @@ class ProgressWeekCalendar extends ConsumerWidget {
           // Week/Month segmented button - centered and full width
           Padding(
             padding: const EdgeInsets.only(right: 40),
-            child: SizedBox(
-              width: double.infinity,
-              child: SegmentedButton<CalendarFormat>(
-                segments: const [
-                  ButtonSegment<CalendarFormat>(
-                    value: CalendarFormat.week,
-                    label: Text('Week'),
-                  ),
-                  ButtonSegment<CalendarFormat>(
-                    value: CalendarFormat.month,
-                    label: Text('Month'),
-                  ),
-                ],
-                selected: {format},
-                onSelectionChanged: (Set<CalendarFormat> newSelection) {
-                  HapticFeedback.selectionClick();
-                  if (newSelection.isNotEmpty) {
-                    ref.read(calendarFormatProvider.notifier).state =
-                        newSelection.first;
-                  }
-                },
-                showSelectedIcon: false,
-                style: ButtonStyle(
-                  backgroundColor: WidgetStateProperty.resolveWith<Color>(
-                    (Set<WidgetState> states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return AppColors.primary;
-                      }
-                      return Colors.transparent;
-                    },
-                  ),
-                  foregroundColor: WidgetStateProperty.resolveWith<Color>(
-                    (Set<WidgetState> states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return Colors.white;
-                      }
-                      return AppColors.textPrimary;
-                    },
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: SegmentedButton<CalendarFormat>(
+                  segments: const [
+                    ButtonSegment<CalendarFormat>(
+                      value: CalendarFormat.week,
+                      label: Text('Week'),
+                    ),
+                    ButtonSegment<CalendarFormat>(
+                      value: CalendarFormat.month,
+                      label: Text('Month'),
+                    ),
+                  ],
+                  selected: {format},
+                  onSelectionChanged: (Set<CalendarFormat> newSelection) {
+                    HapticFeedback.selectionClick();
+                    if (newSelection.isNotEmpty) {
+                      ref.read(calendarFormatProvider.notifier).state =
+                          newSelection.first;
+                    }
+                  },
+                  showSelectedIcon: false,
+                  style: ButtonStyle(
+                    padding: WidgetStateProperty.all<EdgeInsetsGeometry>(
+                      const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                    ),
+                    shape: WidgetStateProperty.all(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                    backgroundColor: WidgetStateProperty.resolveWith<Color>(
+                      (Set<WidgetState> states) {
+                        if (states.contains(WidgetState.selected)) {
+                          return AppColors.primary;
+                        }
+                        return Colors.transparent;
+                      },
+                    ),
+                    foregroundColor: WidgetStateProperty.resolveWith<Color>(
+                      (Set<WidgetState> states) {
+                        if (states.contains(WidgetState.selected)) {
+                          return Colors.white;
+                        }
+                        return AppColors.textPrimary;
+                      },
+                    ),
+                    textStyle: WidgetStateProperty.all(
+                      AppTextStyles.buttonSecondary.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -195,14 +219,14 @@ class ProgressWeekCalendar extends ConsumerWidget {
     final format = ref.watch(calendarFormatProvider);
     final isMonth = format == CalendarFormat.month;
     final monthYearFormat = DateFormat('MMMM yyyy');
-    final monthYearText = monthYearFormat.format(day);
+    final monthYearText = monthYearFormat.format(day).toUpperCase();
 
     // Determine if we're viewing the current period (week or month)
     final now = DateTime.now();
     final isOnCurrentPeriod = isMonth
         ? focusedDay.year == now.year && focusedDay.month == now.month
         : AppDateUtils.startOfWeekMonday(focusedDay) ==
-            AppDateUtils.startOfWeekMonday(now);
+              AppDateUtils.startOfWeekMonday(now);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
@@ -211,6 +235,7 @@ class ProgressWeekCalendar extends ConsumerWidget {
           // Left chevron - jumps by week or month based on format
           IconButton(
             icon: const Icon(Icons.chevron_left),
+            iconSize: 22,
             onPressed: () {
               final previous = isMonth
                   ? _getPreviousMonth(focusedDay)
@@ -225,12 +250,16 @@ class ProgressWeekCalendar extends ConsumerWidget {
           // Month and year
           Text(
             monthYearText,
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              letterSpacing: 0.8,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(width: 8),
           // Right chevron - jumps by week or month based on format
           IconButton(
             icon: const Icon(Icons.chevron_right),
+            iconSize: 22,
             onPressed: () {
               final next = isMonth
                   ? _getNextMonth(focusedDay)
@@ -266,8 +295,11 @@ class ProgressWeekCalendar extends ConsumerWidget {
   /// Falls back to last valid day if the day doesn't exist in target month.
   DateTime _getPreviousMonth(DateTime date) {
     final targetMonth = DateTime(date.year, date.month - 1);
-    final lastDayOfTargetMonth =
-        DateTime(targetMonth.year, targetMonth.month + 1, 0).day;
+    final lastDayOfTargetMonth = DateTime(
+      targetMonth.year,
+      targetMonth.month + 1,
+      0,
+    ).day;
     final targetDay = min(date.day, lastDayOfTargetMonth);
     return DateTime(targetMonth.year, targetMonth.month, targetDay);
   }
@@ -276,8 +308,11 @@ class ProgressWeekCalendar extends ConsumerWidget {
   /// Falls back to last valid day if the day doesn't exist in target month.
   DateTime _getNextMonth(DateTime date) {
     final targetMonth = DateTime(date.year, date.month + 1);
-    final lastDayOfTargetMonth =
-        DateTime(targetMonth.year, targetMonth.month + 1, 0).day;
+    final lastDayOfTargetMonth = DateTime(
+      targetMonth.year,
+      targetMonth.month + 1,
+      0,
+    ).day;
     final targetDay = min(date.day, lastDayOfTargetMonth);
     return DateTime(targetMonth.year, targetMonth.month, targetDay);
   }

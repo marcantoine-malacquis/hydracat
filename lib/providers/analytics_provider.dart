@@ -144,6 +144,9 @@ class AnalyticsEvents {
   /// Reminder canceled on log event name
   static const String reminderCanceledOnLog = 'reminder_canceled_on_log';
 
+  /// Multi-day scheduling event name
+  static const String multiDayScheduling = 'multi_day_scheduling';
+
   // Notification reliability events
   /// Index corruption detected event name
   static const String indexCorruptionDetected = 'index_corruption_detected';
@@ -1113,6 +1116,29 @@ class AnalyticsService {
       name: AnalyticsEvents.notificationPrivacyLearnMore,
       parameters: {
         'source': source, // 'preprompt' or 'settings'
+      },
+    );
+  }
+
+  /// Track multi-day scheduling completion.
+  ///
+  /// Tracks when notifications are scheduled for multiple days ahead
+  /// to measure the effectiveness of the multi-day scheduling strategy.
+  ///
+  /// Parameters:
+  /// - [daysScheduled]: Number of days scheduled
+  /// - [totalNotifications]: Total number of notifications scheduled
+  Future<void> trackMultiDayScheduling({
+    required int daysScheduled,
+    required int totalNotifications,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.multiDayScheduling,
+      parameters: {
+        'days': daysScheduled,
+        'count': totalNotifications,
       },
     );
   }

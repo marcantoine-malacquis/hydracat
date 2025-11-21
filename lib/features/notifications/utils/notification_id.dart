@@ -346,6 +346,69 @@ int generateTimeSlotNotificationId({
   return notificationId;
 }
 
+/// Generates notification ID for specific date and time slot.
+///
+/// Used for multi-day scheduling to ensure unique IDs across different dates.
+/// This prevents ID collisions when the same time slot exists on multiple days.
+///
+/// **Example:**
+/// - Day 0 (today) 9AM:
+///   ID = hash("timeslot|user1|pet1|2025-01-24|09:00|initial")
+/// - Day 1 9AM:
+///   ID = hash("timeslot|user1|pet1|2025-01-25|09:00|initial")
+/// - Day 2 9AM:
+///   ID = hash("timeslot|user1|pet1|2025-01-26|09:00|initial")
+///
+/// **Parameters:**
+/// - [userId]: User identifier
+/// - [petId]: Pet identifier
+/// - [timeSlot]: Time in "HH:mm" format (e.g., "09:00")
+/// - [kind]: "initial" or "followup"
+/// - [date]: The specific date for this notification
+///
+/// **Returns**: 31-bit positive integer suitable for Android/iOS notifications
+///
+/// **Throws**:
+/// - [ArgumentError] if any parameter is invalid
+int generateTimeSlotNotificationIdForDate({
+  required String userId,
+  required String petId,
+  required String timeSlot,
+  required String kind,
+  required DateTime date,
+}) {
+  // Validate parameters
+  if (userId.isEmpty) throw ArgumentError('userId must not be empty');
+  if (petId.isEmpty) throw ArgumentError('petId must not be empty');
+  if (timeSlot.isEmpty) throw ArgumentError('timeSlot must not be empty');
+  if (kind.isEmpty) throw ArgumentError('kind must not be empty');
+
+  // Validate formats
+  if (!ScheduledNotificationEntry.isValidTimeSlot(timeSlot)) {
+    throw ArgumentError(
+      'timeSlot must be in "HH:mm" format (00:00 to 23:59), got: "$timeSlot"',
+    );
+  }
+  if (!ScheduledNotificationEntry.isValidKind(kind)) {
+    throw ArgumentError(
+      'kind must be "initial" or "followup", got: "$kind"',
+    );
+  }
+
+  // Format date as YYYY-MM-DD
+  final dateStr = '${date.year}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
+
+  // Create composite: timeslot|userId|petId|date|HH:mm|kind
+  // Note: Date is included to ensure uniqueness across days
+  final composite = 'timeslot|$userId|$petId|$dateStr|$timeSlot|$kind';
+
+  // Compute FNV-1a hash and mask to 31 bits
+  final hash = _fnv1aHash32(composite);
+  return hash & 0x7FFFFFFF;
+}
+
 /// Computes FNV-1a hash (32-bit) for a given string.
 ///
 /// FNV-1a (Fowler-Noll-Vo hash, variant 1a) is a simple, fast,
