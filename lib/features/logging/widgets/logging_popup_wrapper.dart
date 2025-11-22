@@ -115,7 +115,12 @@ class LoggingPopupWrapper extends StatelessWidget {
                           // Design for 640px height minimum (iPhone SE)
                           // Show subtle scroll indicator if content exceeds
                           return SingleChildScrollView(
-                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            padding: const EdgeInsets.only(
+                              left: AppSpacing.lg,
+                              right: AppSpacing.lg,
+                              top: AppSpacing.sm,
+                              bottom: AppSpacing.lg,
+                            ),
                             child: child,
                           );
                         },

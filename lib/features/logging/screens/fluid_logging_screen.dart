@@ -554,7 +554,7 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
         ),
 
         // Log button
-        const SizedBox(height: AppSpacing.lg),
+        const SizedBox(height: AppSpacing.sm),
         Semantics(
           label: l10n.fluidLogButtonLabel,
           hint: l10n.fluidLogButtonHint,

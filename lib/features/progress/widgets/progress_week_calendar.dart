@@ -102,78 +102,22 @@ class ProgressWeekCalendar extends ConsumerWidget {
   /// Builds the format bar with Week/Month toggle and Jump to date button.
   Widget _buildFormatBar(BuildContext context, WidgetRef ref) {
     final format = ref.watch(calendarFormatProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Week/Month segmented button - centered and full width
-          Padding(
-            padding: const EdgeInsets.only(right: 40),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                child: SegmentedButton<CalendarFormat>(
-                  segments: const [
-                    ButtonSegment<CalendarFormat>(
-                      value: CalendarFormat.week,
-                      label: Text('Week'),
-                    ),
-                    ButtonSegment<CalendarFormat>(
-                      value: CalendarFormat.month,
-                      label: Text('Month'),
-                    ),
-                  ],
-                  selected: {format},
-                  onSelectionChanged: (Set<CalendarFormat> newSelection) {
-                    HapticFeedback.selectionClick();
-                    if (newSelection.isNotEmpty) {
-                      ref.read(calendarFormatProvider.notifier).state =
-                          newSelection.first;
-                    }
-                  },
-                  showSelectedIcon: false,
-                  style: ButtonStyle(
-                    padding: WidgetStateProperty.all<EdgeInsetsGeometry>(
-                      const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 6,
-                      ),
-                    ),
-                    shape: WidgetStateProperty.all(
-                      RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                    backgroundColor: WidgetStateProperty.resolveWith<Color>(
-                      (Set<WidgetState> states) {
-                        if (states.contains(WidgetState.selected)) {
-                          return AppColors.primary;
-                        }
-                        return Colors.transparent;
-                      },
-                    ),
-                    foregroundColor: WidgetStateProperty.resolveWith<Color>(
-                      (Set<WidgetState> states) {
-                        if (states.contains(WidgetState.selected)) {
-                          return Colors.white;
-                        }
-                        return AppColors.textPrimary;
-                      },
-                    ),
-                    textStyle: WidgetStateProperty.all(
-                      AppTextStyles.buttonSecondary.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+          // Week/Month segmented control - centered
+          Center(
+            child: _SlidingSegmentedControl(
+              selected: format,
+              isDark: isDark,
+              onChanged: (CalendarFormat newFormat) {
+                HapticFeedback.selectionClick();
+                ref.read(calendarFormatProvider.notifier).state = newFormat;
+              },
             ),
           ),
           // Jump to date button - positioned on right with reduced padding
@@ -231,6 +175,7 @@ class ProgressWeekCalendar extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Left chevron - jumps by week or month based on format
           IconButton(
@@ -246,46 +191,66 @@ class ProgressWeekCalendar extends ConsumerWidget {
             constraints: const BoxConstraints(),
             tooltip: isMonth ? 'Previous month' : 'Previous week',
           ),
-          const SizedBox(width: 8),
-          // Month and year
-          Text(
-            monthYearText,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              letterSpacing: 0.8,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Right chevron - jumps by week or month based on format
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            iconSize: 22,
-            onPressed: () {
-              final next = isMonth
-                  ? _getNextMonth(focusedDay)
-                  : focusedDay.add(const Duration(days: 7));
-              ref.read(focusedDayProvider.notifier).state = next;
-            },
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            tooltip: isMonth ? 'Next month' : 'Next week',
-          ),
-          const Spacer(),
-          // "Today" button - only show when not on current period
-          if (!isOnCurrentPeriod)
-            TextButton(
-              onPressed: () {
-                HapticFeedback.selectionClick();
-                final today = DateTime.now();
-                ref.read(focusedDayProvider.notifier).state = today;
-              },
+          // Month and year - centered in available space
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Text(
-                'Today',
-                style: AppTextStyles.buttonSecondary.copyWith(
-                  color: AppColors.primary,
+                monthYearText,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  letterSpacing: 0.8,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
+          ),
+          // Right section: chevron + optional Today button
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Right chevron - jumps by week or month based on format
+              IconButton(
+                icon: const Icon(Icons.chevron_right),
+                iconSize: 22,
+                onPressed: () {
+                  final next = isMonth
+                      ? _getNextMonth(focusedDay)
+                      : focusedDay.add(const Duration(days: 7));
+                  ref.read(focusedDayProvider.notifier).state = next;
+                },
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: isMonth ? 'Next month' : 'Next week',
+              ),
+              // "Today" button - only show when not on current period
+              if (!isOnCurrentPeriod)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: TextButton(
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      final today = DateTime.now();
+                      ref.read(focusedDayProvider.notifier).state = today;
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      'Today',
+                      style: AppTextStyles.buttonSecondary.copyWith(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );
@@ -421,6 +386,127 @@ class _DotSkeleton extends ConsumerWidget {
             shape: BoxShape.circle,
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Custom segmented control with animated sliding marker.
+///
+/// Features:
+/// - Compact size with teal sliding marker that animates between Week/Month
+/// - Premium design with shadows and proper spacing
+/// - Smooth 250ms animation with easeInOut curve
+/// - Supports both light and dark themes
+/// - Intrinsic width based on content (not stretched)
+class _SlidingSegmentedControl extends StatelessWidget {
+  const _SlidingSegmentedControl({
+    required this.selected,
+    required this.isDark,
+    required this.onChanged,
+  });
+
+  final CalendarFormat selected;
+  final bool isDark;
+  final ValueChanged<CalendarFormat> onChanged;
+
+  // Segment width - increased for better visual presence
+  static const double _segmentWidth = 90;
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedIndex = selected == CalendarFormat.week ? 0 : 1;
+
+    return Container(
+      height: 36,
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[900] : Colors.grey[100],
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: AppColors.border,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Animated sliding marker (teal background)
+          AnimatedPositioned(
+            left: selectedIndex == 0 ? 0 : _segmentWidth,
+            top: 0,
+            bottom: 0,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            child: Container(
+              width: _segmentWidth,
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(7),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Labels on top of the marker
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GestureDetector(
+                onTap: () => onChanged(CalendarFormat.week),
+                behavior: HitTestBehavior.opaque,
+                child: SizedBox(
+                  width: _segmentWidth,
+                  child: Center(
+                    child: AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      style: AppTextStyles.buttonSecondary.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: selectedIndex == 0
+                            ? Colors.white
+                            : AppColors.textSecondary,
+                      ),
+                      child: const Text('Week'),
+                    ),
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: () => onChanged(CalendarFormat.month),
+                behavior: HitTestBehavior.opaque,
+                child: SizedBox(
+                  width: _segmentWidth,
+                  child: Center(
+                    child: AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      style: AppTextStyles.buttonSecondary.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: selectedIndex == 1
+                            ? Colors.white
+                            : AppColors.textSecondary,
+                      ),
+                      child: const Text('Month'),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

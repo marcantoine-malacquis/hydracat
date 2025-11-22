@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -159,8 +161,9 @@ class _FluidVolumeBarChartState extends ConsumerState<FluidVolumeBarChart>
                   maxY: chartData.maxVolume,
                   minY: 0,
                   barTouchData: _buildTouchData(),
-                  titlesData:
-                      const FlTitlesData(show: false), // No Y-axis labels
+                  titlesData: const FlTitlesData(
+                    show: false,
+                  ), // No Y-axis labels
                   gridData: const FlGridData(show: false), // No grid lines
                   borderData: FlBorderData(show: false), // No border
                   barGroups: _buildBarGroups(
@@ -266,8 +269,10 @@ class _FluidVolumeBarChartState extends ConsumerState<FluidVolumeBarChart>
     // emphasis is gently animated via [selectionHighlight] without affecting
     // the chart layout or neighboring bars.
     final baseOpacity = day.barOpacity;
-    final highlightBoost =
-        (isSelected ? 0.2 * selectionHighlight : 0).clamp(0.0, 0.4);
+    final highlightBoost = (isSelected ? 0.2 * selectionHighlight : 0).clamp(
+      0.0,
+      0.4,
+    );
     final topOpacity = (baseOpacity + highlightBoost).clamp(0.0, 1.0);
 
     return BarChartRodData(
@@ -298,8 +303,9 @@ class _FluidVolumeBarChartState extends ConsumerState<FluidVolumeBarChart>
   /// Builds an overlaid pill label for the unified goal line.
   ///
   /// When a single consistent daily goal exists across the week, this overlay
-  /// renders a small pill on the right edge of the chart, aligned to the
-  /// dashed amber goal line to make the target immediately clear.
+  /// renders a small pill on the right edge of the chart. When overlapping
+  /// with bars, it uses a glass morphism effect (backdrop blur) with reduced
+  /// opacity for a premium, elegant appearance.
   Widget _buildGoalLabelOverlay(
     BuildContext context,
     FluidChartData chartData,
@@ -320,36 +326,86 @@ class _FluidVolumeBarChartState extends ConsumerState<FluidVolumeBarChart>
     // Map chart Y-value to pixel offset within the fixed chart height.
     final clampedGoal = goalY.clamp(0, chartData.maxVolume);
     final ratio = 1 - (clampedGoal / chartData.maxVolume);
-    final top = (ratio * _chartHeight).clamp(0, _chartHeight - 24);
+    final goalLineTop = (ratio * _chartHeight)
+        .clamp(
+          0,
+          _chartHeight - 24,
+        )
+        .toDouble();
+
+    // Calculate pill bounds (approximately 24px height based on padding)
+    const pillHeight = 24.0;
+    final pillTop = goalLineTop - 12.0; // Center on goal line
+    final pillBottom = pillTop + pillHeight;
+
+    // Detect overlap: check if any bar extends into the pill's vertical range
+    final hasOverlap = chartData.days.any((day) {
+      if (!day.shouldShowBar || day.isMissed) return false;
+
+      // Convert bar height to pixel position
+      final barRatio = 1 - (day.volumeMl / chartData.maxVolume);
+      final barTop = (barRatio * _chartHeight).clamp(0, _chartHeight);
+
+      // Check if bar overlaps with pill (with small buffer)
+      return barTop <= pillBottom + 2 && barTop >= pillTop - 2;
+    });
+
+    // Glass morphism style: semi-transparent background with backdrop blur
+    //when overlapping
+    // Solid background when no overlap for better readability
+    final backgroundColor = hasOverlap
+        ? Colors.white.withValues(alpha: 0.75) // 75% opacity when overlapping
+        : Colors.white; // Solid when clear
 
     return Positioned(
       right: 8,
-      top: top - 12, // Center the pill on the goal line
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 10,
-          vertical: 4,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(999),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+      top: pillTop,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(999),
+        child: BackdropFilter(
+          filter: hasOverlap
+              // Glass blur when overlapping
+              ? ImageFilter.blur(sigmaX: 8, sigmaY: 8)
+              // No blur when clear
+              : ImageFilter.blur(),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 4,
             ),
-          ],
-          border: Border.all(
-            color: Colors.amber[600]!.withValues(alpha: 0.8),
-            width: 1.2,
-          ),
-        ),
-        child: Text(
-          'Goal ${goalValue.toStringAsFixed(0)}ml',
-          style: AppTextStyles.caption.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: Colors.amber[600]!.withValues(
+                  // Slightly more transparent border when overlapping
+                  alpha: hasOverlap ? 0.6 : 0.8,
+                ),
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(
+                    alpha: hasOverlap ? 0.05 : 0.08,
+                  ),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Text(
+              'Goal ${goalValue.toStringAsFixed(0)}ml',
+              style: AppTextStyles.caption.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary.withValues(
+                  alpha: hasOverlap
+                      ? 0.9
+                      : 1.0, // Slightly dimmed text when overlapping
+                ),
+              ),
+            ),
           ),
         ),
       ),

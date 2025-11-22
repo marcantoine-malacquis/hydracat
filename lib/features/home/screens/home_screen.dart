@@ -14,7 +14,6 @@ import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/widgets/empty_states/onboarding_cta_empty_state.dart';
 import 'package:hydracat/shared/widgets/fluid/water_drop_progress_card.dart';
 import 'package:hydracat/shared/widgets/selection_card.dart';
-import 'package:hydracat/shared/widgets/status/connection_status_widget.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A screen that displays the main home interface for the HydraCat app.
@@ -34,8 +33,6 @@ class HomeScreen extends ConsumerWidget {
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           actions: const [
             NotificationStatusWidget(),
-            SizedBox(width: 4),
-            ConnectionStatusWidget(),
           ],
         ),
         body: hasCompletedOnboarding

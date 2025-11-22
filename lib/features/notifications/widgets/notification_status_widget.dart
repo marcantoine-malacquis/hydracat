@@ -30,28 +30,16 @@ class NotificationStatusWidget extends ConsumerWidget {
 
     // If no user, show disabled icon (shouldn't happen in normal flow)
     if (currentUser == null) {
-      return IconButton(
-        icon: Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primaryDark.withValues(alpha: 0.4),
-                blurRadius: 3,
-                offset: const Offset(0, 1),
-              ),
-            ],
-          ),
-          child: const Icon(
-            Icons.notifications_off,
-            size: 20,
-            color: AppColors.textSecondary,
-          ),
+      return const IconButton(
+        icon: Icon(
+          Icons.notifications,
+          size: 20,
+          color: AppColors.textPrimary,
         ),
         tooltip: 'Notifications disabled',
         onPressed: null, // Disabled when no user
-        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-        padding: const EdgeInsets.all(8),
+        constraints: BoxConstraints(minWidth: 40, minHeight: 40),
+        padding: EdgeInsets.all(8),
       );
     }
 
@@ -59,21 +47,6 @@ class NotificationStatusWidget extends ConsumerWidget {
 
     return permissionStatusAsync.when(
       data: (permissionStatus) {
-        // Determine icon
-        final icon =
-            isEnabled ? Icons.notifications : Icons.notifications_off;
-
-        // Determine color
-        final Color iconColor;
-        if (isEnabled) {
-          iconColor = AppColors.success;
-        } else if (permissionStatus ==
-            NotificationPermissionStatus.permanentlyDenied) {
-          iconColor = AppColors.warning;
-        } else {
-          iconColor = AppColors.textSecondary;
-        }
-
         // Determine tooltip
         final String tooltip;
         if (isEnabled) {
@@ -87,18 +60,10 @@ class NotificationStatusWidget extends ConsumerWidget {
 
         return IconButton(
           key: const Key('notif_bell'),
-          icon: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primaryDark.withValues(alpha: 0.4),
-                  blurRadius: 3,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
-            child: Icon(icon, size: 20, color: iconColor),
+          icon: const Icon(
+            Icons.notifications,
+            size: 20,
+            color: AppColors.textPrimary,
           ),
           tooltip: tooltip,
           onPressed: () => _handleTap(context, ref, isEnabled),
@@ -106,51 +71,27 @@ class NotificationStatusWidget extends ConsumerWidget {
           padding: const EdgeInsets.all(8),
         );
       },
-      loading: () => IconButton(
-        icon: Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primaryDark.withValues(alpha: 0.4),
-                blurRadius: 3,
-                offset: const Offset(0, 1),
-              ),
-            ],
-          ),
-          child: const Icon(
-            Icons.notifications_off,
-            size: 20,
-            color: AppColors.textSecondary,
-          ),
+      loading: () => const IconButton(
+        icon: Icon(
+          Icons.notifications,
+          size: 20,
+          color: AppColors.textPrimary,
         ),
         tooltip: 'Loading...',
         onPressed: null, // Disabled while loading
-        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-        padding: const EdgeInsets.all(8),
+        constraints: BoxConstraints(minWidth: 40, minHeight: 40),
+        padding: EdgeInsets.all(8),
       ),
-      error: (error, stackTrace) => IconButton(
-        icon: Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primaryDark.withValues(alpha: 0.4),
-                blurRadius: 3,
-                offset: const Offset(0, 1),
-              ),
-            ],
-          ),
-          child: const Icon(
-            Icons.notifications_off,
-            size: 20,
-            color: AppColors.textSecondary,
-          ),
+      error: (error, stackTrace) => const IconButton(
+        icon: Icon(
+          Icons.notifications,
+          size: 20,
+          color: AppColors.textPrimary,
         ),
         tooltip: 'Unable to check notification status',
         onPressed: null, // Disabled on error
-        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-        padding: const EdgeInsets.all(8),
+        constraints: BoxConstraints(minWidth: 40, minHeight: 40),
+        padding: EdgeInsets.all(8),
       ),
     );
   }
