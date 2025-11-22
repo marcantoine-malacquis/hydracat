@@ -33,7 +33,7 @@ class DashboardEmptyState extends StatelessWidget {
               const Icon(
                 Icons.check_circle,
                 size: 64,
-                color: AppColors.success,
+                color: AppColors.primary,
               ),
               const SizedBox(height: AppSpacing.lg),
 
@@ -41,7 +41,7 @@ class DashboardEmptyState extends StatelessWidget {
               Text(
                 'All Done for Today!',
                 style: AppTextStyles.h2.copyWith(
-                  color: AppColors.success,
+                  color: AppColors.primary,
                 ),
                 textAlign: TextAlign.center,
               ),

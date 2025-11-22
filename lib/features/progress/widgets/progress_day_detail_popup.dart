@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
@@ -20,6 +19,7 @@ import 'package:hydracat/providers/progress_edit_provider.dart';
 import 'package:hydracat/providers/progress_provider.dart';
 import 'package:hydracat/providers/schedule_history_provider.dart';
 import 'package:hydracat/shared/widgets/fluid/fluid_daily_summary_card.dart';
+import 'package:hydracat/shared/widgets/inputs/volume_input_adjuster.dart';
 import 'package:intl/intl.dart';
 
 /// Popup content mode for transitioning between views
@@ -2057,10 +2057,8 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
   late double _volumeGiven;
   late FluidLocation _injectionSite;
   late String? _stressLevel;
-  late TextEditingController _volumeController;
   late TextEditingController _notesController;
   bool _notesExpanded = false;
-  final FocusNode _volumeFocusNode = FocusNode();
   final FocusNode _notesFocusNode = FocusNode();
 
   @override
@@ -2069,30 +2067,6 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
     _volumeGiven = widget.session.volumeGiven;
     _injectionSite = widget.session.injectionSite;
     _stressLevel = widget.session.stressLevel;
-
-    // Initialize volume controller with formatted value
-    final initialVolume = _volumeGiven == _volumeGiven.toInt()
-        ? _volumeGiven.toInt().toString()
-        : _volumeGiven.toStringAsFixed(1);
-    _volumeController = TextEditingController(text: initialVolume);
-
-    // Sync controller changes back to _volumeGiven state
-    _volumeController.addListener(() {
-      final text = _volumeController.text;
-      if (text.isEmpty) {
-        setState(() {
-          _volumeGiven = 0;
-        });
-        return;
-      }
-
-      final value = double.tryParse(text);
-      if (value != null) {
-        setState(() {
-          _volumeGiven = value.clamp(0, 500);
-        });
-      }
-    });
 
     _notesController = TextEditingController(text: widget.session.notes ?? '');
 
@@ -2117,8 +2091,6 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
 
   @override
   void dispose() {
-    _volumeFocusNode.dispose();
-    _volumeController.dispose();
     _notesFocusNode.dispose();
     _notesController.dispose();
     super.dispose();
@@ -2129,34 +2101,6 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
       _injectionSite != widget.session.injectionSite ||
       _stressLevel != widget.session.stressLevel ||
       _notesController.text != (widget.session.notes ?? '');
-
-  void _incrementVolume() {
-    if (_volumeGiven < 500) {
-      final newVolume = (_volumeGiven + 10).clamp(0.0, 500.0);
-      final displayVolume = newVolume == newVolume.toInt()
-          ? newVolume.toInt().toString()
-          : newVolume.toStringAsFixed(1);
-
-      setState(() {
-        _volumeGiven = newVolume;
-        _volumeController.text = displayVolume;
-      });
-    }
-  }
-
-  void _decrementVolume() {
-    if (_volumeGiven > 0) {
-      final newVolume = (_volumeGiven - 10).clamp(0.0, 500.0);
-      final displayVolume = newVolume == newVolume.toInt()
-          ? newVolume.toInt().toString()
-          : newVolume.toStringAsFixed(1);
-
-      setState(() {
-        _volumeGiven = newVolume;
-        _volumeController.text = displayVolume;
-      });
-    }
-  }
 
   void _handleSave() {
     if (!_hasChanges) {
@@ -2198,7 +2142,14 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
         const SizedBox(height: AppSpacing.lg),
 
         // Volume adjuster
-        _buildVolumeAdjuster(theme),
+        VolumeInputAdjuster(
+          initialValue: _volumeGiven,
+          onChanged: (value) {
+            setState(() {
+              _volumeGiven = value;
+            });
+          },
+        ),
         const SizedBox(height: AppSpacing.lg),
 
         // Injection site selector
@@ -2216,115 +2167,6 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
         // Action buttons
         _buildActionButtons(theme),
       ],
-    );
-  }
-
-  Widget _buildVolumeAdjuster(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildCircularButton(
-            icon: Icons.remove,
-            onPressed: _decrementVolume,
-            enabled: _volumeGiven > 0,
-          ),
-          const SizedBox(width: AppSpacing.lg),
-          Expanded(
-            child: Column(
-              children: [
-                TextField(
-                  controller: _volumeController,
-                  focusNode: _volumeFocusNode,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.display.copyWith(
-                    color: theme.colorScheme.onSurface,
-                    fontSize: 40,
-                  ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-                    LengthLimitingTextInputFormatter(5),
-                  ],
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: AppSpacing.xs,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(
-                        color: AppColors.border,
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(
-                        color: AppColors.border,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(
-                        color: AppColors.primary,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'ml',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: AppSpacing.lg),
-          _buildCircularButton(
-            icon: Icons.add,
-            onPressed: _incrementVolume,
-            enabled: _volumeGiven < 500,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCircularButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-    required bool enabled,
-  }) {
-    return Material(
-      color: enabled
-          ? AppColors.primaryLight.withValues(alpha: 0.3)
-          : AppColors.disabled,
-      shape: const CircleBorder(),
-      child: InkWell(
-        onTap: enabled ? onPressed : null,
-        customBorder: const CircleBorder(),
-        child: Container(
-          width: 48,
-          height: 48,
-          alignment: Alignment.center,
-          child: Icon(
-            icon,
-            color: enabled ? AppColors.primaryDark : AppColors.textTertiary,
-            size: 24,
-          ),
-        ),
-      ),
     );
   }
 

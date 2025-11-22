@@ -140,11 +140,7 @@ class FluidDailySummaryCard extends StatelessWidget {
   }
 
   String _formatMl(int ml) {
-    if (ml >= 1000) {
-      final liters = ml / 1000.0;
-      return '${liters.toStringAsFixed(liters >= 10 ? 0 : 1)} L';
-    }
-    return '$ml ml';
+    return '$ml mL';
   }
 }
 

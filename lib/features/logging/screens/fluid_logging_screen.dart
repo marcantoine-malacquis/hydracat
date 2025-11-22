@@ -22,6 +22,7 @@ import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
+import 'package:hydracat/shared/widgets/inputs/volume_input_adjuster.dart';
 import 'package:hydracat/shared/widgets/loading/loading_overlay.dart';
 
 /// Fluid therapy logging screen with volume input and optional fields.
@@ -71,8 +72,10 @@ enum _FluidInputMode {
 
 class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
   // Form controllers
-  final TextEditingController _volumeController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
+
+  // Form state
+  double _volumeValue = 100;
 
   // Selection state
   FluidLocation _selectedInjectionSite = FluidLocation.shoulderBladeLeft;
@@ -80,7 +83,6 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
 
   // UI state
   LoadingOverlayState _loadingState = LoadingOverlayState.none;
-  String? _volumeError;
 
   // Weight calculator state (pending result pattern)
   WeightCalculatorResult? _pendingWeightResult;
@@ -175,7 +177,6 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
   @override
   void dispose() {
     _notesFocusNode.dispose();
-    _volumeController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -221,13 +222,10 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
 
     if (fluidSchedule != null) {
       // Pre-fill from schedule - always use the latest data
-      final newVolume = fluidSchedule.targetVolume?.toInt().toString() ?? '100';
-
-      if (_volumeController.text != newVolume) {
-        _volumeController.text = newVolume;
-      }
+      final newVolume = fluidSchedule.targetVolume ?? 100;
 
       setState(() {
+        _volumeValue = newVolume;
         _selectedInjectionSite =
             fluidSchedule.preferredLocation ?? FluidLocation.shoulderBladeLeft;
       });
@@ -241,14 +239,11 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
       }
     } else {
       // Manual logging - try to use last used injection site
-      if (_volumeController.text != '100') {
-        _volumeController.text = '100';
-      }
-
       // Fetch last used injection site for smart defaults
       final lastUsedSite = await _getLastUsedInjectionSite();
 
       setState(() {
+        _volumeValue = 100;
         _selectedInjectionSite =
             lastUsedSite ?? FluidLocation.shoulderBladeLeft;
       });
@@ -261,46 +256,11 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
         );
       }
     }
-
-    // Initial validation
-    _validateVolume();
-  }
-
-  /// Validate volume input
-  void _validateVolume() {
-    final text = _volumeController.text.trim();
-    final l10n = AppLocalizations.of(context)!;
-
-    setState(() {
-      if (text.isEmpty) {
-        _volumeError = l10n.fluidVolumeRequired;
-        return;
-      }
-
-      final volume = double.tryParse(text);
-
-      if (volume == null) {
-        _volumeError = l10n.fluidVolumeInvalid;
-        return;
-      }
-
-      if (volume < 1) {
-        _volumeError = l10n.fluidVolumeMin;
-        return;
-      }
-
-      if (volume > 500) {
-        _volumeError = l10n.fluidVolumeMax;
-        return;
-      }
-
-      _volumeError = null;
-    });
   }
 
   /// Check if form is valid
   bool get _isFormValid {
-    return _volumeError == null && _volumeController.text.trim().isNotEmpty;
+    return _volumeValue >= 1 && _volumeValue <= 500;
   }
 
   /// Log fluid session
@@ -328,7 +288,7 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
         return;
       }
 
-      final volume = double.parse(_volumeController.text.trim());
+      final volume = _volumeValue;
       final notes = _notesController.text.trim().isEmpty
           ? null
           : _notesController.text;
@@ -427,11 +387,9 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
   void _handleCalculatorResult(WeightCalculatorResult result) {
     setState(() {
       _pendingWeightResult = result;
-      _volumeController.text = result.volumeMl.toStringAsFixed(0);
+      _volumeValue = result.volumeMl;
       _inputMode = _FluidInputMode.standard;
-      _volumeError = null;
     });
-    _validateVolume();
   }
 
   /// Handle calculator cancellation and return to standard form
@@ -497,29 +455,16 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
         ],
 
         // Volume input
-        TextField(
-          controller: _volumeController,
-          keyboardType: const TextInputType.numberWithOptions(
-            decimal: true,
-          ),
-          textInputAction: TextInputAction.next,
-          decoration: InputDecoration(
-            labelText: l10n.volumeLabel,
-            hintText: l10n.volumeHint,
-            errorText: _volumeError,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.md,
-            ),
-          ),
+        VolumeInputAdjuster(
+          initialValue: _volumeValue,
           onChanged: (value) {
-            _validateVolume();
+            setState(() {
+              _volumeValue = value;
+            });
           },
+          minValue: 1,
         ),
-        const SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: AppSpacing.md),
 
         // Weight calculator button
         Center(

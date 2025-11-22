@@ -24,61 +24,39 @@ class ProgressScreen extends ConsumerStatefulWidget {
 }
 
 class _ProgressScreenState extends ConsumerState<ProgressScreen> {
-  bool _registeredHelpListener = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    // Register auto-help logic once when dependencies are available.
-    if (!_registeredHelpListener) {
-      _registeredHelpListener = true;
-
-      // Defer to next frame to avoid calling ref.listen during build phase.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _maybeRegisterAutoHelpListener();
-      });
-    }
-  }
-
-  void _maybeRegisterAutoHelpListener() {
-    final hasCompletedOnboarding = ref.read(hasCompletedOnboardingProvider);
-    final hasSeenHelp = ref.read(calendarHelpSeenProvider);
-
-    if (!hasCompletedOnboarding || hasSeenHelp) {
-      return;
-    }
-
-    final weekStart = ref.read(focusedWeekStartProvider);
-
-    ref.listen<AsyncValue<Map<DateTime, DailySummary?>>>(
-      weekSummariesProvider(weekStart),
-      (prev, next) {
-        if (!mounted) return;
-
-        final alreadySeen = ref.read(calendarHelpSeenProvider);
-        if (alreadySeen) return;
-
-        final hasAnySummary = next.maybeWhen(
-          data: (map) => map.values.any((s) => s != null),
-          orElse: () => false,
-        );
-
-        if (hasAnySummary) {
-          WidgetsBinding.instance.addPostFrameCallback((_) async {
-            if (!mounted) return;
-            showCalendarHelpPopup(context);
-            await ref.read(calendarHelpSeenNotifierProvider).markSeen();
-          });
-        }
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final hasCompletedOnboarding = ref.watch(hasCompletedOnboardingProvider);
     final petName = ref.watch(petNameProvider);
+
+    // Auto-show calendar help popup on first data load
+    final hasSeenHelp = ref.watch(calendarHelpSeenProvider);
+    if (hasCompletedOnboarding && !hasSeenHelp) {
+      final weekStart = ref.watch(focusedWeekStartProvider);
+
+      ref.listen<AsyncValue<Map<DateTime, DailySummary?>>>(
+        weekSummariesProvider(weekStart),
+        (prev, next) {
+          if (!mounted) return;
+
+          final alreadySeen = ref.read(calendarHelpSeenProvider);
+          if (alreadySeen) return;
+
+          final hasAnySummary = next.maybeWhen(
+            data: (map) => map.values.any((s) => s != null),
+            orElse: () => false,
+          );
+
+          if (hasAnySummary) {
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              if (!mounted) return;
+              showCalendarHelpPopup(context);
+              await ref.read(calendarHelpSeenProvider.notifier).markSeen();
+            });
+          }
+        },
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,

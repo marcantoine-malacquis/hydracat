@@ -5,6 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:hydracat/core/constants/app_animations.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 
+/// Session-scoped flag to track if the rising fill animation has played
+bool _hasPlayedWaterDropRiseThisSession = false;
+
 /// Animated water drop widget with organic wave motion
 ///
 /// Shows fill percentage (0.0 to 1.0) with animated waves.
@@ -41,8 +44,10 @@ class WaterDropWidget extends StatefulWidget {
 }
 
 class _WaterDropWidgetState extends State<WaterDropWidget>
-    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late AnimationController _waveController;
+  late AnimationController _fillController;
+  late Animation<double> _fillAnimation;
 
   // Celebration state
   bool _hasShownCelebration = false;
@@ -50,6 +55,7 @@ class _WaterDropWidgetState extends State<WaterDropWidget>
 
   // Track if animation has been initialized (prevent re-initialization)
   bool _hasInitializedAnimation = false;
+  bool _hasInitializedFillAnimation = false;
 
   @override
   void initState() {
@@ -61,19 +67,65 @@ class _WaterDropWidgetState extends State<WaterDropWidget>
       duration: const Duration(milliseconds: 4000),
       vsync: this,
     );
+
+    // Fill animation controller (duration will be set in didChangeDependencies)
+    _fillController = AnimationController(
+      duration: const Duration(milliseconds: 700),
+      vsync: this,
+    );
+
+    // Create fill animation with easing curve
+    _fillAnimation = CurvedAnimation(
+      parent: _fillController,
+      curve: Curves.easeOutCubic,
+    );
+
+    // Listen for animation completion to set session flag
+    _fillController.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) {
+        _hasPlayedWaterDropRiseThisSession = true;
+      }
+    });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    // Start animation once (only when first mounted and context is available)
+    // Start wave animation once (only when first mounted
+    //and context is available)
     if (!_hasInitializedAnimation) {
       _hasInitializedAnimation = true;
 
       // Start animation if motion is not reduced
       if (!AppAnimations.shouldReduceMotion(context)) {
         _waveController.repeat();
+      }
+    }
+
+    // Initialize fill animation once per session
+    if (!_hasInitializedFillAnimation) {
+      _hasInitializedFillAnimation = true;
+
+      final shouldReduceMotion = AppAnimations.shouldReduceMotion(context);
+      final shouldAnimate =
+          !shouldReduceMotion &&
+          !_hasPlayedWaterDropRiseThisSession &&
+          widget.fillPercentage > 0;
+
+      if (shouldAnimate) {
+        // Set duration respecting reduce motion
+        final duration = AppAnimations.getDuration(
+          context,
+          const Duration(milliseconds: 700),
+        );
+        _fillController.duration = duration;
+
+        // Start fill animation from 0 to 1
+        _fillController.forward();
+      } else {
+        // Skip animation, set to final value immediately
+        _fillController.value = 1.0;
       }
     }
   }
@@ -131,6 +183,7 @@ class _WaterDropWidgetState extends State<WaterDropWidget>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _waveController.dispose();
+    _fillController.dispose();
     super.dispose();
   }
 
@@ -139,7 +192,8 @@ class _WaterDropWidgetState extends State<WaterDropWidget>
     final width = widget.height * 0.83;
 
     return Semantics(
-      label: 'Water drop showing '
+      label:
+          'Water drop showing '
           '${(widget.fillPercentage * 100).round()} percent progress',
       child: SizedBox(
         width: width,
@@ -149,12 +203,21 @@ class _WaterDropWidgetState extends State<WaterDropWidget>
           children: [
             // Base water drop animation
             AnimatedBuilder(
-              animation: _waveController,
+              animation: Listenable.merge([_waveController, _fillController]),
               builder: (context, child) {
+                // Calculate animated fill level (0 to target fillPercentage)
+                // This must be inside the builder to update
+                // on each animation tick
+                final animatedFill =
+                    (widget.fillPercentage * _fillAnimation.value).clamp(
+                      0.0,
+                      1.0,
+                    );
+
                 return CustomPaint(
                   size: Size(width, widget.height),
                   painter: WaterDropPainter(
-                    fillLevel: widget.fillPercentage,
+                    fillLevel: animatedFill,
                     wavePhase: _waveController.value * 2 * pi,
                     enableWaves: !AppAnimations.shouldReduceMotion(context),
                   ),
@@ -311,11 +374,14 @@ class WaterDropPainter extends CustomPainter {
     for (double x = 0; x <= width; x += 1) {
       final normalizedX = x / width;
 
-      final wave1 = amplitude1 *
+      final wave1 =
+          amplitude1 *
           sin(normalizedX * 2 * pi * frequency1 + wavePhase * speed1);
-      final wave2 = amplitude2 *
+      final wave2 =
+          amplitude2 *
           sin(normalizedX * 2 * pi * frequency2 + wavePhase * speed2);
-      final wave3 = amplitude3 *
+      final wave3 =
+          amplitude3 *
           sin(normalizedX * 2 * pi * frequency3 + wavePhase * speed3);
 
       final y = waterLevel + wave1 + wave2 + wave3;
@@ -328,8 +394,12 @@ class WaterDropPainter extends CustomPainter {
       ..close();
 
     // Create gradient for base water fill (darker at bottom, lighter at top)
-    final fillRect =
-        Rect.fromLTWH(0, waterLevel, width, actualBottom - waterLevel);
+    final fillRect = Rect.fromLTWH(
+      0,
+      waterLevel,
+      width,
+      actualBottom - waterLevel,
+    );
     final gradient = LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
@@ -368,8 +438,12 @@ class WaterDropPainter extends CustomPainter {
     final waterLevel = height * (1 - fillLevel);
     final actualBottom = _getDropBottom(width, height);
 
-    final fillRect =
-        Rect.fromLTWH(0, waterLevel, width, actualBottom - waterLevel);
+    final fillRect = Rect.fromLTWH(
+      0,
+      waterLevel,
+      width,
+      actualBottom - waterLevel,
+    );
 
     final gradient = LinearGradient(
       begin: Alignment.topCenter,
@@ -412,7 +486,8 @@ class _ParticleBurstAnimation extends StatelessWidget {
         particleCount,
         (i) {
           // Fountain pattern: -20° to +20° from vertical (upward)
-          final angle = (-pi / 2) +
+          final angle =
+              (-pi / 2) +
               (i - particleCount / 2) * (40 * pi / 180) / particleCount;
           return _Particle(angle: angle, color: color);
         },

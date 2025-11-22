@@ -147,13 +147,6 @@ class NotificationCoordinator {
       '$totalImmediate immediate, $totalMissed missed',
     );
 
-    // Update group summary for today
-    await _updateGroupSummary(
-      userId: user.id,
-      petId: pet.id,
-      petName: petName,
-    );
-
     // Track analytics
     try {
       await _ref.read(analyticsServiceDirectProvider).trackMultiDayScheduling(
@@ -272,15 +265,14 @@ class NotificationCoordinator {
   /// - A new schedule is created
   /// - An existing schedule is updated
   ///
-  /// **Strategy (Option B: Surgical updates with fallback):**
-  /// 1. Check if schedule shares time slots with other schedules (bundling)
-  /// 2. If bundling detected → use refreshAll() (safe, ensures correctness)
-  /// 3. If no bundling → surgical update:
-  ///    a. Cancel old notifications (next 3 days)
-  ///    b. Schedule new notifications (next 3 days)
+  /// **Strategy:**
+  /// Always uses refreshAll() to ensure correctness and avoid edge cases.
+  /// This prioritizes simplicity and reliability over performance optimization.
   ///
-  /// This approach is more efficient than always using refreshAll() while
-  /// still being safe for bundled notifications.
+  /// **Why not surgical updates?**
+  /// Surgical updates fail when reminder times change because notification IDs
+  /// include the time slot. When times change, old notifications can't be
+  /// canceled using new time-based IDs, resulting in duplicate notifications.
   Future<Map<String, dynamic>> scheduleForSchedule(Schedule schedule) async {
     final user = _ref.read(currentUserProvider);
     final pet = _ref.read(primaryPetProvider);
@@ -300,49 +292,14 @@ class NotificationCoordinator {
       return _emptyResult(reason: 'inactive_schedule');
     }
 
-    try {
-      // Check if this schedule shares time slots with other schedules
-      final profileState = _ref.read(profileProvider);
-      final allSchedules = <Schedule>[
-        if (profileState.fluidSchedule != null) profileState.fluidSchedule!,
-        ...profileState.medicationSchedules ?? [],
-      ];
-
-      final hasSharedTimeSlots = _hasSharedTimeSlots(schedule, allSchedules);
-
-      if (hasSharedTimeSlots) {
-        // Bundling detected - use nuclear option to ensure correctness
-        _devLog(
-          'Schedule ${schedule.id} shares time slots with others, '
-          'using refreshAll()',
-        );
-        return await refreshAll();
-      }
-
-      // No bundling - safe to do surgical update
-      final canceledCount =
-          await cancelFutureNotificationsForSchedule(schedule.id);
-      _devLog(
-        'Canceled $canceledCount old notifications for schedule ${schedule.id}',
-      );
-
-      final result = await scheduleForSingleSchedule(schedule);
-      _devLog(
-        'Rescheduled ${result['scheduled']} notifications for '
-        'schedule ${schedule.id}',
-      );
-
-      return result;
-    } on Exception catch (e, stackTrace) {
-      _devLog('ERROR in scheduleForSchedule: $e');
-      _devLog('Stack trace: $stackTrace');
-      return {
-        'scheduled': 0,
-        'immediate': 0,
-        'missed': 0,
-        'errors': [e.toString()],
-      };
-    }
+    // Always use refreshAll() for correctness
+    // This ensures we cancel old notifications and reschedule correctly,
+    // avoiding bugs where surgical updates fail to cancel notifications
+    // with old time-based IDs when reminder times change.
+    _devLog(
+      'Using refreshAll() to ensure all notifications are synchronized',
+    );
+    return refreshAll();
   }
 
   /// Cancel all notifications for a schedule.
@@ -360,15 +317,6 @@ class NotificationCoordinator {
 
     final canceledCount =
         await cancelFutureNotificationsForSchedule(scheduleId);
-
-    // Update group summary
-    final profileState = _ref.read(profileProvider);
-    final petName = profileState.primaryPet?.name ?? 'your pet';
-    await _updateGroupSummary(
-      userId: user.id,
-      petId: pet.id,
-      petName: petName,
-    );
 
     return canceledCount;
   }
@@ -877,147 +825,6 @@ class NotificationCoordinator {
     return canceledCount;
   }
 
-  /// Schedule notifications for a single schedule for the next 3 days.
-  ///
-  /// Used when a new schedule is created.
-  ///
-  /// **Parameters:**
-  /// - [schedule]: The schedule to schedule notifications for
-  ///
-  /// **Returns**: Map with scheduling results
-  Future<Map<String, dynamic>> scheduleForSingleSchedule(
-    Schedule schedule,
-  ) async {
-    final user = _ref.read(currentUserProvider);
-    final pet = _ref.read(primaryPetProvider);
-
-    if (user == null || pet == null) {
-      return _emptyResult(reason: 'no_user_or_pet');
-    }
-
-    if (!schedule.isActive) {
-      _devLog('Schedule ${schedule.id} is inactive, skipping');
-      return _emptyResult(reason: 'inactive_schedule');
-    }
-
-    _devLog(
-      'Scheduling single schedule ${schedule.id} for next '
-      '$_schedulingWindowDays days',
-    );
-
-    var totalScheduled = 0;
-    var totalImmediate = 0;
-    var totalMissed = 0;
-    final errors = <String>[];
-
-    final profileState = _ref.read(profileProvider);
-    final petName = profileState.primaryPet?.name ?? 'your pet';
-
-    // Schedule for each of the next 3 days
-    for (var dayOffset = 0; dayOffset < _schedulingWindowDays; dayOffset++) {
-      final date = DateTime.now().add(Duration(days: dayOffset));
-
-      // Check if schedule has reminders on this date
-      if (!schedule.hasReminderOnDate(date)) {
-        continue;
-      }
-
-      // Get reminder times for this date
-      final reminderTimes = schedule.reminderTimesOnDate(date);
-
-      for (final reminderTime in reminderTimes) {
-        final timeSlot = '${reminderTime.hour.toString().padLeft(2, '0')}:'
-            '${reminderTime.minute.toString().padLeft(2, '0')}';
-
-        try {
-          // Schedule notification for this time slot
-          final result = await _scheduleNotificationForDateAndTimeSlot(
-            userId: user.id,
-            petId: pet.id,
-            schedules: [schedule], // Single schedule
-            timeSlot: timeSlot,
-            date: date,
-            petName: petName,
-            includeFollowup: dayOffset == 0, // Only today gets follow-ups
-          );
-
-          totalScheduled += result['scheduled'] as int;
-          totalImmediate += result['immediate'] as int;
-          totalMissed += result['missed'] as int;
-        } on Exception catch (e) {
-          final error =
-              'Failed to schedule ${schedule.id} on ${_formatDate(date)} '
-              'at $timeSlot: $e';
-          errors.add(error);
-          _devLog('❌ $error');
-        }
-      }
-    }
-
-    _devLog(
-      '✅ Scheduled $totalScheduled notifications for schedule ${schedule.id}',
-    );
-
-    // Update group summary
-    await _updateGroupSummary(
-      userId: user.id,
-      petId: pet.id,
-      petName: petName,
-    );
-
-    return {
-      'scheduled': totalScheduled,
-      'immediate': totalImmediate,
-      'missed': totalMissed,
-      'errors': errors,
-    };
-  }
-
-  /// Check if schedule shares time slots with any other active schedule.
-  ///
-  /// Used to detect bundling conflicts. If a schedule shares time slots with
-  /// other schedules, we need to use refreshAll() instead of surgical updates
-  /// to ensure bundled notifications are correct.
-  ///
-  /// **Example:**
-  /// - Schedule A: Benazepril at 9AM
-  /// - Schedule B: Fluid Therapy at 9AM
-  /// - These are bundled into one notification
-  /// - If we update Schedule A, we need to update Schedule B's notification too
-  ///
-  /// **Parameters:**
-  /// - [schedule]: The schedule to check
-  /// - [allSchedules]: All schedules to compare against
-  ///
-  /// **Returns**: true if any shared time slots found, false otherwise
-  bool _hasSharedTimeSlots(Schedule schedule, List<Schedule> allSchedules) {
-    final scheduleTimeSlots = schedule.reminderTimes
-        .map(
-          (t) =>
-              '${t.hour.toString().padLeft(2, '0')}:'
-              '${t.minute.toString().padLeft(2, '0')}',
-        )
-        .toSet();
-
-    for (final other in allSchedules) {
-      if (other.id == schedule.id || !other.isActive) continue;
-
-      final otherTimeSlots = other.reminderTimes
-          .map(
-            (t) =>
-                '${t.hour.toString().padLeft(2, '0')}:'
-                '${t.minute.toString().padLeft(2, '0')}',
-          )
-          .toSet();
-
-      if (scheduleTimeSlots.intersection(otherTimeSlots).isNotEmpty) {
-        return true; // Found shared time slot
-      }
-    }
-
-    return false;
-  }
-
   /// Generate notification content for single or bundled treatments.
   Map<String, String> _generateBundledNotificationContent({
     required List<Schedule> schedules,
@@ -1090,54 +897,6 @@ class NotificationCoordinator {
             l10n.notificationMultipleFollowupBody(petName, schedules.length),
         'channelId': 'medication_reminders',
       };
-    }
-  }
-
-  /// Update the group summary notification for a pet.
-  Future<void> _updateGroupSummary({
-    required String userId,
-    required String petId,
-    required String petName,
-  }) async {
-    try {
-      // Get all entries for the pet today
-      final now = DateTime.now();
-      final entries = await _indexStore.getEntriesForPet(userId, petId, now);
-
-      // If no notifications, cancel the summary
-      if (entries.isEmpty) {
-        await _plugin.cancelGroupSummary(petId);
-        _devLog('Canceled group summary for $petName (no notifications)');
-        return;
-      }
-
-      // Categorize entries by treatment type
-      final breakdown = NotificationIndexStore.categorizeByType(entries);
-      final medicationCount = breakdown['medication'] ?? 0;
-      final fluidCount = breakdown['fluid'] ?? 0;
-
-      // Generate group ID and thread identifier for this pet
-      final groupId = 'pet_$petId';
-      final threadIdentifier = 'pet_$petId';
-
-      // Show or update group summary
-      await _plugin.showGroupSummary(
-        petId: petId,
-        petName: petName,
-        medicationCount: medicationCount,
-        fluidCount: fluidCount,
-        groupId: groupId,
-        threadIdentifier: threadIdentifier,
-      );
-
-      _devLog(
-        'Updated group summary for $petName: '
-        '$medicationCount medications, $fluidCount fluids',
-      );
-    } on Exception catch (e, stackTrace) {
-      _devLog('ERROR updating group summary for pet $petId: $e');
-      _devLog('Stack trace: $stackTrace');
-      // Don't rethrow - summary update failure shouldn't block main operations
     }
   }
 

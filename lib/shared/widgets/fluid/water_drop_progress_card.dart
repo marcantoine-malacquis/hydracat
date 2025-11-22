@@ -317,12 +317,8 @@ class _WaterDropProgressCardState
     );
   }
 
-  /// Format volume (ml to L conversion)
+  /// Format volume in mL
   String _formatMl(num ml) {
-    if (ml >= 1000) {
-      final liters = ml / 1000.0;
-      return '${liters.toStringAsFixed(liters >= 10 ? 0 : 1)} L';
-    }
-    return '${ml.round()} ml';
+    return '${ml.round()} mL';
   }
 }
