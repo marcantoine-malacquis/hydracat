@@ -39,6 +39,15 @@ class WeeklySummary extends TreatmentSummaryBase {
     this.endDate,
     super.updatedAt,
     this.fluidScheduledVolume,
+    this.daysWithVomiting = 0,
+    this.daysWithDiarrhea = 0,
+    this.daysWithConstipation = 0,
+    this.daysWithLethargy = 0,
+    this.daysWithSuppressedAppetite = 0,
+    this.daysWithInjectionSiteReaction = 0,
+    this.symptomScoreTotal,
+    this.symptomScoreAverage,
+    this.symptomScoreMax,
   });
 
   /// Factory constructor to create an empty weekly summary
@@ -118,6 +127,18 @@ class WeeklySummary extends TreatmentSummaryBase {
       endDate: TreatmentSummaryBase.parseDateTimeNullable(json['endDate']),
       updatedAt: TreatmentSummaryBase.parseDateTimeNullable(json['updatedAt']),
       fluidScheduledVolume: (json['fluidScheduledVolume'] as num?)?.toInt(),
+      daysWithVomiting: (json['daysWithVomiting'] as num?)?.toInt() ?? 0,
+      daysWithDiarrhea: (json['daysWithDiarrhea'] as num?)?.toInt() ?? 0,
+      daysWithConstipation:
+          (json['daysWithConstipation'] as num?)?.toInt() ?? 0,
+      daysWithLethargy: (json['daysWithLethargy'] as num?)?.toInt() ?? 0,
+      daysWithSuppressedAppetite:
+          (json['daysWithSuppressedAppetite'] as num?)?.toInt() ?? 0,
+      daysWithInjectionSiteReaction:
+          (json['daysWithInjectionSiteReaction'] as num?)?.toInt() ?? 0,
+      symptomScoreTotal: (json['symptomScoreTotal'] as num?)?.toInt(),
+      symptomScoreAverage: (json['symptomScoreAverage'] as num?)?.toDouble(),
+      symptomScoreMax: (json['symptomScoreMax'] as num?)?.toInt(),
     );
   }
 
@@ -166,6 +187,36 @@ class WeeklySummary extends TreatmentSummaryBase {
   /// Null if no sessions have been logged this week yet.
   final int? fluidScheduledVolume;
 
+  // Symptom tracking fields
+
+  /// Number of days with vomiting present (score > 0)
+  final int daysWithVomiting;
+
+  /// Number of days with diarrhea present (score > 0)
+  final int daysWithDiarrhea;
+
+  /// Number of days with constipation present (score > 0)
+  final int daysWithConstipation;
+
+  /// Number of days with lethargy present (score > 0)
+  final int daysWithLethargy;
+
+  /// Number of days with suppressed appetite present (score > 0)
+  final int daysWithSuppressedAppetite;
+
+  /// Number of days with injection site reaction present (score > 0)
+  final int daysWithInjectionSiteReaction;
+
+  /// Sum of daily symptomScoreTotal over the week
+  /// (0-420 for 7 days with max 60 each)
+  final int? symptomScoreTotal;
+
+  /// Average daily symptom score across days with any symptoms (0-10)
+  final double? symptomScoreAverage;
+
+  /// Maximum daily symptomScoreTotal in the week (0-60)
+  final int? symptomScoreMax;
+
   @override
   String get documentId =>
       AppDateUtils.formatWeekForSummary(startDate ?? DateTime.now());
@@ -211,6 +262,16 @@ class WeeklySummary extends TreatmentSummaryBase {
       'overallTreatmentDone': overallTreatmentDone,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'daysWithVomiting': daysWithVomiting,
+      'daysWithDiarrhea': daysWithDiarrhea,
+      'daysWithConstipation': daysWithConstipation,
+      'daysWithLethargy': daysWithLethargy,
+      'daysWithSuppressedAppetite': daysWithSuppressedAppetite,
+      'daysWithInjectionSiteReaction': daysWithInjectionSiteReaction,
+      if (symptomScoreTotal != null) 'symptomScoreTotal': symptomScoreTotal,
+      if (symptomScoreAverage != null)
+        'symptomScoreAverage': symptomScoreAverage,
+      if (symptomScoreMax != null) 'symptomScoreMax': symptomScoreMax,
     };
   }
 
@@ -282,6 +343,15 @@ class WeeklySummary extends TreatmentSummaryBase {
     Object? endDate = _undefined,
     Object? updatedAt = _undefined,
     Object? fluidScheduledVolume = _undefined,
+    int? daysWithVomiting,
+    int? daysWithDiarrhea,
+    int? daysWithConstipation,
+    int? daysWithLethargy,
+    int? daysWithSuppressedAppetite,
+    int? daysWithInjectionSiteReaction,
+    Object? symptomScoreTotal = _undefined,
+    Object? symptomScoreAverage = _undefined,
+    Object? symptomScoreMax = _undefined,
   }) {
     return WeeklySummary(
       fluidTreatmentDays: fluidTreatmentDays ?? this.fluidTreatmentDays,
@@ -305,15 +375,30 @@ class WeeklySummary extends TreatmentSummaryBase {
       startDate: startDate == _undefined
           ? this.startDate
           : startDate as DateTime?,
-      endDate: endDate == _undefined
-          ? this.endDate
-          : endDate as DateTime?,
+      endDate: endDate == _undefined ? this.endDate : endDate as DateTime?,
       updatedAt: updatedAt == _undefined
           ? this.updatedAt
           : updatedAt as DateTime?,
       fluidScheduledVolume: fluidScheduledVolume == _undefined
           ? this.fluidScheduledVolume
           : fluidScheduledVolume as int?,
+      daysWithVomiting: daysWithVomiting ?? this.daysWithVomiting,
+      daysWithDiarrhea: daysWithDiarrhea ?? this.daysWithDiarrhea,
+      daysWithConstipation: daysWithConstipation ?? this.daysWithConstipation,
+      daysWithLethargy: daysWithLethargy ?? this.daysWithLethargy,
+      daysWithSuppressedAppetite:
+          daysWithSuppressedAppetite ?? this.daysWithSuppressedAppetite,
+      daysWithInjectionSiteReaction:
+          daysWithInjectionSiteReaction ?? this.daysWithInjectionSiteReaction,
+      symptomScoreTotal: symptomScoreTotal == _undefined
+          ? this.symptomScoreTotal
+          : symptomScoreTotal as int?,
+      symptomScoreAverage: symptomScoreAverage == _undefined
+          ? this.symptomScoreAverage
+          : symptomScoreAverage as double?,
+      symptomScoreMax: symptomScoreMax == _undefined
+          ? this.symptomScoreMax
+          : symptomScoreMax as int?,
     );
   }
 
@@ -330,6 +415,15 @@ class WeeklySummary extends TreatmentSummaryBase {
         other.overallTreatmentDays == overallTreatmentDays &&
         other.overallMissedDays == overallMissedDays &&
         other.fluidScheduledVolume == fluidScheduledVolume &&
+        other.daysWithVomiting == daysWithVomiting &&
+        other.daysWithDiarrhea == daysWithDiarrhea &&
+        other.daysWithConstipation == daysWithConstipation &&
+        other.daysWithLethargy == daysWithLethargy &&
+        other.daysWithSuppressedAppetite == daysWithSuppressedAppetite &&
+        other.daysWithInjectionSiteReaction == daysWithInjectionSiteReaction &&
+        other.symptomScoreTotal == symptomScoreTotal &&
+        other.symptomScoreAverage == symptomScoreAverage &&
+        other.symptomScoreMax == symptomScoreMax &&
         super == other;
   }
 
@@ -345,6 +439,15 @@ class WeeklySummary extends TreatmentSummaryBase {
       overallTreatmentDays,
       overallMissedDays,
       fluidScheduledVolume,
+      daysWithVomiting,
+      daysWithDiarrhea,
+      daysWithConstipation,
+      daysWithLethargy,
+      daysWithSuppressedAppetite,
+      daysWithInjectionSiteReaction,
+      symptomScoreTotal,
+      symptomScoreAverage,
+      symptomScoreMax,
     );
   }
 
@@ -367,7 +470,16 @@ class WeeklySummary extends TreatmentSummaryBase {
         'fluidSessionCount: $fluidSessionCount, '
         'overallTreatmentDone: $overallTreatmentDone, '
         'createdAt: $createdAt, '
-        'updatedAt: $updatedAt'
+        'updatedAt: $updatedAt, '
+        'daysWithVomiting: $daysWithVomiting, '
+        'daysWithDiarrhea: $daysWithDiarrhea, '
+        'daysWithConstipation: $daysWithConstipation, '
+        'daysWithLethargy: $daysWithLethargy, '
+        'daysWithSuppressedAppetite: $daysWithSuppressedAppetite, '
+        'daysWithInjectionSiteReaction: $daysWithInjectionSiteReaction, '
+        'symptomScoreTotal: $symptomScoreTotal, '
+        'symptomScoreAverage: $symptomScoreAverage, '
+        'symptomScoreMax: $symptomScoreMax'
         ')';
   }
 }

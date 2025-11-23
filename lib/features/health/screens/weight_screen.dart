@@ -140,8 +140,9 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
               icon: Icons.add,
               label: 'Add Weight',
               backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.onPrimary,
-              elevation: 6,
+              foregroundColor: AppColors.textPrimary,
+              elevation: 0,
+              useGlassEffect: true,
             )
           : null,
       floatingActionButtonAnimator: FloatingActionButtonAnimator.scaling,

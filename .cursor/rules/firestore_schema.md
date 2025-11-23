@@ -150,7 +150,16 @@ users/
                   │     └── {YYYY-MM-DD} (date-based document ID)
                   │           ├── weight: number             # kg, optional
                   │           ├── appetite: string           # all/3-4/half/1-4/nothing, optional
-                  │           ├── symptoms: string           # good/okay/concerning, optional
+                  │           ├── symptoms: map              # per-symptom 0-10 scores, optional
+                  │           │     ├── vomiting: number     # 0-10, optional
+                  │           │     ├── diarrhea: number     # 0-10, optional
+                  │           │     ├── constipation: number # 0-10, optional
+                  │           │     ├── lethargy: number     # 0-10, optional
+                  │           │     ├── suppressedAppetite: number    # 0-10, optional
+                  │           │     └── injectionSiteReaction: number # 0-10, optional
+                  │           ├── hasSymptoms: boolean       # true if any symptom score > 0, optional
+                  │           ├── symptomScoreTotal: number  # sum of all present scores (0-60), optional
+                  │           ├── symptomScoreAverage: number # average of present scores (0-10), optional
                   │           ├── notes: string              # optional daily health notes
                   │           ├── createdAt: Timestamp
                   │           └── updatedAt: Timestamp
@@ -193,6 +202,23 @@ users/
                   │     │                 ├── overallTreatmentDone: boolean     # true if primary treatments completed
                   │     │                 ├── overallStreak: number            # consecutive days of adherence
                   │     │                 │
+                  │     │                 # Symptom Tracking Summary
+                  │     │                 ├── hadVomiting: boolean              # vomiting present (score > 0)
+                  │     │                 ├── hadDiarrhea: boolean              # diarrhea present (score > 0)
+                  │     │                 ├── hadConstipation: boolean          # constipation present (score > 0)
+                  │     │                 ├── hadLethargy: boolean              # lethargy present (score > 0)
+                  │     │                 ├── hadSuppressedAppetite: boolean    # suppressed appetite present (score > 0)
+                  │     │                 ├── hadInjectionSiteReaction: boolean # injection site reaction present (score > 0)
+                  │     │                 ├── vomitingMaxScore: number          # max vomiting score (0-10, optional)
+                  │     │                 ├── diarrheaMaxScore: number          # max diarrhea score (0-10, optional)
+                  │     │                 ├── constipationMaxScore: number      # max constipation score (0-10, optional)
+                  │     │                 ├── lethargyMaxScore: number          # max lethargy score (0-10, optional)
+                  │     │                 ├── suppressedAppetiteMaxScore: number # max suppressed appetite score (0-10, optional)
+                  │     │                 ├── injectionSiteReactionMaxScore: number # max injection site reaction score (0-10, optional)
+                  │     │                 ├── symptomScoreTotal: number         # sum of all present scores (0-60, optional)
+                  │     │                 ├── symptomScoreAverage: number       # average of present scores (0-10, optional)
+                  │     │                 ├── hasSymptoms: boolean              # true if any symptom score > 0
+                  │     │                 │
                   │     │                 ├── createdAt: Timestamp
                   │     │                 └── updatedAt: Timestamp
                   │     │
@@ -219,6 +245,17 @@ users/
                   │     │                 ├── overallTreatmentDays: number
                   │     │                 ├── overallMissedDays: number
                   │     │                 ├── overallTreatmentDone: boolean
+                  │     │                 │
+                  │     │                 # Symptom Tracking Summary
+                  │     │                 ├── daysWithVomiting: number              # days with vomiting (score > 0)
+                  │     │                 ├── daysWithDiarrhea: number              # days with diarrhea (score > 0)
+                  │     │                 ├── daysWithConstipation: number          # days with constipation (score > 0)
+                  │     │                 ├── daysWithLethargy: number              # days with lethargy (score > 0)
+                  │     │                 ├── daysWithSuppressedAppetite: number    # days with suppressed appetite (score > 0)
+                  │     │                 ├── daysWithInjectionSiteReaction: number # days with injection site reaction (score > 0)
+                  │     │                 ├── symptomScoreTotal: number             # sum of daily symptomScoreTotal over week (optional)
+                  │     │                 ├── symptomScoreAverage: number           # average daily score across days with symptoms (optional)
+                  │     │                 ├── symptomScoreMax: number               # max daily symptomScoreTotal in week (optional)
                   │     │                 │
                   │     │                 ├── createdAt: Timestamp
                   │     │                 └── updatedAt: Timestamp
@@ -252,6 +289,17 @@ users/
                   │                       ├── overallLongestStreak: number
                   │                       ├── overallCurrentStreak: number
                   │                       ├── overallTreatmentDone: boolean
+                  │                       │
+                  │                       # Symptom Tracking Summary
+                  │                       ├── daysWithVomiting: number              # days with vomiting (score > 0)
+                  │                       ├── daysWithDiarrhea: number              # days with diarrhea (score > 0)
+                  │                       ├── daysWithConstipation: number          # days with constipation (score > 0)
+                  │                       ├── daysWithLethargy: number              # days with lethargy (score > 0)
+                  │                       ├── daysWithSuppressedAppetite: number    # days with suppressed appetite (score > 0)
+                  │                       ├── daysWithInjectionSiteReaction: number # days with injection site reaction (score > 0)
+                  │                       ├── symptomScoreTotal: number             # sum of daily symptomScoreTotal over month (optional)
+                  │                       ├── symptomScoreAverage: number           # average daily score across days with symptoms (optional)
+                  │                       ├── symptomScoreMax: number               # max daily symptomScoreTotal in month (optional)
                   │                       │
                   │                       ├── createdAt: Timestamp
                   │                       └── updatedAt: Timestamp

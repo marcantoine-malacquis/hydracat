@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -159,6 +160,7 @@ class HydraExtendedFab extends StatelessWidget {
     this.backgroundColor,
     this.foregroundColor,
     this.elevation,
+    this.useGlassEffect = false,
   });
 
   /// Callback function when FAB is pressed
@@ -182,33 +184,97 @@ class HydraExtendedFab extends StatelessWidget {
   /// Elevation of the FAB. Defaults to 0
   final double? elevation;
 
+  /// Whether to apply glass morphism effect (backdrop blur with
+  /// semi-transparent background)
+  final bool useGlassEffect;
+
   @override
   Widget build(BuildContext context) {
-    return FloatingActionButton.extended(
-      onPressed: isLoading ? null : onPressed,
-      backgroundColor:
-          backgroundColor ?? AppColors.surface, // White background by default
-      foregroundColor:
-          foregroundColor ?? AppColors.primary, // Teal text and icon by default
-      elevation: elevation ?? 0,
-      icon: _buildIcon(),
-      label: _buildLabel(),
+    final baseBackgroundColor =
+        backgroundColor ?? AppColors.surface; // White background by default
+    final baseForegroundColor =
+        foregroundColor ?? AppColors.primary; // Teal text and icon by default
+
+    if (!useGlassEffect) {
+      // Standard FAB without glass effect
+      return FloatingActionButton.extended(
+        onPressed: isLoading ? null : onPressed,
+        backgroundColor: baseBackgroundColor,
+        foregroundColor: baseForegroundColor,
+        elevation: elevation ?? 0,
+        icon: _buildIcon(),
+        label: _buildLabel(),
+      );
+    }
+
+    // Apply glass morphism effect with custom widget
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          decoration: BoxDecoration(
+            color: baseBackgroundColor.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: baseForegroundColor.withValues(
+                alpha: 0.4,
+              ),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(
+                  alpha: 0.05,
+                ),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: isLoading ? null : onPressed,
+              borderRadius: BorderRadius.circular(999),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildIcon(),
+                    const SizedBox(width: 8),
+                    _buildLabel(),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildIcon() {
+    final baseForegroundColor = foregroundColor ?? AppColors.primary;
+
     if (isLoading) {
-      return const SizedBox(
+      return SizedBox(
         width: 20,
         height: 20,
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(AppColors.onPrimary),
+          valueColor: AlwaysStoppedAnimation<Color>(baseForegroundColor),
         ),
       );
     }
 
-    return Icon(icon);
+    return Icon(icon, color: baseForegroundColor);
   }
 
   Widget _buildLabel() {

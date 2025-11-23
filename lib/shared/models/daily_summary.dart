@@ -33,6 +33,21 @@ class DailySummary extends TreatmentSummaryBase {
     required super.createdAt,
     super.updatedAt,
     this.fluidDailyGoalMl,
+    this.hadVomiting = false,
+    this.hadDiarrhea = false,
+    this.hadConstipation = false,
+    this.hadLethargy = false,
+    this.hadSuppressedAppetite = false,
+    this.hadInjectionSiteReaction = false,
+    this.vomitingMaxScore,
+    this.diarrheaMaxScore,
+    this.constipationMaxScore,
+    this.lethargyMaxScore,
+    this.suppressedAppetiteMaxScore,
+    this.injectionSiteReactionMaxScore,
+    this.symptomScoreTotal,
+    this.symptomScoreAverage,
+    this.hasSymptoms = false,
   });
 
   /// Factory constructor to create an empty daily summary
@@ -103,6 +118,23 @@ class DailySummary extends TreatmentSummaryBase {
           DateTime.now(),
       updatedAt: TreatmentSummaryBase.parseDateTimeNullable(json['updatedAt']),
       fluidDailyGoalMl: (json['fluidDailyGoalMl'] as num?)?.toInt(),
+      hadVomiting: asBool(json['hadVomiting']),
+      hadDiarrhea: asBool(json['hadDiarrhea']),
+      hadConstipation: asBool(json['hadConstipation']),
+      hadLethargy: asBool(json['hadLethargy']),
+      hadSuppressedAppetite: asBool(json['hadSuppressedAppetite']),
+      hadInjectionSiteReaction: asBool(json['hadInjectionSiteReaction']),
+      vomitingMaxScore: (json['vomitingMaxScore'] as num?)?.toInt(),
+      diarrheaMaxScore: (json['diarrheaMaxScore'] as num?)?.toInt(),
+      constipationMaxScore: (json['constipationMaxScore'] as num?)?.toInt(),
+      lethargyMaxScore: (json['lethargyMaxScore'] as num?)?.toInt(),
+      suppressedAppetiteMaxScore: (json['suppressedAppetiteMaxScore'] as num?)
+          ?.toInt(),
+      injectionSiteReactionMaxScore:
+          (json['injectionSiteReactionMaxScore'] as num?)?.toInt(),
+      symptomScoreTotal: (json['symptomScoreTotal'] as num?)?.toInt(),
+      symptomScoreAverage: (json['symptomScoreAverage'] as num?)?.toDouble(),
+      hasSymptoms: asBool(json['hasSymptoms']),
     );
   }
 
@@ -124,6 +156,53 @@ class DailySummary extends TreatmentSummaryBase {
   /// Stores the point-in-time daily fluid goal to ensure historical accuracy
   /// when schedules change. Nullable for backward compatibility with old data.
   final int? fluidDailyGoalMl;
+
+  // Symptom tracking fields
+
+  /// Whether vomiting was present (score > 0)
+  final bool hadVomiting;
+
+  /// Whether diarrhea was present (score > 0)
+  final bool hadDiarrhea;
+
+  /// Whether constipation was present (score > 0)
+  final bool hadConstipation;
+
+  /// Whether lethargy was present (score > 0)
+  final bool hadLethargy;
+
+  /// Whether suppressed appetite was present (score > 0)
+  final bool hadSuppressedAppetite;
+
+  /// Whether injection site reaction was present (score > 0)
+  final bool hadInjectionSiteReaction;
+
+  /// Maximum vomiting score for the day (0-10)
+  final int? vomitingMaxScore;
+
+  /// Maximum diarrhea score for the day (0-10)
+  final int? diarrheaMaxScore;
+
+  /// Maximum constipation score for the day (0-10)
+  final int? constipationMaxScore;
+
+  /// Maximum lethargy score for the day (0-10)
+  final int? lethargyMaxScore;
+
+  /// Maximum suppressed appetite score for the day (0-10)
+  final int? suppressedAppetiteMaxScore;
+
+  /// Maximum injection site reaction score for the day (0-10)
+  final int? injectionSiteReactionMaxScore;
+
+  /// Sum of all present symptom scores (0-60)
+  final int? symptomScoreTotal;
+
+  /// Average of present symptom scores (0-10)
+  final double? symptomScoreAverage;
+
+  /// Whether any symptom score > 0
+  final bool hasSymptoms;
 
   @override
   String get documentId => AppDateUtils.formatDateForSummary(date);
@@ -150,6 +229,25 @@ class DailySummary extends TreatmentSummaryBase {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'fluidDailyGoalMl': fluidDailyGoalMl,
+      'hadVomiting': hadVomiting,
+      'hadDiarrhea': hadDiarrhea,
+      'hadConstipation': hadConstipation,
+      'hadLethargy': hadLethargy,
+      'hadSuppressedAppetite': hadSuppressedAppetite,
+      'hadInjectionSiteReaction': hadInjectionSiteReaction,
+      if (vomitingMaxScore != null) 'vomitingMaxScore': vomitingMaxScore,
+      if (diarrheaMaxScore != null) 'diarrheaMaxScore': diarrheaMaxScore,
+      if (constipationMaxScore != null)
+        'constipationMaxScore': constipationMaxScore,
+      if (lethargyMaxScore != null) 'lethargyMaxScore': lethargyMaxScore,
+      if (suppressedAppetiteMaxScore != null)
+        'suppressedAppetiteMaxScore': suppressedAppetiteMaxScore,
+      if (injectionSiteReactionMaxScore != null)
+        'injectionSiteReactionMaxScore': injectionSiteReactionMaxScore,
+      if (symptomScoreTotal != null) 'symptomScoreTotal': symptomScoreTotal,
+      if (symptomScoreAverage != null)
+        'symptomScoreAverage': symptomScoreAverage,
+      'hasSymptoms': hasSymptoms,
     };
   }
 
@@ -192,6 +290,21 @@ class DailySummary extends TreatmentSummaryBase {
     DateTime? createdAt,
     Object? updatedAt = _undefined,
     Object? fluidDailyGoalMl = _undefined,
+    bool? hadVomiting,
+    bool? hadDiarrhea,
+    bool? hadConstipation,
+    bool? hadLethargy,
+    bool? hadSuppressedAppetite,
+    bool? hadInjectionSiteReaction,
+    Object? vomitingMaxScore = _undefined,
+    Object? diarrheaMaxScore = _undefined,
+    Object? constipationMaxScore = _undefined,
+    Object? lethargyMaxScore = _undefined,
+    Object? suppressedAppetiteMaxScore = _undefined,
+    Object? injectionSiteReactionMaxScore = _undefined,
+    Object? symptomScoreTotal = _undefined,
+    Object? symptomScoreAverage = _undefined,
+    bool? hasSymptoms,
   }) {
     return DailySummary(
       date: date ?? this.date,
@@ -208,12 +321,45 @@ class DailySummary extends TreatmentSummaryBase {
           fluidScheduledSessions ?? this.fluidScheduledSessions,
       overallTreatmentDone: overallTreatmentDone ?? this.overallTreatmentDone,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt == _undefined 
-          ? this.updatedAt 
+      updatedAt: updatedAt == _undefined
+          ? this.updatedAt
           : updatedAt as DateTime?,
-      fluidDailyGoalMl: fluidDailyGoalMl == _undefined 
-          ? this.fluidDailyGoalMl 
+      fluidDailyGoalMl: fluidDailyGoalMl == _undefined
+          ? this.fluidDailyGoalMl
           : fluidDailyGoalMl as int?,
+      hadVomiting: hadVomiting ?? this.hadVomiting,
+      hadDiarrhea: hadDiarrhea ?? this.hadDiarrhea,
+      hadConstipation: hadConstipation ?? this.hadConstipation,
+      hadLethargy: hadLethargy ?? this.hadLethargy,
+      hadSuppressedAppetite:
+          hadSuppressedAppetite ?? this.hadSuppressedAppetite,
+      hadInjectionSiteReaction:
+          hadInjectionSiteReaction ?? this.hadInjectionSiteReaction,
+      vomitingMaxScore: vomitingMaxScore == _undefined
+          ? this.vomitingMaxScore
+          : vomitingMaxScore as int?,
+      diarrheaMaxScore: diarrheaMaxScore == _undefined
+          ? this.diarrheaMaxScore
+          : diarrheaMaxScore as int?,
+      constipationMaxScore: constipationMaxScore == _undefined
+          ? this.constipationMaxScore
+          : constipationMaxScore as int?,
+      lethargyMaxScore: lethargyMaxScore == _undefined
+          ? this.lethargyMaxScore
+          : lethargyMaxScore as int?,
+      suppressedAppetiteMaxScore: suppressedAppetiteMaxScore == _undefined
+          ? this.suppressedAppetiteMaxScore
+          : suppressedAppetiteMaxScore as int?,
+      injectionSiteReactionMaxScore: injectionSiteReactionMaxScore == _undefined
+          ? this.injectionSiteReactionMaxScore
+          : injectionSiteReactionMaxScore as int?,
+      symptomScoreTotal: symptomScoreTotal == _undefined
+          ? this.symptomScoreTotal
+          : symptomScoreTotal as int?,
+      symptomScoreAverage: symptomScoreAverage == _undefined
+          ? this.symptomScoreAverage
+          : symptomScoreAverage as double?,
+      hasSymptoms: hasSymptoms ?? this.hasSymptoms,
     );
   }
 
@@ -225,6 +371,21 @@ class DailySummary extends TreatmentSummaryBase {
         other.date == date &&
         other.overallStreak == overallStreak &&
         other.fluidDailyGoalMl == fluidDailyGoalMl &&
+        other.hadVomiting == hadVomiting &&
+        other.hadDiarrhea == hadDiarrhea &&
+        other.hadConstipation == hadConstipation &&
+        other.hadLethargy == hadLethargy &&
+        other.hadSuppressedAppetite == hadSuppressedAppetite &&
+        other.hadInjectionSiteReaction == hadInjectionSiteReaction &&
+        other.vomitingMaxScore == vomitingMaxScore &&
+        other.diarrheaMaxScore == diarrheaMaxScore &&
+        other.constipationMaxScore == constipationMaxScore &&
+        other.lethargyMaxScore == lethargyMaxScore &&
+        other.suppressedAppetiteMaxScore == suppressedAppetiteMaxScore &&
+        other.injectionSiteReactionMaxScore == injectionSiteReactionMaxScore &&
+        other.symptomScoreTotal == symptomScoreTotal &&
+        other.symptomScoreAverage == symptomScoreAverage &&
+        other.hasSymptoms == hasSymptoms &&
         super == other;
   }
 
@@ -235,6 +396,21 @@ class DailySummary extends TreatmentSummaryBase {
       date,
       overallStreak,
       fluidDailyGoalMl,
+      hadVomiting,
+      hadDiarrhea,
+      hadConstipation,
+      hadLethargy,
+      hadSuppressedAppetite,
+      hadInjectionSiteReaction,
+      vomitingMaxScore,
+      diarrheaMaxScore,
+      constipationMaxScore,
+      lethargyMaxScore,
+      suppressedAppetiteMaxScore,
+      injectionSiteReactionMaxScore,
+      symptomScoreTotal,
+      symptomScoreAverage,
+      hasSymptoms,
     );
   }
 
@@ -252,7 +428,22 @@ class DailySummary extends TreatmentSummaryBase {
         'overallTreatmentDone: $overallTreatmentDone, '
         'createdAt: $createdAt, '
         'updatedAt: $updatedAt, '
-        'fluidDailyGoalMl: $fluidDailyGoalMl'
+        'fluidDailyGoalMl: $fluidDailyGoalMl, '
+        'hadVomiting: $hadVomiting, '
+        'hadDiarrhea: $hadDiarrhea, '
+        'hadConstipation: $hadConstipation, '
+        'hadLethargy: $hadLethargy, '
+        'hadSuppressedAppetite: $hadSuppressedAppetite, '
+        'hadInjectionSiteReaction: $hadInjectionSiteReaction, '
+        'vomitingMaxScore: $vomitingMaxScore, '
+        'diarrheaMaxScore: $diarrheaMaxScore, '
+        'constipationMaxScore: $constipationMaxScore, '
+        'lethargyMaxScore: $lethargyMaxScore, '
+        'suppressedAppetiteMaxScore: $suppressedAppetiteMaxScore, '
+        'injectionSiteReactionMaxScore: $injectionSiteReactionMaxScore, '
+        'symptomScoreTotal: $symptomScoreTotal, '
+        'symptomScoreAverage: $symptomScoreAverage, '
+        'hasSymptoms: $hasSymptoms'
         ')';
   }
 }

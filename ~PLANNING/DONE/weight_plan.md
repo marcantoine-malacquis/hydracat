@@ -8,6 +8,46 @@ Implement weight tracking for pets with optimal Firestore usage from day one, fo
 
 ---
 
+## Free vs Premium Analytics (Weight)
+
+### Free Features (Core Weight Tracking)
+
+**Core Tracking & Simple Insights (Free for All Users):**
+- ✅ Log, edit, and delete individual weight entries using the existing `healthParameters` + `WeightService` flow.
+- ✅ Week / Month / Year views with the current fl_chart implementation, using cost-optimized summaries and caching.
+- ✅ Weight stat card at the top of the screen showing **current weight + short-term change** (e.g. `5.70 kg ↑ +1.20`).
+- ✅ Recent entries list with edit/delete, including notes and basic pagination.
+- ✅ Basic “this month vs previous” feeling via the stat card and graph, without complex analytics wording.
+
+**Rationale**: Weight is a core CKD parameter (PRD “Health Parameter Monitoring – Free for All Users”). Basic tracking plus simple trends should not be paywalled; they are part of HydraCat’s promise of supporting anxious caregivers with neutral, clear tracking.
+
+### Premium Features (Advanced Weight Analytics)
+
+**Long-Range & Comparative Analytics (Premium):**
+- 🔒 Multi-year views and **extended history comparisons**, e.g. “Compare the last 12 months vs the previous 12 months”.
+- 🔒 **Before/after treatment change** comparisons (e.g., compare weight trajectory 3 months before vs 3 months after starting fluids, new diet, or medication).
+- 🔒 Highlighting **“critical periods”** such as the top 5 months with the steepest weight loss or gain.
+
+**Correlation Analytics (Across Treatments & Labs) – Premium:**
+- 🔒 Visual overlays or side‑by‑side charts showing **weight vs fluid adherence**, weight vs medication adherence, or weight vs key lab markers (e.g., creatinine/BUN).
+- 🔒 Neutral, data‑driven copy like “During months with higher fluid adherence, average weight tended to be more stable” (no medical interpretation, just pattern highlighting).
+
+**Advanced Drill‑Down & Filtering – Premium:**
+- 🔒 Filters like “show only periods where **weight loss > 10% over 3 months**” or “highlight weeks where weight dropped more than 0.3 kg”.
+- 🔒 Episode detection: identify and visually group **episodes of rapid weight change** (e.g., 3+ consecutive weeks of loss).
+
+**Vet‑Ready Reports & Exports – Premium:**
+- 🔒 **PDF or printable reports** summarizing the last 3–6 months of weight, with clean charts and key stats, suitable to email or bring to the vet.
+- 🔒 CSV/data export for data‑driven caregivers who want to perform their own analysis (with clear privacy messaging).
+
+**Customization & Alerts – Premium:**
+- 🔒 **Custom alert thresholds**, e.g. “Alert me if weight drops by more than 0.3 kg in 2 weeks” (front-end alerting, not medical advice).
+- 🔒 Saved views/presets (e.g. “Vet Visit Summary” that automatically selects a time window and metrics to show).
+
+**Implementation Note**: The current schema and monthly summaries (fields like `weightEntriesCount`, `weightAverage`, `weightChange`, `weightChangePercent`, `weightTrend`) already support most of these premium analytics without additional Firestore changes. V1 keeps everything above in the **Free** tier; premium analytics can later be layered on top with feature flags and UI gating.
+
+---
+
 ## Schema Design - OPTIMIZED DUAL APPROACH
 
 ### 1. Individual Weight Records (Existing Schema - Keep As-Is)

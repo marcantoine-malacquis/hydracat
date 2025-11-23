@@ -52,6 +52,15 @@ class MonthlySummary extends TreatmentSummaryBase {
     this.weightChange,
     this.weightChangePercent,
     this.weightTrend,
+    this.daysWithVomiting = 0,
+    this.daysWithDiarrhea = 0,
+    this.daysWithConstipation = 0,
+    this.daysWithLethargy = 0,
+    this.daysWithSuppressedAppetite = 0,
+    this.daysWithInjectionSiteReaction = 0,
+    this.symptomScoreTotal,
+    this.symptomScoreAverage,
+    this.symptomScoreMax,
   });
 
   /// Factory constructor to create an empty monthly summary
@@ -159,6 +168,18 @@ class MonthlySummary extends TreatmentSummaryBase {
       weightChange: (json['weightChange'] as num?)?.toDouble(),
       weightChangePercent: (json['weightChangePercent'] as num?)?.toDouble(),
       weightTrend: json['weightTrend'] as String?,
+      daysWithVomiting: (json['daysWithVomiting'] as num?)?.toInt() ?? 0,
+      daysWithDiarrhea: (json['daysWithDiarrhea'] as num?)?.toInt() ?? 0,
+      daysWithConstipation:
+          (json['daysWithConstipation'] as num?)?.toInt() ?? 0,
+      daysWithLethargy: (json['daysWithLethargy'] as num?)?.toInt() ?? 0,
+      daysWithSuppressedAppetite:
+          (json['daysWithSuppressedAppetite'] as num?)?.toInt() ?? 0,
+      daysWithInjectionSiteReaction:
+          (json['daysWithInjectionSiteReaction'] as num?)?.toInt() ?? 0,
+      symptomScoreTotal: (json['symptomScoreTotal'] as num?)?.toInt(),
+      symptomScoreAverage: (json['symptomScoreAverage'] as num?)?.toDouble(),
+      symptomScoreMax: (json['symptomScoreMax'] as num?)?.toInt(),
     );
   }
 
@@ -255,6 +276,36 @@ class MonthlySummary extends TreatmentSummaryBase {
   /// Trend indicator: "increasing", "stable", "decreasing"
   final String? weightTrend;
 
+  // Symptom tracking fields
+
+  /// Number of days with vomiting present (score > 0)
+  final int daysWithVomiting;
+
+  /// Number of days with diarrhea present (score > 0)
+  final int daysWithDiarrhea;
+
+  /// Number of days with constipation present (score > 0)
+  final int daysWithConstipation;
+
+  /// Number of days with lethargy present (score > 0)
+  final int daysWithLethargy;
+
+  /// Number of days with suppressed appetite present (score > 0)
+  final int daysWithSuppressedAppetite;
+
+  /// Number of days with injection site reaction present (score > 0)
+  final int daysWithInjectionSiteReaction;
+
+  /// Sum of daily symptomScoreTotal over the month (0-1860 for 31 days with
+  /// max 60 each)
+  final int? symptomScoreTotal;
+
+  /// Average daily symptom score across days with any symptoms (0-10)
+  final double? symptomScoreAverage;
+
+  /// Maximum daily symptomScoreTotal in the month (0-60)
+  final int? symptomScoreMax;
+
   @override
   String get documentId => AppDateUtils.formatMonthForSummary(startDate);
 
@@ -321,6 +372,16 @@ class MonthlySummary extends TreatmentSummaryBase {
       if (weightChangePercent != null)
         'weightChangePercent': weightChangePercent,
       if (weightTrend != null) 'weightTrend': weightTrend,
+      'daysWithVomiting': daysWithVomiting,
+      'daysWithDiarrhea': daysWithDiarrhea,
+      'daysWithConstipation': daysWithConstipation,
+      'daysWithLethargy': daysWithLethargy,
+      'daysWithSuppressedAppetite': daysWithSuppressedAppetite,
+      'daysWithInjectionSiteReaction': daysWithInjectionSiteReaction,
+      if (symptomScoreTotal != null) 'symptomScoreTotal': symptomScoreTotal,
+      if (symptomScoreAverage != null)
+        'symptomScoreAverage': symptomScoreAverage,
+      if (symptomScoreMax != null) 'symptomScoreMax': symptomScoreMax,
     };
   }
 
@@ -435,6 +496,15 @@ class MonthlySummary extends TreatmentSummaryBase {
     Object? weightChange = _undefined,
     Object? weightChangePercent = _undefined,
     Object? weightTrend = _undefined,
+    int? daysWithVomiting,
+    int? daysWithDiarrhea,
+    int? daysWithConstipation,
+    int? daysWithLethargy,
+    int? daysWithSuppressedAppetite,
+    int? daysWithInjectionSiteReaction,
+    Object? symptomScoreTotal = _undefined,
+    Object? symptomScoreAverage = _undefined,
+    Object? symptomScoreMax = _undefined,
   }) {
     return MonthlySummary(
       startDate: startDate ?? this.startDate,
@@ -465,34 +535,51 @@ class MonthlySummary extends TreatmentSummaryBase {
           fluidScheduledSessions ?? this.fluidScheduledSessions,
       overallTreatmentDone: overallTreatmentDone ?? this.overallTreatmentDone,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt == _undefined 
-          ? this.updatedAt 
+      updatedAt: updatedAt == _undefined
+          ? this.updatedAt
           : updatedAt as DateTime?,
       weightEntriesCount: weightEntriesCount ?? this.weightEntriesCount,
-      weightLatest: weightLatest == _undefined 
-          ? this.weightLatest 
+      weightLatest: weightLatest == _undefined
+          ? this.weightLatest
           : weightLatest as double?,
-      weightLatestDate: weightLatestDate == _undefined 
-          ? this.weightLatestDate 
+      weightLatestDate: weightLatestDate == _undefined
+          ? this.weightLatestDate
           : weightLatestDate as DateTime?,
-      weightFirst: weightFirst == _undefined 
-          ? this.weightFirst 
+      weightFirst: weightFirst == _undefined
+          ? this.weightFirst
           : weightFirst as double?,
-      weightFirstDate: weightFirstDate == _undefined 
-          ? this.weightFirstDate 
+      weightFirstDate: weightFirstDate == _undefined
+          ? this.weightFirstDate
           : weightFirstDate as DateTime?,
-      weightAverage: weightAverage == _undefined 
-          ? this.weightAverage 
+      weightAverage: weightAverage == _undefined
+          ? this.weightAverage
           : weightAverage as double?,
-      weightChange: weightChange == _undefined 
-          ? this.weightChange 
+      weightChange: weightChange == _undefined
+          ? this.weightChange
           : weightChange as double?,
-      weightChangePercent: weightChangePercent == _undefined 
-          ? this.weightChangePercent 
+      weightChangePercent: weightChangePercent == _undefined
+          ? this.weightChangePercent
           : weightChangePercent as double?,
-      weightTrend: weightTrend == _undefined 
-          ? this.weightTrend 
+      weightTrend: weightTrend == _undefined
+          ? this.weightTrend
           : weightTrend as String?,
+      daysWithVomiting: daysWithVomiting ?? this.daysWithVomiting,
+      daysWithDiarrhea: daysWithDiarrhea ?? this.daysWithDiarrhea,
+      daysWithConstipation: daysWithConstipation ?? this.daysWithConstipation,
+      daysWithLethargy: daysWithLethargy ?? this.daysWithLethargy,
+      daysWithSuppressedAppetite:
+          daysWithSuppressedAppetite ?? this.daysWithSuppressedAppetite,
+      daysWithInjectionSiteReaction:
+          daysWithInjectionSiteReaction ?? this.daysWithInjectionSiteReaction,
+      symptomScoreTotal: symptomScoreTotal == _undefined
+          ? this.symptomScoreTotal
+          : symptomScoreTotal as int?,
+      symptomScoreAverage: symptomScoreAverage == _undefined
+          ? this.symptomScoreAverage
+          : symptomScoreAverage as double?,
+      symptomScoreMax: symptomScoreMax == _undefined
+          ? this.symptomScoreMax
+          : symptomScoreMax as int?,
     );
   }
 
@@ -523,6 +610,15 @@ class MonthlySummary extends TreatmentSummaryBase {
         other.weightChange == weightChange &&
         other.weightChangePercent == weightChangePercent &&
         other.weightTrend == weightTrend &&
+        other.daysWithVomiting == daysWithVomiting &&
+        other.daysWithDiarrhea == daysWithDiarrhea &&
+        other.daysWithConstipation == daysWithConstipation &&
+        other.daysWithLethargy == daysWithLethargy &&
+        other.daysWithSuppressedAppetite == daysWithSuppressedAppetite &&
+        other.daysWithInjectionSiteReaction == daysWithInjectionSiteReaction &&
+        other.symptomScoreTotal == symptomScoreTotal &&
+        other.symptomScoreAverage == symptomScoreAverage &&
+        other.symptomScoreMax == symptomScoreMax &&
         super == other;
   }
 
@@ -552,6 +648,15 @@ class MonthlySummary extends TreatmentSummaryBase {
       weightChange,
       weightChangePercent,
       weightTrend,
+      daysWithVomiting,
+      daysWithDiarrhea,
+      daysWithConstipation,
+      daysWithLethargy,
+      daysWithSuppressedAppetite,
+      daysWithInjectionSiteReaction,
+      symptomScoreTotal,
+      symptomScoreAverage,
+      symptomScoreMax,
     ]);
   }
 
@@ -588,7 +693,16 @@ class MonthlySummary extends TreatmentSummaryBase {
         'weightAverage: $weightAverage, '
         'weightChange: $weightChange, '
         'weightChangePercent: $weightChangePercent, '
-        'weightTrend: $weightTrend'
+        'weightTrend: $weightTrend, '
+        'daysWithVomiting: $daysWithVomiting, '
+        'daysWithDiarrhea: $daysWithDiarrhea, '
+        'daysWithConstipation: $daysWithConstipation, '
+        'daysWithLethargy: $daysWithLethargy, '
+        'daysWithSuppressedAppetite: $daysWithSuppressedAppetite, '
+        'daysWithInjectionSiteReaction: $daysWithInjectionSiteReaction, '
+        'symptomScoreTotal: $symptomScoreTotal, '
+        'symptomScoreAverage: $symptomScoreAverage, '
+        'symptomScoreMax: $symptomScoreMax'
         ')';
   }
 }
