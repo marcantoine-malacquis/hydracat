@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -144,7 +146,7 @@ class HydraRefreshIndicator extends StatelessWidget {
     return () async {
       // Trigger haptic feedback when refresh starts
       if (enableHaptics) {
-        HapticFeedback.mediumImpact();
+        unawaited(HapticFeedback.mediumImpact());
       }
 
       // Record start time
@@ -170,9 +172,10 @@ class HydraRefreshIndicator extends StatelessWidget {
     final appBarHeight = appBarTheme.toolbarHeight ?? kToolbarHeight;
     final statusBarHeight = MediaQuery.of(context).padding.top;
     final totalTopHeight = appBarHeight + statusBarHeight;
-    
+
     // Position the indicator in the middle of the free space below the app bar
-    // The displacement should account for the app bar + status bar + some padding
+    // The displacement should account for the app bar + status bar +
+    // some padding
     // to ensure it's clearly visible in the "refresh free space"
     final calculatedDisplacement = totalTopHeight + displacement;
 
@@ -200,46 +203,45 @@ class HydraRefreshIndicator extends StatelessWidget {
 
     return CupertinoSliverRefreshControl(
       onRefresh: _wrapOnRefreshWithMinDuration(),
-      builder: (
-        BuildContext context,
-        RefreshIndicatorMode mode,
-        double pulledExtent,
-        double refreshTriggerPullDistance,
-        double refreshIndicatorExtent,
-      ) {
-        // Trigger haptic feedback when transitioning to armed state
-        // (user has pulled far enough to trigger refresh)
-        if (enableHaptics &&
-            mode == RefreshIndicatorMode.armed &&
-            previousMode != RefreshIndicatorMode.armed) {
-          HapticFeedback.mediumImpact();
-        }
+      builder:
+          (
+            BuildContext context,
+            RefreshIndicatorMode mode,
+            double pulledExtent,
+            double refreshTriggerPullDistance,
+            double refreshIndicatorExtent,
+          ) {
+            // Trigger haptic feedback when transitioning to armed state
+            // (user has pulled far enough to trigger refresh)
+            if (enableHaptics &&
+                mode == RefreshIndicatorMode.armed &&
+                previousMode != RefreshIndicatorMode.armed) {
+              HapticFeedback.mediumImpact();
+            }
 
-        previousMode = mode;
+            previousMode = mode;
 
-        // Clamp the extent to avoid negative/overshoot values.
-        final extent = pulledExtent
-            .clamp(0.0, refreshIndicatorExtent)
-            .toDouble();
+            // Clamp the extent to avoid negative/overshoot values.
+            final extent = pulledExtent.clamp(0.0, refreshIndicatorExtent);
 
-        // Only show the spinner while actively refreshing / armed.
-        // We intentionally *don't* show it in drag/other states to avoid
-        // brief re-appearances during the bounce-back animation after a
-        // completed refresh.
-        final bool showSpinner =
-            mode == RefreshIndicatorMode.armed ||
-            mode == RefreshIndicatorMode.refresh;
+            // Only show the spinner while actively refreshing / armed.
+            // We intentionally *don't* show it in drag/other states to avoid
+            // brief re-appearances during the bounce-back animation after a
+            // completed refresh.
+            final showSpinner =
+                mode == RefreshIndicatorMode.armed ||
+                mode == RefreshIndicatorMode.refresh;
 
-        return SizedBox(
-          height: extent,
-          width: double.infinity,
-          child: Center(
-            child: showSpinner
-                ? const CupertinoActivityIndicator()
-                : const SizedBox.shrink(),
-          ),
-        );
-      },
+            return SizedBox(
+              height: extent,
+              width: double.infinity,
+              child: Center(
+                child: showSpinner
+                    ? const CupertinoActivityIndicator()
+                    : const SizedBox.shrink(),
+              ),
+            );
+          },
     );
   }
 

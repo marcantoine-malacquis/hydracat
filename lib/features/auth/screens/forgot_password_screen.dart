@@ -73,8 +73,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Reset Password'),
+      appBar: const HydraAppBar(
+        title: Text('Reset Password'),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
       ),

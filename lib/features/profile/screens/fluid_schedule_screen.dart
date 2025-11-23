@@ -204,7 +204,7 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
       child: DevBanner(
         child: Scaffold(
           backgroundColor: AppColors.background,
-          appBar: AppBar(
+          appBar: HydraAppBar(
             title: Text("$petName's Fluid Schedule"),
             backgroundColor: Theme.of(context).colorScheme.inversePrimary,
             leading: IconButton(

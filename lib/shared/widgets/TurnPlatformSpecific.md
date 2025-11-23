@@ -217,6 +217,36 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
     - Material: `RefreshIndicator` with full API support (`onRefresh`, `color`, `backgroundColor`, `displacement`, `edgeOffset`, `strokeWidth`, `triggerMode`)
     - Cupertino: `CupertinoSliverRefreshControl` within `CustomScrollView`; automatically handles conversion of `SingleChildScrollView` and other scrollables to `CustomScrollView` with slivers. Material-specific options like `color`, `backgroundColor`, `displacement`, `edgeOffset`, `strokeWidth`, and `triggerMode` are ignored on iOS/macOS.
 
+- **`HydraAppBar`** (`lib/shared/widgets/navigation/hydra_app_bar.dart`) - ✅ Done
+  - Wraps `AppBar` (Material) / `CupertinoNavigationBar` (iOS/macOS)
+  - Platform-adaptive app bar with support for title, actions, leading, and styling
+  - **Material**: `AppBar` widget with full Material API support
+  - **Cupertino**: `CupertinoNavigationBar` widget with mapped properties
+  - **Used in**: 
+    - `home_screen.dart` (migrated)
+    - `profile_screen.dart` (migrated)
+    - `progress_screen.dart` (migrated)
+    - `medication_schedule_screen.dart` (migrated)
+    - `fluid_schedule_screen.dart` (migrated)
+    - `ckd_profile_screen.dart` (migrated)
+    - `weight_screen.dart` (migrated)
+    - `symptoms_screen.dart` (migrated)
+    - `settings_screen.dart` (migrated)
+    - `notification_settings_screen.dart` (migrated)
+    - `login_screen.dart` (migrated)
+    - `register_screen.dart` (migrated)
+    - `forgot_password_screen.dart` (migrated)
+    - `email_verification_screen.dart` (migrated)
+    - `create_fluid_schedule_screen.dart` (migrated)
+    - `onboarding_screen_wrapper.dart` (migrated)
+    - `learn_screen.dart` (migrated)
+    - `schedule_screen.dart` (migrated)
+    - `injection_sites_analytics_screen.dart` (migrated)
+    - `component_demo_screen.dart` (migrated)
+  - **API Differences**: 
+    - Material: Full `AppBar` API with `title`, `actions`, `leading`, `backgroundColor`, `foregroundColor`, `elevation`, `centerTitle`, `automaticallyImplyLeading`, `toolbarHeight`
+    - Cupertino: `title` maps to `middle`, `actions` maps to `trailing` (wrapped in `Row` if multiple), `leading` maps directly. `backgroundColor` is applied where supported. `elevation` is ignored (Cupertino doesn't use elevation). `foregroundColor` affects text color. `centerTitle` controls title alignment. `automaticallyImplyLeading` is ignored (Cupertino doesn't auto-show back button). Transparent `backgroundColor` removes the border for a cleaner look.
+
 ---
 
 ## 🔴 High Priority (Frequently Used, High Visual Impact)
@@ -253,15 +283,6 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
   - Used throughout the app (AppBar leading buttons, etc.)
 - **Priority**: Low - Often wrapped in custom widgets, less critical
 
-### 17. **AppBar** → `HydraAppBar`
-- **Material**: `AppBar` widget
-- **Cupertino**: `CupertinoNavigationBar` widget
-- **Current Usage**: 
-  - Used in most screens via `AppBar`
-- **API Differences**: 
-  - Material: `AppBar` with `title`, `actions`, `leading`, `backgroundColor`, etc.
-  - Cupertino: `CupertinoNavigationBar` with `middle`, `leading`, `trailing`, different styling
-- **Priority**: Low - High visual impact but would require significant refactoring
 
 ### 18. **Scaffold** → `HydraScaffold`
 - **Material**: `Scaffold` widget

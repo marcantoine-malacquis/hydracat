@@ -109,7 +109,7 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
+      appBar: HydraAppBar(
         title: const Text('Weight'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         leading: IconButton(

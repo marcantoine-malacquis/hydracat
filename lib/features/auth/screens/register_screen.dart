@@ -7,7 +7,7 @@ import 'package:hydracat/features/auth/mixins/auth_loading_state_mixin.dart';
 import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/features/auth/widgets/social_signin_buttons.dart';
 import 'package:hydracat/providers/auth_provider.dart';
-import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A screen that handles user registration and account creation.
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -58,8 +58,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Account'),
+      appBar: const HydraAppBar(
+        title: Text('Create Account'),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
       ),

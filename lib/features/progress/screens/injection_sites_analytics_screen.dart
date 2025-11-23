@@ -6,6 +6,7 @@ import 'package:hydracat/features/progress/providers/injection_sites_provider.da
 import 'package:hydracat/features/progress/widgets/injection_sites_donut_chart.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Screen displaying injection site analytics with donut chart
 ///
@@ -33,7 +34,7 @@ class InjectionSitesAnalyticsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
+      appBar: HydraAppBar(
         title: Text(l10n.injectionSitesAnalyticsTitle),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),

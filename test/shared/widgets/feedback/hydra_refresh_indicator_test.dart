@@ -174,7 +174,8 @@ void main() {
         final elapsed = DateTime.now().difference(startTime);
 
         expect(refreshCalled, isTrue);
-        // Verify that minimum duration was enforced (allowing some margin for test execution)
+        // Verify that minimum duration was enforced (allowing some
+        // margin for test execution)
         expect(elapsed.inMilliseconds, greaterThanOrEqualTo(90));
       },
     );
@@ -291,7 +292,6 @@ void main() {
                   await Future<void>.delayed(const Duration(milliseconds: 50));
                 },
                 minRefreshDuration: const Duration(milliseconds: 200),
-                enableHaptics: true,
                 child: const SingleChildScrollView(
                   child: SizedBox(height: 1000, child: Text('Content')),
                 ),
@@ -353,7 +353,8 @@ void main() {
         final elapsed = DateTime.now().difference(startTime);
 
         expect(refreshCalled, isTrue);
-        // Verify that minimum duration was enforced (allowing some margin for test execution)
+        // Verify that minimum duration was enforced (allowing some margin
+        // for test execution)
         expect(elapsed.inMilliseconds, greaterThanOrEqualTo(90));
       },
     );
@@ -388,12 +389,13 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        // Find the CupertinoSliverRefreshControl from the CustomScrollView slivers
+        // Find the CupertinoSliverRefreshControl from the CustomScrollView
+        // slivers
         final customScrollView = tester.widget<CustomScrollView>(
           find.byType(CustomScrollView),
         );
-        final refreshControl = customScrollView.slivers.first
-            as CupertinoSliverRefreshControl;
+        final refreshControl =
+            customScrollView.slivers.first as CupertinoSliverRefreshControl;
 
         // Simulate pull-to-refresh by calling onRefresh directly
         // The wrapped callback should enforce minimum duration
@@ -402,7 +404,8 @@ void main() {
         final elapsed = DateTime.now().difference(startTime);
 
         expect(refreshCalled, isTrue);
-        // Verify that minimum duration was enforced (allowing some margin for test execution)
+        // Verify that minimum duration was enforced (allowing some margin
+        // for test execution)
         expect(elapsed.inMilliseconds, greaterThanOrEqualTo(90));
       },
     );

@@ -117,8 +117,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       ..watch(authIsLoadingProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Login'),
+      appBar: const HydraAppBar(
+        title: Text('Login'),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
       ),

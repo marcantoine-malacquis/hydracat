@@ -264,7 +264,7 @@ class _MedicationScheduleScreenState
     return DevBanner(
       child: Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
+        appBar: HydraAppBar(
           title: Text("$petName's Medication Schedule"),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           leading: IconButton(

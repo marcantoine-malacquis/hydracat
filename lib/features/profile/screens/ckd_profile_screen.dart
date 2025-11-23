@@ -184,7 +184,7 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
       child: DevBanner(
         child: Scaffold(
           backgroundColor: AppColors.background,
-          appBar: AppBar(
+          appBar: HydraAppBar(
             title: Text("$petName's CKD Profile"),
             backgroundColor: Theme.of(context).colorScheme.inversePrimary,
             leading: IconButton(

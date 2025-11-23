@@ -60,7 +60,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
+      appBar: HydraAppBar(
         title: const Text('Progress & Analytics'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: hasCompletedOnboarding

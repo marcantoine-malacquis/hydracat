@@ -18,8 +18,8 @@ class _ComponentDemoScreenState extends State<ComponentDemoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('HydraCat Components'),
+      appBar: const HydraAppBar(
+        title: Text('HydraCat Components'),
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
       ),

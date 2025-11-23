@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/health/widgets/symptoms_entry_dialog.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
-import 'package:hydracat/shared/widgets/buttons/hydra_fab.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Screen for viewing and managing symptom tracking
 ///
@@ -74,7 +74,7 @@ class _SymptomsScreenState extends ConsumerState<SymptomsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
+      appBar: HydraAppBar(
         title: const Text('Symptoms'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         leading: IconButton(

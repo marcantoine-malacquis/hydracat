@@ -46,7 +46,7 @@ class _NotificationSettingsScreenState
     if (currentUser == null) {
       return Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
+        appBar: HydraAppBar(
           title: Text(l10n.notificationSettingsTitle),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           leading: IconButton(
@@ -71,7 +71,7 @@ class _NotificationSettingsScreenState
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
+      appBar: HydraAppBar(
         title: Text(l10n.notificationSettingsTitle),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         leading: IconButton(

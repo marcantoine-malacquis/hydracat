@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A screen that displays resources and tips for users.
 class ResourcesScreen extends StatelessWidget {
@@ -10,7 +11,7 @@ class ResourcesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
+      appBar: HydraAppBar(
         title: const Text('Learn'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),

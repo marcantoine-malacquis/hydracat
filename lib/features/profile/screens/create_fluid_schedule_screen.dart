@@ -69,7 +69,7 @@ class _CreateFluidScheduleScreenState
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
+      appBar: HydraAppBar(
         title: const Text('Fluid Therapy Setup'),
         leading: IconButton(
           icon: const Icon(Icons.close),

@@ -9,7 +9,7 @@ import 'package:hydracat/features/onboarding/widgets/onboarding_progress_indicat
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/onboarding_provider.dart';
 import 'package:hydracat/shared/widgets/accessibility/touch_target_icon_button.dart';
-import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A wrapper widget that provides consistent layout and navigation for
 /// onboarding screens with automatic analytics tracking.
@@ -206,7 +206,7 @@ class _OnboardingScreenWrapperState
       return null;
     }
 
-    return AppBar(
+    return HydraAppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
       automaticallyImplyLeading: false,

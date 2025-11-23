@@ -240,8 +240,8 @@ class _EmailVerificationScreenState
       ..watch(authProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Verify Your Email'),
+      appBar: const HydraAppBar(
+        title: Text('Verify Your Email'),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
         automaticallyImplyLeading: false,

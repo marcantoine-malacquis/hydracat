@@ -28,7 +28,7 @@ class HomeScreen extends ConsumerWidget {
     return DevBanner(
       child: Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
+        appBar: HydraAppBar(
           title: const Text('HydraCat'),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           actions: const [
