@@ -713,7 +713,7 @@ class _NotificationSettingsScreenState
     if (!context.mounted) return;
 
     // Show privacy details bottom sheet
-    await showModalBottomSheet<void>(
+    await showHydraBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

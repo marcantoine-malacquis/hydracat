@@ -63,19 +63,22 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
     - Material: `Dialog` with `shape`, `backgroundColor`, `insetPadding`, `clipBehavior`, `elevation`
     - Cupertino: `CupertinoPopupSurface` with `insetPadding` support; `shape`, `backgroundColor`, `elevation`, `clipBehavior` are ignored
 
+- **`HydraBottomSheet`** (`lib/shared/widgets/bottom_sheets/hydra_bottom_sheet.dart`) - ✅ Done
+  - Wraps `showModalBottomSheet()` (Material) / `showCupertinoModalPopup()` (iOS)
+  - Includes `showHydraBottomSheet()` helper function
+  - **Material**: `showModalBottomSheet()` function with Material bottom sheet styling
+  - **Cupertino**: `showCupertinoModalPopup()` with Cupertino-style bottom sheet
+  - **Used in**: 
+    - `notification_settings_screen.dart` (migrated to use `showHydraBottomSheet`)
+    - `permission_preprompt.dart` (migrated to use `showHydraBottomSheet`)
+    - `debug_panel.dart` (migrated to use `showHydraBottomSheet`)
+  - **API Differences**: 
+    - Material: `showModalBottomSheet()` with full Material API support (`isScrollControlled`, `enableDrag`, `shape`, etc.)
+    - Cupertino: `showCupertinoModalPopup()` with simplified API; Material-specific options are gracefully ignored
+
 ---
 
 ## 🔴 High Priority (Frequently Used, High Visual Impact)
-
-### 3. **Bottom Sheet** → `HydraBottomSheet`
-- **Material**: `showModalBottomSheet()` / `showBottomSheet()`
-- **Cupertino**: `showCupertinoModalPopup()` with `CupertinoActionSheet`
-- **Current Usage**: 
-  - `privacy_details_bottom_sheet.dart` (1 instance)
-- **API Differences**: 
-  - Material: `showModalBottomSheet()` function with `BottomSheet` widget
-  - Cupertino: `showCupertinoModalPopup()` with `CupertinoActionSheet` widget
-- **Priority**: High - Used for action sheets and detail views
 
 ---
 

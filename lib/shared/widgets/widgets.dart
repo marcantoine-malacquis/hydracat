@@ -2,6 +2,7 @@
 library;
 
 export 'accessibility/accessibility.dart';
+export 'bottom_sheets/bottom_sheets.dart';
 export 'buttons/buttons.dart';
 export 'cards/cards.dart';
 export 'dialogs/dialogs.dart';

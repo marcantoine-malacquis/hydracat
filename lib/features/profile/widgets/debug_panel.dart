@@ -1085,7 +1085,7 @@ class DebugPanel extends ConsumerWidget {
     // ignore: avoid_dynamic_calls
     List<dynamic> pendingNotifications,
   ) async {
-    await showModalBottomSheet<void>(
+    await showHydraBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -1096,81 +1096,90 @@ class DebugPanel extends ConsumerWidget {
         minChildSize: 0.5,
         maxChildSize: 0.95,
         expand: false,
-        builder: (context, scrollController) => Column(
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
+        builder: (context, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(16),
+            ),
+          ),
+          child: Column(
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.list_alt, color: Colors.blue.shade700),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        'Pending Notifications '
+                        '(${pendingNotifications.length})',
+                        style: AppTextStyles.body.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                      color: Colors.blue.shade700,
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                children: [
-                  Icon(Icons.list_alt, color: Colors.blue.shade700),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      'Pending Notifications (${pendingNotifications.length})',
-                      style: AppTextStyles.body.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade700,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                    color: Colors.blue.shade700,
-                  ),
-                ],
-              ),
-            ),
 
-            // Content
-            Expanded(
-              child: pendingNotifications.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.notifications_off,
-                            size: 64,
-                            color: Colors.grey.shade400,
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          Text(
-                            'No Pending Notifications',
-                            style: AppTextStyles.body.copyWith(
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.w500,
+              // Content
+              Expanded(
+                child: pendingNotifications.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.notifications_off,
+                              size: 64,
+                              color: Colors.grey.shade400,
                             ),
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            'All notifications have been delivered',
-                            style: AppTextStyles.caption.copyWith(
-                              color: Colors.grey.shade500,
+                            const SizedBox(height: AppSpacing.md),
+                            Text(
+                              'No Pending Notifications',
+                              style: AppTextStyles.body.copyWith(
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              'All notifications have been delivered',
+                              style: AppTextStyles.caption.copyWith(
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: scrollController,
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        itemCount: pendingNotifications.length,
+                        itemBuilder: (context, index) {
+                          return _buildNotificationListItem(
+                            pendingNotifications[index],
+                          );
+                        },
                       ),
-                    )
-                  : ListView.builder(
-                      controller: scrollController,
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      itemCount: pendingNotifications.length,
-                      itemBuilder: (context, index) {
-                        return _buildNotificationListItem(
-                          pendingNotifications[index],
-                        );
-                      },
-                    ),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -18,7 +18,7 @@ import 'package:markdown_widget/markdown_widget.dart';
 ///
 /// Example usage:
 /// ```dart
-/// showModalBottomSheet(
+/// showHydraBottomSheet(
 ///   context: context,
 ///   builder: (context) => const PrivacyDetailsBottomSheet(),
 /// );
