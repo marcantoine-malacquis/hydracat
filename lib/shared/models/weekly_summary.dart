@@ -45,6 +45,7 @@ class WeeklySummary extends TreatmentSummaryBase {
     this.daysWithLethargy = 0,
     this.daysWithSuppressedAppetite = 0,
     this.daysWithInjectionSiteReaction = 0,
+    this.daysWithAnySymptoms = 0,
     this.symptomScoreTotal,
     this.symptomScoreAverage,
     this.symptomScoreMax,
@@ -136,6 +137,7 @@ class WeeklySummary extends TreatmentSummaryBase {
           (json['daysWithSuppressedAppetite'] as num?)?.toInt() ?? 0,
       daysWithInjectionSiteReaction:
           (json['daysWithInjectionSiteReaction'] as num?)?.toInt() ?? 0,
+      daysWithAnySymptoms: (json['daysWithAnySymptoms'] as num?)?.toInt() ?? 0,
       symptomScoreTotal: (json['symptomScoreTotal'] as num?)?.toInt(),
       symptomScoreAverage: (json['symptomScoreAverage'] as num?)?.toDouble(),
       symptomScoreMax: (json['symptomScoreMax'] as num?)?.toInt(),
@@ -207,6 +209,9 @@ class WeeklySummary extends TreatmentSummaryBase {
   /// Number of days with injection site reaction present (score > 0)
   final int daysWithInjectionSiteReaction;
 
+  /// Number of days with any symptoms present (hasSymptoms == true)
+  final int daysWithAnySymptoms;
+
   /// Sum of daily symptomScoreTotal over the week
   /// (0-420 for 7 days with max 60 each)
   final int? symptomScoreTotal;
@@ -268,6 +273,7 @@ class WeeklySummary extends TreatmentSummaryBase {
       'daysWithLethargy': daysWithLethargy,
       'daysWithSuppressedAppetite': daysWithSuppressedAppetite,
       'daysWithInjectionSiteReaction': daysWithInjectionSiteReaction,
+      'daysWithAnySymptoms': daysWithAnySymptoms,
       if (symptomScoreTotal != null) 'symptomScoreTotal': symptomScoreTotal,
       if (symptomScoreAverage != null)
         'symptomScoreAverage': symptomScoreAverage,
@@ -349,6 +355,7 @@ class WeeklySummary extends TreatmentSummaryBase {
     int? daysWithLethargy,
     int? daysWithSuppressedAppetite,
     int? daysWithInjectionSiteReaction,
+    int? daysWithAnySymptoms,
     Object? symptomScoreTotal = _undefined,
     Object? symptomScoreAverage = _undefined,
     Object? symptomScoreMax = _undefined,
@@ -390,6 +397,7 @@ class WeeklySummary extends TreatmentSummaryBase {
           daysWithSuppressedAppetite ?? this.daysWithSuppressedAppetite,
       daysWithInjectionSiteReaction:
           daysWithInjectionSiteReaction ?? this.daysWithInjectionSiteReaction,
+      daysWithAnySymptoms: daysWithAnySymptoms ?? this.daysWithAnySymptoms,
       symptomScoreTotal: symptomScoreTotal == _undefined
           ? this.symptomScoreTotal
           : symptomScoreTotal as int?,
@@ -421,6 +429,7 @@ class WeeklySummary extends TreatmentSummaryBase {
         other.daysWithLethargy == daysWithLethargy &&
         other.daysWithSuppressedAppetite == daysWithSuppressedAppetite &&
         other.daysWithInjectionSiteReaction == daysWithInjectionSiteReaction &&
+        other.daysWithAnySymptoms == daysWithAnySymptoms &&
         other.symptomScoreTotal == symptomScoreTotal &&
         other.symptomScoreAverage == symptomScoreAverage &&
         other.symptomScoreMax == symptomScoreMax &&
@@ -445,6 +454,7 @@ class WeeklySummary extends TreatmentSummaryBase {
       daysWithLethargy,
       daysWithSuppressedAppetite,
       daysWithInjectionSiteReaction,
+      daysWithAnySymptoms,
       symptomScoreTotal,
       symptomScoreAverage,
       symptomScoreMax,
@@ -477,6 +487,7 @@ class WeeklySummary extends TreatmentSummaryBase {
         'daysWithLethargy: $daysWithLethargy, '
         'daysWithSuppressedAppetite: $daysWithSuppressedAppetite, '
         'daysWithInjectionSiteReaction: $daysWithInjectionSiteReaction, '
+        'daysWithAnySymptoms: $daysWithAnySymptoms, '
         'symptomScoreTotal: $symptomScoreTotal, '
         'symptomScoreAverage: $symptomScoreAverage, '
         'symptomScoreMax: $symptomScoreMax'

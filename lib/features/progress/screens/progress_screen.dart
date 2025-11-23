@@ -85,7 +85,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   ..invalidate(weekSummariesProvider)
                   ..invalidate(weekStatusProvider)
                   // Invalidate injection sites data
-                  ..invalidate(injectionSitesStatsProvider);
+                  ..invalidate(injectionSitesStatsProvider)
+                  // Invalidate symptoms summary
+                  ..invalidate(currentMonthSymptomsSummaryProvider);
 
                 // Brief delay to allow providers to rebuild
                 await Future<void>.delayed(
@@ -145,6 +147,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                             margin: EdgeInsets.zero,
                           ),
 
+                          const SizedBox(height: 12),
+
+                          // Symptoms tracking card
+                          const _SymptomsCard(),
+
                           // Future insights cards will be added here
                         ],
                       ),
@@ -158,6 +165,43 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           : OnboardingEmptyStates.progress(
               onGetStarted: () => context.go('/onboarding/welcome'),
             ),
+    );
+  }
+}
+
+/// Symptoms tracking card widget
+///
+/// Displays a NavigationCard for symptoms tracking with metadata showing
+/// the number of days with symptoms this month.
+class _SymptomsCard extends ConsumerWidget {
+  const _SymptomsCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final monthlySummaryAsync = ref.watch(currentMonthSymptomsSummaryProvider);
+
+    final metadata = monthlySummaryAsync.maybeWhen(
+      data: (summary) {
+        if (summary == null) {
+          return 'No symptoms logged yet this month';
+        }
+        final days = summary.daysWithAnySymptoms;
+        if (days == 0) {
+          return 'No symptoms logged yet this month';
+        }
+        return 'This month: $days ${days == 1 ? 'day' : 'days'} with symptoms';
+      },
+      loading: () => 'Loading symptom data…',
+      error: (_, _) => 'No symptoms logged yet this month',
+      orElse: () => 'No symptoms logged yet this month',
+    );
+
+    return NavigationCard(
+      title: 'Symptoms',
+      metadata: metadata,
+      icon: Icons.medical_services,
+      onTap: () => context.push('/progress/symptoms'),
+      margin: EdgeInsets.zero,
     );
   }
 }

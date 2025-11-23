@@ -231,10 +231,13 @@ Add daily CKD symptom tracking (0–10 sliders per symptom) plus monthly trends,
     - ✅ `symptomScoreTotal: number` – sum of daily `symptomScoreTotal` over the period (nullable)
     - ✅ `symptomScoreAverage: number` – average daily score across days with any symptoms (nullable)
     - ✅ `symptomScoreMax: number` – max daily `symptomScoreTotal` in the period (nullable)
+  - Overall symptom day count:
+    - ✅ `daysWithAnySymptoms: number` – count of days where `hasSymptoms == true` (added in Step 4.3, defaults to 0)
     - ⏸️ Counts by overall status (`daysGoodSymptoms`, `daysOkaySymptoms`, `daysConcerningSymptoms`) – **DEFERRED** (may be added later)
 
 **Model changes – `WeeklySummary`** (✅ Implemented):
   - ✅ Added all 6 symptom day count fields with default value `0`
+  - ✅ Added `daysWithAnySymptoms` field with default value `0` (added in Step 4.3)
   - ✅ Added 3 aggregate score fields (`symptomScoreTotal`, `symptomScoreAverage`, `symptomScoreMax`) as nullable
   - ✅ Updated constructor to accept all new fields with appropriate defaults
   - ✅ Updated `empty()` factory (fields use constructor defaults)
@@ -246,6 +249,7 @@ Add daily CKD symptom tracking (0–10 sliders per symptom) plus monthly trends,
 
 **Model changes – `MonthlySummary`** (✅ Implemented):
   - ✅ Added all 6 symptom day count fields with default value `0`
+  - ✅ Added `daysWithAnySymptoms` field with default value `0` (added in Step 4.3)
   - ✅ Added 3 aggregate score fields (`symptomScoreTotal`, `symptomScoreAverage`, `symptomScoreMax`) as nullable
   - ✅ Updated constructor to accept all new fields with appropriate defaults
   - ✅ Updated `empty()` factory (fields use constructor defaults)
@@ -317,6 +321,7 @@ Add daily CKD symptom tracking (0–10 sliders per symptom) plus monthly trends,
   - ✅ `_buildMonthlySummaryDeltas(DailySummary? oldDaily, DailySummary newDaily)` - Reuses weekly delta logic (same computation)
   - ✅ Delta computation logic:
     - For each symptom boolean field: increments/decrements `daysWithX` counts based on changes (e.g., `daysWithVomiting`)
+    - For `daysWithAnySymptoms`: increments/decrements based on `hasSymptoms` boolean changes (added in Step 4.3)
     - For `symptomScoreTotal`: computes delta using `FieldValue.increment()` for atomic updates
     - For `symptomScoreMax`: handled separately in `saveSymptoms()` after reading current summary
     - For `symptomScoreAverage`: set directly from daily summary (can be refined later)
@@ -399,44 +404,106 @@ Add daily CKD symptom tracking (0–10 sliders per symptom) plus monthly trends,
 
 ## Phase 4 – UI/UX Implementation
 
-### Step 4.1a: Build Symptoms Entry Dialog (Full-Screen Popup)
+### Step 4.1a: Build Symptoms Entry Dialog (Full-Screen Popup) ✅ COMPLETED
 
 **Goal**: Create a full-screen popup dialog for logging symptoms with 0–10 sliders per symptom, status, and notes.
 
-- **Dialog pattern**:
-  - Use `OverlayService.showFullScreenPopup()` with `OverlayAnimationType.slideUp` (matching the logging popup pattern).  
-  - Wrap content in `LoggingPopupWrapper` for consistent styling (header with title/close button, scrollable content area).  
-  - Location: `lib/features/health/widgets/symptoms_entry_dialog.dart`.
-- **Dialog content**:
-  - Title: "Log Symptoms" (or "Edit Symptoms" for edit mode).
-  - Date selector (today by default) reusing date handling patterns from `weight_entry_dialog.dart`.  
-  - For each symptom (`vomiting`, `diarrhea`, `constipation`, `lethargy`, `suppressed appetite`, `injection site reaction`):
-    - Label + short helper text (tooltips or subtitle) to keep it empathetic and non-alarming.  
-    - Slider with:
-      - Positions: N/A, 0, 1, …, 10.  
-      - Under the hood: `null` (N/A) vs `0–10` int.  
-    - Small textual feedback under the slider (e.g. "No symptom", "Mild", "Severe") mapped from ranges (0, 1–3, 4–7, 8–10).
-  - Overall status indicator (computed from scores, displayed but not stored): "Good / Okay / Concerning"  
-  - Notes field (multi-line text, 500 char limit, expandable like weight entry dialog).
-  - Primary button: "Save symptoms" → calls `SymptomsService.saveSymptoms`, then dismisses popup and shows success snackbar.
-- **Edit mode support**:
-  - Dialog accepts optional `existingEntry: HealthParameter?` parameter (similar to `WeightEntryDialog`).  
-  - Pre-fills sliders, status, notes from existing entry when provided.  
-  - Note: Edit functionality will be accessed from the calendar (see Step 4.2 note below), not from the symptoms screen itself.
+**Implementation Status**: ✅ **COMPLETED**
 
-### Step 4.1b: Build Minimal Symptoms Screen (V1)
+- **Dialog pattern** (✅ Implemented):
+  - ✅ Uses `LoggingPopupWrapper` for consistent styling (header with title/close button, scrollable content area).  
+  - ✅ Location: `lib/features/health/widgets/symptoms_entry_dialog.dart`.
+  - ✅ Dialog is displayed via `OverlayService.showFullScreenPopup()` (called from parent screen, not within dialog itself).
+- **Dialog content** (✅ Implemented):
+  - ✅ Title: "Log Symptoms" (or "Edit Symptoms" for edit mode).
+  - ✅ Date selector (today by default) reusing date handling patterns from `weight_entry_dialog.dart`:
+    - `InkWell` container with calendar icon
+    - `DateFormat('MMM dd, yyyy')` for display
+    - `showDatePicker` with past dates only (no future dates)
+  - ✅ For each symptom (`vomiting`, `diarrhea`, `constipation`, `lethargy`, `suppressed appetite`, `injection site reaction`):
+    - ✅ `_SymptomSlider` helper widget with:
+      - Label (display name) for each symptom
+      - N/A toggle switch (when enabled, slider is active; when disabled, value is `null`)
+      - Discrete slider with 10 divisions (0-10 range)
+      - Current value display (shows "N/A" or numeric value 0-10)
+      - Under the hood: `null` (N/A) vs `0–10` int stored in `_symptomScores` map
+    - ⏸️ Textual feedback under slider ("No symptom", "Mild", "Severe") – **DEFERRED** per user decision
+  - ⏸️ Overall status indicator ("Good / Okay / Concerning") – **DEFERRED** per user decision
+  - ✅ Notes field (multi-line text, 500 char limit, expandable like weight entry dialog):
+    - `TextField` with `maxLength: 500`
+    - `minLines: 1, maxLines: 5`
+    - Character counter shown when focused (animated opacity)
+  - ✅ Primary button: "Save symptoms" (or "Save" in edit mode):
+    - Calls `SymptomsService.saveSymptoms()` with userId/petId from providers
+    - Shows loading state during save (disabled button with `CircularProgressIndicator`)
+    - On success: dismisses popup via `OverlayService.hide()` and shows success snackbar
+    - On error: displays error message below notes field
+- **Edit mode support** (✅ Implemented):
+  - ✅ Dialog accepts optional `existingEntry: HealthParameter?` parameter (similar to `WeightEntryDialog`).  
+  - ✅ Pre-fills symptom scores and notes from existing entry when provided.  
+  - ✅ Date initialized from existing entry or today.
+  - Note: Edit functionality will be accessed from the calendar (see Step 4.2 note below), not from the symptoms screen itself.
+- **State Management** (✅ Implemented):
+  - ✅ `_selectedDate: DateTime` - initialized from existing entry or today
+  - ✅ `_symptomScores: Map<String, int?>` - tracks each symptom's score (null = N/A, 0-10 = severity)
+  - ✅ `_notesController: TextEditingController` - for notes field
+  - ✅ `_notesFocusNode: FocusNode` - for expandable notes field
+  - ✅ `_isSaving: bool` - loading state during save
+  - ✅ `_errorMessage: String?` - validation error display
+- **Provider Integration** (✅ Implemented):
+  - ✅ Uses `currentUserProvider` to get userId
+  - ✅ Uses `primaryPetProvider` to get petId
+  - ✅ Both providers accessed via `ref.read()` in save method
+- **Error Handling** (✅ Implemented):
+  - ✅ Handles `SymptomValidationException` (validation errors)
+  - ✅ Handles `SymptomServiceException` (service errors)
+  - ✅ Handles generic `Exception` (fallback for unexpected errors)
+  - ✅ Error messages displayed below notes field with error styling
+
+### Step 4.1b: Build Minimal Symptoms Screen (V1) ✅ COMPLETED
 
 **Goal**: Create a minimal Symptoms screen with just a FAB button for adding symptoms entries.
 
-- **Screen location**: `lib/features/health/screens/symptoms_screen.dart`.
+**Implementation Status**: ✅ **COMPLETED**
+
+- **Screen location** (✅ Implemented):
+  - ✅ `lib/features/health/screens/symptoms_screen.dart`
 - **Entry point**:
   - Screen is reached via a **"Symptoms" card** in the Progress insights list (see 4.3).
-- **Layout for Symptoms screen (V1)**:
-  - App bar: "Symptoms" with back button, consistent with health/weight screens.  
-  - Body: Empty state for now (no charts/trends in V1).  
-  - **Floating Action Button**: "Add Symptoms" (using `HydraExtendedFab` or `HydraFab`, matching the weight screen pattern).
-    - On press: Opens `SymptomsEntryDialog` via `OverlayService.showFullScreenPopup()`.
-    - FAB visibility: Hide when scrolling down, show when scrolling up (optional enhancement, matching weight screen).
+- **Layout for Symptoms screen (V1)** (✅ Implemented):
+  - ✅ App bar: "Symptoms" with back button, consistent with health/weight screens:
+    - `AppBar` with title "Symptoms"
+    - Leading `IconButton` with `Icons.arrow_back_ios` (size 20)
+    - `backgroundColor: Theme.of(context).colorScheme.inversePrimary`
+    - Back button uses `context.pop()` for navigation
+  - ✅ Body: Empty state (no charts/trends in V1):
+    - `_buildEmptyState()` method with:
+      - Large icon (`Icons.medical_services`, size 80) with primary color at 50% opacity
+      - Title: "Track Your Pet's Symptoms" (using `AppTextStyles.h2`)
+      - Description text about symptom tracking for CKD management (using `AppTextStyles.body` with `AppColors.textSecondary`)
+      - "Log Your First Symptom" button that opens the dialog
+    - Wrapped in `SingleChildScrollView` for scroll handling
+  - ✅ **Floating Action Button**: "Add Symptoms" (using `HydraExtendedFab`, matching the weight screen pattern):
+    - `HydraExtendedFab` with:
+      - `icon: Icons.add`
+      - `label: 'Add Symptoms'`
+      - `backgroundColor: AppColors.primary`
+      - `foregroundColor: AppColors.textPrimary`
+      - `elevation: 0`
+      - `useGlassEffect: true`
+    - On press: Opens `SymptomsEntryDialog` via `OverlayService.showFullScreenPopup()`:
+      - `_showAddSymptomsDialog()` method calls `OverlayService.showFullScreenPopup()`
+      - `child: const SymptomsEntryDialog()` (no existing entry for add mode)
+      - `animationType: OverlayAnimationType.slideUp`
+    - ✅ FAB visibility: Hide when scrolling down, show when scrolling up (implemented):
+      - `ScrollController` with `_handleScroll()` listener
+      - Tracks `ScrollDirection.reverse` (hide) and `ScrollDirection.forward` (show)
+      - `_showFab` boolean state controls FAB visibility
+      - `floatingActionButtonAnimator: FloatingActionButtonAnimator.scaling`
+- **State Management** (✅ Implemented):
+  - ✅ `ScrollController? _scrollController` - for scroll-based FAB visibility
+  - ✅ `bool _showFab = true` - controls FAB visibility
+  - ✅ Proper disposal of `ScrollController` in `dispose()`
 - **Future**: Trends and history views will be added in a later phase once symptom logging is working.
 
 **Note**: Symptom entries can be edited, but editing will be handled from the calendar (where fluid/medication entries are also edited), not from the symptoms screen itself. The V1 focus is on getting symptom logging working correctly.
@@ -457,19 +524,53 @@ Add daily CKD symptom tracking (0–10 sliders per symptom) plus monthly trends,
 
 **Note**: Long-range trends (6+ months), comparative views, and correlation analytics are **Premium features** (see Free vs Premium section) and out of scope for V1.
 
-### Step 4.3: Integrate Symptoms Card on Progress Screen - FREE
+### Step 4.3: Integrate Symptoms Card on Progress Screen - FREE ✅ COMPLETED
 
 **Goal**: Surface symptom trends via a new card in the Progress insights list, driven purely by summaries.
 
 **Feature Tier**: ✅ **Free** (basic monthly summary for all users)
 
-- **Card placement**:
-  - In the Progress screen analytics/insights list, add a **“Symptoms” card**, reusing the card style used for Profile or other analytics features.
-- **Card content** (derived from weekly/monthly summaries only):
-  - Text like “This month: X days with concerning symptoms” or “Average symptom score: Y/10”.  
-  - Optional sub-text: “Tap for details”.
-- **Navigation**:
-  - Tapping the card navigates to the Symptoms screen.
+**Implementation Status**: ✅ **COMPLETED**
+
+- **Data Model Updates** (✅ Implemented):
+  - ✅ Added `daysWithAnySymptoms: int` field to `MonthlySummary` model (defaults to 0)
+  - ✅ Added `daysWithAnySymptoms: int` field to `WeeklySummary` model (defaults to 0) for symmetry
+  - ✅ Updated all model methods: constructor, `empty()`, `fromJson()`, `toJson()`, `copyWith()`, `==`, `hashCode`, `toString()`
+  - ✅ Added helper getter `hadSymptomsThisMonth` to `MonthlySummary` for future UI use
+  - ✅ Updated Firestore schema documentation (`.cursor/rules/firestore_schema.md`) to document `daysWithAnySymptoms` in both weekly and monthly summaries sections
+
+- **Symptom Aggregation Logic** (✅ Implemented):
+  - ✅ Extended `_buildWeeklySummaryDeltas()` in `SymptomsService` to increment/decrement `daysWithAnySymptoms` based on `DailySummary.hasSymptoms` changes
+  - ✅ Logic automatically applies to both weekly and monthly summaries (monthly delegates to weekly)
+  - ✅ Uses `FieldValue.increment()` for atomic updates to avoid race conditions
+
+- **Data Access Provider** (✅ Implemented):
+  - ✅ Created `currentMonthSymptomsSummaryProvider` in `lib/providers/progress_provider.dart`
+  - ✅ Provider watches `dailyCacheProvider` for automatic invalidation after symptom logs
+  - ✅ Fetches current month's `MonthlySummary` using `SummaryService.getMonthlySummary()` (0-1 Firestore reads with 15-minute TTL cache)
+  - ✅ Returns `null` early if user or pet is unavailable
+
+- **Card placement** (✅ Implemented):
+  - ✅ Added **"Symptoms"** `NavigationCard` to Progress screen insights list (below Weight card)
+  - ✅ Uses `Icons.medical_services` icon
+  - ✅ Reuses existing `NavigationCard` component for consistency
+
+- **Card content** (✅ Implemented):
+  - ✅ Metadata derived from `currentMonthSymptomsSummaryProvider`:
+    - **Loading state**: "Loading symptom data…"
+    - **No summary/error**: "No symptoms logged yet this month"
+    - **With data**: "This month: X days with symptoms" (with proper pluralization: "day" vs "days")
+  - ✅ Card shows dynamic count based on `summary.daysWithAnySymptoms` from monthly summary
+
+- **Navigation** (✅ Implemented):
+  - ✅ Tapping the card navigates to `/progress/symptoms` route
+  - ✅ Route added to `lib/app/router.dart` using `AppPageTransitions.bidirectionalSlide` for consistency
+  - ✅ Route name: `progress-symptoms`
+  - ✅ Wired to `SymptomsScreen` component
+
+- **Refresh Integration** (✅ Implemented):
+  - ✅ Added `currentMonthSymptomsSummaryProvider` to Progress screen refresh handler invalidation list
+  - ✅ Ensures card updates after pull-to-refresh
 
 **Note**: Advanced analytics (correlations, long-range charts, vet exports) are **Premium features** and will be added later with feature gating.
 
@@ -498,7 +599,7 @@ Add daily CKD symptom tracking (0–10 sliders per symptom) plus monthly trends,
 ### Step 5.2: Read/Write Cost Profile
 
 - **Reads**:
-  - Daily logging: 0–1 reads (if you fetch existing doc) + 3 summary updates done **without** reading full summary histories (delta approach).  
+- Daily logging: 0–1 reads (if you fetch existing doc) + 3 summary updates done **without** reading full summary histories (delta approach).  
   - Trends:
     - Recent: ≤30 reads from `healthParameters`.  
     - Monthly/weekly views: 1–12 reads from `treatmentSummaries/weekly|monthly/summaries`.
@@ -544,9 +645,9 @@ Add daily CKD symptom tracking (0–10 sliders per symptom) plus monthly trends,
    - [x] Implement `SymptomsService` with CRUD, batching, and score helpers. ✅  
    - [x] Reuse summary path helpers / patterns; wire minimal analytics events. ✅
 4. **Phase 4 – UI/UX**  
-   - [ ] Build `SymptomsEntryDialog` (full-screen popup using `LoggingPopupWrapper` with sliders, status, notes, save flow).  
-   - [ ] Build minimal `SymptomsScreen` (app bar + FAB button to open dialog).  
-   - [ ] Add the Symptoms card to the Progress screen, powered by summaries.
+   - [x] Build `SymptomsEntryDialog` (full-screen popup using `LoggingPopupWrapper` with sliders, notes, save flow). ✅  
+   - [x] Build minimal `SymptomsScreen` (app bar + FAB button to open dialog). ✅  
+   - [x] Add the Symptoms card to the Progress screen, powered by summaries. ✅  
    - [ ] (Deferred) Add recent 30-day trends to Symptoms screen.
 5. **Phase 5 – Indexes & costs**  
    - [ ] Review real query patterns; add targeted indexes only if needed.  

@@ -253,6 +253,7 @@ users/
                   │     │                 ├── daysWithLethargy: number              # days with lethargy (score > 0)
                   │     │                 ├── daysWithSuppressedAppetite: number    # days with suppressed appetite (score > 0)
                   │     │                 ├── daysWithInjectionSiteReaction: number # days with injection site reaction (score > 0)
+                  │     │                 ├── daysWithAnySymptoms: number           # count of days this week where hasSymptoms == true
                   │     │                 ├── symptomScoreTotal: number             # sum of daily symptomScoreTotal over week (optional)
                   │     │                 ├── symptomScoreAverage: number           # average daily score across days with symptoms (optional)
                   │     │                 ├── symptomScoreMax: number               # max daily symptomScoreTotal in week (optional)
@@ -297,6 +298,7 @@ users/
                   │                       ├── daysWithLethargy: number              # days with lethargy (score > 0)
                   │                       ├── daysWithSuppressedAppetite: number    # days with suppressed appetite (score > 0)
                   │                       ├── daysWithInjectionSiteReaction: number # days with injection site reaction (score > 0)
+                  │                       ├── daysWithAnySymptoms: number             # count of days this month where hasSymptoms == true
                   │                       ├── symptomScoreTotal: number             # sum of daily symptomScoreTotal over month (optional)
                   │                       ├── symptomScoreAverage: number           # average daily score across days with symptoms (optional)
                   │                       ├── symptomScoreMax: number               # max daily symptomScoreTotal in month (optional)

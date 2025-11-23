@@ -290,6 +290,15 @@ class SymptomsService {
       deltas['daysWithInjectionSiteReaction'] = FieldValue.increment(-1);
     }
 
+    // Handle daysWithAnySymptoms delta (based on hasSymptoms boolean)
+    final oldHasSymptoms = oldDaily?.hasSymptoms ?? false;
+    final newHasSymptoms = newDaily.hasSymptoms;
+    if (oldHasSymptoms == false && newHasSymptoms == true) {
+      deltas['daysWithAnySymptoms'] = FieldValue.increment(1);
+    } else if (oldHasSymptoms == true && newHasSymptoms == false) {
+      deltas['daysWithAnySymptoms'] = FieldValue.increment(-1);
+    }
+
     // Handle symptomScoreTotal delta
     final oldTotal = oldDaily?.symptomScoreTotal;
     final newTotal = newDaily.symptomScoreTotal;

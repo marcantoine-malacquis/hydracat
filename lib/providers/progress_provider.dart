@@ -12,6 +12,7 @@ import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/models/daily_summary.dart';
 import 'package:hydracat/shared/models/fluid_daily_summary_view.dart';
+import 'package:hydracat/shared/models/monthly_summary.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 /// Provider for the currently focused day in the progress calendar.
@@ -194,8 +195,11 @@ dateRangeStatusProvider = FutureProvider.autoDispose
 
         // Month mode: merge week chunks covering the entire month
         final firstDayOfMonth = DateTime(rangeStart.year, rangeStart.month);
-        final lastDayOfMonth =
-            DateTime(rangeStart.year, rangeStart.month + 1, 0);
+        final lastDayOfMonth = DateTime(
+          rangeStart.year,
+          rangeStart.month + 1,
+          0,
+        );
 
         // Start from the Monday of the week containing the first day
         var cursor = AppDateUtils.startOfWeekMonday(firstDayOfMonth);
@@ -333,6 +337,54 @@ fluidDailySummaryViewProvider = Provider.autoDispose
         },
         orElse: () => null,
       );
+    });
+
+/// Provider for current month's symptoms summary
+///
+/// Fetches the monthly summary for the current month to display symptom
+/// statistics on the Progress screen. Automatically invalidates when
+/// daily cache changes (after new symptom logs).
+///
+/// Returns null if:
+/// - User or pet is not available
+/// - No monthly summary exists for current month
+/// - Firestore read fails
+///
+/// Cost: 0-1 Firestore reads (with 15-minute in-memory TTL cache)
+final AutoDisposeFutureProvider<MonthlySummary?>
+currentMonthSymptomsSummaryProvider =
+    FutureProvider.autoDispose<MonthlySummary?>((
+      ref,
+    ) async {
+      // Watch for invalidation triggers (refetch after logging)
+      ref.watch(dailyCacheProvider);
+
+      final user = ref.read(currentUserProvider);
+      final pet = ref.read(primaryPetProvider);
+
+      if (user == null || pet == null) {
+        return null;
+      }
+
+      final summaryService = ref.read(summaryServiceProvider);
+
+      try {
+        final monthlySummary = await summaryService.getMonthlySummary(
+          userId: user.id,
+          petId: pet.id,
+          date: DateTime.now(),
+        );
+
+        return monthlySummary;
+      } on Exception catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            '[currentMonthSymptomsSummaryProvider] '
+            'Error fetching monthly summary: $e',
+          );
+        }
+        return null;
+      }
     });
 
 /// Helper function to calculate the current fluid goal from active schedule

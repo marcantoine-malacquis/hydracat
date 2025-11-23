@@ -8,6 +8,7 @@ import 'package:hydracat/features/auth/screens/email_verification_screen.dart';
 import 'package:hydracat/features/auth/screens/forgot_password_screen.dart';
 import 'package:hydracat/features/auth/screens/login_screen.dart';
 import 'package:hydracat/features/auth/screens/register_screen.dart';
+import 'package:hydracat/features/health/screens/symptoms_screen.dart';
 import 'package:hydracat/features/health/screens/weight_screen.dart';
 import 'package:hydracat/features/home/screens/component_demo_screen.dart';
 import 'package:hydracat/features/home/screens/home_screen.dart';
@@ -295,6 +296,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 pageBuilder: (context, state) =>
                     AppPageTransitions.bidirectionalSlide(
                   child: const WeightScreen(),
+                  key: state.pageKey,
+                ),
+              ),
+              GoRoute(
+                path: 'symptoms',
+                name: 'progress-symptoms',
+                pageBuilder: (context, state) =>
+                    AppPageTransitions.bidirectionalSlide(
+                  child: const SymptomsScreen(),
                   key: state.pageKey,
                 ),
               ),
