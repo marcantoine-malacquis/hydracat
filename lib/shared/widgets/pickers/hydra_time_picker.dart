@@ -2,17 +2,46 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 
-/// A universal iOS-style time picker that works on both iOS and Android.
-/// Provides a wheel-style picker with digital display and app theme
-/// integration.
+/// Platform-adaptive time picker for HydraCat.
+///
+/// Uses Material [showTimePicker] on Android and other Material platforms,
+/// and iOS-style wheel picker with digital display on iOS/macOS.
 class HydraTimePicker {
-  /// Shows an iOS-style time picker with wheel interface and digital display.
+  /// Shows a platform-adaptive time picker.
+  ///
+  /// On iOS/macOS: Shows a Cupertino-style wheel picker with digital display.
+  /// On Android/other platforms: Shows Material time picker dialog.
   ///
   /// Returns the selected [TimeOfDay] or null if cancelled.
   static Future<TimeOfDay?> show({
     required BuildContext context,
     required TimeOfDay initialTime,
   }) async {
+    final platform = Theme.of(context).platform;
+
+    if (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS) {
+      return _showCupertinoTimePicker(context, initialTime);
+    }
+
+    return _showMaterialTimePicker(context, initialTime);
+  }
+
+  /// Shows Material time picker dialog.
+  static Future<TimeOfDay?> _showMaterialTimePicker(
+    BuildContext context,
+    TimeOfDay initialTime,
+  ) async {
+    return showTimePicker(
+      context: context,
+      initialTime: initialTime,
+    );
+  }
+
+  /// Shows Cupertino time picker with wheel interface and digital display.
+  static Future<TimeOfDay?> _showCupertinoTimePicker(
+    BuildContext context,
+    TimeOfDay initialTime,
+  ) async {
     return showCupertinoModalPopup<TimeOfDay>(
       context: context,
       builder: (BuildContext context) => _HydraTimePickerContent(
@@ -22,7 +51,12 @@ class HydraTimePicker {
   }
 }
 
-/// Internal widget that handles the time picker content and state.
+// ============================================================================
+// Cupertino Implementation
+// ============================================================================
+
+/// Internal widget that handles the Cupertino time picker content and state.
+/// Used only on iOS/macOS platforms.
 class _HydraTimePickerContent extends StatefulWidget {
   const _HydraTimePickerContent({
     required this.initialTime,

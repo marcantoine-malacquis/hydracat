@@ -102,13 +102,14 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
 
 ## 🟡 Medium Priority (Moderately Used, Moderate Visual Impact)
 
-### 7. **Time Picker** → `HydraTimePicker` (Already exists but iOS-only)
+### 7. **Time Picker** → `HydraTimePicker` - ✅ Done
 - **Current**: `HydraTimePicker` in `lib/shared/widgets/pickers/hydra_time_picker.dart`
-- **Issue**: Currently always uses `CupertinoDatePicker` (iOS-style) on all platforms
-- **Should**: Use `showTimePicker()` (Material) on Android, `CupertinoDatePicker` on iOS
+- **Implementation**: Uses `showTimePicker()` (Material) on Android, `CupertinoDatePicker` with custom bottom sheet on iOS/macOS
 - **Current Usage**: 
   - Used for time selection in schedules
-- **Priority**: Medium - Already exists but needs platform branching
+  - `time_picker_group.dart` (onboarding)
+  - `fluid_schedule_screen.dart` (profile)
+- **Priority**: Medium - ✅ Platform-adaptive implementation complete
 
 ### 8. **SnackBar** → `HydraSnackBar`
 - **Material**: `SnackBar` widget + `ScaffoldMessenger.of(context).showSnackBar()`
