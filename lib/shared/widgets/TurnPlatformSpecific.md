@@ -11,6 +11,23 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
 4. Mirrors the core API of the Material widget (since that's what's currently used)
 5. Handles API differences between Material and Cupertino gracefully
 
+### Performance Optimization
+
+**Important**: To minimize performance overhead, cache the platform detection result in `build()` and pass it down to helper methods:
+
+```dart
+@override
+Widget build(BuildContext context) {
+  final platform = Theme.of(context).platform;
+  final isCupertino = platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
+  
+  // Pass isCupertino to helper methods instead of calling Theme.of() again
+  return _buildContent(context, isCupertino);
+}
+```
+
+This avoids multiple `Theme.of(context)` lookups during the same build cycle, which can impact performance especially in widgets with many helper methods or frequent rebuilds.
+
 ---
 
 ## ✅ Already Implemented
@@ -222,7 +239,7 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
   - Platform-adaptive app bar with support for title, actions, leading, and styling
   - **Material**: `AppBar` widget with full Material API support
   - **Cupertino**: `CupertinoNavigationBar` widget with mapped properties
-  - **Used in**: 
+  - **Used in**:
     - `home_screen.dart` (migrated)
     - `profile_screen.dart` (migrated)
     - `progress_screen.dart` (migrated)
@@ -246,6 +263,17 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
   - **API Differences**: 
     - Material: Full `AppBar` API with `title`, `actions`, `leading`, `backgroundColor`, `foregroundColor`, `elevation`, `centerTitle`, `automaticallyImplyLeading`, `toolbarHeight`
     - Cupertino: `title` maps to `middle`, `actions` maps to `trailing` (wrapped in `Row` if multiple), `leading` maps directly. `backgroundColor` is applied where supported. `elevation` is ignored (Cupertino doesn't use elevation). `foregroundColor` affects text color. `centerTitle` controls title alignment. `automaticallyImplyLeading` is ignored (Cupertino doesn't auto-show back button). Transparent `backgroundColor` removes the border for a cleaner look.
+
+- **`HydraNavigationBar`** (`lib/shared/widgets/navigation/hydra_navigation_bar.dart`) - ✅ Done
+  - Custom bottom navigation bar with platform-adaptive styling and animations
+  - Features: 4 navigation items (Home, Schedule, Progress, Profile) with centered FAB, top selection indicators, accessibility support
+  - **Material**: Custom container with elevation/shadow, 160ms animations, 26px icons, w600 font weight for selected items
+  - **Cupertino**: Custom container with border-only separator (no shadow), 120ms animations, 24px icons, w500 font weight for selected items, uses `CupertinoColors.separator` for border
+  - **Used in**: 
+    - `app_shell.dart` (main app navigation)
+  - **API Differences**: 
+    - Material: Uses elevation/shadow for depth, standard Material motion (160ms), larger icons (26px), heavier font weight (w600)
+    - Cupertino: Flat design with border-only separator (0.5px hairline), lighter animations (120ms), smaller icons (24px), lighter font weight (w500), uses `Curves.easeOut` for snappier feel vs Material's `Curves.easeInOut`
 
 ---
 
@@ -283,7 +311,6 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
   - Used throughout the app (AppBar leading buttons, etc.)
 - **Priority**: Low - Often wrapped in custom widgets, less critical
 
-
 ### 18. **Scaffold** → `HydraScaffold`
 - **Material**: `Scaffold` widget
 - **Cupertino**: `CupertinoPageScaffold` widget
@@ -293,11 +320,6 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
   - Material: `Scaffold` with `appBar`, `body`, `bottomNavigationBar`, `floatingActionButton`, `drawer`
   - Cupertino: `CupertinoPageScaffold` with `navigationBar`, `child`, different structure
 - **Priority**: Low - Core layout component, would require extensive refactoring
-
-### 19. **Bottom Navigation Bar** → `HydraNavigationBar` (Already exists)
-- **Current**: `HydraNavigationBar` exists in `lib/shared/widgets/navigation/hydra_navigation_bar.dart`
-- **Issue**: Need to verify if it branches on platform
-- **Priority**: Low - Already exists, just needs verification
 
 ### 20. **TabBar** → `HydraTabBar`
 - **Material**: `TabBar` widget

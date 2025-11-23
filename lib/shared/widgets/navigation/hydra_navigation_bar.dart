@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hydracat/core/constants/app_accessibility.dart';
@@ -14,7 +15,18 @@ const double _indicatorHeight = 3;
 // Edge spacing for full-width indicators
 const double _indicatorHorizontalPadding = 4;
 const double _indicatorRadius = 12;
-const int _indicatorAnimMs = 160;
+
+// Animation durations - platform-specific
+// Material: Standard Material motion (160ms)
+const int _materialIndicatorAnimMs = 160;
+// Cupertino: Lighter, faster iOS-style animations (120ms)
+const int _cupertinoIndicatorAnimMs = 120;
+
+// Icon sizes - platform-specific
+// Material: Standard 26px
+const double _materialIconSize = 26;
+// Cupertino: Slightly smaller 24px for iOS feel
+const double _cupertinoIconSize = 24;
 
 /// Custom bottom navigation bar with accessibility support.
 class HydraNavigationBar extends StatefulWidget {
@@ -62,12 +74,31 @@ class HydraNavigationBar extends StatefulWidget {
 class _HydraNavigationBarState extends State<HydraNavigationBar> {
   int? _lastAnnouncedIndex;
 
-  Duration _indicatorDuration(BuildContext context) {
+  /// Gets the animation duration for indicators based on platform
+  /// and accessibility.
+  ///
+  /// Material platforms use 160ms, Cupertino platforms use 120ms for
+  /// lighter feel.
+  /// Respects reduced motion preferences.
+  Duration _indicatorDuration(BuildContext context, bool isCupertino) {
     final mq = MediaQuery.maybeOf(context);
     final reducedMotion = mq?.disableAnimations ?? false;
-    return reducedMotion
-        ? Duration.zero
-        : const Duration(milliseconds: _indicatorAnimMs);
+    if (reducedMotion) {
+      return Duration.zero;
+    }
+
+    return Duration(
+      milliseconds: isCupertino
+          ? _cupertinoIndicatorAnimMs
+          : _materialIndicatorAnimMs,
+    );
+  }
+
+  /// Gets the icon size based on platform.
+  ///
+  /// Material uses 26px, Cupertino uses 24px for a more iOS-native feel.
+  double _iconSize(bool isCupertino) {
+    return isCupertino ? _cupertinoIconSize : _materialIconSize;
   }
 
   @override
@@ -83,6 +114,24 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
 
   @override
   Widget build(BuildContext context) {
+    final platform = Theme.of(context).platform;
+    final isCupertino =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
+
+    if (isCupertino) {
+      return _buildCupertinoNavBar(context, isCupertino);
+    }
+
+    return _buildMaterialNavBar(context, isCupertino);
+  }
+
+  /// Builds the Material (Android) version of the navigation bar.
+  ///
+  /// Uses Material Design styling:
+  /// - Elevation/shadow for depth
+  /// - Standard Material colors and typography
+  /// - Material motion animations (160ms)
+  Widget _buildMaterialNavBar(BuildContext context, bool isCupertino) {
     return Container(
       height: AppLayout.bottomNavHeight,
       decoration: BoxDecoration(
@@ -92,6 +141,7 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
             color: AppColors.border,
           ),
         ),
+        // Material: Use elevation/shadow for depth
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
@@ -100,72 +150,125 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          // Main navigation content
-          Padding(
-            padding: const EdgeInsets.only(
-              top: _indicatorHeight,
-              bottom: 20,
-            ),
-            child: Row(
-              children: [
-                // Left side items (Home, Schedule)
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: widget.items.take(2).map((item) {
-                      final index = widget.items.indexOf(item);
-                      return Expanded(
-                        child: _buildNavigationItem(context, item, index),
-                      );
-                    }).toList(),
-                  ),
-                ),
-
-                // Center FAB
-                const SizedBox(width: AppSpacing.md),
-                HydraTouchTarget(
-                  minSize: AppAccessibility.fabTouchTarget,
-                  child: HydraFab(
-                    onPressed: widget.onFabPressed,
-                    onLongPress: widget.onFabLongPress,
-                    icon: _getIconData(AppIcons.logSession),
-                    isLoading: widget.isFabLoading,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-
-                // Right side items (Progress, Profile)
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: widget.items.skip(2).map((item) {
-                      final index = widget.items.indexOf(item);
-                      return Expanded(
-                        child: _buildNavigationItem(context, item, index),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Top indicators layer
-          if (widget.currentIndex >= 0)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: _buildTopIndicators(context),
-            ),
-        ],
-      ),
+      child: _buildNavBarContent(context, isCupertino),
     );
   }
 
-  Widget _buildTopIndicators(BuildContext context) {
+  /// Builds the Cupertino (iOS/macOS) version of the navigation bar.
+  ///
+  /// Uses iOS-native styling:
+  /// - Border-only separator (no shadow/elevation)
+  /// - Lighter, faster animations (120ms)
+  /// - Slightly smaller icons (24px vs 26px)
+  /// - More subtle selection animations
+  Widget _buildCupertinoNavBar(BuildContext context, bool isCupertino) {
+    return Container(
+      height: AppLayout.bottomNavHeight,
+      decoration: BoxDecoration(
+        color: widget.backgroundColor ?? AppColors.surface,
+        // Cupertino: Use border-only separator (no shadow)
+        // Similar to CupertinoTabBar and CupertinoNavigationBar
+        border: const Border(
+          top: BorderSide(
+            color: CupertinoColors.separator,
+            width: 0.5, // Hairline width for iOS feel
+          ),
+        ),
+        // No boxShadow on iOS - flat design with border only
+      ),
+      child: _buildNavBarContent(context, isCupertino),
+    );
+  }
+
+  /// Builds the shared navigation bar content structure.
+  ///
+  /// This is platform-agnostic and contains:
+  /// - Navigation items (left and right)
+  /// - Centered FAB
+  /// - Top selection indicators
+  Widget _buildNavBarContent(BuildContext context, bool isCupertino) {
+    return Stack(
+      children: [
+        // Main navigation content
+        Padding(
+          padding: const EdgeInsets.only(
+            top: _indicatorHeight,
+            bottom: 20,
+          ),
+          child: Row(
+            children: [
+              // Left side items (Home, Schedule)
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: widget.items.take(2).map((item) {
+                    final index = widget.items.indexOf(item);
+                    return Expanded(
+                      child: _buildNavigationItem(
+                        context,
+                        item,
+                        index,
+                        isCupertino,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+
+              // Center FAB
+              const SizedBox(width: AppSpacing.md),
+              HydraTouchTarget(
+                minSize: AppAccessibility.fabTouchTarget,
+                child: HydraFab(
+                  onPressed: widget.onFabPressed,
+                  onLongPress: widget.onFabLongPress,
+                  icon: _getIconData(AppIcons.logSession),
+                  isLoading: widget.isFabLoading,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+
+              // Right side items (Progress, Profile)
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: widget.items.skip(2).map((item) {
+                    final index = widget.items.indexOf(item);
+                    return Expanded(
+                      child: _buildNavigationItem(
+                        context,
+                        item,
+                        index,
+                        isCupertino,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Top indicators layer
+        if (widget.currentIndex >= 0)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: _buildTopIndicators(context, isCupertino),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildTopIndicators(BuildContext context, bool isCupertino) {
+    // iOS: More subtle scale animation (0.95 vs 0.9) for lighter feel
+    // Material: Standard scale (0.9) for more pronounced feedback
+    final scaleWhenUnselected = isCupertino ? 0.95 : 0.9;
+    // iOS: Use easeOut for snappier feel, Material: easeInOut for smoother
+    final animationCurve = isCupertino ? Curves.easeOut : Curves.easeInOut;
+    final indicatorDuration = _indicatorDuration(context, isCupertino);
+
     return Row(
       children: [
         // Left side items indicators
@@ -177,12 +280,12 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
               final isSelected = index == widget.currentIndex;
               return Expanded(
                 child: AnimatedOpacity(
-                  duration: _indicatorDuration(context),
+                  duration: indicatorDuration,
                   opacity: isSelected ? 1.0 : 0.0,
                   child: AnimatedScale(
-                    duration: _indicatorDuration(context),
-                    scale: isSelected ? 1.0 : 0.9,
-                    curve: Curves.easeInOut,
+                    duration: indicatorDuration,
+                    scale: isSelected ? 1.0 : scaleWhenUnselected,
+                    curve: animationCurve,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: _indicatorHorizontalPadding,
@@ -219,12 +322,12 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
               final isSelected = index == widget.currentIndex;
               return Expanded(
                 child: AnimatedOpacity(
-                  duration: _indicatorDuration(context),
+                  duration: indicatorDuration,
                   opacity: isSelected ? 1.0 : 0.0,
                   child: AnimatedScale(
-                    duration: _indicatorDuration(context),
-                    scale: isSelected ? 1.0 : 0.9,
-                    curve: Curves.easeInOut,
+                    duration: indicatorDuration,
+                    scale: isSelected ? 1.0 : scaleWhenUnselected,
+                    curve: animationCurve,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: _indicatorHorizontalPadding,
@@ -254,9 +357,15 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
     BuildContext context,
     HydraNavigationItem item,
     int index,
+    bool isCupertino,
   ) {
     final isSelected = widget.currentIndex >= 0 && index == widget.currentIndex;
     final color = isSelected ? AppColors.primary : AppColors.textSecondary;
+    final iconSize = _iconSize(isCupertino);
+
+    // iOS: Slightly lighter font weight for selected (w500 vs w600)
+    // Material: Standard w600 for selected
+    final selectedFontWeight = isCupertino ? FontWeight.w500 : FontWeight.w600;
 
     return GestureDetector(
       onTap: () => widget.onTap(index),
@@ -265,7 +374,7 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
         selected: isSelected,
         label: item.label,
         child: HydraTouchTarget(
-          minSize: 48, // Accessibility touch target
+          minSize: 48, // Accessibility touch target (platform-agnostic)
           child: Container(
             margin: const EdgeInsets.only(
               bottom: 4,
@@ -280,7 +389,7 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
                   icon: item.icon,
                   color: color,
                   semanticLabel: item.label,
-                  size: 26,
+                  size: iconSize, // Platform-specific size
                 ),
                 const SizedBox(height: 2),
                 Flexible(
@@ -289,7 +398,7 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: color,
                       fontWeight: isSelected
-                          ? FontWeight.w600
+                          ? selectedFontWeight
                           : FontWeight.w400,
                       fontSize: 10,
                       height: 1,
