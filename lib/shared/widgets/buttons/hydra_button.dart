@@ -1,8 +1,12 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/shared/widgets/accessibility/hydra_touch_target.dart';
 
-/// A reusable button component with accessibility support.
+/// Platform-adaptive button component with accessibility support.
+///
+/// Wraps Material buttons (ElevatedButton) on Android/other platforms and
+/// CupertinoButton on iOS/macOS, while mirroring the core Material button API.
 class HydraButton extends StatelessWidget {
   /// Creates a HydraButton.
   const HydraButton({
@@ -39,14 +43,19 @@ class HydraButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final button = _buildButton(context);
+    final platform = Theme.of(context).platform;
+    final isCupertino =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
+    final button = isCupertino
+        ? _buildCupertinoButton(context)
+        : _buildMaterialButton(context);
 
     return HydraTouchTarget(
       child: button,
     );
   }
 
-  Widget _buildButton(BuildContext context) {
+  Widget _buildMaterialButton(BuildContext context) {
     final buttonStyle = _getButtonStyle(context);
     final minHeight = _getMinHeight();
 
@@ -59,20 +68,120 @@ class HydraButton extends StatelessWidget {
         child: Container(
           height: minHeight,
           alignment: Alignment.center,
-          child: _buildButtonContent(),
+          child: _buildButtonContent(context, isCupertino: false),
         ),
       ),
     );
   }
 
-  Widget _buildButtonContent() {
+  Widget _buildCupertinoButton(BuildContext context) {
+    final minHeight = _getMinHeight();
+    final buttonPadding = _getButtonPadding();
+    final isDisabled = isLoading || onPressed == null;
+
+    Widget button;
+    switch (variant) {
+      case HydraButtonVariant.primary:
+        button = CupertinoButton.filled(
+          onPressed: isLoading ? null : onPressed,
+          padding: buttonPadding,
+          minimumSize: Size(0, minHeight),
+          borderRadius: BorderRadius.circular(8),
+          color: AppColors.primary,
+          disabledColor: AppColors.disabled,
+          child: DefaultTextStyle(
+            style: const TextStyle(
+              color: AppColors.onPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+            child: _buildButtonContent(context, isCupertino: true),
+          ),
+        );
+      case HydraButtonVariant.secondary:
+        button = Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: isDisabled ? AppColors.disabled : AppColors.primary,
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: CupertinoButton(
+            onPressed: isLoading ? null : onPressed,
+            padding: buttonPadding,
+            minimumSize: Size(0, minHeight),
+            borderRadius: BorderRadius.circular(8),
+            color: Colors.transparent,
+            disabledColor: Colors.transparent,
+            child: DefaultTextStyle(
+              style: TextStyle(
+                color: isDisabled ? AppColors.disabled : AppColors.primary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              child: _buildButtonContent(context, isCupertino: true),
+            ),
+          ),
+        );
+      case HydraButtonVariant.text:
+        button = CupertinoButton(
+          onPressed: isLoading ? null : onPressed,
+          padding: buttonPadding,
+          minimumSize: Size(0, minHeight),
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.transparent,
+          disabledColor: Colors.transparent,
+          child: DefaultTextStyle(
+            style: TextStyle(
+              color: isDisabled ? AppColors.disabled : AppColors.primary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+            child: _buildButtonContent(context, isCupertino: true),
+          ),
+        );
+    }
+
+    return SizedBox(
+      width: isFullWidth ? double.infinity : null,
+      height: minHeight,
+      child: button,
+    );
+  }
+
+  Widget _buildButtonContent(
+    BuildContext context, {
+    required bool isCupertino,
+  }) {
     if (isLoading) {
-      return const SizedBox(
+      // Determine loading indicator color based on variant and platform
+      Color loadingColor;
+      if (isCupertino) {
+        // For Cupertino, use appropriate color based on variant
+        switch (variant) {
+          case HydraButtonVariant.primary:
+            loadingColor = AppColors.onPrimary;
+          case HydraButtonVariant.secondary:
+          case HydraButtonVariant.text:
+            loadingColor = AppColors.primary;
+        }
+      } else {
+        // For Material, use white for primary, primary color for others
+        switch (variant) {
+          case HydraButtonVariant.primary:
+            loadingColor = Colors.white;
+          case HydraButtonVariant.secondary:
+          case HydraButtonVariant.text:
+            loadingColor = AppColors.primary;
+        }
+      }
+
+      return SizedBox(
         width: 20,
         height: 20,
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          valueColor: AlwaysStoppedAnimation<Color>(loadingColor),
         ),
       );
     }
@@ -83,7 +192,7 @@ class HydraButton extends StatelessWidget {
   ButtonStyle _getButtonStyle(BuildContext context) {
     final buttonPadding = _getButtonPadding();
     final minHeight = _getMinHeight();
-    
+
     switch (variant) {
       case HydraButtonVariant.primary:
         return ElevatedButton.styleFrom(

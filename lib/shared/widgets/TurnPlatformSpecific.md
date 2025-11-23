@@ -134,6 +134,26 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
     - `progress_week_calendar.dart` (replaced `_SlidingSegmentedControl`)
     - `weight_screen.dart` (replaced `SegmentedButton` granularity selector)
 
+- **`HydraButton`** (`lib/shared/widgets/buttons/hydra_button.dart`) - ✅ Done
+  - Wraps `ElevatedButton` (Material) / `CupertinoButton` (iOS/macOS)
+  - Platform-adaptive button with variants (primary, secondary, text) and sizing support
+  - Mirrors the core Material button API used in the app
+  - **Material**: `ElevatedButton` widget with custom styling for variants
+  - **Cupertino**: `CupertinoButton.filled` (primary), `CupertinoButton` with border decoration (secondary), plain `CupertinoButton` (text)
+  - **Used in**: 
+    - Used throughout the app via `HydraButton` (25+ usages)
+    - `login_screen.dart`, `register_screen.dart`, `forgot_password_screen.dart`
+    - `onboarding_screen_wrapper.dart`, `welcome_screen.dart`, `pet_basics_screen.dart`
+    - `treatment_confirmation_popup.dart`, `component_demo_screen.dart`
+    - And many more screens
+  - **API Differences**: 
+    - Material: Full `ElevatedButton` API with `ButtonStyle`, `elevation`, `side` (for secondary)
+    - Cupertino: `CupertinoButton` / `CupertinoButton.filled` with `color`, `disabledColor`, `borderRadius`; secondary variant uses `Container` with border decoration
+  - **Variant Mapping**:
+    - `primary`: Material → `ElevatedButton` with teal background; Cupertino → `CupertinoButton.filled` with teal color
+    - `secondary`: Material → `ElevatedButton` with transparent background and border; Cupertino → `CupertinoButton` with border decoration
+    - `text`: Material → `ElevatedButton` with transparent background; Cupertino → plain `CupertinoButton` with transparent background
+
 ---
 
 ## 🔴 High Priority (Frequently Used, High Visual Impact)
@@ -142,16 +162,6 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
 
 ## 🟡 Medium Priority (Moderately Used, Moderate Visual Impact)
 
-### 7. **Button Variants** → `HydraButton` (Partially exists)
-- **Material**: `ElevatedButton`, `FilledButton`, `OutlinedButton`, `TextButton`
-- **Cupertino**: `CupertinoButton`, `CupertinoButton.filled`
-- **Current**: `HydraButton` exists in `lib/shared/widgets/buttons/hydra_button.dart`
-- **Issue**: Need to verify if it branches on platform or always uses Material
-- **Current Usage**: 
-  - Used throughout the app via `HydraButton`
-  - Direct usage: `unsaved_changes_dialog.dart` (uses `ElevatedButton`, `OutlinedButton`)
-  - `settings_screen.dart` (uses `ElevatedButton`, `TextButton`)
-- **Priority**: Medium - Core component, but may already be handled
 
 ### 8. **FloatingActionButton** → `HydraFAB` (Partially exists)
 - **Material**: `FloatingActionButton`

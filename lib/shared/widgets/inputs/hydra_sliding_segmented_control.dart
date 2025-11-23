@@ -82,7 +82,7 @@ class HydraSlidingSegmentedControl<T extends Object> extends StatelessWidget {
     final resolvedBackground =
         backgroundColor ?? CupertinoTheme.of(context).barBackgroundColor;
     final resolvedSelectedColor =
-        selectedColor ?? CupertinoTheme.of(context).primaryColor;
+        selectedColor ?? AppColors.primaryLight;
 
     return CupertinoSlidingSegmentedControl<T>(
       groupValue: value,
@@ -118,7 +118,7 @@ class HydraSlidingSegmentedControl<T extends Object> extends StatelessWidget {
 
     final resolvedBackground =
         backgroundColor ?? (isDark ? Colors.grey[900] : Colors.grey[100]);
-    final resolvedSelectedColor = selectedColor ?? AppColors.primary;
+    final resolvedSelectedColor = selectedColor ?? AppColors.primaryLight;
     final resolvedUnselectedColor = unselectedColor ?? AppColors.textSecondary;
 
     return Container(
