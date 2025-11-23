@@ -160,12 +160,7 @@ class _SymptomsEntryDialogState extends ConsumerState<SymptomsEntryDialog> {
         OverlayService.hide();
 
         // Show success snackbar
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Symptoms saved successfully'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
+        HydraSnackBar.showSuccess(context, 'Symptoms saved successfully');
       }
     } on SymptomValidationException catch (e) {
       if (mounted) {

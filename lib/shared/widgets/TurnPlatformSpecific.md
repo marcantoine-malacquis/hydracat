@@ -94,6 +94,46 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
     - Material: Full `InputDecoration` support including `errorText`, `counter`, `labelText`, `hintText`, `suffixText`, etc.
     - Cupertino: `placeholder` from `decoration?.hintText`, `prefix`/`suffix` from `decoration?.prefixIcon`/`suffixIcon` or `suffixText`. Error text and counter are shown separately below the field on iOS.
 
+- **`HydraTimePicker`** (`lib/shared/widgets/pickers/hydra_time_picker.dart`) - ✅ Done
+  - Wraps `showTimePicker()` (Material) / `CupertinoDatePicker` with custom bottom sheet (iOS/macOS)
+  - Includes `show()` static method
+  - **Material**: `showTimePicker()` function with Material time picker dialog
+  - **Cupertino**: `showCupertinoModalPopup()` with custom wheel picker and digital display
+  - **Used in**: 
+    - `time_picker_group.dart` (onboarding)
+    - `fluid_schedule_screen.dart` (profile)
+  - **API Differences**: 
+    - Material: `showTimePicker()` with standard Material time picker dialog
+    - Cupertino: Custom bottom sheet with `CupertinoDatePicker` wheel, Cancel/Done buttons, and digital time display
+
+- **`HydraSnackBar`** (`lib/shared/widgets/feedback/hydra_snack_bar.dart`) - ✅ Done
+  - Wraps `SnackBar` (Material) / custom toast overlay (iOS/macOS)
+  - **Material**: `SnackBar` widget + `ScaffoldMessenger.of(context).showSnackBar()`
+  - **Cupertino**: Custom toast overlay positioned above bottom navigation bar
+  - **API**: 
+    - `HydraSnackBar.showSuccess(context, message, {duration})` - Success messages (teal)
+    - `HydraSnackBar.showError(context, message, {duration})` - Error messages (red)
+    - `HydraSnackBar.showInfo(context, message, {duration})` - Info messages (neutral)
+    - `HydraSnackBar.show(context, message, {type, actionLabel, onAction, duration})` - Low-level with actions
+  - **Platform Behavior**: 
+    - **Material**: Uses `SnackBar` with floating behavior and rounded corners
+    - **iOS/macOS**: Custom capsule-shaped toast with fade/slide animations, positioned above nav bar
+  - **API Differences**: 
+    - Material: Full `SnackBar` API with `action`, `duration`, `backgroundColor`, etc.
+    - Cupertino: Custom toast overlay; actions rendered as tappable text within toast
+  - **Used in**: All existing SnackBar usages have been migrated across the app
+
+- **`HydraSlidingSegmentedControl`** (`lib/shared/widgets/inputs/hydra_sliding_segmented_control.dart`) - ✅ Done
+  - Wraps `SegmentedButton` / custom segmented control (Material) / `CupertinoSlidingSegmentedControl` (iOS/macOS)
+  - Platform-adaptive segmented control with a sliding selection pill
+  - Supports 2+ segments (e.g. Week/Month, Week/Month/Year)
+  - Provides a simple, generic API mapping to both Material and Cupertino variants
+  - **Material**: Custom Material-styled segmented control with animated sliding pill
+  - **Cupertino**: `CupertinoSlidingSegmentedControl` widget
+  - **Used in**: 
+    - `progress_week_calendar.dart` (replaced `_SlidingSegmentedControl`)
+    - `weight_screen.dart` (replaced `SegmentedButton` granularity selector)
+
 ---
 
 ## 🔴 High Priority (Frequently Used, High Visual Impact)
@@ -102,35 +142,7 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
 
 ## 🟡 Medium Priority (Moderately Used, Moderate Visual Impact)
 
-### 7. **Time Picker** → `HydraTimePicker` - ✅ Done
-- **Current**: `HydraTimePicker` in `lib/shared/widgets/pickers/hydra_time_picker.dart`
-- **Implementation**: Uses `showTimePicker()` (Material) on Android, `CupertinoDatePicker` with custom bottom sheet on iOS/macOS
-- **Current Usage**: 
-  - Used for time selection in schedules
-  - `time_picker_group.dart` (onboarding)
-  - `fluid_schedule_screen.dart` (profile)
-- **Priority**: Medium - ✅ Platform-adaptive implementation complete
-
-### 8. **SnackBar** → `HydraSnackBar`
-- **Material**: `SnackBar` widget + `ScaffoldMessenger.of(context).showSnackBar()`
-- **Cupertino**: No direct equivalent, typically uses custom overlay or `CupertinoAlertDialog`
-- **Current Usage**: 
-  - `symptoms_entry_dialog.dart` (success message)
-  - `weight_screen.dart`
-  - `progress_day_detail_popup.dart`
-  - `create_fluid_schedule_screen.dart`
-  - `app_shell.dart`
-  - `notification_settings_screen.dart`
-  - `welcome_screen.dart`
-  - `pet_basics_screen.dart`
-  - `ckd_medical_info_screen.dart`
-  - `add_medication_screen.dart`
-- **API Differences**: 
-  - Material: `SnackBar` with `action`, `duration`, `backgroundColor`, etc.
-  - Cupertino: No built-in equivalent, need custom implementation or use alert dialog
-- **Priority**: Medium - Used in 10+ locations for user feedback
-
-### 9. **Button Variants** → `HydraButton` (Partially exists)
+### 7. **Button Variants** → `HydraButton` (Partially exists)
 - **Material**: `ElevatedButton`, `FilledButton`, `OutlinedButton`, `TextButton`
 - **Cupertino**: `CupertinoButton`, `CupertinoButton.filled`
 - **Current**: `HydraButton` exists in `lib/shared/widgets/buttons/hydra_button.dart`
@@ -141,7 +153,7 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
   - `settings_screen.dart` (uses `ElevatedButton`, `TextButton`)
 - **Priority**: Medium - Core component, but may already be handled
 
-### 10. **FloatingActionButton** → `HydraFAB` (Partially exists)
+### 8. **FloatingActionButton** → `HydraFAB` (Partially exists)
 - **Material**: `FloatingActionButton`
 - **Cupertino**: No direct equivalent, typically uses `CupertinoButton` with custom styling
 - **Current**: `HydraExtendedFab` exists in `lib/shared/widgets/buttons/hydra_fab.dart`
@@ -245,8 +257,8 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
    - **Decision**: Keep as-is or make platform-adaptive if Android users need it
 
 2. **`HydraTimePicker`** (`lib/shared/widgets/pickers/hydra_time_picker.dart`)
-   - Currently always uses `CupertinoDatePicker` (iOS-style)
-   - Should be made platform-adaptive to use Material `showTimePicker()` on Android
+   - ✅ Platform-adaptive implementation complete
+   - Uses Material `showTimePicker()` on Android, Cupertino wheel picker on iOS/macOS
 
 3. **Custom Wrappers**
    - `HydraButton`, `HydraFAB`, `HydraBackButton`, `HydraNavigationBar` already exist
@@ -255,7 +267,7 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
 ### Implementation Order Recommendation
 
 1. **Phase 1 (High Priority)**: ✅ Switch, ✅ Date Picker, ✅ Alert Dialog, ✅ Dialog, Bottom Sheet
-2. **Phase 2 (Medium Priority)**: TextField, Time Picker (fix existing), SnackBar, verify existing buttons
+2. **Phase 2 (Medium Priority)**: ✅ TextField, ✅ Time Picker, ✅ SnackBar, ✅ Sliding Segmented Control, verify existing buttons
 3. **Phase 3 (Low Priority)**: Progress indicators, refresh indicator, AppBar, Scaffold (if needed)
 
 ### Testing Strategy

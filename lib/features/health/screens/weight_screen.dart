@@ -15,7 +15,7 @@ import 'package:hydracat/features/health/widgets/weight_line_chart.dart';
 import 'package:hydracat/features/health/widgets/weight_stat_card.dart';
 import 'package:hydracat/providers/weight_provider.dart';
 import 'package:hydracat/providers/weight_unit_provider.dart';
-import 'package:hydracat/shared/widgets/buttons/hydra_fab.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 
 /// Screen for viewing and managing weight tracking
@@ -92,19 +92,12 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
           );
 
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Weight logged successfully'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
+        HydraSnackBar.showSuccess(context, 'Weight logged successfully');
       } else if (mounted) {
         final error = ref.read(weightProvider).error;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error?.message ?? 'Failed to log weight'),
-            backgroundColor: AppColors.error,
-          ),
+        HydraSnackBar.showError(
+          context,
+          error?.message ?? 'Failed to log weight',
         );
       }
     }
@@ -376,49 +369,17 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
   Widget _buildGranularitySelector(WeightState state) {
     return SizedBox(
       width: double.infinity,
-      child: SegmentedButton<WeightGranularity>(
-        segments: const [
-          ButtonSegment<WeightGranularity>(
-            value: WeightGranularity.week,
-            label: Text('Week'),
-          ),
-          ButtonSegment<WeightGranularity>(
-            value: WeightGranularity.month,
-            label: Text('Month'),
-          ),
-          ButtonSegment<WeightGranularity>(
-            value: WeightGranularity.year,
-            label: Text('Year'),
-          ),
-        ],
-        selected: {state.granularity},
-        onSelectionChanged: (Set<WeightGranularity> newSelection) {
-          HapticFeedback.selectionClick();
-          if (newSelection.isNotEmpty) {
-            ref
-                .read(weightProvider.notifier)
-                .setGranularity(newSelection.first);
-          }
+      child: HydraSlidingSegmentedControl<WeightGranularity>(
+        value: state.granularity,
+        segments: const {
+          WeightGranularity.week: Text('Week'),
+          WeightGranularity.month: Text('Month'),
+          WeightGranularity.year: Text('Year'),
         },
-        showSelectedIcon: false,
-        style: ButtonStyle(
-          backgroundColor: WidgetStateProperty.resolveWith<Color>(
-            (Set<WidgetState> states) {
-              if (states.contains(WidgetState.selected)) {
-                return AppColors.primary;
-              }
-              return Colors.transparent;
-            },
-          ),
-          foregroundColor: WidgetStateProperty.resolveWith<Color>(
-            (Set<WidgetState> states) {
-              if (states.contains(WidgetState.selected)) {
-                return Colors.white;
-              }
-              return AppColors.textPrimary;
-            },
-          ),
-        ),
+        onChanged: (newGranularity) {
+          HapticFeedback.selectionClick();
+          ref.read(weightProvider.notifier).setGranularity(newGranularity);
+        },
       ),
     );
   }
@@ -582,12 +543,7 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
           );
 
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Weight updated successfully'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
+        HydraSnackBar.showSuccess(context, 'Weight updated successfully');
       }
     }
   }
@@ -603,19 +559,12 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
 
     if (mounted) {
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Weight entry deleted'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
+        HydraSnackBar.showSuccess(context, 'Weight entry deleted');
       } else {
         final error = ref.read(weightProvider).error;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error?.message ?? 'Failed to delete weight'),
-            backgroundColor: AppColors.error,
-          ),
+        HydraSnackBar.showError(
+          context,
+          error?.message ?? 'Failed to delete weight',
         );
       }
     }

@@ -134,14 +134,7 @@ class _MedicationScheduleScreenState
             .addMedicationSchedule(schedule);
 
         if (success && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Center(
-                child: Text('Medication added successfully'),
-              ),
-              backgroundColor: AppColors.primary,
-            ),
-          );
+          HydraSnackBar.showSuccess(context, 'Medication added successfully');
         } else if (mounted) {
           setState(() {
             _saveError = 'Failed to add medication. Please try again.';
@@ -186,13 +179,9 @@ class _MedicationScheduleScreenState
             .updateMedicationSchedule(updatedSchedule);
 
         if (success && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Center(
-                child: Text('Medication updated successfully'),
-              ),
-              backgroundColor: AppColors.primary,
-            ),
+          HydraSnackBar.showSuccess(
+            context,
+            'Medication updated successfully',
           );
         } else if (mounted) {
           setState(() {
@@ -240,13 +229,9 @@ class _MedicationScheduleScreenState
             .deleteMedicationSchedule(schedule.id);
 
         if (success && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Center(
-                child: Text('Medication deleted successfully'),
-              ),
-              backgroundColor: AppColors.success,
-            ),
+          HydraSnackBar.showSuccess(
+            context,
+            'Medication deleted successfully',
           );
         } else if (mounted) {
           setState(() {

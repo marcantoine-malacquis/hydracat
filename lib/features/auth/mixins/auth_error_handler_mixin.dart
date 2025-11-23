@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/auth/exceptions/auth_exceptions.dart';
 import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/features/auth/widgets/lockout_dialog.dart';
 import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Mixin that provides consistent error handling across authentication screens.
 ///
@@ -33,35 +33,13 @@ mixin AuthErrorHandlerMixin<T extends ConsumerStatefulWidget>
   /// Shows an error message using consistent styling
   void showErrorMessage(String message) {
     if (!mounted) return;
-
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-    );
+    HydraSnackBar.showError(context, message);
   }
 
   /// Shows a success message using consistent styling
   void showSuccessMessage(String message) {
     if (!mounted) return;
-
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-    );
+    HydraSnackBar.showSuccess(context, message);
   }
 
   /// Sets up auth state listener for error handling

@@ -131,11 +131,9 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
 
         // Show success feedback
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Fluid schedule updated successfully'),
-              backgroundColor: AppColors.primary,
-            ),
+          HydraSnackBar.showSuccess(
+            context,
+            'Fluid schedule updated successfully',
           );
         }
       } else {

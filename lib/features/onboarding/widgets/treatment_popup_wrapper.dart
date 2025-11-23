@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/shared/widgets/accessibility/touch_target_icon_button.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 
@@ -67,7 +68,7 @@ class TreatmentPopupWrapper extends StatelessWidget {
           maxWidth: 400,
         ),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          color: AppColors.background,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(

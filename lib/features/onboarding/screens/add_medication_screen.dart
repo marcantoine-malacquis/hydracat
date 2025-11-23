@@ -9,6 +9,7 @@ import 'package:hydracat/features/onboarding/widgets/time_picker_group.dart';
 import 'package:hydracat/features/onboarding/widgets/treatment_popup_wrapper.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/shared/widgets/custom_dropdown.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Multi-step screen for adding/editing medications
 class AddMedicationScreen extends StatefulWidget {
@@ -602,14 +603,10 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
       }
     } on Exception {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              'Failed to save medication. '
-              'Please check all fields and try again.',
-            ),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
+        HydraSnackBar.showError(
+          context,
+          'Failed to save medication. '
+          'Please check all fields and try again.',
         );
       }
     } finally {

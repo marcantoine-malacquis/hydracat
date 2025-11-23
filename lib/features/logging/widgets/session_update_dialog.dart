@@ -148,10 +148,9 @@ class SessionUpdateDialog extends StatelessWidget {
         TextButton(
           onPressed: () {
             Navigator.of(context).pop();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.duplicateDialogCreateNewMessage),
-              ),
+            HydraSnackBar.showInfo(
+              context,
+              l10n.duplicateDialogCreateNewMessage,
             );
           },
           child: Text(l10n.duplicateDialogCreateNew),
@@ -161,11 +160,7 @@ class SessionUpdateDialog extends StatelessWidget {
         FilledButton(
           onPressed: () {
             Navigator.of(context).pop();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.duplicateDialogUpdateMessage),
-              ),
-            );
+            HydraSnackBar.showInfo(context, l10n.duplicateDialogUpdateMessage);
           },
           child: Text(l10n.duplicateDialogUpdate),
         ),

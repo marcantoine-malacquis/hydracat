@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/shared/widgets/selection_card.dart';
@@ -19,6 +20,7 @@ class NoSchedulesDialog extends StatelessWidget {
     final theme = Theme.of(context);
 
     return HydraDialog(
+      backgroundColor: AppColors.background,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),

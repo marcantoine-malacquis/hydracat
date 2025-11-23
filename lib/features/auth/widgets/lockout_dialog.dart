@@ -104,12 +104,7 @@ class _LockoutDialogState extends State<LockoutDialog> {
     await _loginAttemptService.resetAttemptData(widget.email);
     if (mounted) {
       context.pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Lockout reset for testing'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      HydraSnackBar.showInfo(context, 'Lockout reset for testing');
     }
   }
 

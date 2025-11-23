@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/auth/mixins/auth_loading_state_mixin.dart';
 import 'package:hydracat/features/auth/services/auth_service.dart';
-import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A screen that allows users to reset their password via email.
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
@@ -60,31 +60,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
   }
 
   void _showSuccessSnackBar() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          'Password reset email sent! Please check your inbox.',
-        ),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
+    HydraSnackBar.showSuccess(
+      context,
+      'Password reset email sent! Please check your inbox.',
     );
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-    );
+    HydraSnackBar.showError(context, message);
   }
 
   @override

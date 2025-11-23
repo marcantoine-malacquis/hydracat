@@ -1413,14 +1413,10 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
 
     if (success && mounted) {
       // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isNewSession ? 'Treatment logged' : 'Medication updated',
-          ),
-          duration: const Duration(seconds: 2),
-          backgroundColor: AppColors.primary,
-        ),
+      HydraSnackBar.showSuccess(
+        context,
+        isNewSession ? 'Treatment logged' : 'Medication updated',
+        duration: const Duration(seconds: 2),
       );
 
       // Explicit refresh: Wait for Firestore refetch to complete
@@ -1511,14 +1507,10 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
 
     if (success && mounted) {
       // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isNewSession ? 'Fluid therapy logged' : 'Fluid therapy updated',
-          ),
-          duration: const Duration(seconds: 2),
-          backgroundColor: AppColors.primary,
-        ),
+      HydraSnackBar.showSuccess(
+        context,
+        isNewSession ? 'Fluid therapy logged' : 'Fluid therapy updated',
+        duration: const Duration(seconds: 2),
       );
 
       // Explicit refresh: Wait for Firestore refetch to complete

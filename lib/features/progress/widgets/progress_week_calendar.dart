@@ -103,7 +103,6 @@ class ProgressWeekCalendar extends ConsumerWidget {
   /// Builds the format bar with Week/Month toggle and Jump to date button.
   Widget _buildFormatBar(BuildContext context, WidgetRef ref) {
     final format = ref.watch(calendarFormatProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -112,9 +111,12 @@ class ProgressWeekCalendar extends ConsumerWidget {
         children: [
           // Week/Month segmented control - centered
           Center(
-            child: _SlidingSegmentedControl(
-              selected: format,
-              isDark: isDark,
+            child: HydraSlidingSegmentedControl<CalendarFormat>(
+              value: format,
+              segments: const {
+                CalendarFormat.week: Text('Week'),
+                CalendarFormat.month: Text('Month'),
+              },
               onChanged: (CalendarFormat newFormat) {
                 HapticFeedback.selectionClick();
                 ref.read(calendarFormatProvider.notifier).state = newFormat;
@@ -387,127 +389,6 @@ class _DotSkeleton extends ConsumerWidget {
             shape: BoxShape.circle,
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Custom segmented control with animated sliding marker.
-///
-/// Features:
-/// - Compact size with teal sliding marker that animates between Week/Month
-/// - Premium design with shadows and proper spacing
-/// - Smooth 250ms animation with easeInOut curve
-/// - Supports both light and dark themes
-/// - Intrinsic width based on content (not stretched)
-class _SlidingSegmentedControl extends StatelessWidget {
-  const _SlidingSegmentedControl({
-    required this.selected,
-    required this.isDark,
-    required this.onChanged,
-  });
-
-  final CalendarFormat selected;
-  final bool isDark;
-  final ValueChanged<CalendarFormat> onChanged;
-
-  // Segment width - increased for better visual presence
-  static const double _segmentWidth = 90;
-
-  @override
-  Widget build(BuildContext context) {
-    final selectedIndex = selected == CalendarFormat.week ? 0 : 1;
-
-    return Container(
-      height: 36,
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[900] : Colors.grey[100],
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: AppColors.border,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Animated sliding marker (teal background)
-          AnimatedPositioned(
-            left: selectedIndex == 0 ? 0 : _segmentWidth,
-            top: 0,
-            bottom: 0,
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            child: Container(
-              width: _segmentWidth,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(7),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // Labels on top of the marker
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              GestureDetector(
-                onTap: () => onChanged(CalendarFormat.week),
-                behavior: HitTestBehavior.opaque,
-                child: SizedBox(
-                  width: _segmentWidth,
-                  child: Center(
-                    child: AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeInOut,
-                      style: AppTextStyles.buttonSecondary.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                        color: selectedIndex == 0
-                            ? Colors.white
-                            : AppColors.textSecondary,
-                      ),
-                      child: const Text('Week'),
-                    ),
-                  ),
-                ),
-              ),
-              GestureDetector(
-                onTap: () => onChanged(CalendarFormat.month),
-                behavior: HitTestBehavior.opaque,
-                child: SizedBox(
-                  width: _segmentWidth,
-                  child: Center(
-                    child: AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeInOut,
-                      style: AppTextStyles.buttonSecondary.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                        color: selectedIndex == 1
-                            ? Colors.white
-                            : AppColors.textSecondary,
-                      ),
-                      child: const Text('Month'),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

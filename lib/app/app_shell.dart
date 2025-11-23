@@ -455,11 +455,10 @@ class _AppShellState extends ConsumerState<AppShell>
             if (mounted) {
               final l10n = AppLocalizations.of(context);
               if (l10n != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(l10n.notificationAuthRequired),
-                    duration: const Duration(seconds: 3),
-                  ),
+                HydraSnackBar.showInfo(
+                  context,
+                  l10n.notificationAuthRequired,
+                  duration: const Duration(seconds: 3),
                 );
               }
             }
@@ -585,10 +584,9 @@ class _AppShellState extends ConsumerState<AppShell>
             if (mounted) {
               final l10n = AppLocalizations.of(context);
               if (l10n != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(l10n.notificationScheduleNotFound),
-                  ),
+                HydraSnackBar.showInfo(
+                  context,
+                  l10n.notificationScheduleNotFound,
                 );
               }
             }
@@ -684,13 +682,10 @@ class _AppShellState extends ConsumerState<AppShell>
             if (mounted) {
               final l10n = AppLocalizations.of(context);
               if (l10n != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Please log in to view your weekly summary',
-                    ),
-                    duration: Duration(seconds: 3),
-                  ),
+                HydraSnackBar.showInfo(
+                  context,
+                  'Please log in to view your weekly summary',
+                  duration: const Duration(seconds: 3),
                 );
               }
             }
@@ -719,13 +714,10 @@ class _AppShellState extends ConsumerState<AppShell>
             if (mounted) {
               final l10n = AppLocalizations.of(context);
               if (l10n != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Please complete onboarding to view your weekly summary',
-                    ),
-                    duration: Duration(seconds: 3),
-                  ),
+                HydraSnackBar.showInfo(
+                  context,
+                  'Please complete onboarding to view your weekly summary',
+                  duration: const Duration(seconds: 3),
                 );
               }
             }

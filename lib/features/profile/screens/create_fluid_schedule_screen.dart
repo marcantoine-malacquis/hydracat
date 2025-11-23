@@ -9,6 +9,7 @@ import 'package:hydracat/features/onboarding/widgets/rotating_wheel_picker.dart'
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/profile_provider.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:uuid/uuid.dart';
 
 /// Screen for creating a new fluid schedule
@@ -522,11 +523,9 @@ class _CreateFluidScheduleScreenState
 
       if (mounted && context.mounted) {
         // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Fluid schedule saved successfully!'),
-            backgroundColor: Colors.green,
-          ),
+        HydraSnackBar.showSuccess(
+          context,
+          'Fluid schedule saved successfully!',
         );
 
         // Navigate back
@@ -534,13 +533,7 @@ class _CreateFluidScheduleScreenState
       }
     } on Exception catch (e) {
       if (mounted) {
-        final theme = Theme.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error saving fluid schedule: $e'),
-            backgroundColor: theme.colorScheme.error,
-          ),
-        );
+        HydraSnackBar.showError(context, 'Error saving fluid schedule: $e');
       }
     } finally {
       if (mounted) {

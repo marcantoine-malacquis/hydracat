@@ -128,12 +128,7 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
 
       // Show success feedback
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('CKD profile updated successfully'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
+        HydraSnackBar.showSuccess(context, 'CKD profile updated successfully');
       }
     } on Exception catch (e) {
       setState(() {

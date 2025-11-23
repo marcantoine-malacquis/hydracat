@@ -86,11 +86,29 @@ class HydraDialog extends StatelessWidget {
         insetPadding ??
         const EdgeInsets.symmetric(horizontal: 40, vertical: 24);
 
+    // If a fully transparent background color is requested, we disable the
+    // default Cupertino surface painting so that the child can control the
+    // visual background and corner treatment. This is important for custom
+    // dialogs (e.g. weight entry) that want the header color to reach all the
+    // way into the rounded corners without the default white surface showing
+    // through.
+    final shouldPaintSurface = backgroundColor != Colors.transparent;
+
     return Center(
       child: Padding(
         padding: resolvedInsetPadding,
         child: CupertinoPopupSurface(
-          child: child,
+          isSurfacePainted: shouldPaintSurface,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color:
+                  backgroundColor == null ||
+                      backgroundColor == Colors.transparent
+                  ? Colors.transparent
+                  : backgroundColor,
+            ),
+            child: child,
+          ),
         ),
       ),
     );

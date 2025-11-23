@@ -178,12 +178,7 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
         final errorMessage = ref
             .read(onboardingProvider.notifier)
             .getErrorMessage(e);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        HydraSnackBar.showError(context, errorMessage);
       }
     } finally {
       if (mounted) {

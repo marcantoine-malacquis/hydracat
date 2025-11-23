@@ -213,7 +213,6 @@ class _NotificationSettingsScreenState
             isLoading: _isWeeklySummaryLoading,
             isEnabled: canUseFeatures && !noPetProfile,
             onChanged: (value) => _handleToggleWeeklySummary(
-              context,
               ref,
               value,
               currentUser.id,
@@ -554,27 +553,21 @@ class _NotificationSettingsScreenState
 
   /// Handles toggling the weekly summary notifications switch
   Future<void> _handleToggleWeeklySummary(
-    BuildContext context,
     WidgetRef ref,
     bool value,
     String userId,
     String? petId,
   ) async {
     // Capture context before async gaps
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
     final localizations = AppLocalizations.of(context)!;
 
     // Check if pet profile exists
     if (petId == null) {
       if (mounted) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              localizations.notificationSettingsFeatureRequiresPetProfile,
-            ),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 3),
-          ),
+        HydraSnackBar.showError(
+          context,
+          localizations.notificationSettingsFeatureRequiresPetProfile,
+          duration: const Duration(seconds: 3),
         );
       }
       return;
@@ -609,12 +602,10 @@ class _NotificationSettingsScreenState
           final message = value
               ? localizations.notificationSettingsWeeklySummarySuccess
               : localizations.notificationSettingsWeeklySummaryDisabledSuccess;
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Text(message),
-              backgroundColor: AppColors.success,
-              duration: const Duration(seconds: 3),
-            ),
+          HydraSnackBar.showSuccess(
+            context,
+            message,
+            duration: const Duration(seconds: 3),
           );
           await ref
               .read(analyticsServiceDirectProvider)
@@ -632,12 +623,10 @@ class _NotificationSettingsScreenState
         final message = value
             ? localizations.notificationSettingsWeeklySummarySuccess
             : localizations.notificationSettingsWeeklySummaryDisabledSuccess;
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text(message),
-            backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 3),
-          ),
+        HydraSnackBar.showSuccess(
+          context,
+          message,
+          duration: const Duration(seconds: 3),
         );
         await ref
             .read(analyticsServiceDirectProvider)
@@ -652,12 +641,10 @@ class _NotificationSettingsScreenState
           .setWeeklySummaryEnabled(enabled: !value);
 
       if (!mounted) return;
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text(localizations.notificationSettingsWeeklySummaryError),
-          backgroundColor: AppColors.error,
-          duration: const Duration(seconds: 3),
-        ),
+      HydraSnackBar.showError(
+        context,
+        localizations.notificationSettingsWeeklySummaryError,
+        duration: const Duration(seconds: 3),
       );
 
       await ref
@@ -729,7 +716,6 @@ class _NotificationSettingsScreenState
     String petId,
   ) async {
     // Capture context before async gaps
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
     final localizations = AppLocalizations.of(context)!;
 
     // Show confirmation dialog
@@ -777,16 +763,12 @@ class _NotificationSettingsScreenState
         final canceledCount = result['canceledCount'] as int;
 
         if (!context.mounted) return;
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              localizations.notificationSettingsClearDataSuccess(
-                canceledCount,
-              ),
-            ),
-            backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 3),
+        HydraSnackBar.showSuccess(
+          context,
+          localizations.notificationSettingsClearDataSuccess(
+            canceledCount,
           ),
+          duration: const Duration(seconds: 3),
         );
 
         // Track analytics
@@ -802,16 +784,12 @@ class _NotificationSettingsScreenState
       }
     } on Exception catch (e) {
       if (!context.mounted) return;
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            localizations.notificationSettingsClearDataError(
-              e.toString(),
-            ),
-          ),
-          backgroundColor: AppColors.error,
-          duration: const Duration(seconds: 3),
+      HydraSnackBar.showError(
+        context,
+        localizations.notificationSettingsClearDataError(
+          e.toString(),
         ),
+        duration: const Duration(seconds: 3),
       );
 
       // Track analytics

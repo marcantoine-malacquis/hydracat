@@ -177,25 +177,19 @@ class DebugPanel extends ConsumerWidget {
       await ref.read(authProvider.notifier).debugResetUserState();
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              '✅ Complete user data wipe successful! '
-              'All Firestore and local data cleared.',
-            ),
-            backgroundColor: Colors.green.shade600,
-            duration: const Duration(seconds: 3),
-          ),
+        HydraSnackBar.showSuccess(
+          context,
+          '✅ Complete user data wipe successful! '
+          'All Firestore and local data cleared.',
+          duration: const Duration(seconds: 3),
         );
       }
     } on Exception catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Reset failed: $e'),
-            backgroundColor: Colors.red.shade600,
-            duration: const Duration(seconds: 3),
-          ),
+        HydraSnackBar.showError(
+          context,
+          '❌ Reset failed: $e',
+          duration: const Duration(seconds: 3),
         );
       }
     }
@@ -272,14 +266,10 @@ class DebugPanel extends ConsumerWidget {
       debugPrint('');
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              'Test notification scheduled - will appear in 1 second!',
-            ),
-            backgroundColor: Colors.green.shade600,
-            duration: const Duration(seconds: 2),
-          ),
+        HydraSnackBar.showSuccess(
+          context,
+          'Test notification scheduled - will appear in 1 second!',
+          duration: const Duration(seconds: 2),
         );
       }
     } on Exception catch (e) {
@@ -288,12 +278,10 @@ class DebugPanel extends ConsumerWidget {
       debugPrint('');
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed: $e'),
-            backgroundColor: Colors.red.shade600,
-            duration: const Duration(seconds: 3),
-          ),
+        HydraSnackBar.showError(
+          context,
+          'Failed: $e',
+          duration: const Duration(seconds: 3),
         );
       }
     }
@@ -323,14 +311,10 @@ class DebugPanel extends ConsumerWidget {
         debugPrint('❌ Permission denied, aborting');
         debugPrint('═══════════════════════════════════════════════════════');
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
-                'Please grant notification permissions in Settings',
-              ),
-              backgroundColor: Colors.red.shade600,
-              duration: const Duration(seconds: 3),
-            ),
+          HydraSnackBar.showError(
+            context,
+            'Please grant notification permissions in Settings',
+            duration: const Duration(seconds: 3),
           );
         }
         return;
@@ -362,12 +346,10 @@ class DebugPanel extends ConsumerWidget {
         debugPrint('❌ No medication schedule found');
         debugPrint('═══════════════════════════════════════════════════════');
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('No medication schedule found'),
-              backgroundColor: Colors.red.shade600,
-              duration: const Duration(seconds: 3),
-            ),
+          HydraSnackBar.showError(
+            context,
+            'No medication schedule found',
+            duration: const Duration(seconds: 3),
           );
         }
         return;
@@ -384,12 +366,10 @@ class DebugPanel extends ConsumerWidget {
         debugPrint('  primaryPet: $primaryPet');
         debugPrint('═══════════════════════════════════════════════════════');
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('User or pet data not available'),
-              backgroundColor: Colors.red.shade600,
-              duration: const Duration(seconds: 3),
-            ),
+          HydraSnackBar.showError(
+            context,
+            'User or pet data not available',
+            duration: const Duration(seconds: 3),
           );
         }
         return;
@@ -468,15 +448,11 @@ class DebugPanel extends ConsumerWidget {
       debugPrint('');
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              'Medication test notification scheduled - '
-              'will appear in 5 seconds',
-            ),
-            backgroundColor: Colors.green.shade600,
-            duration: const Duration(seconds: 3),
-          ),
+        HydraSnackBar.showSuccess(
+          context,
+          'Medication test notification scheduled - '
+          'will appear in 5 seconds',
+          duration: const Duration(seconds: 3),
         );
       }
     } on Exception catch (e) {
@@ -485,12 +461,10 @@ class DebugPanel extends ConsumerWidget {
       debugPrint('');
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to schedule notification: $e'),
-            backgroundColor: Colors.red.shade600,
-            duration: const Duration(seconds: 3),
-          ),
+        HydraSnackBar.showError(
+          context,
+          'Failed to schedule notification: $e',
+          duration: const Duration(seconds: 3),
         );
       }
     }
@@ -520,14 +494,10 @@ class DebugPanel extends ConsumerWidget {
         debugPrint('❌ Permission denied, aborting');
         debugPrint('═══════════════════════════════════════════════════════');
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
-                'Please grant notification permissions in Settings',
-              ),
-              backgroundColor: Colors.red.shade600,
-              duration: const Duration(seconds: 3),
-            ),
+          HydraSnackBar.showError(
+            context,
+            'Please grant notification permissions in Settings',
+            duration: const Duration(seconds: 3),
           );
         }
         return;
@@ -559,12 +529,10 @@ class DebugPanel extends ConsumerWidget {
         debugPrint('❌ No fluid schedule found');
         debugPrint('═══════════════════════════════════════════════════════');
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('No fluid schedule found'),
-              backgroundColor: Colors.red.shade600,
-              duration: const Duration(seconds: 3),
-            ),
+          HydraSnackBar.showError(
+            context,
+            'No fluid schedule found',
+            duration: const Duration(seconds: 3),
           );
         }
         return;
@@ -581,12 +549,10 @@ class DebugPanel extends ConsumerWidget {
         debugPrint('  primaryPet: $primaryPet');
         debugPrint('═══════════════════════════════════════════════════════');
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('User or pet data not available'),
-              backgroundColor: Colors.red.shade600,
-              duration: const Duration(seconds: 3),
-            ),
+          HydraSnackBar.showError(
+            context,
+            'User or pet data not available',
+            duration: const Duration(seconds: 3),
           );
         }
         return;
@@ -644,15 +610,11 @@ class DebugPanel extends ConsumerWidget {
       debugPrint('');
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              'Fluid test notification scheduled - '
-              'will appear in 5 seconds',
-            ),
-            backgroundColor: Colors.green.shade600,
-            duration: const Duration(seconds: 3),
-          ),
+        HydraSnackBar.showSuccess(
+          context,
+          'Fluid test notification scheduled - '
+          'will appear in 5 seconds',
+          duration: const Duration(seconds: 3),
         );
       }
     } on Exception catch (e) {
@@ -661,12 +623,10 @@ class DebugPanel extends ConsumerWidget {
       debugPrint('');
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to schedule notification: $e'),
-            backgroundColor: Colors.red.shade600,
-            duration: const Duration(seconds: 3),
-          ),
+        HydraSnackBar.showError(
+          context,
+          'Failed to schedule notification: $e',
+          duration: const Duration(seconds: 3),
         );
       }
     }
@@ -864,14 +824,10 @@ class DebugPanel extends ConsumerWidget {
         debugPrint('❌ Permission denied, aborting');
         debugPrint('═══════════════════════════════════════════════════════');
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
-                'Please grant notification permissions in Settings',
-              ),
-              backgroundColor: Colors.red.shade600,
-              duration: const Duration(seconds: 3),
-            ),
+          HydraSnackBar.showError(
+            context,
+            'Please grant notification permissions in Settings',
+            duration: const Duration(seconds: 3),
           );
         }
         return;
@@ -898,12 +854,10 @@ class DebugPanel extends ConsumerWidget {
         debugPrint('❌ No schedule found');
         debugPrint('═══════════════════════════════════════════════════════');
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('No schedule found for testing'),
-              backgroundColor: Colors.red.shade600,
-              duration: const Duration(seconds: 3),
-            ),
+          HydraSnackBar.showError(
+            context,
+            'No schedule found for testing',
+            duration: const Duration(seconds: 3),
           );
         }
         return;
@@ -919,12 +873,10 @@ class DebugPanel extends ConsumerWidget {
         debugPrint('❌ User or pet data not available');
         debugPrint('═══════════════════════════════════════════════════════');
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('User or pet data not available'),
-              backgroundColor: Colors.red.shade600,
-              duration: const Duration(seconds: 3),
-            ),
+          HydraSnackBar.showError(
+            context,
+            'User or pet data not available',
+            duration: const Duration(seconds: 3),
           );
         }
         return;
@@ -997,15 +949,11 @@ class DebugPanel extends ConsumerWidget {
       debugPrint('═══════════════════════════════════════════════════════');
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Snooze test notification scheduled for '
-              '${scheduledTime.toLocal()}',
-            ),
-            backgroundColor: Colors.green.shade600,
-            duration: const Duration(seconds: 3),
-          ),
+        HydraSnackBar.showSuccess(
+          context,
+          'Snooze test notification scheduled for '
+          '${scheduledTime.toLocal()}',
+          duration: const Duration(seconds: 3),
         );
       }
     } on Exception catch (e, stackTrace) {
@@ -1014,11 +962,9 @@ class DebugPanel extends ConsumerWidget {
       debugPrint('═══════════════════════════════════════════════════════');
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to schedule test notification: $e'),
-            backgroundColor: Colors.red.shade600,
-          ),
+        HydraSnackBar.showError(
+          context,
+          'Failed to schedule test notification: $e',
         );
       }
     }
@@ -1040,12 +986,10 @@ class DebugPanel extends ConsumerWidget {
     try {
       // Show loading indicator
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Fetching pending notifications...'),
-            duration: const Duration(seconds: 1),
-            backgroundColor: Colors.blue.shade600,
-          ),
+        HydraSnackBar.showInfo(
+          context,
+          'Fetching pending notifications...',
+          duration: const Duration(seconds: 1),
         );
       }
 
@@ -1067,12 +1011,10 @@ class DebugPanel extends ConsumerWidget {
       debugPrint('═══════════════════════════════════════════════════════');
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to fetch notifications: $e'),
-            backgroundColor: Colors.red.shade600,
-            duration: const Duration(seconds: 3),
-          ),
+        HydraSnackBar.showError(
+          context,
+          'Failed to fetch notifications: $e',
+          duration: const Duration(seconds: 3),
         );
       }
     }

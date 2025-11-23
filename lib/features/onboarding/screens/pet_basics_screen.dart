@@ -242,12 +242,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
   void _showGenericError(String message) {
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.error,
-      ),
-    );
+    HydraSnackBar.showError(context, message);
   }
 
   /// Navigate back to previous step

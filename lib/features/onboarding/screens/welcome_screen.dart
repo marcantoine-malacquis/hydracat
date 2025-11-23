@@ -13,7 +13,7 @@ import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.d
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/onboarding_provider.dart';
-import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// The welcome screen that introduces users to the onboarding flow.
 /// This is the entry point for new users to set up their CKD management.
@@ -206,12 +206,7 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
   }
 
   void _showErrorSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.error,
-      ),
-    );
+    HydraSnackBar.showError(context, message);
   }
 
   Future<void> _handleSkip(BuildContext context, WidgetRef ref) async {
@@ -250,11 +245,7 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
     } else {
       // Handle error case
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.failedToSkipOnboarding),
-          ),
-        );
+        HydraSnackBar.showError(context, context.l10n.failedToSkipOnboarding);
       }
     }
   }

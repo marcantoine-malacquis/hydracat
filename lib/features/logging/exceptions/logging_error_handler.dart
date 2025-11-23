@@ -3,10 +3,9 @@ library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
-import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/logging/exceptions/logging_exceptions.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Static utility class for consistent error handling across logging feature
 ///
@@ -78,25 +77,11 @@ class LoggingErrorHandler {
 
   /// Shows an error message with consistent styling
   ///
-  /// Uses snackbar with error background color and floating behavior.
-  /// Clears any existing snackbars before showing the new one.
+  /// Uses platform-adaptive snackbar/toast with error background color.
+  /// Clears any existing snackbars/toasts before showing the new one.
   /// Announces message to screen readers via SemanticsService.
   static void showLoggingError(BuildContext context, String message) {
-    // Announce to screen readers
-    SemanticsService.announce(message, TextDirection.ltr);
-
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-      );
+    HydraSnackBar.showError(context, message);
   }
 
   /// Shows a success message with optional offline indicator
@@ -104,7 +89,7 @@ class LoggingErrorHandler {
   /// When [isOffline] is true, appends localized offline message to inform
   /// users that their data will sync when reconnected.
   ///
-  /// Uses success background color and floating behavior.
+  /// Uses platform-adaptive snackbar/toast with success background color.
   /// Announces message to screen readers via SemanticsService.
   static void showLoggingSuccess(
     BuildContext context,
@@ -112,28 +97,12 @@ class LoggingErrorHandler {
     bool isOffline = false,
   }) {
     final l10n = AppLocalizations.of(context)!;
-    final messenger = ScaffoldMessenger.of(context)..clearSnackBars();
 
     final displayMessage = isOffline
         ? '$message ${l10n.errorSyncLater}'
         : message;
 
-    // Announce to screen readers with offline context if applicable
-    final announcement = isOffline
-        ? '$message. ${l10n.errorSyncWhenOnline}'
-        : message;
-    SemanticsService.announce(announcement, TextDirection.ltr);
-
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(displayMessage),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-    );
+    HydraSnackBar.showSuccess(context, displayMessage);
   }
 
   /// Shows an error message with a retry action button
@@ -148,29 +117,13 @@ class LoggingErrorHandler {
   ) {
     final l10n = AppLocalizations.of(context)!;
 
-    // Announce to screen readers with retry context
-    SemanticsService.announce(
-      '$message. ${l10n.retry} button available.',
-      TextDirection.ltr,
+    HydraSnackBar.show(
+      context,
+      message,
+      type: HydraSnackBarType.error,
+      actionLabel: l10n.retry,
+      onAction: onRetry,
+      duration: const Duration(seconds: 6), // Longer for retry action
     );
-
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          duration: const Duration(seconds: 6), // Longer for retry action
-          action: SnackBarAction(
-            label: l10n.retry,
-            textColor: Colors.white,
-            onPressed: onRetry,
-          ),
-        ),
-      );
   }
 }

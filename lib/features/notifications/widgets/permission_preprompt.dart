@@ -287,34 +287,28 @@ class _NotificationPermissionPrepromptState
         }
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.notificationPermissionGrantedSuccess),
-              backgroundColor: AppColors.success,
-              duration: const Duration(seconds: 3),
-            ),
+          HydraSnackBar.showSuccess(
+            context,
+            l10n.notificationPermissionGrantedSuccess,
+            duration: const Duration(seconds: 3),
           );
         }
       } else if (mounted) {
         // Permission denied - show gentle feedback
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.notificationPermissionDeniedFeedback),
-            backgroundColor: AppColors.textSecondary,
-            duration: const Duration(seconds: 3),
-          ),
+        HydraSnackBar.showInfo(
+          context,
+          l10n.notificationPermissionDeniedFeedback,
+          duration: const Duration(seconds: 3),
         );
       }
     } on Exception catch (e) {
       // Handle error gracefully
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error requesting permission: $e'),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 3),
-          ),
+        HydraSnackBar.showError(
+          context,
+          'Error requesting permission: $e',
+          duration: const Duration(seconds: 3),
         );
       }
     } finally {

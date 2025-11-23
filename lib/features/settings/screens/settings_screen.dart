@@ -55,11 +55,9 @@ class SettingsScreen extends ConsumerWidget {
 
     if (user == null || pet == null) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to clear cache: User or pet not found'),
-            backgroundColor: AppColors.error,
-          ),
+        HydraSnackBar.showError(
+          context,
+          'Unable to clear cache: User or pet not found',
         );
       }
       return;
@@ -78,21 +76,17 @@ class SettingsScreen extends ConsumerWidget {
       await cacheService.invalidateProviders(ref);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Cache cleared successfully ($clearedCount items)'),
-            backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 3),
-          ),
+        HydraSnackBar.showSuccess(
+          context,
+          'Cache cleared successfully ($clearedCount items)',
+          duration: const Duration(seconds: 3),
         );
       }
     } on Exception catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to clear cache: $e'),
-            backgroundColor: AppColors.error,
-          ),
+        HydraSnackBar.showError(
+          context,
+          'Failed to clear cache: $e',
         );
       }
     }

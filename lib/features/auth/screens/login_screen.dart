@@ -8,7 +8,7 @@ import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/features/auth/widgets/lockout_dialog.dart';
 import 'package:hydracat/features/auth/widgets/social_signin_buttons.dart';
 import 'package:hydracat/providers/auth_provider.dart';
-import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A screen that handles user authentication and login.
 class LoginScreen extends ConsumerStatefulWidget {
@@ -69,16 +69,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   void _showErrorSnackBar(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-      );
+      HydraSnackBar.showError(context, message);
     }
   }
 
