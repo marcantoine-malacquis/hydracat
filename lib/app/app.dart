@@ -7,6 +7,7 @@ import 'package:hydracat/core/theme/app_theme.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/theme_provider.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Main application widget for HydraCat.
 class HydraCatApp extends ConsumerStatefulWidget {
@@ -137,7 +138,7 @@ class _HydraCatAppState extends ConsumerState<HydraCatApp> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CircularProgressIndicator(
+                HydraProgressIndicator(
                   color: Colors.blue,
                 ),
                 SizedBox(height: 24),

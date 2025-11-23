@@ -3,6 +3,7 @@ import 'package:hydracat/core/constants/app_accessibility.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Layout options for the selection card
 enum CardLayout {
@@ -274,8 +275,8 @@ class _SelectionCardState extends State<SelectionCard>
           color: AppColors.surface.withValues(alpha: 0.9),
         ),
         child: const Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+          child: HydraProgressIndicator(
+            color: AppColors.primary,
             strokeWidth: 2,
           ),
         ),

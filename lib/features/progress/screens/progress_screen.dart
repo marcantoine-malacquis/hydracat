@@ -74,7 +74,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             : null,
       ),
       body: hasCompletedOnboarding
-          ? RefreshIndicator(
+          ? HydraRefreshIndicator(
               onRefresh: () async {
                 // Invalidate schedule data
                 // (may have changed in Profile screen)

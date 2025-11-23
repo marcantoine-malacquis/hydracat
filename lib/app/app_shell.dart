@@ -1373,7 +1373,7 @@ class _AppShellState extends ConsumerState<AppShell>
                 SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(
+                  child: HydraProgressIndicator(
                     strokeWidth: 2,
                     color: Theme.of(context).colorScheme.primary.withValues(
                       alpha: 0.6,

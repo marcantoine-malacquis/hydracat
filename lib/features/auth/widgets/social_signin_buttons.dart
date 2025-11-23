@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A widget that provides Google and Apple Sign-In buttons
 ///
@@ -89,11 +90,9 @@ class _SocialSignInButtonsState extends ConsumerState<SocialSignInButtons> {
                 ? SizedBox(
                     height: 20,
                     width: 20,
-                    child: CircularProgressIndicator(
+                    child: HydraProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Theme.of(context).colorScheme.primary,
-                      ),
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   )
                 : Row(
@@ -141,9 +140,9 @@ class _SocialSignInButtonsState extends ConsumerState<SocialSignInButtons> {
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(
+                      child: HydraProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        color: Colors.white,
                       ),
                     )
                   : const Row(

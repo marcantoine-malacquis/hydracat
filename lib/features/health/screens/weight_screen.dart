@@ -144,7 +144,7 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
 
   Widget _buildLoadingState() {
     return const Center(
-      child: CircularProgressIndicator(
+      child: HydraProgressIndicator(
         color: AppColors.primary,
       ),
     );
@@ -514,7 +514,7 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
                   ? const SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: HydraProgressIndicator(strokeWidth: 2),
                     )
                   : const Text('Load More'),
             ),

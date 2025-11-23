@@ -180,7 +180,7 @@ class TreatmentPopupWrapper extends StatelessWidget {
                     ? SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(
+                        child: HydraProgressIndicator(
                           strokeWidth: 2,
                           color: theme.colorScheme.onPrimary,
                         ),

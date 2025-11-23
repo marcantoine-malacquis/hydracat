@@ -1,12 +1,23 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
-/// Special Floating Action Button for logging sessions.
-/// Implements the droplet FAB design from the UI guidelines.
+/// Platform-adaptive Floating Action Button for logging sessions.
+///
+/// Wraps [FloatingActionButton] on Material platforms and a custom
+/// Cupertino-style circular button on iOS/macOS, while preserving the
+/// droplet FAB design from the UI guidelines.
+///
+/// **Material (Android/others)**: Uses [FloatingActionButton] with Material
+/// styling and ink ripple effects. Tooltips are supported.
+///
+/// **Cupertino (iOS/macOS)**: Uses a custom circular button with Cupertino
+/// styling. Tooltips are not supported on iOS (tooltip parameter is ignored).
 class HydraFab extends StatefulWidget {
   /// Creates a HydraFab.
   const HydraFab({
@@ -67,6 +78,16 @@ class _HydraFabState extends State<HydraFab> {
 
   @override
   Widget build(BuildContext context) {
+    final platform = Theme.of(context).platform;
+
+    if (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS) {
+      return _buildCupertinoFab(context);
+    }
+
+    return _buildMaterialFab(context);
+  }
+
+  Widget _buildMaterialFab(BuildContext context) {
     // If we have a long press handler, create a custom FAB that handles
     // gestures properly
     if (widget.onLongPress != null) {
@@ -129,14 +150,48 @@ class _HydraFabState extends State<HydraFab> {
     );
   }
 
+  Widget _buildCupertinoFab(BuildContext context) {
+    // Cupertino does not have a direct FAB equivalent, so we create a custom
+    // circular button that matches the Material FAB design while using
+    // Cupertino interaction patterns (no ink ripple, no tooltip).
+    final isDisabled = widget.isLoading || widget.onPressed == null;
+
+    return GestureDetector(
+      onTap: widget.isLoading ? null : widget.onPressed,
+      onLongPress: widget.isLoading
+          ? null
+          : widget.onLongPress != null
+          ? () {
+              HapticFeedback.selectionClick();
+              widget.onLongPress?.call();
+            }
+          : null,
+      child: Opacity(
+        opacity: isDisabled ? 0.5 : 1.0,
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.surface,
+            border: Border.all(
+              color: AppColors.border,
+            ),
+          ),
+          child: _buildFabContent(),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFabContent() {
     if (widget.isLoading) {
       return const SizedBox(
         width: 24,
         height: 24,
-        child: CircularProgressIndicator(
+        child: HydraProgressIndicator(
           strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(AppColors.onPrimary),
+          color: AppColors.primary,
         ),
       );
     }
@@ -144,11 +199,23 @@ class _HydraFabState extends State<HydraFab> {
     return Icon(
       widget.icon,
       size: 32, // Increased from 28 to make it stand out more
+      color: AppColors.primary,
     );
   }
 }
 
-/// Extended FAB for more prominent actions
+/// Platform-adaptive Extended FAB for more prominent actions.
+///
+/// Wraps [FloatingActionButton.extended] on Material platforms and a custom
+/// Cupertino-style pill button on iOS/macOS, while preserving the extended
+/// FAB design from the UI guidelines.
+///
+/// **Material (Android/others)**: Uses [FloatingActionButton.extended] with
+/// Material styling and ink ripple effects. Supports glass morphism effect
+/// via custom [BackdropFilter] implementation.
+///
+/// **Cupertino (iOS/macOS)**: Uses a custom pill-shaped button with Cupertino
+/// styling. Glass morphism effect is supported on both platforms.
 class HydraExtendedFab extends StatelessWidget {
   /// Creates a HydraExtendedFab.
   const HydraExtendedFab({
@@ -190,6 +257,16 @@ class HydraExtendedFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final platform = Theme.of(context).platform;
+
+    if (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS) {
+      return _buildCupertinoExtendedFab(context);
+    }
+
+    return _buildMaterialExtendedFab(context);
+  }
+
+  Widget _buildMaterialExtendedFab(BuildContext context) {
     final baseBackgroundColor =
         backgroundColor ?? AppColors.surface; // White background by default
     final baseForegroundColor =
@@ -255,6 +332,93 @@ class HydraExtendedFab extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCupertinoExtendedFab(BuildContext context) {
+    final baseBackgroundColor =
+        backgroundColor ?? AppColors.surface; // White background by default
+    final baseForegroundColor =
+        foregroundColor ?? AppColors.primary; // Teal text and icon by default
+
+    // Cupertino does not have a direct extended FAB equivalent, so we create
+    // a custom pill-shaped button that matches the Material extended FAB
+    // design while using Cupertino interaction patterns (no ink ripple).
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 12,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildIcon(),
+          const SizedBox(width: 8),
+          _buildLabel(),
+        ],
+      ),
+    );
+
+    if (useGlassEffect) {
+      // Apply glass morphism effect with custom widget
+      // (works on both platforms)
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(999),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            decoration: BoxDecoration(
+              color: baseBackgroundColor.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: baseForegroundColor.withValues(
+                  alpha: 0.4,
+                ),
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(
+                    alpha: 0.05,
+                  ),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: CupertinoButton(
+              onPressed: isLoading ? null : onPressed,
+              padding: EdgeInsets.zero,
+              borderRadius: BorderRadius.circular(999),
+              color: Colors.transparent,
+              disabledColor: Colors.transparent,
+              child: content,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Standard Cupertino button without glass effect
+    final isDisabled = isLoading || onPressed == null;
+
+    return GestureDetector(
+      onTap: isLoading ? null : onPressed,
+      child: Opacity(
+        opacity: isDisabled ? 0.5 : 1.0,
+        child: Container(
+          decoration: BoxDecoration(
+            color: baseBackgroundColor,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: baseForegroundColor.withValues(alpha: 0.2),
+            ),
+          ),
+          child: content,
         ),
       ),
     );

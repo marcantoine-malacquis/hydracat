@@ -275,7 +275,7 @@ class _MedicationScheduleScreenState
             tooltip: 'Back',
           ),
         ),
-        body: RefreshIndicator(
+        body: HydraRefreshIndicator(
           onRefresh: () async {
             await ref
                 .read(profileProvider.notifier)

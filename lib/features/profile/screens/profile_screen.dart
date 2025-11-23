@@ -51,7 +51,7 @@ class ProfileScreen extends ConsumerWidget {
         ),
         drawer: _buildDrawer(context, ref),
         body: hasCompletedOnboarding
-            ? RefreshIndicator(
+            ? HydraRefreshIndicator(
                 onRefresh: () => _handleRefresh(ref),
                 child: _buildProfileContent(context, ref),
               )

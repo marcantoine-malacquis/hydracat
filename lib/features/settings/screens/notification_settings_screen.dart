@@ -95,7 +95,9 @@ class _NotificationSettingsScreenState
           permissionStatusAsync.when(
             data: (permissionStatus) =>
                 _buildPermissionStatusCard(context, l10n, permissionStatus),
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(
+                  child: HydraProgressIndicator(),
+                ),
             error: (error, stack) => _buildPermissionStatusCard(
               context,
               l10n,
@@ -436,7 +438,7 @@ class _NotificationSettingsScreenState
                   const SizedBox(
                     width: 24,
                     height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: HydraProgressIndicator(strokeWidth: 2),
                   )
                 else
                   IgnorePointer(

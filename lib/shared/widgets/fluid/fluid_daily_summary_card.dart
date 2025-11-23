@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/shared/models/fluid_daily_summary_view.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Compact progress bar card for daily fluid summary (Option 1)
 class FluidDailySummaryCard extends StatelessWidget {
@@ -163,7 +164,8 @@ class _ProgressBarWithTick extends StatelessWidget {
                 tween: Tween(begin: 0, end: value),
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOut,
-                builder: (context, val, _) => LinearProgressIndicator(
+                builder: (context, val, _) => HydraProgressIndicator(
+                  type: HydraProgressIndicatorType.linear,
                   value: val.isNaN ? 0 : math.max(0, math.min(1, val)),
                   minHeight: 8,
                   backgroundColor: AppColors.textSecondary.withValues(

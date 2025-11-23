@@ -9,25 +9,25 @@ import 'package:hydracat/features/auth/mixins/auth_loading_state_mixin.dart';
 import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/features/auth/services/auth_service.dart';
 import 'package:hydracat/providers/auth_provider.dart';
-import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Configuration for smart email verification polling
 class VerificationPollingConfig {
   /// Initial delay between verification checks
   static const Duration initialDelay = Duration(seconds: 5);
-  
+
   /// Maximum delay between verification checks
   static const Duration maxDelay = Duration(minutes: 1);
-  
+
   /// Maximum consecutive failures before circuit breaker
   static const int maxFailures = 3;
-  
+
   /// Delay during circuit breaker activation
   static const Duration circuitBreakerDelay = Duration(minutes: 5);
-  
+
   /// Maximum time to continue polling before timeout
   static const Duration maxPollingDuration = Duration(minutes: 10);
-  
+
   /// Multiplier for exponential backoff
   static const int backoffMultiplier = 2;
 }
@@ -55,7 +55,7 @@ class _EmailVerificationScreenState
   int _cooldownSeconds = 0;
   Timer? _cooldownTimer;
   Timer? _verificationCheckTimer;
-  
+
   // Smart polling state
   Duration _currentDelay = VerificationPollingConfig.initialDelay;
   int _failureCount = 0;
@@ -91,73 +91,73 @@ class _EmailVerificationScreenState
 
   void _scheduleNextCheck() {
     if (!_isPollingActive || !mounted) return;
-    
+
     // Stop if maximum duration exceeded
     if (_pollingStartTime != null &&
-        DateTime.now().difference(_pollingStartTime!) > 
-        VerificationPollingConfig.maxPollingDuration) {
+        DateTime.now().difference(_pollingStartTime!) >
+            VerificationPollingConfig.maxPollingDuration) {
       _handlePollingTimeout();
       return;
     }
-    
+
     // Schedule next check with current delay
     _verificationCheckTimer = Timer(_currentDelay, _performSmartCheck);
   }
 
   Future<void> _performSmartCheck() async {
     if (!mounted || !_isPollingActive) return;
-    
+
     try {
       final isVerified = await ref
           .read(authProvider.notifier)
           .checkEmailVerification();
-      
+
       if (isVerified && mounted) {
         // Success - stop polling and navigate
         _stopPolling();
         context.go('/');
         return;
       }
-      
+
       // Reset failure count on successful check (even if not verified yet)
       _failureCount = 0;
-      
+
       // Increase delay for next check (exponential backoff)
       _currentDelay = Duration(
-        milliseconds: _currentDelay.inMilliseconds * 
-                      VerificationPollingConfig.backoffMultiplier,
+        milliseconds:
+            _currentDelay.inMilliseconds *
+            VerificationPollingConfig.backoffMultiplier,
       );
-      
+
       // Clamp to max delay
       if (_currentDelay > VerificationPollingConfig.maxDelay) {
         _currentDelay = VerificationPollingConfig.maxDelay;
       }
-      
+
       if (mounted) {
         setState(() {
-          _pollingStatus = 
-              'Next check in ${_formatDuration(_currentDelay)}';
+          _pollingStatus = 'Next check in ${_formatDuration(_currentDelay)}';
         });
       }
-      
     } on Exception catch (_) {
       _handlePollingFailure();
     }
-    
+
     _scheduleNextCheck();
   }
 
   void _handlePollingFailure() {
     _failureCount++;
-    
+
     if (_failureCount >= VerificationPollingConfig.maxFailures) {
       // Trigger circuit breaker
       _currentDelay = VerificationPollingConfig.circuitBreakerDelay;
       _failureCount = 0; // Reset for next attempt
-      
+
       if (mounted) {
         setState(() {
-          _pollingStatus = 'Connection issues. '
+          _pollingStatus =
+              'Connection issues. '
               'Trying again in ${_formatDuration(_currentDelay)}';
         });
       }
@@ -168,7 +168,8 @@ class _EmailVerificationScreenState
     _stopPolling();
     if (mounted) {
       setState(() {
-        _pollingStatus = 'Verification check timed out. '
+        _pollingStatus =
+            'Verification check timed out. '
             'Try resending the email or check manually.';
       });
     }
@@ -325,7 +326,7 @@ class _EmailVerificationScreenState
               Container(
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
-                  color: _isPollingActive 
+                  color: _isPollingActive
                       ? Theme.of(context).colorScheme.primaryContainer
                       : Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(6),
@@ -337,11 +338,9 @@ class _EmailVerificationScreenState
                       SizedBox(
                         width: 12,
                         height: 12,
-                        child: CircularProgressIndicator(
+                        child: HydraProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Theme.of(context).colorScheme.primary,
-                          ),
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
@@ -360,7 +359,7 @@ class _EmailVerificationScreenState
                   ],
                 ),
               ),
-            if (_pollingStatus.isNotEmpty) 
+            if (_pollingStatus.isNotEmpty)
               const SizedBox(height: AppSpacing.md),
             // Manual check button when polling stops
             if (!_isPollingActive && _pollingStatus.isNotEmpty)

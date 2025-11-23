@@ -154,6 +154,69 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
     - `secondary`: Material → `ElevatedButton` with transparent background and border; Cupertino → `CupertinoButton` with border decoration
     - `text`: Material → `ElevatedButton` with transparent background; Cupertino → plain `CupertinoButton` with transparent background
 
+- **`HydraFab`** (`lib/shared/widgets/buttons/hydra_fab.dart`) - ✅ Done
+  - Wraps `FloatingActionButton` (Material) / custom circular button (iOS/macOS)
+  - Platform-adaptive floating action button with droplet design
+  - **Material**: `FloatingActionButton` widget with Material styling and ink ripple effects. Tooltips are supported.
+  - **Cupertino**: Custom circular button using `GestureDetector` with Cupertino styling. Tooltips are not supported (tooltip parameter is ignored).
+  - **Used in**: 
+    - `hydra_navigation_bar.dart` (uses `HydraFab` with `onPressed`, `onLongPress`, `icon`, `isLoading`)
+  - **API Differences**: 
+    - Material: Full `FloatingActionButton` API with `tooltip`, `elevation`, Material ink ripple
+    - Cupertino: Custom implementation; tooltips are ignored, no ink ripple, uses `GestureDetector` for interactions
+
+- **`HydraExtendedFab`** (`lib/shared/widgets/buttons/hydra_fab.dart`) - ✅ Done
+  - Wraps `FloatingActionButton.extended` (Material) / custom pill button (iOS/macOS)
+  - Platform-adaptive extended floating action button with label support
+  - **Material**: `FloatingActionButton.extended` widget with Material styling and ink ripple effects. Supports glass morphism effect via custom `BackdropFilter` implementation.
+  - **Cupertino**: Custom pill-shaped button using `GestureDetector` or `CupertinoButton` with Cupertino styling. Glass morphism effect is supported on both platforms.
+  - **Used in**: 
+    - `symptoms_screen.dart` (uses `HydraExtendedFab` with glass effect)
+    - `weight_screen.dart` (uses `HydraExtendedFab` with glass effect)
+  - **API Differences**: 
+    - Material: Full `FloatingActionButton.extended` API with `elevation`, Material ink ripple
+    - Cupertino: Custom implementation; no ink ripple, uses `GestureDetector` or `CupertinoButton` for interactions
+
+- **`HydraProgressIndicator`** (`lib/shared/widgets/feedback/hydra_progress_indicator.dart`) - ✅ Done
+  - Wraps `CircularProgressIndicator`, `LinearProgressIndicator` (Material) / `CupertinoActivityIndicator` (iOS/macOS)
+  - Platform-adaptive progress indicator with support for circular and linear types
+  - **Material**: `CircularProgressIndicator` or `LinearProgressIndicator` depending on `type` parameter
+  - **Cupertino**: `CupertinoActivityIndicator` (circular only; linear type also displays as circular for API compatibility)
+  - **Used in**: 
+    - `notification_settings_screen.dart` (migrated)
+    - `loading_overlay.dart` (migrated)
+    - `fluid_daily_summary_card.dart` (migrated - linear type)
+    - `hydra_button.dart` (migrated)
+    - `hydra_fab.dart` (migrated)
+    - `app_shell.dart` (migrated)
+    - `selection_card.dart` (migrated)
+    - `water_drop_progress_card.dart` (migrated)
+    - `app.dart` (migrated)
+    - `social_signin_buttons.dart` (migrated)
+    - `email_verification_screen.dart` (migrated)
+    - `weight_screen.dart` (migrated)
+    - `treatment_popup_wrapper.dart` (migrated)
+    - `medication_summary_card.dart` (migrated)
+    - And other loading states throughout the app
+  - **API Differences**: 
+    - Material: `CircularProgressIndicator`, `LinearProgressIndicator` with `value`, `backgroundColor`, `color`, `strokeWidth` (circular), `minHeight` (linear)
+    - Cupertino: `CupertinoActivityIndicator` (only circular, no value/linear support; `value`, `backgroundColor`, `strokeWidth`, `minHeight` are ignored)
+
+- **`HydraRefreshIndicator`** (`lib/shared/widgets/feedback/hydra_refresh_indicator.dart`) - ✅ Done
+  - Wraps `RefreshIndicator` (Material) / `CupertinoSliverRefreshControl` (iOS/macOS)
+  - Platform-adaptive refresh indicator for pull-to-refresh functionality
+  - **Material**: `RefreshIndicator` widget that wraps scrollable widgets
+  - **Cupertino**: `CupertinoSliverRefreshControl` within `CustomScrollView` (automatically converts `SingleChildScrollView` and other scrollables to `CustomScrollView`)
+  - **Used in**: 
+    - `progress_screen.dart` (migrated)
+    - `profile_screen.dart` (migrated)
+    - `fluid_schedule_screen.dart` (migrated)
+    - `ckd_profile_screen.dart` (migrated)
+    - `medication_schedule_screen.dart` (migrated)
+  - **API Differences**: 
+    - Material: `RefreshIndicator` with full API support (`onRefresh`, `color`, `backgroundColor`, `displacement`, `edgeOffset`, `strokeWidth`, `triggerMode`)
+    - Cupertino: `CupertinoSliverRefreshControl` within `CustomScrollView`; automatically handles conversion of `SingleChildScrollView` and other scrollables to `CustomScrollView` with slivers. Material-specific options like `color`, `backgroundColor`, `displacement`, `edgeOffset`, `strokeWidth`, and `triggerMode` are ignored on iOS/macOS.
+
 ---
 
 ## 🔴 High Priority (Frequently Used, High Visual Impact)
@@ -161,17 +224,6 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
 ---
 
 ## 🟡 Medium Priority (Moderately Used, Moderate Visual Impact)
-
-
-### 8. **FloatingActionButton** → `HydraFAB` (Partially exists)
-- **Material**: `FloatingActionButton`
-- **Cupertino**: No direct equivalent, typically uses `CupertinoButton` with custom styling
-- **Current**: `HydraExtendedFab` exists in `lib/shared/widgets/buttons/hydra_fab.dart`
-- **Issue**: Need to verify if it branches on platform
-- **Current Usage**: 
-  - `symptoms_screen.dart` (uses `HydraExtendedFab`)
-  - `home_screen.dart` (uses `HydraExtendedFab`)
-- **Priority**: Medium - Core component, but may already be handled
 
 ---
 
@@ -188,27 +240,6 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
 - **Cupertino**: No direct equivalent (iOS uses segmented controls or list selections)
 - **Current Usage**: None found (0 instances)
 - **Priority**: Low - Not currently used
-
-### 13. **Progress Indicators** → `HydraProgressIndicator`
-- **Material**: `CircularProgressIndicator`, `LinearProgressIndicator`
-- **Cupertino**: `CupertinoActivityIndicator` (circular only, no linear)
-- **Current Usage**: 
-  - `notification_settings_screen.dart` (uses `CircularProgressIndicator`)
-  - Various loading states
-- **API Differences**: 
-  - Material: `CircularProgressIndicator`, `LinearProgressIndicator` with `value`, `backgroundColor`, `color`
-  - Cupertino: `CupertinoActivityIndicator` (only circular, no value/linear support)
-- **Priority**: Low - Used but less critical for platform feel
-
-### 14. **Refresh Indicator** → `HydraRefreshIndicator`
-- **Material**: `RefreshIndicator`
-- **Cupertino**: `CupertinoSliverRefreshControl` (works with `CustomScrollView`)
-- **Current Usage**: 
-  - May be used in scrollable lists
-- **API Differences**: 
-  - Material: Wraps scrollable widget
-  - Cupertino: Must be used within `CustomScrollView` as a sliver
-- **Priority**: Low - Less frequently used
 
 ### 15. **Back Button** → `HydraBackButton` (Already exists)
 - **Current**: `HydraBackButton` exists in `lib/shared/widgets/hydra_back_button.dart`
@@ -278,7 +309,7 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
 
 1. **Phase 1 (High Priority)**: ✅ Switch, ✅ Date Picker, ✅ Alert Dialog, ✅ Dialog, Bottom Sheet
 2. **Phase 2 (Medium Priority)**: ✅ TextField, ✅ Time Picker, ✅ SnackBar, ✅ Sliding Segmented Control, verify existing buttons
-3. **Phase 3 (Low Priority)**: Progress indicators, refresh indicator, AppBar, Scaffold (if needed)
+3. **Phase 3 (Low Priority)**: ✅ Progress indicators, refresh indicator, AppBar, Scaffold (if needed)
 
 ### Testing Strategy
 

@@ -3,6 +3,7 @@ import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/shared/widgets/accessibility/touch_target_icon_button.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A card displaying medication summary information
 class MedicationSummaryCard extends StatelessWidget {
@@ -345,7 +346,7 @@ class MedicationLoadingCard extends StatelessWidget {
                     color: theme.colorScheme.surface,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const CircularProgressIndicator(),
+                  child: const HydraProgressIndicator(),
                 ),
                 const SizedBox(width: 12),
 

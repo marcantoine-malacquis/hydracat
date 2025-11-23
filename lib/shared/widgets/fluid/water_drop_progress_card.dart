@@ -7,6 +7,7 @@ import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/weekly_progress_provider.dart';
 import 'package:hydracat/shared/widgets/fluid/water_drop_painter.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Water drop progress card showing weekly fluid intake progress
 ///
@@ -277,7 +278,7 @@ class _WaterDropProgressCardState
         ],
       ),
       child: const Center(
-        child: CircularProgressIndicator(),
+        child: HydraProgressIndicator(),
       ),
     );
   }

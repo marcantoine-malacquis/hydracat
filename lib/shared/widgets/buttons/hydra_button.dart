@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/theme/theme.dart';
-import 'package:hydracat/shared/widgets/accessibility/hydra_touch_target.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Platform-adaptive button component with accessibility support.
 ///
@@ -179,9 +179,9 @@ class HydraButton extends StatelessWidget {
       return SizedBox(
         width: 20,
         height: 20,
-        child: CircularProgressIndicator(
+        child: HydraProgressIndicator(
           strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(loadingColor),
+          color: loadingColor,
         ),
       );
     }

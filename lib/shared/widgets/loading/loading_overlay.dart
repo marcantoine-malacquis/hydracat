@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/constants/app_animations.dart';
 import 'package:hydracat/features/logging/widgets/success_indicator.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Loading state enum
 enum LoadingOverlayState {
@@ -83,7 +84,7 @@ class LoadingOverlay extends StatelessWidget {
                           opacity: state == LoadingOverlayState.loading
                               ? 1.0
                               : 0.0,
-                          child: const CircularProgressIndicator(),
+                          child: const HydraProgressIndicator(),
                         ),
                         AnimatedOpacity(
                           duration: AppAnimations.loadingFadeInDuration,

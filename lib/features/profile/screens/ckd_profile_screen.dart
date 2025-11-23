@@ -201,7 +201,7 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
               tooltip: 'Back',
             ),
           ),
-          body: RefreshIndicator(
+          body: HydraRefreshIndicator(
             onRefresh: () async {
               await ref.read(profileProvider.notifier).refreshPrimaryPet();
               _initializeFromProfile();

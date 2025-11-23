@@ -221,7 +221,7 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
               tooltip: 'Back',
             ),
           ),
-          body: RefreshIndicator(
+          body: HydraRefreshIndicator(
             onRefresh: () async {
               await ref.read(profileProvider.notifier).refreshFluidSchedule();
             },
