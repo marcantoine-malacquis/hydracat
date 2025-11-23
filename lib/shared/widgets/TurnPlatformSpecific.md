@@ -19,20 +19,13 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
   - Wraps `Slider` (Material) / `CupertinoSlider` (iOS)
   - Used in: `symptoms_entry_dialog.dart`
 
+- **`HydraSwitch`** (`lib/shared/widgets/inputs/hydra_switch.dart`) - ✅ Done
+  - Wraps `Switch` (Material) / `CupertinoSwitch` (iOS)
+  - Used in: `notification_settings_screen.dart`
+
 ---
 
 ## 🔴 High Priority (Frequently Used, High Visual Impact)
-
-### 1. **Switch** → `HydraSwitch`
-- **Material**: `Switch`
-- **Cupertino**: `CupertinoSwitch`
-- **Current Usage**: 
-  - `notification_settings_screen.dart` (1 instance)
-  - `progress_day_detail_popup.dart` (completion toggle)
-- **API Differences**: 
-  - Material: `activeColor`, `inactiveThumbColor`, `inactiveTrackColor`, `thumbColor`, `trackColor`, `trackOutlineColor`
-  - Cupertino: `activeColor`, `thumbColor` (simpler API)
-- **Priority**: High - Used in settings and important UI flows
 
 ### 2. **Date Picker** → `HydraDatePicker`
 - **Material**: `showDatePicker()` function

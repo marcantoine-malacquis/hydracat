@@ -10,6 +10,7 @@ import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// Screen for managing notification settings and preferences.
@@ -133,7 +134,7 @@ class _NotificationSettingsScreenState
                     ),
                   ),
                   permissionStatusAsync.maybeWhen(
-                    data: (permissionStatus) => Switch(
+                    data: (permissionStatus) => HydraSwitch(
                       key: const Key('notif_master_toggle'),
                       value: settings.enableNotifications,
                       onChanged: (value) => _handleToggleNotifications(
@@ -144,7 +145,7 @@ class _NotificationSettingsScreenState
                         currentUser.id,
                       ),
                     ),
-                    orElse: () => const Switch(value: false, onChanged: null),
+                    orElse: () => const HydraSwitch(value: false),
                   ),
                 ],
               ),
@@ -441,7 +442,7 @@ class _NotificationSettingsScreenState
                 else
                   IgnorePointer(
                     ignoring: !isEnabled,
-                    child: Switch(
+                    child: HydraSwitch(
                       key: label.contains('Weekly')
                           ? const Key('notif_weekly_toggle')
                           : label.contains('Snooze')
@@ -595,8 +596,8 @@ class _NotificationSettingsScreenState
       final resultMap = value
           ? await coordinator.scheduleWeeklySummary()
           : (await coordinator.cancelWeeklySummary()
-              ? {'success': true}
-              : {'success': false});
+                ? {'success': true}
+                : {'success': false});
 
       // Check if operation was successful
       if (resultMap['success'] != true && resultMap['success'] != false) {
