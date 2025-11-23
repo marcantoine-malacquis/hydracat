@@ -51,20 +51,21 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
     - Material: `actions` (list of buttons), `title`, `content`
     - Cupertino: `actions` (list of `CupertinoDialogAction`), `title`, `content`
 
+- **`HydraDialog`** (`lib/shared/widgets/dialogs/hydra_dialog.dart`) - ✅ Done
+  - Wraps `Dialog` (Material) / `CupertinoPopupSurface` (iOS)
+  - Includes `showHydraDialog()` helper function
+  - **Material**: `Dialog` widget + `showDialog()`
+  - **Cupertino**: `CupertinoPopupSurface` widget + `showCupertinoDialog()`
+  - **Used in**: 
+    - `no_schedules_dialog.dart` (migrated to use `HydraDialog`)
+    - `treatment_popup_wrapper.dart` (migrated to use `HydraDialog`)
+  - **API Differences**: 
+    - Material: `Dialog` with `shape`, `backgroundColor`, `insetPadding`, `clipBehavior`, `elevation`
+    - Cupertino: `CupertinoPopupSurface` with `insetPadding` support; `shape`, `backgroundColor`, `elevation`, `clipBehavior` are ignored
+
 ---
 
 ## 🔴 High Priority (Frequently Used, High Visual Impact)
-
-### 2. **Dialog** (Generic) → `HydraDialog`
-- **Material**: `Dialog` widget
-- **Cupertino**: `CupertinoPopupSurface` or custom modal
-- **Current Usage**: 
-  - `no_schedules_dialog.dart` (uses `Dialog` widget)
-  - `unsaved_changes_dialog.dart` (custom Material dialog)
-- **API Differences**: 
-  - Material: `Dialog` with `shape`, `backgroundColor`, etc.
-  - Cupertino: No direct equivalent, typically uses `CupertinoPopupSurface` or custom modal
-- **Priority**: High - Used for custom dialogs
 
 ### 3. **Bottom Sheet** → `HydraBottomSheet`
 - **Material**: `showModalBottomSheet()` / `showBottomSheet()`
@@ -248,7 +249,7 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
 
 ### Implementation Order Recommendation
 
-1. **Phase 1 (High Priority)**: ✅ Switch, ✅ Date Picker, ✅ Alert Dialog, Dialog, Bottom Sheet
+1. **Phase 1 (High Priority)**: ✅ Switch, ✅ Date Picker, ✅ Alert Dialog, ✅ Dialog, Bottom Sheet
 2. **Phase 2 (Medium Priority)**: TextField, Time Picker (fix existing), SnackBar, verify existing buttons
 3. **Phase 3 (Low Priority)**: Progress indicators, refresh indicator, AppBar, Scaffold (if needed)
 

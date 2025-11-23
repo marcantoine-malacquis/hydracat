@@ -58,7 +58,7 @@ class TreatmentPopupWrapper extends StatelessWidget {
     final theme = Theme.of(context);
     final mediaQuery = MediaQuery.of(context);
 
-    return Dialog(
+    return HydraDialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(16),
       child: Container(

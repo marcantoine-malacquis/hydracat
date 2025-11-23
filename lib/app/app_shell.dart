@@ -27,7 +27,7 @@ import 'package:hydracat/providers/logging_queue_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
 import 'package:hydracat/shared/widgets/dialogs/no_schedules_dialog.dart';
-import 'package:hydracat/shared/widgets/navigation/hydra_navigation_bar.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 
@@ -232,7 +232,7 @@ class _AppShellState extends ConsumerState<AppShell>
       _showLoggingDialog(context, const MedicationLoggingScreen());
     } else {
       // No schedules yet - show setup dialog
-      showDialog<void>(
+      showHydraDialog<void>(
         context: context,
         builder: (context) => const NoSchedulesDialog(),
       );
@@ -1046,8 +1046,9 @@ class _AppShellState extends ConsumerState<AppShell>
     _isRescheduling = true;
     try {
       _devLog('Running rescheduleAll() due to $reason');
-      final result =
-          await ref.read(notificationCoordinatorProvider).rescheduleAll();
+      final result = await ref
+          .read(notificationCoordinatorProvider)
+          .rescheduleAll();
       _devLog('Reschedule result: $result');
 
       // Persist new state
@@ -1062,8 +1063,9 @@ class _AppShellState extends ConsumerState<AppShell>
       await Future<void>.delayed(const Duration(seconds: 3));
       try {
         _devLog('Retrying rescheduleAll()');
-        final result =
-            await ref.read(notificationCoordinatorProvider).rescheduleAll();
+        final result = await ref
+            .read(notificationCoordinatorProvider)
+            .rescheduleAll();
         _devLog('Reschedule retry result: $result');
         final today = DateTime.now();
         await _saveSchedulerState(
