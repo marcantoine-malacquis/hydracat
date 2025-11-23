@@ -10,6 +10,7 @@ export 'hydra_back_button.dart';
 export 'icons/icons.dart';
 export 'inputs/hydra_slider.dart';
 export 'inputs/hydra_switch.dart';
+export 'inputs/hydra_text_field.dart';
 export 'layout/layout.dart';
 export 'loading/loading.dart';
 export 'navigation/navigation.dart';

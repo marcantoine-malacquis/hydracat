@@ -214,7 +214,7 @@ class _WeightEntryDialogState extends ConsumerState<WeightEntryDialog> {
             const SizedBox(height: AppSpacing.md),
 
             // Weight input
-            TextField(
+            HydraTextField(
               controller: _weightController,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
@@ -248,7 +248,7 @@ class _WeightEntryDialogState extends ConsumerState<WeightEntryDialog> {
             const SizedBox(height: AppSpacing.md),
 
             // Notes field (expandable)
-            TextField(
+            HydraTextField(
               controller: _notesController,
               focusNode: _notesFocusNode,
               maxLength: 500,

@@ -23,7 +23,7 @@ import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/widgets/inputs/volume_input_adjuster.dart';
-import 'package:hydracat/shared/widgets/loading/loading_overlay.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Fluid therapy logging screen with volume input and optional fields.
 ///
@@ -520,7 +520,7 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
         const SizedBox(height: AppSpacing.lg),
 
         // Notes field (matches medication screen behavior)
-        TextField(
+        HydraTextField(
           controller: _notesController,
           focusNode: _notesFocusNode,
           maxLength: 500,
@@ -560,8 +560,7 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
           hint: l10n.fluidLogButtonHint,
           button: true,
           child: FilledButton(
-            onPressed:
-                _isFormValid && _loadingState == LoadingOverlayState.none
+            onPressed: _isFormValid && _loadingState == LoadingOverlayState.none
                 ? _logFluidSession
                 : null,
             style: FilledButton.styleFrom(

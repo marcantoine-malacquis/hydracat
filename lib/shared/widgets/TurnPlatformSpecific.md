@@ -76,6 +76,24 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
     - Material: `showModalBottomSheet()` with full Material API support (`isScrollControlled`, `enableDrag`, `shape`, etc.)
     - Cupertino: `showCupertinoModalPopup()` with simplified API; Material-specific options are gracefully ignored
 
+- **`HydraTextField`** (`lib/shared/widgets/inputs/hydra_text_field.dart`) - ✅ Done
+  - Wraps `TextField` (Material) / `CupertinoTextField` (iOS)
+  - Mirrors the core `TextField` API used in the app
+  - **Material**: `TextField` widget with full `InputDecoration` support
+  - **Cupertino**: `CupertinoTextField` widget with mapped decoration properties
+  - **Used in**: 
+    - `symptoms_entry_dialog.dart` (notes field)
+    - `weight_entry_dialog.dart` (weight input, notes)
+    - `fluid_logging_screen.dart`
+    - `volume_input_adjuster.dart` (internal)
+    - `progress_day_detail_popup.dart` (notes)
+    - `weight_calculator_form.dart`
+    - `medication_dosage_input.dart`
+    - `medication_logging_screen.dart`
+  - **API Differences**: 
+    - Material: Full `InputDecoration` support including `errorText`, `counter`, `labelText`, `hintText`, `suffixText`, etc.
+    - Cupertino: `placeholder` from `decoration?.hintText`, `prefix`/`suffix` from `decoration?.prefixIcon`/`suffixIcon` or `suffixText`. Error text and counter are shown separately below the field on iOS.
+
 ---
 
 ## 🔴 High Priority (Frequently Used, High Visual Impact)
@@ -83,23 +101,6 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
 ---
 
 ## 🟡 Medium Priority (Moderately Used, Moderate Visual Impact)
-
-### 6. **TextField** → `HydraTextField`
-- **Material**: `TextField` widget
-- **Cupertino**: `CupertinoTextField` widget
-- **Current Usage**: 
-  - `symptoms_entry_dialog.dart` (notes field)
-  - `weight_entry_dialog.dart` (weight input, notes)
-  - `fluid_logging_screen.dart`
-  - `volume_input_adjuster.dart` (internal)
-  - `progress_day_detail_popup.dart` (notes)
-  - `weight_calculator_form.dart`
-  - `medication_dosage_input.dart`
-  - `medication_logging_screen.dart`
-- **API Differences**: 
-  - Material: `decoration` (InputDecoration), `controller`, `focusNode`, etc.
-  - Cupertino: `placeholder`, `prefix`, `suffix`, `padding`, simpler styling API
-- **Priority**: Medium - Used in 8+ locations, but often wrapped in custom widgets
 
 ### 7. **Time Picker** → `HydraTimePicker` (Already exists but iOS-only)
 - **Current**: `HydraTimePicker` in `lib/shared/widgets/pickers/hydra_time_picker.dart`

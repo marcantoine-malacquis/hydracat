@@ -221,7 +221,7 @@ class _SymptomsEntryDialogState extends ConsumerState<SymptomsEntryDialog> {
   }
 
   Widget _buildNotesField() {
-    return TextField(
+    return HydraTextField(
       controller: _notesController,
       focusNode: _notesFocusNode,
       maxLength: 500,

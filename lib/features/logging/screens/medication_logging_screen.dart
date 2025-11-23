@@ -19,7 +19,7 @@ import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
-import 'package:hydracat/shared/widgets/loading/loading_overlay.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Medication logging screen with multi-select confirmation.
 ///
@@ -479,7 +479,7 @@ class _MedicationLoggingScreenState
 
             // Notes field (appears right after medication selection)
             const SizedBox(height: AppSpacing.lg),
-            TextField(
+            HydraTextField(
               controller: _notesController,
               focusNode: _notesFocusNode,
               maxLength: 500,
@@ -510,7 +510,7 @@ class _MedicationLoggingScreenState
                   // TextField will expand when tapped
                 });
               },
-              onChanged: (value) {
+              onChanged: (String value) {
                 // Rebuild to show expanded field and update counter
                 if (value.isNotEmpty && _notesController.text.length == 1) {
                   setState(() {});

@@ -20,6 +20,7 @@ import 'package:hydracat/providers/progress_provider.dart';
 import 'package:hydracat/providers/schedule_history_provider.dart';
 import 'package:hydracat/shared/widgets/fluid/fluid_daily_summary_card.dart';
 import 'package:hydracat/shared/widgets/inputs/volume_input_adjuster.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 
 /// Popup content mode for transitioning between views
@@ -1956,7 +1957,7 @@ class _MedicationEditInlineFormState
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
-        TextField(
+        HydraTextField(
           controller: _notesController,
           focusNode: _notesFocusNode,
           maxLength: _notesExpanded ? 500 : null,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A text field for entering medication dosage with validation.
 ///
@@ -132,7 +133,7 @@ class _MedicationDosageInputState extends State<MedicationDosageInput> {
         const SizedBox(height: AppSpacing.sm),
 
         // Dosage input field
-        TextField(
+        HydraTextField(
           controller: _controller,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [

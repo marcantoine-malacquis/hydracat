@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A reusable volume input widget with increment/decrement buttons.
 ///
@@ -172,7 +173,7 @@ class _VolumeInputAdjusterState extends State<VolumeInputAdjuster> {
           Expanded(
             child: Column(
               children: [
-                TextField(
+                HydraTextField(
                   controller: _controller,
                   focusNode: _focusNode,
                   keyboardType: const TextInputType.numberWithOptions(

@@ -8,6 +8,7 @@ import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/logging/services/weight_calculator_service.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/logging_provider.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Reusable form for calculating fluid volume from weight measurements
 ///
@@ -259,7 +260,7 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
-              TextField(
+              HydraTextField(
                 controller: _initialWeightController,
                 focusNode: _initialFocusNode,
                 keyboardType: const TextInputType.numberWithOptions(
@@ -301,7 +302,7 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
-              TextField(
+              HydraTextField(
                 controller: _finalWeightController,
                 focusNode: _finalFocusNode,
                 keyboardType: const TextInputType.numberWithOptions(
