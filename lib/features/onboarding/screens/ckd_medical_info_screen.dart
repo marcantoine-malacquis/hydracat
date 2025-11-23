@@ -10,7 +10,7 @@ import 'package:hydracat/features/onboarding/widgets/lab_values_input.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.dart';
 import 'package:hydracat/features/profile/models/medical_info.dart';
 import 'package:hydracat/providers/onboarding_provider.dart';
-import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// CKD Medical Information collection screen - Step 4 of onboarding flow
 class CkdMedicalInfoScreen extends ConsumerStatefulWidget {
@@ -175,8 +175,9 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
       }
     } on Exception catch (e) {
       if (mounted) {
-        final errorMessage =
-            ref.read(onboardingProvider.notifier).getErrorMessage(e);
+        final errorMessage = ref
+            .read(onboardingProvider.notifier)
+            .getErrorMessage(e);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
@@ -200,7 +201,7 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
     // Show empathetic dialog
     final shouldSkip = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => HydraAlertDialog(
         title: Text(l10n.skipMedicalInfoTitle),
         content: Text(l10n.skipMedicalInfoMessage),
         actions: [
@@ -245,7 +246,7 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
 
   /// Select last checkup date
   Future<void> _selectLastCheckupDate() async {
-    final selectedDate = await showDatePicker(
+    final selectedDate = await HydraDatePicker.show(
       context: context,
       initialDate: _lastCheckupDate ?? DateTime.now(),
       firstDate: DateTime.now().subtract(const Duration(days: 365 * 3)),

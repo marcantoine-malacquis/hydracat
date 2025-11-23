@@ -9,6 +9,7 @@ import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// Educational pre-prompt dialog that requests notification permission
@@ -116,7 +117,7 @@ class _NotificationPermissionPrepromptState
         ? l10n.notificationPermissionIosHint
         : l10n.notificationPermissionAndroidHint;
 
-    return AlertDialog(
+    return HydraAlertDialog(
       title: Text(l10n.notificationPermissionDialogTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -207,7 +208,7 @@ class _NotificationPermissionPrepromptState
 
   /// Builds loading dialog
   Widget _buildLoadingDialog(BuildContext context, AppLocalizations l10n) {
-    return AlertDialog(
+    return HydraAlertDialog(
       title: Text(l10n.notificationPermissionDialogTitle),
       content: const Column(
         mainAxisSize: MainAxisSize.min,

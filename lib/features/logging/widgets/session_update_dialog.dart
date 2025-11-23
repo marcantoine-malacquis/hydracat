@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 
 /// Dialog shown when attempting to log a duplicate medication session
@@ -62,7 +63,7 @@ class SessionUpdateDialog extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
-    return AlertDialog(
+    return HydraAlertDialog(
       title: Text(l10n.duplicateDialogTitle),
       content: SingleChildScrollView(
         child: Column(

@@ -4,6 +4,7 @@ import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/core/validation/models/validation_result.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Consistent error display component for validation errors
 ///
@@ -243,7 +244,7 @@ class ValidationErrorDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return HydraAlertDialog(
       title: Text(title),
       content: SingleChildScrollView(
         child: ValidationErrorDisplay(

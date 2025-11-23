@@ -735,7 +735,7 @@ class _NotificationSettingsScreenState
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => HydraAlertDialog(
         title: Text(
           localizations.notificationSettingsClearDataConfirmTitle,
         ),

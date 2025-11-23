@@ -10,6 +10,7 @@ import 'package:hydracat/features/progress/models/day_dot_status.dart';
 import 'package:hydracat/features/progress/widgets/fluid_volume_bar_chart.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/progress_provider.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -131,7 +132,7 @@ class ProgressWeekCalendar extends ConsumerWidget {
               onPressed: () async {
                 final theme = Theme.of(context);
                 final focused = ref.read(focusedDayProvider);
-                final picked = await showDatePicker(
+                final picked = await HydraDatePicker.show(
                   context: context,
                   initialDate: focused,
                   firstDate: DateTime(2010),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/shared/services/feature_gate_service.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Widget that gates features based on email verification status
 class VerificationGate extends ConsumerWidget {
@@ -180,7 +181,7 @@ class VerificationGateDisabled extends ConsumerWidget {
 
     showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => HydraAlertDialog(
         icon: const Icon(Icons.verified_user, color: Colors.blue),
         title: const Text('Verification Required'),
         content: Text(reason ?? 'This feature requires account verification.'),

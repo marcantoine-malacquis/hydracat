@@ -23,47 +23,39 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
   - Wraps `Switch` (Material) / `CupertinoSwitch` (iOS)
   - Used in: `notification_settings_screen.dart`
 
+- **`HydraDatePicker`** (`lib/shared/widgets/pickers/hydra_date_picker.dart`) - ✅ Done
+  - Wraps `showDatePicker()` (Material) / `CupertinoDatePicker` (iOS)
+  - Used in: `symptoms_entry_dialog.dart`, `weight_entry_dialog.dart`, `progress_week_calendar.dart`, `pet_basics_screen.dart`, `ckd_medical_info_screen.dart`, `ckd_profile_screen.dart`, `lab_values_input.dart`
+
+- **`HydraAlertDialog`** (`lib/shared/widgets/dialogs/hydra_alert_dialog.dart`) - ✅ Done
+  - Wraps `AlertDialog` (Material) / `CupertinoAlertDialog` (iOS)
+  - Includes `showHydraAlertDialog()` helper function
+  - Automatically converts Material buttons to CupertinoDialogAction
+  - **Material**: `AlertDialog` widget + `showDialog()`
+  - **Cupertino**: `CupertinoAlertDialog` widget + `showCupertinoDialog()`
+  - **Used in**: 
+    - `settings_screen.dart` (clear cache confirmation)
+    - `lockout_dialog.dart`
+    - `weight_calculator_dialog.dart`
+    - `session_update_dialog.dart`
+    - `treatment_popup_wrapper.dart`
+    - `permission_preprompt.dart`
+    - `notification_error_handler.dart`
+    - `debug_panel.dart`
+    - `ckd_medical_info_screen.dart`
+    - `verification_gate.dart`
+    - `validation_error_display.dart`
+    - `weight_entry_dialog.dart`
+    - `notification_settings_screen.dart`
+  - **API Differences**: 
+    - Material: `actions` (list of buttons), `title`, `content`
+    - Cupertino: `actions` (list of `CupertinoDialogAction`), `title`, `content`
+
 ---
 
 ## 🔴 High Priority (Frequently Used, High Visual Impact)
 
-### 2. **Date Picker** → `HydraDatePicker`
-- **Material**: `showDatePicker()` function
-- **Cupertino**: `CupertinoDatePicker` (widget) + `showCupertinoModalPopup`
-- **Current Usage**: 
-  - `symptoms_entry_dialog.dart` (1 instance)
-  - `weight_entry_dialog.dart` (1 instance)
-  - `progress_week_calendar.dart`
-  - `pet_basics_screen.dart`
-  - `ckd_medical_info_screen.dart`
-  - `ckd_profile_screen.dart`
-  - `lab_values_input.dart`
-- **API Differences**: 
-  - Material: Function-based `showDatePicker()` with `DatePicker` widget
-  - Cupertino: Widget-based `CupertinoDatePicker` with modal popup pattern
-- **Priority**: High - Used in 7+ locations, critical for data entry
-
-### 3. **Alert Dialog** → `HydraAlertDialog`
-- **Material**: `AlertDialog` widget + `showDialog()`
-- **Cupertino**: `CupertinoAlertDialog` widget + `showCupertinoDialog()`
-- **Current Usage**: 
-  - `settings_screen.dart` (clear cache confirmation)
-  - `lockout_dialog.dart`
-  - `weight_calculator_dialog.dart`
-  - `session_update_dialog.dart`
-  - `treatment_popup_wrapper.dart`
-  - `permission_preprompt.dart`
-  - `notification_error_handler.dart`
-  - `debug_panel.dart`
-  - `ckd_medical_info_screen.dart`
-  - `verification_gate.dart`
-  - `validation_error_display.dart`
-- **API Differences**: 
-  - Material: `actions` (list of buttons), `title`, `content`
-  - Cupertino: `actions` (list of `CupertinoDialogAction`), `title`, `content`
-- **Priority**: High - Used in 12+ locations, critical for confirmations and errors
-
-### 4. **Dialog** (Generic) → `HydraDialog`
+### 2. **Dialog** (Generic) → `HydraDialog`
 - **Material**: `Dialog` widget
 - **Cupertino**: `CupertinoPopupSurface` or custom modal
 - **Current Usage**: 
@@ -74,7 +66,7 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
   - Cupertino: No direct equivalent, typically uses `CupertinoPopupSurface` or custom modal
 - **Priority**: High - Used for custom dialogs
 
-### 5. **Bottom Sheet** → `HydraBottomSheet`
+### 3. **Bottom Sheet** → `HydraBottomSheet`
 - **Material**: `showModalBottomSheet()` / `showBottomSheet()`
 - **Cupertino**: `showCupertinoModalPopup()` with `CupertinoActionSheet`
 - **Current Usage**: 
@@ -256,7 +248,7 @@ For each widget listed below, create a `Hydra*` wrapper in `lib/shared/widgets/`
 
 ### Implementation Order Recommendation
 
-1. **Phase 1 (High Priority)**: Switch, Date Picker, Alert Dialog, Dialog, Bottom Sheet
+1. **Phase 1 (High Priority)**: ✅ Switch, ✅ Date Picker, ✅ Alert Dialog, Dialog, Bottom Sheet
 2. **Phase 2 (Medium Priority)**: TextField, Time Picker (fix existing), SnackBar, verify existing buttons
 3. **Phase 3 (Low Priority)**: Progress indicators, refresh indicator, AppBar, Scaffold (if needed)
 

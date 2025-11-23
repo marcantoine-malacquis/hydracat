@@ -500,7 +500,7 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
           // Editing mode
           GestureDetector(
             onTap: () async {
-              final selectedDate = await showDatePicker(
+              final selectedDate = await HydraDatePicker.show(
                 context: context,
                 initialDate: _editingLastCheckupDate ?? DateTime.now(),
                 firstDate: DateTime.now().subtract(

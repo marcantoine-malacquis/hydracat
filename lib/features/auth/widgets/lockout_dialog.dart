@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/shared/services/login_attempt_service.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Dialog shown when account is temporarily locked due to too many failed
 /// attempts
@@ -116,7 +117,7 @@ class _LockoutDialogState extends State<LockoutDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return AlertDialog(
+    return HydraAlertDialog(
       icon: Icon(
         Icons.lock_clock,
         color: theme.colorScheme.error,

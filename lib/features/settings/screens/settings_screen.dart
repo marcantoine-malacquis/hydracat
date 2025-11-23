@@ -7,6 +7,7 @@ import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/cache_management_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/theme_provider.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A screen that displays app settings and preferences.
 class SettingsScreen extends ConsumerWidget {
@@ -17,7 +18,7 @@ class SettingsScreen extends ConsumerWidget {
   Future<bool> _showClearCacheConfirmation(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => HydraAlertDialog(
         title: const Text('Clear Cache?'),
         content: const Text(
           'This will clear locally cached summary data. '

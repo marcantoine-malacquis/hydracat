@@ -10,6 +10,7 @@ import 'package:hydracat/features/notifications/utils/notification_id.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 /// Debug panel for development testing - allows resetting user state
@@ -204,7 +205,7 @@ class DebugPanel extends ConsumerWidget {
   Future<bool> _showConfirmationDialog(BuildContext context) async {
     return await showDialog<bool>(
           context: context,
-          builder: (context) => AlertDialog(
+          builder: (context) => HydraAlertDialog(
             title: const Text('Complete User Data Reset'),
             content: const Text(
               '⚠️ WARNING: This will COMPLETELY WIPE all user data:\n\n'

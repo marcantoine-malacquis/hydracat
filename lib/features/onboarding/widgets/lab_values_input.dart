@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/core/utils/number_input_utils.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Sentinel value for [LabValueData.copyWith] to distinguish between
 /// "not provided" and "explicitly set to null"
@@ -189,7 +190,7 @@ class _LabValuesInputState extends State<LabValuesInput> {
   /// Select bloodwork date
   Future<void> _selectBloodworkDate() async {
     final currentDate = widget.labValues.bloodworkDate ?? DateTime.now();
-    final selectedDate = await showDatePicker(
+    final selectedDate = await HydraDatePicker.show(
       context: context,
       initialDate: currentDate,
       firstDate: DateTime.now().subtract(const Duration(days: 365 * 3)),

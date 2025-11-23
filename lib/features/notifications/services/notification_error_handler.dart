@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Static utility class for consistent error handling across
 ///  notification feature
@@ -267,7 +268,7 @@ class NotificationErrorHandler {
 
     return showDialog<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => HydraAlertDialog(
         title: Text(title),
         content: Text(message),
         actions: [

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hydracat/shared/widgets/accessibility/touch_target_icon_button.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A reusable wrapper for treatment setup popups
 class TreatmentPopupWrapper extends StatelessWidget {
@@ -387,7 +388,7 @@ class TreatmentConfirmationDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return AlertDialog(
+    return HydraAlertDialog(
       title: Text(title),
       content: content,
       shape: RoundedRectangleBorder(

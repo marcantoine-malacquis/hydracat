@@ -12,4 +12,5 @@ export 'inputs/hydra_switch.dart';
 export 'layout/layout.dart';
 export 'loading/loading.dart';
 export 'navigation/navigation.dart';
+export 'pickers/hydra_date_picker.dart';
 export 'pickers/hydra_time_picker.dart';

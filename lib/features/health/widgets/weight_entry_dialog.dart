@@ -8,6 +8,7 @@ import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/core/utils/weight_utils.dart';
 import 'package:hydracat/features/health/models/health_parameter.dart';
 import 'package:hydracat/providers/weight_unit_provider.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 
 /// Dialog for adding or editing weight entries
@@ -125,7 +126,7 @@ class _WeightEntryDialogState extends ConsumerState<WeightEntryDialog> {
   }
 
   Future<void> _selectDate() async {
-    final picked = await showDatePicker(
+    final picked = await HydraDatePicker.show(
       context: context,
       initialDate: _selectedDate,
       firstDate: DateTime(2020),
@@ -175,7 +176,7 @@ class _WeightEntryDialogState extends ConsumerState<WeightEntryDialog> {
     final currentUnit = ref.watch(weightUnitProvider);
     final theme = Theme.of(context);
 
-    return AlertDialog(
+    return HydraAlertDialog(
       title: Text(isEditMode ? 'Edit Weight' : 'Add Weight'),
       content: SingleChildScrollView(
         child: Column(

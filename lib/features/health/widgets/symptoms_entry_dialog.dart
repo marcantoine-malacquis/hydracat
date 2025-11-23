@@ -80,7 +80,7 @@ class _SymptomsEntryDialogState extends ConsumerState<SymptomsEntryDialog> {
   }
 
   Future<void> _selectDate() async {
-    final picked = await showDatePicker(
+    final picked = await HydraDatePicker.show(
       context: context,
       initialDate: _selectedDate,
       firstDate: DateTime(2020),

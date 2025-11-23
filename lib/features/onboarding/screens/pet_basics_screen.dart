@@ -16,8 +16,8 @@ import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.d
 import 'package:hydracat/features/onboarding/widgets/weight_unit_selector.dart';
 import 'package:hydracat/providers/onboarding_provider.dart';
 import 'package:hydracat/providers/weight_unit_provider.dart';
-import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
 import 'package:hydracat/shared/widgets/validation_error_display.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Pet basics collection screen - Step 3 of onboarding flow
 class PetBasicsScreen extends ConsumerStatefulWidget {
@@ -125,7 +125,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
     final now = DateTime.now();
     final firstDate = DateTime(now.year - 25, now.month, now.day);
 
-    final selectedDate = await showDatePicker(
+    final selectedDate = await HydraDatePicker.show(
       context: context,
       initialDate: _selectedDateOfBirth ?? DateTime(now.year - 2),
       firstDate: firstDate,

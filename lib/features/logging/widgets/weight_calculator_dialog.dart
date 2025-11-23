@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hydracat/features/logging/widgets/weight_calculator_form.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Dialog wrapper for calculating fluid volume from weight measurements
 ///
@@ -26,7 +27,7 @@ class WeightCalculatorDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return AlertDialog(
+    return HydraAlertDialog(
       title: Text(l10n.weightCalculatorTitle),
       content: WeightCalculatorForm(
         userId: userId,
