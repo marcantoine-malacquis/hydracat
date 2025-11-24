@@ -487,79 +487,161 @@
    - ✅ Added `Semantics` label via `_buildTooltipSemanticsLabel()` for screen reader support.
    - ✅ TODO added for future widget tests covering tooltip behavior.
 
-### 3.5 Legend
+### 3.5 Legend ✅ **COMPLETED**
 
 **Objective**: Help users interpret colors without clutter.
 
-1. Position a legend under the chart:
-   - `Wrap` of chips, each showing:
-     - Colored dot/square
-     - Name: `Vomiting`, `Diarrhea`, etc., plus optional `(top)` note in debug mode only (not in UI).
-2. “Other”:
-   - Use the dedicated neutral color and label “Other”.
-3. Responsiveness:
-   - Ensure legend items wrap nicely on small screens, consistent with injection-sites donut legend.
+**Implementation Status**: ✅ Completed
+
+1. ✅ Added `_LegendItem` data class in `lib/features/health/widgets/symptoms_stacked_bar_chart.dart`:
+   - ✅ Fields: `label` (String) and `color` (Color)
+   - ✅ Immutable data class for legend item representation
+2. ✅ Implemented `_buildLegendItems()` helper method:
+   - ✅ **Stacked mode**: Aggregates total days across all buckets for each symptom in `viewModel.visibleSymptoms`; includes symptom in legend if total days > 0
+   - ✅ **Stacked mode "Other"**: Computes "Other" count per bucket (totalSymptomDays minus visible symptoms) and includes "Other" legend item if aggregate total > 0
+   - ✅ **Single-symptom mode**: Shows only the selected symptom if it has any non-zero data across buckets
+   - ✅ Maintains ordering: visible symptoms in `viewModel.visibleSymptoms` order, with "Other" at the end when present
+3. ✅ Replaced `_buildLegendPlaceholder()` with full legend implementation:
+   - ✅ Early returns `SizedBox.shrink()` if no legend items (edge case handling)
+   - ✅ Uses `Wrap` widget with `spacing: AppSpacing.md`, `runSpacing: AppSpacing.sm`, and `alignment: WrapAlignment.center` for responsive layout
+   - ✅ Each legend chip is a `Container` with:
+     - ✅ Background color: `item.color.withValues(alpha: 0.1)` (subtle tint)
+     - ✅ Border: `item.color.withValues(alpha: 0.3)` with 8px border radius
+     - ✅ Row containing: 12x12 colored circle dot + symptom name text
+     - ✅ Text styled with `AppTextStyles.caption`, `AppColors.textSecondary`, and `FontWeight.w500`
+   - ✅ Stable keys: `ValueKey('symptom-legend-${item.label}')` for widget tests
+4. ✅ Layout adjustments:
+   - ✅ Restructured chart layout: chart area (200px fixed height) in `SizedBox`, legend below in `Column` (not constrained by fixed height)
+   - ✅ Legend padding: `EdgeInsets.only(top: AppSpacing.lg)` for proper spacing from chart
+5. ✅ Styling consistency:
+   - ✅ Matches injection sites donut chart legend styling (chip design, spacing, colors)
+   - ✅ Reuses `_getSymptomLabel()` for legend labels (same as tooltip text)
+   - ✅ Colors match chart segments: `SymptomColors.colorForSymptom()` for specific symptoms, `SymptomColors.colorForOther()` for "Other"
+6. ✅ Accessibility:
+   - ✅ Wrapped entire legend `Wrap` in `Semantics` widget with label "Symptoms legend"
+   - ✅ Ready for widget tests (keys and structure in place)
 
 ---
 
 ## 4. Symptoms Screen Integration & Controls
 
-### 4.1 Extend SymptomsScreen layout
+### 4.1 Extend SymptomsScreen layout ✅ **COMPLETED**
 
 **Objective**: Replace the pure empty state with chart + history while preserving FAB and initial message.
 
-1. Update `SymptomsScreen` body:
-   - Instead of always calling `_buildEmptyState()`, branch:
-     - If **no symptom data at all** (e.g. `currentMonthSymptomsSummaryProvider` reports `daysWithAnySymptoms == 0` and week buckets all zero) → show the existing empty state plus a CTA to log symptoms.
-     - Else:
-       - Show:
-         1. Period header (chevrons + “Today” button) reusing weight patterns.
-         2. Week/Month/Year segmented control.
-         3. Symptom dropdown (“All” + symptoms).
-         4. The `SymptomsStackedBarChart`.
-         5. (Optional later) A small textual summary below.
-2. Maintain the existing FAB behavior (`HydraExtendedFab`) unchanged.
+**Implementation Status**: ✅ Completed
 
-### 4.2 Granularity selector (reuse HydraSlidingSegmentedControl)
+1. ✅ Updated `SymptomsScreen` body:
+   - ✅ Replaced hard-coded `_buildEmptyState()` call with conditional `_buildBody()` method
+   - ✅ Implemented `_hasAnySymptomData()` helper that checks:
+     - Current month summary `daysWithAnySymptoms > 0` via `currentMonthSymptomsSummaryProvider`
+     - Chart buckets with `totalSymptomDays > 0` via `symptomsChartDataProvider`
+   - ✅ Conditional branching:
+     - If **no symptom data** → shows existing empty state (preserves first-time user experience)
+     - If **data exists** → shows analytics layout with chart and placeholder controls
+2. ✅ Created analytics layout scaffold (`_buildAnalyticsLayout()`):
+   - ✅ Period header placeholder (`_buildGraphHeader()`) - ready for section 4.3
+   - ✅ Granularity selector placeholder (`_buildGranularitySelector()`) - ready for section 4.2
+   - ✅ Chart section with `SymptomsStackedBarChart` widget fully integrated
+   - ✅ Optional summary placeholder (commented out for future use)
+3. ✅ Maintained existing FAB behavior:
+   - ✅ `_scrollController`, `_handleScroll`, and `_showFab` logic unchanged
+   - ✅ `HydraExtendedFab` continues to hide/show on scroll as before
+4. ✅ Styling alignment:
+   - ✅ Uses `AppSpacing.md` for padding matching WeightScreen pattern
+   - ✅ Column layout with consistent spacing between header, controls, and chart
+   - ✅ All imports added: providers, models, and chart widget
 
-**Objective**: Match the weight screen’s segmented control for Week/Month/Year.
+### 4.2 Granularity selector (reuse HydraSlidingSegmentedControl) ✅ **COMPLETED**
 
-1. Add a `_buildGranularitySelector` method similar to `WeightScreen._buildGranularitySelector`, but using `SymptomGranularity` and `symptomsChartStateProvider`.
-2. When the user taps a segment:
-   - Call `symptomsChartStateNotifier.setGranularity(newGranularity)`.
-   - Optionally reset `selectedSymptomKey` to `null` to avoid confusing state when switching scales.
+**Objective**: Match the weight screen's segmented control for Week/Month/Year.
 
-### 4.3 Period header (chevrons + Today)
+**Implementation Status**: ✅ Completed
+
+1. ✅ Added `_buildGranularitySelector` method in `SymptomsScreen`:
+   - ✅ Uses `HydraSlidingSegmentedControl<SymptomGranularity>` matching `WeightScreen` pattern
+   - ✅ Reads current granularity from `symptomsChartStateProvider`
+   - ✅ Configures three segments: Week, Month, Year with `Text` labels
+   - ✅ Wrapped in `SizedBox(width: double.infinity)` for full-width layout
+2. ✅ Wired `onChanged` callback:
+   - ✅ Triggers `HapticFeedback.selectionClick()` for tactile feedback
+   - ✅ Calls `ref.read(symptomsChartStateProvider.notifier).setGranularity(newGranularity)`
+   - ✅ `SymptomsChartNotifier.setGranularity()` automatically resets `selectedSymptomKey` to `null` when switching granularities (already implemented in section 2.2)
+3. ✅ Added required imports:
+   - ✅ `package:flutter/services.dart` for `HapticFeedback`
+   - ✅ `package:hydracat/features/health/models/symptom_granularity.dart` for `SymptomGranularity`
+   - ✅ `package:hydracat/shared/widgets/inputs/hydra_sliding_segmented_control.dart` for `HydraSlidingSegmentedControl`
+4. ✅ Widget tests added in `test/features/health/screens/symptoms_screen_granularity_selector_test.dart`:
+   - ✅ Verifies all three segments (Week, Month, Year) render correctly
+   - ✅ Tests that tapping Month segment updates granularity state
+   - ✅ Tests that tapping Year segment updates granularity state
+   - ✅ Verifies `selectedSymptomKey` resets to null when granularity changes
+
+### 4.3 Period header (chevrons + Today) ✅ **COMPLETED**
 
 **Objective**: Provide consistent navigation between periods.
 
-1. Add `_buildGraphHeader` to `SymptomsScreen`:
-   - Left/right chevrons:
-     - Call `previousPeriod()` / `nextPeriod()` on the symptoms chart notifier.
-     - Disable right chevron when the period includes “today” (similar to weight screen’s `isOnCurrentPeriod`).
-   - Period label:
-     - Week: show `MMM d–d, yyyy` range.
-     - Month: `MMMM yyyy`.
-     - Year: `yyyy`.
-   - “Today” button:
-     - Visible only when not on the current period.
-     - Calls `goToToday()`.
-2. Provide mild haptic feedback (`HapticFeedback.selectionClick()`) on period changes, matching existing patterns.
+**Implementation Status**: ✅ Completed
 
-### 4.4 Symptom selection dropdown (All vs single symptom)
+1. ✅ Added `_buildGraphHeader` method in `SymptomsScreen`:
+   - ✅ Left/right chevrons:
+     - ✅ Left chevron calls `previousPeriod()` on the symptoms chart notifier
+     - ✅ Right chevron calls `nextPeriod()` and is disabled when `isOnCurrentPeriod` is `true`
+     - ✅ Both chevrons trigger `HapticFeedback.selectionClick()` on tap
+     - ✅ Tooltips added for accessibility ("Previous week", "Next week", "Cannot view future")
+   - ✅ Period label formatting:
+     - ✅ Week: `_formatWeekLabel()` shows `MMM d–d, yyyy` range (e.g., "Nov 3-9, 2025") with cross-month handling
+     - ✅ Month: `DateFormat('MMMM yyyy')` format (e.g., "November 2025")
+     - ✅ Year: `yearStart.year.toString()` format (e.g., "2025")
+   - ✅ "Today" button:
+     - ✅ Visible only when `!isOnCurrentPeriod`
+     - ✅ Calls `goToToday()` on tap with haptic feedback
+     - ✅ Styled with `AppTextStyles.buttonSecondary` and `AppColors.primary`
+2. ✅ Layout matches weight screen pattern:
+   - ✅ Row layout with chevrons, period label, `Spacer()`, and conditional Today button
+   - ✅ Period label uses `AppTextStyles.body` with `FontWeight.w500`
+   - ✅ Proper spacing with `AppSpacing.xs` between elements
+3. ✅ Added required imports:
+   - ✅ `package:intl/intl.dart` for `DateFormat`
+4. ✅ Widget tests added in `test/features/health/screens/symptoms_screen_granularity_selector_test.dart`:
+   - ✅ Period label formatting tests for week, month, and year granularities
+   - ✅ Left chevron navigation test (calls `previousPeriod()`)
+   - ✅ Right chevron disabled/enabled state tests based on `isOnCurrentPeriod`
+   - ✅ Right chevron navigation test (calls `nextPeriod()` when enabled)
+   - ✅ Today button visibility tests (hidden on current period, visible otherwise)
+   - ✅ Today button functionality test (calls `goToToday()`)
+
+### 4.4 Symptom selection dropdown (All vs single symptom) ✅ **COMPLETED**
 
 **Objective**: Allow advanced users to focus on a single symptom.
 
-1. Add a small dropdown next to the period label or under the segmented control:
-   - Options:
-     - `All` (maps to `selectedSymptomKey = null`)
-     - Names for each `SymptomType` in the static priority order.
-2. Hook it to `symptomsChartStateProvider`:
-   - `onChanged` → `setSelectedSymptom(newKeyOrNull)`.
-3. Chart behavior:
-   - The chart widget reads `selectedSymptomKey`:
-     - `null` → stacked mode.
-     - non-null → single-symptom non-stacked mode.
+**Implementation Status**: ✅ Completed
+
+1. ✅ Added `_buildSymptomSelector()` method in `SymptomsScreen`:
+   - ✅ Positioned below the granularity selector and above the chart section in `_buildAnalyticsLayout()`
+   - ✅ Uses `CustomDropdown<String?>` widget for consistent styling with other dropdowns in the app
+   - ✅ Left-aligned with fixed width (200px) for consistent layout
+   - ✅ Includes "All symptoms" option (maps to `selectedSymptomKey = null`)
+   - ✅ Includes all 6 symptom options in static priority order: lethargy, suppressedAppetite, vomiting, injectionSiteReaction, constipation, diarrhea
+   - ✅ Labels match chart widget labels via `_getSymptomLabel()` helper method for consistency
+2. ✅ State wiring:
+   - ✅ Reads current `selectedSymptomKey` from `symptomsChartStateProvider` to set dropdown value
+   - ✅ `onChanged` callback calls `setSelectedSymptom(newKeyOrNull)` with haptic feedback
+   - ✅ Chart widget already receives `selectedSymptomKey` via `_buildChartSection()` (no changes needed)
+3. ✅ Chart behavior verified:
+   - ✅ `null` → stacked mode (all symptoms shown as stacked bars)
+   - ✅ non-null → single-symptom mode (only selected symptom shown)
+4. ✅ State interactions:
+   - ✅ Changing granularity (Week/Month/Year) resets `selectedSymptomKey` to `null` (existing behavior in `setGranularity()`)
+   - ✅ Period navigation (chevrons, Today) preserves `selectedSymptomKey` (no reset on navigation)
+5. ✅ Widget tests added in `test/features/health/screens/symptoms_screen_granularity_selector_test.dart`:
+   - ✅ Dropdown rendering verification
+   - ✅ "All symptoms" option visibility
+   - ✅ Dropdown interaction and opening
+   - ✅ Selecting a symptom updates `selectedSymptomKey` correctly
+   - ✅ Selecting "All symptoms" sets `selectedSymptomKey` to `null`
+   - ✅ Changing granularity resets `selectedSymptomKey` to `null`
+   - ✅ Period navigation preserves `selectedSymptomKey` (does not reset)
 
 ---
 
@@ -638,12 +720,12 @@
    - [x] Implement stacked vs single-symptom rendering (section 3.2).
    - [x] Implement basic visual styling and alignment (section 3.3 - layout, colors, grid, borders, x-axis labels).
    - [x] Implement tooltips matching existing chart styling (section 3.4).
-   - [ ] Implement legend matching existing chart styling (section 3.5).
+   - [x] Implement legend matching existing chart styling (section 3.5).
 4. **Screen Integration**
-   - [ ] Extend `SymptomsScreen` to show chart instead of only empty state when data exists.
-   - [ ] Add Week/Month/Year segmented control wired to chart state.
-   - [ ] Add period header with chevrons + Today button.
-   - [ ] Add symptom selection dropdown and wire to chart.
+   - [x] Extend `SymptomsScreen` to show chart instead of only empty state when data exists.
+   - [x] Add Week/Month/Year segmented control wired to chart state.
+   - [x] Add period header with chevrons + Today button.
+   - [x] Add symptom selection dropdown and wire to chart.
 5. **Performance & Testing**
    - [ ] Sanity-check Firestore read patterns in debug logs.
    - [x] Add unit tests for aggregation/top-5 logic.

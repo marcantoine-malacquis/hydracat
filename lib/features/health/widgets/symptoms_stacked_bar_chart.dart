@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/constants/symptom_colors.dart';
+import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/features/health/models/symptom_bucket.dart';
 import 'package:hydracat/features/health/models/symptom_granularity.dart';
@@ -17,7 +18,7 @@ import 'package:intl/intl.dart';
 /// - Support for week/month/year granularity
 /// - All symptoms (stacked) or single symptom view
 /// - Interactive tooltips with period labels and symptom breakdowns
-/// - Legend (to be implemented in section 3.5)
+/// - Legend with colored symptom chips matching bar segments
 ///
 /// This widget is driven by [symptomsChartStateProvider] and consumes
 /// [symptomsChartDataProvider] for chart data. The widget expects to be
@@ -114,31 +115,31 @@ class _SymptomsStackedBarChartState
     // Non-empty data: render chart structure with tooltip overlay
     return Padding(
       padding: const EdgeInsets.only(top: 12),
-      child: SizedBox(
-        height: _chartHeight,
-        child: Stack(
-          children: [
-            // Base layer: chart and legend
-            Column(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Chart area with fixed height and tooltip overlay
+          SizedBox(
+            height: _chartHeight,
+            child: Stack(
               children: [
-                Expanded(
-                  child: _buildChartBody(viewModel, chartState),
-                ),
-                // Legend placeholder (will be implemented in section 3.5)
-                _buildLegendPlaceholder(viewModel),
+                // Chart body
+                _buildChartBody(viewModel, chartState),
+                // Tooltip overlay (appears when a bar is tapped)
+                if (_touchedBarGroupIndex != null &&
+                    _touchPosition != null &&
+                    _touchedBarGroupIndex! < viewModel.buckets.length)
+                  _buildTooltip(
+                    viewModel,
+                    viewModel.buckets[_touchedBarGroupIndex!],
+                    _touchedBarGroupIndex!,
+                  ),
               ],
             ),
-            // Tooltip overlay (appears when a bar is tapped)
-            if (_touchedBarGroupIndex != null &&
-                _touchPosition != null &&
-                _touchedBarGroupIndex! < viewModel.buckets.length)
-              _buildTooltip(
-                viewModel,
-                viewModel.buckets[_touchedBarGroupIndex!],
-                _touchedBarGroupIndex!,
-              ),
-          ],
-        ),
+          ),
+          // Legend with symptom color chips (below chart, not constrained)
+          _buildLegendPlaceholder(viewModel),
+        ],
       ),
     );
   }
@@ -643,22 +644,140 @@ class _SymptomsStackedBarChartState
     return buffer.toString();
   }
 
-  /// Builds the legend placeholder below the chart
+  /// Builds the legend below the chart
   ///
-  /// This will later display symptom color chips (section 3.5).
-  /// For now, shows a simple placeholder.
+  /// Displays colored symptom chips matching the stacked bar segments.
+  /// In stacked mode, shows visible symptoms + "Other" if applicable.
+  /// In single-symptom mode, shows only the selected symptom.
   Widget _buildLegendPlaceholder(SymptomsChartViewModel viewModel) {
-    // TODO(section-3.5): Implement legend with symptom color chips
-    return const SizedBox.shrink();
+    final legendItems = _buildLegendItems(viewModel);
+
+    // Early return if no legend items (shouldn't happen in normal flow)
+    if (legendItems.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.lg),
+      child: Semantics(
+        label: 'Symptoms legend',
+        child: Wrap(
+          spacing: AppSpacing.md,
+          runSpacing: AppSpacing.sm,
+          alignment: WrapAlignment.center,
+          children: legendItems.map((item) {
+            return Container(
+              key: ValueKey('symptom-legend-${item.label}'),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xs,
+              ),
+              decoration: BoxDecoration(
+                color: item.color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: item.color.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: item.color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    item.label,
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
   }
 
-  // TODO(widget-tests): Add widget tests for tooltip behavior:
-  // - Tapping a bar shows the tooltip with correct content
-  // - Period labels are formatted correctly for each granularity
-  // - Per-symptom breakdown matches bucket data in stacked mode
-  // - Single-symptom mode shows only selected symptom
-  // - Empty buckets don't show tooltips
-  // - Tooltip positioning adapts to bar index (left/right)
+  /// Builds list of legend items based on view model and selected symptom
+  ///
+  /// Returns a list of legend items to display:
+  /// - Stacked mode: visible symptoms (from viewModel.visibleSymptoms) with
+  ///   total days > 0, plus "Other" if viewModel.hasOther and there's data.
+  /// - Single-symptom mode: only the selected symptom if it has any data.
+  List<_LegendItem> _buildLegendItems(SymptomsChartViewModel viewModel) {
+    final items = <_LegendItem>[];
+
+    if (widget.selectedSymptomKey == null) {
+      // Stacked mode: show visible symptoms + Other
+      // Aggregate total days across all buckets for each visible symptom
+      for (final symptomKey in viewModel.visibleSymptoms) {
+        var totalDays = 0;
+        for (final bucket in viewModel.buckets) {
+          totalDays += bucket.daysWithSymptom[symptomKey] ?? 0;
+        }
+        if (totalDays > 0) {
+          items.add(
+            _LegendItem(
+              label: _getSymptomLabel(symptomKey),
+              color: SymptomColors.colorForSymptom(symptomKey),
+            ),
+          );
+        }
+      }
+
+      // Add "Other" if applicable and there's data
+      if (viewModel.hasOther) {
+        var otherTotalDays = 0;
+        for (final bucket in viewModel.buckets) {
+          // Compute "Other" count: totalSymptomDays minus visible symptoms
+          var visibleTotal = 0;
+          for (final symptomKey in viewModel.visibleSymptoms) {
+            visibleTotal += bucket.daysWithSymptom[symptomKey] ?? 0;
+          }
+          final otherCount = bucket.totalSymptomDays - visibleTotal;
+          if (otherCount > 0) {
+            otherTotalDays += otherCount;
+          }
+        }
+        if (otherTotalDays > 0) {
+          items.add(
+            _LegendItem(
+              label: 'Other',
+              color: SymptomColors.colorForOther(),
+            ),
+          );
+        }
+      }
+    } else {
+      // Single-symptom mode: show only selected symptom if it has data
+      var totalDays = 0;
+      for (final bucket in viewModel.buckets) {
+        totalDays += bucket.daysWithSymptom[widget.selectedSymptomKey] ?? 0;
+      }
+      if (totalDays > 0) {
+        items.add(
+          _LegendItem(
+            label: _getSymptomLabel(widget.selectedSymptomKey!),
+            color: SymptomColors.colorForSymptom(widget.selectedSymptomKey!),
+          ),
+        );
+      }
+    }
+
+    return items;
+  }
+
+  // Widget tests for tooltip behavior are implemented in:
+  // test/features/health/widgets/symptoms_stacked_bar_chart_tooltip_test.dart
 }
 
 /// Data class for a single symptom row in the tooltip
@@ -675,6 +794,21 @@ class _SymptomTooltipRow {
 
   /// Number of days with this symptom
   final int count;
+
+  /// Color for the symptom indicator
+  final Color color;
+}
+
+/// Data class for a single legend item
+class _LegendItem {
+  /// Creates a [_LegendItem]
+  const _LegendItem({
+    required this.label,
+    required this.color,
+  });
+
+  /// Display label for the symptom (e.g., "Vomiting", "Other")
+  final String label;
 
   /// Color for the symptom indicator
   final Color color;
