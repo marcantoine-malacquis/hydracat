@@ -15,6 +15,7 @@ The theme system implements a water-themed design that balances **medical profes
 - **`app_spacing.dart`** - Spacing scale and layout constants
 - **`app_shadows.dart`** - Shadow definitions for elevation and depth
 - **`app_colors.dart`** - Water-themed color palette with semantic color mapping
+- **`../constants/symptom_colors.dart`** - Symptom-specific color palette for analytics visualizations
 
 ### Theme Index
 
@@ -82,6 +83,10 @@ AppColors.error          // #DC3545 - Red for critical alerts only
 // Context-aware color selection
 AppColors.getStressLevelColor('low')    // Returns success color
 AppColors.getAlertColor('warning')      // Returns warning color
+
+// Symptom-specific colors for analytics visualizations
+SymptomColors.colorForSymptom(SymptomType.vomiting)  // Returns pastel teal
+SymptomColors.colorForOther()                        // Returns neutral "Other" color
 ```
 
 ## Design Principles

@@ -351,6 +351,25 @@ opacity: 0.5;
 - Soft, calming shades
 - Clear data hierarchy
 
+**Symptom Color Palette** (for category charts):
+```css
+/* Fixed pastel color mapping for symptoms */
+--symptom-vomiting: #9DCBBF          /* Pastel teal */
+--symptom-diarrhea: #F0C980          /* Pastel amber */
+--symptom-lethargy: #EDA08F          /* Pastel coral */
+--symptom-suppressed-appetite: #C4B5FD /* Soft lavender */
+--symptom-constipation: #A8D5E2      /* Soft aqua */
+--symptom-injection-site: #9DCBBF    /* Pastel teal (reused) */
+--symptom-other: rgba(178, 190, 195, 0.35) /* Neutral with opacity */
+```
+
+**Symptom Chart Pattern:**
+- **Top 4-5 visible symptoms**: Show as distinct colored segments in stacked bars
+- **Remaining symptoms**: Grouped into "Other" segment using neutral color
+- **Single-symptom view**: When filtering to one symptom, use its assigned color
+- **Legend**: Display colored dots/squares with symptom names, including "Other" if present
+- **Implementation**: Use `SymptomColors.colorForSymptom()` and `SymptomColors.colorForOther()` from `lib/core/constants/symptom_colors.dart`
+
 ### Progress Indicators
 ```css
 /* Circular progress */

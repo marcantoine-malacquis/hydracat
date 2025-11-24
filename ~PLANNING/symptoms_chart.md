@@ -27,244 +27,465 @@
 
 ## 1. Data & Color Foundations
 
-### 1.1 Define symptom palette (`SymptomColors`)
+### 1.1 Define symptom palette (`SymptomColors`) ✅ **COMPLETED**
 
 **Objective**: Centralize a pastel color palette for symptoms, reusing injection-sites colors and a neutral “Other”.
 
-1. Add a new helper in `lib/core/constants/` (e.g. `symptom_colors.dart`):
-   - Map each `SymptomType` key to a **fixed pastel color**, reusing:
-     - `0xFF9DCBBF` (pastel teal – already used)
-     - `0xFFC4B5FD` (pastel lavender)
-     - `0xFFF0C980` (pastel amber)
-     - `0xFFEDA08F` (pastel coral)
-   - Add one additional soft hue (e.g. light aqua/blue derived from the primary palette) for the 5th visible symptom.
-   - Define a dedicated color for **“Other”** as a soft neutral:
-     - e.g. `AppColors.textTertiary.withOpacity(~0.35)` for the segment
-     - slightly stronger outline for legend.
-2. Expose two APIs:
-   - `Color colorForSymptom(String symptomKey)`
-   - `Color colorForOther()`
-3. Update `ui_guidelines.md` “Charts & Graphs” section to reference the symptom palette for category charts.
+**Implementation Status**: ✅ Completed
 
-### 1.2 Symptom ordering & “top 5 + Other” rules
+1. ✅ Added `lib/core/constants/symptom_colors.dart`:
+   - ✅ Mapped each `SymptomType` key to a **fixed pastel color**:
+     - `vomiting`: `0xFF9DCBBF` (pastel teal – `AppColors.primaryLight`)
+     - `diarrhea`: `0xFFF0C980` (pastel amber – `AppColors.successLight`)
+     - `lethargy`: `0xFFEDA08F` (pastel coral – `AppColors.warningLight`)
+     - `suppressedAppetite`: `0xFFC4B5FD` (pastel lavender)
+     - `constipation`: `0xFFA8D5E2` (soft aqua)
+     - `injectionSiteReaction`: `0xFFF5C9A8` (soft peach)
+   - ✅ Defined dedicated color for **"Other"** as `AppColors.textTertiary.withValues(alpha: 0.35)`
+2. ✅ Exposed two APIs:
+   - ✅ `Color colorForSymptom(String symptomKey)` – validates keys and returns mapped color or "Other"
+   - ✅ `Color colorForOther()` – returns neutral color for grouped symptoms
+3. ✅ Updated `ui_guidelines.md` "Charts & Graphs" section with symptom palette documentation
+4. ✅ Updated `lib/core/theme/README.md` to reference `SymptomColors` in Core Files and Colors sections
+
+### 1.2 Symptom ordering & "top 5 + Other" rules ✅ Completed
 
 **Objective**: Have a deterministic, future-proof way to decide which symptoms are shown as individual segments.
 
+**Priority Order** (from most important to least important):
+1. lethargy
+2. suppressed appetite
+3. vomiting
+4. injection-site reaction
+5. constipation
+6. diarrhea
+
+**Implementation Notes**:
 1. Define a **static priority list** of symptoms (in `SymptomType` or a small helper):
-   - Example (can be tweaked): vomiting, diarrhea, lethargy, suppressed appetite, constipation, injection-site reaction.
+   - Use the priority order above: lethargy, suppressed appetite, vomiting, injection-site reaction, constipation, diarrhea.
 2. For each chart bucket:
    - Compute a **global ranking over the visible range** (not per-bar) based on total counts:
      - Sum `count[period][symptom]` over all visible periods.
      - Sort by descending total, breaking ties by static priority.
    - Select **up to 5** symptoms to show as distinct segments (usually all 6 for now).
-   - All remaining symptoms are summed into an **“Other”** slot.
-3. Persist the **sorted visible list** and the “Other” index in the chart’s view-model so bar construction and legend stay in sync.
+   - All remaining symptoms are summed into an **"Other"** slot.
+3. Persist the **sorted visible list** and the "Other" index in the chart's view-model so bar construction and legend stay in sync.
 
-### 1.3 Bucket model for the chart
+**Status**: ⏸️ **Documentation only** - The actual ranking/selection logic will be implemented in section 2.6 (Aggregated chart data provider) when building the chart infrastructure.
+
+### 1.3 Bucket model for the chart ✅ **COMPLETED**
 
 **Objective**: Provide a generic data structure that all granularities can share.
 
-1. Add a small model class, e.g. `SymptomBucket` in `lib/features/health/models/`:
-   - Fields:
-     - `DateTime start;`
-     - `DateTime end;`
-     - `Map<String, int> daysWithSymptom; // symptomKey -> count`
-     - `int daysWithAnySymptoms;`
-   - Computed:
-     - `int totalSymptomDays => daysWithSymptom.values.fold(0, (a, b) => a + b);`
-2. For **week view**:
-   - Each bucket is a **single day**, so `start == end`.
-3. For **month view**:
-   - Each bucket represents a **week segment** in the displayed month (see 2.3).
-4. For **year view**:
-   - Each bucket represents a **calendar month** (start = first day, end = last day).
+**Implementation Status**: ✅ Completed
+
+1. ✅ Added `SymptomBucket` model class in `lib/features/health/models/symptom_bucket.dart`:
+   - ✅ Fields:
+     - `DateTime start;` – inclusive start date of the bucket
+     - `DateTime end;` – inclusive end date of the bucket
+     - `Map<String, int> daysWithSymptom;` – symptom key → count of days where score > 0
+     - `int daysWithAnySymptoms;` – count of days where any symptom was present
+   - ✅ Computed getter:
+     - `int get totalSymptomDays` – sum of all values in `daysWithSymptom`
+   - ✅ Factory constructors:
+     - `SymptomBucket.empty(DateTime date)` – creates empty single-day bucket
+     - `SymptomBucket.forRange({required DateTime start, required DateTime end})` – creates empty multi-day bucket
+   - ✅ Utility methods:
+     - `copyWith()` – functional-style updates for bucket building
+   - ✅ Immutability:
+     - `@immutable` class with unmodifiable `daysWithSymptom` map
+     - Proper `==`, `hashCode`, and `toString` overrides with value-based map comparison
+2. ✅ Usage patterns documented:
+   - **Week view**: Each bucket is a **single day**, so `start == end` (via `SymptomBucket.empty()`)
+   - **Month view**: Each bucket represents a **week segment** in the displayed month (see 2.3), using `SymptomBucket.forRange()` for initialization
+   - **Year view**: Each bucket represents a **calendar month** (start = first day, end = last day), populated from monthly summaries
+3. ✅ Unit tests added in `test/features/health/models/symptom_bucket_test.dart`:
+   - ✅ Constructor behavior and immutability validation
+   - ✅ `totalSymptomDays` computation (empty, single, multiple symptoms)
+   - ✅ Factory constructors with date normalization
+   - ✅ `copyWith` functionality for all field combinations
+   - ✅ Equality and hashCode (including map equality by value)
+   - ✅ `toString` output verification
 
 ---
 
 ## 2. Data Providers & Aggregation Logic
 
-### 2.1 New enum for symptoms granularity
+### 2.1 New enum for symptoms granularity ✅ **COMPLETED**
 
 **Objective**: Mirror `WeightGranularity` but scoped to symptoms.
 
-1. Create `SymptomGranularity` in `lib/features/health/models/symptom_granularity.dart`:
-   - Cases: `week`, `month`, `year`.
-   - `String get label` returning `"Week"`, `"Month"`, `"Year"` (used by UI).
-2. This keeps granularity type-safe and decoupled from the weight domain.
+**Implementation Status**: ✅ Completed
 
-### 2.2 Base symptoms chart state (period + granularity + selection)
+1. ✅ Created `SymptomGranularity` in `lib/features/health/models/symptom_granularity.dart`:
+   - ✅ Cases: `week`, `month`, `year`.
+   - ✅ `String get label` returning `"Week"`, `"Month"`, `"Year"` (used by UI).
+   - ✅ Documentation explaining purpose and decoupling from weight domain.
+   - ✅ Pattern matches `WeightGranularity` enum structure for consistency.
+2. ✅ Unit tests added in `test/features/health/models/symptom_granularity_test.dart`:
+   - ✅ Verification of all three enum values (`week`, `month`, `year`).
+   - ✅ Tests for `label` getter returning correct strings for each case.
+3. ✅ This keeps granularity type-safe and decoupled from the weight domain.
+
+### 2.2 Base symptoms chart state (period + granularity + selection) ✅ **COMPLETED**
 
 **Objective**: Centralize state so multiple widgets (header, segmented control, dropdown, chart) stay in sync.
 
-1. Add a Riverpod `StateNotifier` + provider, e.g. `symptomsChartStateProvider` in `lib/providers/`:
-   - State fields:
-     - `DateTime focusedDate;  // reference day inside the visible period`
-     - `SymptomGranularity granularity;`
-     - `String? selectedSymptomKey; // null => "All"`
-   - Derived:
-     - For `week`: `weekStart = AppDateUtils.startOfWeekMonday(focusedDate)`
-     - For `month`: `monthStart = DateTime(year, month, 1)`
-     - For `year`: `yearStart = DateTime(year, 1, 1)`
-2. Methods:
-   - `setGranularity(SymptomGranularity g)` – snaps `focusedDate` if needed.
-   - `previousPeriod()` / `nextPeriod()` – shift by:
-     - week: ±7 days
-     - month: ±1 month
-     - year: ±1 year
-   - `goToToday()`
-   - `setSelectedSymptom(String? key)`
+**Implementation Status**: ✅ Completed
 
-### 2.3 Week view buckets (1 bar per day)
+1. ✅ Added `SymptomsChartState` model and `SymptomsChartNotifier` in `lib/providers/symptoms_chart_provider.dart`:
+   - ✅ State fields:
+     - `DateTime focusedDate` – reference day inside the visible period (defaults to `DateTime.now()`)
+     - `SymptomGranularity granularity` – current graph granularity (defaults to `SymptomGranularity.week`)
+     - `String? selectedSymptomKey` – selected symptom key for single-symptom view (`null` => "All")
+   - ✅ Derived getters:
+     - `DateTime get weekStart` – uses `AppDateUtils.startOfWeekMonday(focusedDate)`
+     - `DateTime get monthStart` – uses `DateTime(focusedDate.year, focusedDate.month)`
+     - `DateTime get yearStart` – uses `DateTime(focusedDate.year)`
+   - ✅ Helper booleans:
+     - `bool get isOnCurrentWeek` – whether current week includes today
+     - `bool get isOnCurrentMonth` – whether current month includes today
+     - `bool get isOnCurrentYear` – whether current year includes today
+     - `bool get isOnCurrentPeriod` – convenience getter that switches on granularity
+   - ✅ Immutability:
+     - `@immutable` class with `copyWith()` for functional updates
+     - Proper `==`, `hashCode`, and `toString` overrides
+2. ✅ Implemented `SymptomsChartNotifier` extending `StateNotifier<SymptomsChartState>`:
+   - ✅ Constructor initializes with today's date, week granularity, and "All" symptoms
+   - ✅ Public methods:
+     - `setGranularity(SymptomGranularity g)` – normalizes `focusedDate` to period start and resets `selectedSymptomKey` to null
+     - `previousPeriod()` – shifts by -1 period (week: -7 days, month: -1 month, year: -1 year)
+     - `nextPeriod()` – shifts by +1 period with future clamping to prevent moving beyond today
+     - `goToToday()` – sets `focusedDate` to today while preserving granularity and selection
+     - `setSelectedSymptom(String? key)` – updates selected symptom key (null for "All")
+   - ✅ Private helpers:
+     - `_getPeriodAnchor()` – returns period start based on current granularity
+     - `_normalizeFocusedDate()` – snaps date to period start for cleaner boundaries
+     - `_shiftByGranularity()` – generic period shifting with month edge case handling
+     - `_shiftMonth()` – handles day clamping when crossing month boundaries (e.g., Jan 31 → Feb 28/29)
+     - `_clampToTodayIfFuture()` – prevents navigation to future periods
+   - ✅ Debug logging for period changes and granularity switches
+3. ✅ Exposed Riverpod provider:
+   - ✅ `symptomsChartStateProvider` – `StateNotifierProvider.autoDispose` for automatic cleanup when Symptoms screen is not in use
+   - ✅ Ready for consumption by UI widgets (header, segmented control, dropdown, chart) and aggregation providers (sections 2.3–2.6)
+
+### 2.3 Week view buckets (1 bar per day) ✅ **COMPLETED**
 
 **Objective**: Build 7 daily buckets using existing weekly summaries infrastructure with **0 extra reads**.
 
-1. Data source:
-   - Reuse `weekSummariesProvider(weekStart)` which already fetches 7 `DailySummary?` docs via `SummaryService.getDailySummary`.
-2. Add a provider, e.g. `weeklySymptomBucketsProvider(weekStart)`:
-   - Watch `weekSummariesProvider(weekStart)` and map each `DateTime -> DailySummary?` to a `SymptomBucket`:
-     - For each day:
-       - For each `SymptomType`:
-         - `daysWithSymptom[symptom] = daily.hadX ? 1 : 0`
-       - `daysWithAnySymptoms = daily.hasSymptoms ? 1 : 0`
-   - Ensure precise handling of `null` (no daily summary = all zeros).
-3. Cost:
-   - No additional reads beyond those already done for the calendar, per CRUD rules.
+**Implementation Status**: ✅ Completed
 
-### 2.4 Month view buckets (1 bar per week of the month)
+1. ✅ Added pure function `buildWeeklySymptomBuckets` in `lib/providers/symptoms_chart_provider.dart`:
+   - ✅ Takes `weekStart` (Monday at 00:00) and `Map<DateTime, DailySummary?>` from `weekSummariesProvider`
+   - ✅ Iterates through 7 days (Mon-Sun) and builds one `SymptomBucket` per day
+   - ✅ For each day:
+     - ✅ Creates empty bucket using `SymptomBucket.empty(date)` if summary is null
+     - ✅ If summary exists, maps all 6 symptom booleans (`hadVomiting`, `hadDiarrhea`, `hadConstipation`, `hadLethargy`, `hadSuppressedAppetite`, `hadInjectionSiteReaction`) to `daysWithSymptom` map with value `1` only when true (omits false symptoms to keep maps compact)
+     - ✅ Sets `daysWithAnySymptoms` to `1` if `summary.hasSymptoms == true`, otherwise `0`
+   - ✅ Returns fixed list of 7 buckets, ordered Monday → Sunday
+   - ✅ Normalizes `weekStart` to start-of-day for safety
+2. ✅ Added `weeklySymptomBucketsProvider` as `AutoDisposeProviderFamily<List<SymptomBucket>?, DateTime>`:
+   - ✅ Watches `weekSummariesProvider(weekStart)` to consume existing cached data
+   - ✅ Returns `null` while loading or on error, `List<SymptomBucket>` when data is available
+   - ✅ Automatically recomputes when `weekSummariesProvider` changes (e.g., after logging new symptoms)
+3. ✅ Cost validation:
+   - ✅ **0 additional Firestore reads** - provider only consumes `weekSummariesProvider` which already adheres to CRUD rules and TTL caching
+4. ✅ Unit tests added in `test/features/health/providers/weekly_symptom_buckets_provider_test.dart`:
+   - ✅ Empty week (all null summaries) → 7 empty buckets
+   - ✅ Single-day symptoms → correct bucket has symptom keys set to 1
+   - ✅ Multiple symptoms on same day → bucket includes all present symptoms
+   - ✅ Mixed week with different symptom combinations → correct ordering and per-day maps
+   - ✅ Day with `hasSymptoms=false` → empty bucket
+   - ✅ Correct ordering (Monday to Sunday) verification
+   - ✅ Date normalization handling
+
+### 2.4 Month view buckets (1 bar per week of the month) ✅ **COMPLETED**
 
 **Objective**: Build 4–5 weekly buckets for the visible month using **daily summaries**, respecting cost limits.
 
-1. Data source:
-   - Use `SummaryService.getDailySummary()` for each day in the month (max 31 docs, TTL-cached).
-2. Add a new provider, e.g. `monthlySymptomBucketsProvider(monthStart)`:
-   - Generate all dates from `monthStart` to `monthEnd` (inclusive).
-   - For each date, call `getDailySummary` in `Future.wait` (bounded 31 reads, cached for 15 minutes).
-   - Group days into **week segments within the month**:
-     - Use `AppDateUtils.startOfWeekMonday(day)` as the week anchor.
-     - Maintain a map `weekStart -> SymptomBucket` but only include **days whose month matches `monthStart.month`** to avoid mixing months.
-   - For each day added to a bucket:
-     - For each symptom, if `daily.hadX == true`, increment `daysWithSymptom[X]` by 1.
-     - If `daily.hasSymptoms == true`, increment `daysWithAnySymptoms` by 1.
-3. Ordering:
-   - Sort buckets by `weekStart` ascending.
-4. Cost:
-   - Max 31 daily summaries per month, fully within CRUD rules and similar to the planned “recent 30-day trends” feature.
+**Implementation Status**: ✅ Completed
 
-### 2.5 Year view buckets (1 bar per month)
+1. ✅ Added pure function `buildMonthlySymptomBuckets` in `lib/providers/symptoms_chart_provider.dart`:
+   - ✅ Takes `monthStart` (first day of month at 00:00) and `Map<DateTime, DailySummary?>` for all days in the month
+   - ✅ Normalizes `monthStart` to first day of month at start-of-day
+   - ✅ Computes `monthEnd` using `AppDateUtils.endOfMonth()`
+   - ✅ Iterates through all days in the month (up to 31 days)
+   - ✅ For each day:
+     - ✅ Only processes days where `currentDate.month == monthStart.month` to avoid mixing months
+     - ✅ Computes `weekStart = AppDateUtils.startOfWeekMonday(currentDate)` as the week anchor
+     - ✅ Maintains a `Map<DateTime, SymptomBucket>` keyed by `weekStart`
+     - ✅ Creates new bucket using `SymptomBucket.forRange()` if week segment doesn't exist
+     - ✅ Extends bucket's `end` date when adding further days to the same week segment
+     - ✅ For each symptom boolean that is `true`, increments `daysWithSymptom[symptomKey]` by 1
+     - ✅ If `daily.hasSymptoms == true`, increments `daysWithAnySymptoms` by 1
+   - ✅ After processing all days, sorts buckets by `start` date ascending and returns as `List<SymptomBucket>`
+   - ✅ Documentation explains why daily summaries are used (not weekly summaries) for correct "weeks of the month" visualization
+2. ✅ Added `monthlySymptomBucketsProvider` as `AutoDisposeFutureProviderFamily<List<SymptomBucket>?, DateTime>`:
+   - ✅ Normalizes `monthStart` to first day of month at start-of-day
+   - ✅ Generates all dates from `monthStart` to `monthEnd` (inclusive)
+   - ✅ Fetches daily summaries in parallel using `Future.wait` with `SummaryService.getDailySummary()`
+   - ✅ Builds `Map<DateTime, DailySummary?>` from results
+   - ✅ Delegates to `buildMonthlySymptomBuckets()` for aggregation
+   - ✅ Returns `null` while loading or on error, `List<SymptomBucket>` (4-6 buckets) when data is available
+   - ✅ Watches `dailyCacheProvider` for reactivity (automatically recomputes when today's cache updates)
+   - ✅ Includes debug logging for fetch operations
+3. ✅ Cost validation:
+   - ✅ **At most 31 Firestore reads per month** (one per day), TTL-cached for 5 minutes
+   - ✅ Fully within CRUD rules and similar to the planned "recent 30-day trends" feature
+   - ✅ Only fetched when user views that month; no background polling
+   - ✅ Documentation describes Firestore cost characteristics and alignment with `firebase_CRUDrules.md`
+4. ✅ Unit tests added in `test/features/health/providers/monthly_symptom_buckets_provider_test.dart`:
+   - ✅ Empty month (all null summaries) → 4-6 empty buckets (depending on how weeks fall)
+   - ✅ Single-day symptoms → correct bucket has symptom keys with count 1
+   - ✅ Multiple days in same week segment → bucket accumulates counts correctly
+   - ✅ Weeks spanning two months → days from adjacent months are correctly excluded
+   - ✅ Months with 28, 30, and 31 days → correct handling of different month lengths
+   - ✅ Day with `hasSymptoms=false` → bucket correctly excludes that day from symptom counts
+   - ✅ Correct ordering (buckets sorted by start date ascending)
+   - ✅ Date normalization handling
+   - ✅ Mixed month with various symptom combinations → correct aggregation across multiple buckets
+
+### 2.5 Year view buckets (1 bar per month) ✅ **COMPLETED**
 
 **Objective**: Build up to 12 monthly buckets using **monthly summaries only**.
 
-1. Data source:
-   - Use `SummaryService.getMonthlySummary()` for months from `yearStart` to `yearStart + 11 months`, stopping at now or at the max premium/free range later.
-2. Add provider `yearlySymptomBucketsProvider(yearStart)`:
-   - For each month in range:
-     - Fetch `MonthlySummary?`.
-     - Create a `SymptomBucket` with:
-       - `start = first day of month`, `end = last day of month`.
-       - `daysWithSymptom[...] = summary.daysWithX` (0 if summary is null).
-       - `daysWithAnySymptoms = summary.daysWithAnySymptoms` (0 if null).
-3. Range limits:
-   - For now: up to **12 months from yearStart**.
-   - Later: enforce free vs premium gating if needed (e.g. only last 30–90 days visible for free).
-4. Cost:
-   - Up to 12 monthly summary reads per year view, TTL-cached for 15 minutes.
+**Implementation Status**: ✅ Completed
 
-### 2.6 Aggregated chart data provider
+1. ✅ Added pure function `buildYearlySymptomBuckets` in `lib/providers/symptoms_chart_provider.dart`:
+   - ✅ Takes `yearStart` (first day of year at 00:00) and `Map<DateTime, MonthlySummary?>` keyed by month start date
+   - ✅ Iterates through months from `yearStart` to `yearStart + 11 months`, stopping at current month if in the future
+   - ✅ For each month:
+     - ✅ Computes `monthStart = DateTime(year, month, 1)` and `monthEnd = AppDateUtils.endOfMonth(monthStart)`
+     - ✅ Gets `MonthlySummary?` from the map
+     - ✅ If summary is null, creates empty bucket using `SymptomBucket.forRange(start: monthStart, end: monthEnd)`
+     - ✅ If summary exists, creates bucket with:
+       - ✅ `start = summary.startDate`, `end = summary.endDate`
+       - ✅ `daysWithSymptom` map populated from summary fields:
+         - ✅ `SymptomType.vomiting` → `summary.daysWithVomiting`
+         - ✅ `SymptomType.diarrhea` → `summary.daysWithDiarrhea`
+         - ✅ `SymptomType.constipation` → `summary.daysWithConstipation`
+         - ✅ `SymptomType.lethargy` → `summary.daysWithLethargy`
+         - ✅ `SymptomType.suppressedAppetite` → `summary.daysWithSuppressedAppetite`
+         - ✅ `SymptomType.injectionSiteReaction` → `summary.daysWithInjectionSiteReaction`
+       - ✅ Only includes symptom keys with count > 0 in the map (keeps it compact)
+       - ✅ `daysWithAnySymptoms = summary.daysWithAnySymptoms`
+   - ✅ Returns sorted list of buckets (by `start` date ascending)
+   - ✅ Documentation explains purpose, parameters, return value, and usage example
+2. ✅ Added `yearlySymptomBucketsProvider` as `AutoDisposeFutureProviderFamily<List<SymptomBucket>?, DateTime>`:
+   - ✅ Normalizes `yearStart` to `DateTime(yearStart.year, 1, 1)` at start-of-day
+   - ✅ Gets `user` and `pet` from `currentUserProvider` and `primaryPetProvider` (returns `null` if either is null)
+   - ✅ Generates list of month dates (up to 12 months, stopping at current month if future):
+     - ✅ Iterates from month 1 to 12, computing `monthDate = DateTime(year, month, 1)`
+     - ✅ Stops if `monthDate` is after current month
+   - ✅ Fetches monthly summaries in parallel using `Future.wait` with `SummaryService.getMonthlySummary()`
+   - ✅ Builds `Map<DateTime, MonthlySummary?>` from results
+   - ✅ Delegates to `buildYearlySymptomBuckets()` for aggregation
+   - ✅ Returns `null` while loading or on error, `List<SymptomBucket>` (up to 12 buckets) when data is available
+   - ✅ Watches `dailyCacheProvider` for reactivity (automatically recomputes when today's cache updates)
+   - ✅ Includes debug logging for fetch operations and summary counts
+3. ✅ Range limits:
+   - ✅ For now: up to **12 months from yearStart**, stopping at current month if future
+   - ✅ Later: enforce free vs premium gating if needed (e.g. only last 30–90 days visible for free)
+4. ✅ Cost validation:
+   - ✅ **Up to 12 Firestore reads per year view**, TTL-cached for 15 minutes (handled by `SummaryService`)
+   - ✅ Fully within CRUD rules and similar to the planned "recent 30-day trends" feature
+   - ✅ Only fetched when user views that year; no background polling
+   - ✅ Documentation describes Firestore cost characteristics and alignment with `firebase_CRUDrules.md`
+5. ✅ Unit tests added in `test/features/health/providers/yearly_symptom_buckets_provider_test.dart`:
+   - ✅ Empty year (all null summaries) → 12 empty buckets (or fewer if stopping at current month)
+   - ✅ Single-month symptoms → correct bucket has symptom keys with counts
+   - ✅ Multiple months with various symptom combinations → correct aggregation across months
+   - ✅ Partial year (year that includes future months) → stops at current month, doesn't create future buckets
+   - ✅ Missing summaries (some months null, some with data) → correct handling of nulls
+   - ✅ Date normalization → verify correct month start/end dates
+   - ✅ Correct ordering → buckets sorted by start date ascending
+   - ✅ Using summary dates → bucket uses summary's `startDate` and `endDate`
+   - ✅ Only including symptoms with count > 0 → map is compact
+   - ✅ Leap year February → correct handling of leap year edge case
+   - ✅ All 6 symptom types → comprehensive symptom coverage
+
+### 2.6 Aggregated chart data provider ✅ **COMPLETED**
 
 **Objective**: Expose a single provider that the chart widget can depend on, abstracting away granularity & period.
 
-1. Add `symptomsChartDataProvider` as a `Provider.autoDispose` that:
-   - Reads `symptomsChartStateProvider` for `granularity` and `focusedDate`.
-   - Switches:
-     - `week` → `weeklySymptomBucketsProvider(weekStart)`
-     - `month` → `monthlySymptomBucketsProvider(monthStart)`
-     - `year` → `yearlySymptomBucketsProvider(yearStart)`
-   - Computes:
-     - `List<SymptomBucket> buckets`
-     - Global ranking and visible symptoms (`visibleSymptoms`, `otherSymptomKey`).
-2. This provider returns a small view-model struct, e.g. `SymptomsChartViewModel`:
-   - `List<SymptomBucket> buckets;`
-   - `List<String> visibleSymptoms; // ordered`
-   - `bool hasOther;`
+**Implementation Status**: ✅ Completed
+
+1. ✅ Added `SymptomsChartViewModel` class in `lib/providers/symptoms_chart_provider.dart`:
+   - ✅ Immutable view-model struct with:
+     - ✅ `List<SymptomBucket> buckets` - list of symptom buckets for the current period
+     - ✅ `List<String> visibleSymptoms` - ordered list of top symptom keys (up to 5) to render as individual stacked segments
+     - ✅ `bool hasOther` - whether an "Other" segment is needed for symptoms not in `visibleSymptoms`
+   - ✅ Includes proper equality, hashCode, and toString implementations
+   - ✅ Documentation explains how chart widget should consume the view-model
+2. ✅ Implemented symptom ranking helpers:
+   - ✅ Static priority order constant `_symptomPriorityOrder` with order: lethargy, suppressedAppetite, vomiting, injectionSiteReaction, constipation, diarrhea
+   - ✅ Private function `_buildVisibleSymptoms()` that:
+     - ✅ Aggregates symptom counts across all buckets
+     - ✅ Sorts by total count (descending) with static priority as tie-breaker
+     - ✅ Returns top 5 symptoms (or fewer if fewer exist)
+   - ✅ Private function `_hasOtherSymptoms()` that determines if symptoms not in `visibleSymptoms` have non-zero counts
+3. ✅ Added `symptomsChartDataProvider` as `Provider.autoDispose<SymptomsChartViewModel?>`:
+   - ✅ Reads `symptomsChartStateProvider` for `granularity` and period anchors (`weekStart`, `monthStart`, `yearStart`)
+   - ✅ Switches based on granularity:
+     - ✅ `week` → watches `weeklySymptomBucketsProvider(weekStart)` (returns `List<SymptomBucket>?` directly)
+     - ✅ `month` → watches `monthlySymptomBucketsProvider(monthStart)` (returns `AsyncValue`, extracts via `valueOrNull`)
+     - ✅ `year` → watches `yearlySymptomBucketsProvider(yearStart)` (returns `AsyncValue`, extracts via `valueOrNull`)
+   - ✅ Returns `null` while data is loading or if an error occurs
+   - ✅ When buckets are available:
+     - ✅ Computes `visibleSymptoms` using `_buildVisibleSymptoms()`
+     - ✅ Computes `hasOther` using `_hasOtherSymptoms()`
+     - ✅ Returns `SymptomsChartViewModel` with buckets, visibleSymptoms, and hasOther
+   - ✅ Includes debug logging for granularity, bucket count, visible symptoms, and hasOther flag
+   - ✅ Fully documented with usage examples
+4. ✅ Unit tests added in `test/features/health/providers/symptoms_chart_data_provider_test.dart`:
+   - ✅ Week granularity tests:
+     - ✅ Returns null when buckets are null (loading state)
+     - ✅ Returns view model with empty buckets
+     - ✅ Computes visible symptoms from buckets correctly
+   - ✅ Month granularity tests:
+     - ✅ Returns null when buckets are null (loading state)
+     - ✅ Returns view model with monthly buckets
+   - ✅ Year granularity tests:
+     - ✅ Returns null when buckets are null (loading state)
+     - ✅ Returns view model with yearly buckets
+   - ✅ Top-5 + Other logic tests:
+     - ✅ Selects top 5 symptoms by count when more than 5 exist
+     - ✅ Uses static priority as tie-breaker when counts are equal
+     - ✅ Sets hasOther to false when all symptoms are visible
+     - ✅ Sets hasOther to true when symptoms are not in visible list
+   - ✅ SymptomsChartViewModel tests:
+     - ✅ Correct equality and hashCode implementation
+     - ✅ Different equality for different visible symptoms
+   - ✅ All 13 tests passing
 
 ---
 
 ## 3. Chart Widget (fl_chart) – Stacked Bars & Tooltips
 
-### 3.1 Widget structure & placement
+### 3.1 Widget structure & placement ✅ **COMPLETED**
 
 **Objective**: Implement a reusable `SymptomsStackedBarChart` widget in the health feature.
 
-1. Add a new widget file, e.g. `lib/features/health/widgets/symptoms_stacked_bar_chart.dart`.
-2. Public API:
-   - `class SymptomsStackedBarChart extends ConsumerWidget` with:
-     - `final SymptomGranularity granularity;`
-     - `final String? selectedSymptomKey; // null => All`
-   - Internally reads `symptomsChartDataProvider`.
+**Implementation Status**: ✅ Completed
 
-### 3.2 Mapping buckets to `BarChartGroupData`
+1. ✅ Added `lib/features/health/widgets/symptoms_stacked_bar_chart.dart`:
+   - ✅ Created `SymptomsStackedBarChart` as a `ConsumerWidget`
+   - ✅ Public API with `granularity` and `selectedSymptomKey` props
+   - ✅ Internally watches `symptomsChartDataProvider` and `symptomsChartStateProvider`
+2. ✅ State handling:
+   - ✅ Loading state: shows centered spinner with fixed height (200px) matching `FluidVolumeBarChart`
+   - ✅ Empty state: displays "No symptom data for this period" message when buckets are empty or all zero
+   - ✅ Non-empty state: renders full BarChart widget with stacked/single-symptom modes (implemented in section 3.2)
+3. ✅ Internal structure:
+   - ✅ Private helper `_buildChartBody()` for main chart area (now fully implemented in section 3.2)
+   - ✅ Private helper `_buildLegendPlaceholder()` for legend area (ready for section 3.5)
+   - ✅ Column layout with Expanded chart area and legend placeholder below
+4. ✅ Styling alignment:
+   - ✅ Fixed height of 200px matching `FluidVolumeBarChart`
+   - ✅ Top padding of 12px consistent with existing charts
+   - ✅ Uses `AppTextStyles` and `AppColors` for consistent typography and colors
+   - ✅ Chart body now renders full BarChart widget (section 3.2 complete)
+5. ✅ Documentation:
+   - ✅ Comprehensive class documentation explaining widget purpose and usage
+   - ✅ Example code showing how to construct from chart state
+   - ✅ References to providers and state structure
+
+### 3.2 Mapping buckets to `BarChartGroupData` ✅ **COMPLETED**
 
 **Objective**: Consistently turn `SymptomBucket`s into fl_chart bar groups for stacked/all vs single-symptom mode.
 
-1. For **All mode** (`selectedSymptomKey == null`):
-   - For each bucket index `i`:
-     - Compute the **stack segments** (values normalized to chart Y scale):
-       - For each `visibleSymptom` (up to 5):
-         - `toY = daysWithSymptom[symptomKey].toDouble()`
-       - Optionally an “Other” segment with:
-         - `otherCount = bucket.totalSymptomDays - sum(visibleSymptoms counts)`
-         - If `otherCount > 0`, add a final segment colored as “Other”.
-     - Use **BarChartRodStackItem** segments inside one `BarChartRodData` per group.
-2. For **single-symptom mode**:
-   - Each bucket has a single rod with:
-     - `toY = daysWithSymptom[selectedSymptomKey]` as double.
-     - Color: `SymptomColors.colorForSymptom(selectedSymptomKey)`.
-3. Y-axis:
-   - `maxY` = max segment height across visible buckets + ~10–20% headroom.
-   - Y-axis labels: small integers (0, 1, 2, …) with minimal reserved width to “not take too much place”.
+**Implementation Status**: ✅ Completed
 
-### 3.3 Visual styling & alignment
+1. ✅ **All mode** (`selectedSymptomKey == null`):
+   - ✅ Implemented `_buildStackedBarGroup()` method that:
+     - Iterates through `viewModel.buckets` with index `i`
+     - For each bucket, builds stacked segments:
+       - Loops through `viewModel.visibleSymptoms` (top 5) in order
+       - For each visible symptom with count > 0, creates `BarChartRodStackItem(fromY, toY, color)` with accumulating `runningTotal`
+       - Computes "Other" count as `bucket.totalSymptomDays - sum(visibleSymptoms counts)`
+       - Adds "Other" segment when `otherCount > 0` using `SymptomColors.colorForOther()`
+     - Creates single `BarChartRodData` per group with `rodStackItems` containing all segments
+     - Handles empty buckets with transparent placeholder
+2. ✅ **Single-symptom mode**:
+   - ✅ Implemented `_buildSingleSymptomBarGroup()` method that:
+     - Creates a single `BarChartRodData` per bucket with:
+       - `toY = daysWithSymptom[selectedSymptomKey] ?? 0` converted to double
+       - `color: SymptomColors.colorForSymptom(selectedSymptomKey)`
+       - Consistent width (40px) and border radius (8px)
+3. ✅ **Y-axis configuration**:
+   - ✅ Implemented `_computeMaxY()` method that:
+     - For stacked mode: finds max `bucket.totalSymptomDays` across all buckets
+     - For single-symptom mode: finds max count for selected symptom across buckets
+     - Adds 15% headroom: `maxY * 1.15`
+     - Ensures minimum of 1.0 for empty data
+   - ✅ Implemented `_computeYAxisInterval()` for nice intervals (1, 2, 5, 10, etc.)
+   - ✅ Configured `leftTitles` to show integer labels only (0, 1, 2, …) with reserved size 30px
+4. ✅ **Bar group building**:
+   - ✅ Implemented `_buildBarGroups()` that switches between stacked and single-symptom modes
+   - ✅ All helper methods properly handle edge cases (empty buckets, zero counts)
+
+### 3.3 Visual styling & alignment ✅ **PARTIALLY COMPLETED**
 
 **Objective**: Match the aesthetics and interaction quality of existing charts.
 
-1. Layout:
-   - Use a fixed height similar to `FluidVolumeBarChart` (~200px).
-   - `alignment: BarChartAlignment.spaceAround` for even spacing.
-   - Slightly rounded bar corners (e.g. radius 8–10) to stay soft and in line with water theme.
-2. Colors:
-   - Apply solid colors for stacked segments (no gradients) for clarity.
-   - Optional subtle gradient for the **selected symptom** in single mode (similar to weight/fluid charts).
-3. Grid & borders:
-   - Show **light grid lines** on Y-axis only (using `AppColors.border` with low opacity).
-   - No top/right borders; bottom + left only (mirroring `WeightLineChart`).
-4. X-axis labels:
-   - Week: show short day labels (`Mon`, `Tue`, …), mirroring `WeightLineChart` logic.
-   - Month: show week numbers or start dates (`W1`, `W2`, etc., or `3–9`, `10–16`).
-   - Year: show 3-letter months (`Jan`, `Feb`, …).
+**Implementation Status**: ✅ Partially completed (basic styling done, gradients deferred)
 
-### 3.4 Tooltip design & behavior
+1. ✅ **Layout**:
+   - ✅ Fixed height of 200px matching `FluidVolumeBarChart`
+   - ✅ `alignment: BarChartAlignment.spaceAround` for even spacing
+   - ✅ Rounded bar corners with radius 8px (via `BorderRadius.circular(8)`)
+   - ✅ Bar width: 40px for consistent appearance
+2. ✅ **Colors**:
+   - ✅ Applied solid colors for stacked segments using `SymptomColors.colorForSymptom()`
+   - ✅ No gradients (keeps clarity for stacked view)
+   - ⏸️ Subtle gradient for selected symptom in single mode deferred (can be added later if desired)
+3. ✅ **Grid & borders**:
+   - ✅ Light horizontal grid lines only using `AppColors.border.withValues(alpha: 0.3)`
+   - ✅ Borders: bottom + left only (no top/right), matching `WeightLineChart` pattern
+   - ✅ Grid intervals computed via `_computeYAxisInterval()` for clean spacing
+4. ✅ **X-axis labels**:
+   - ✅ Implemented `_formatXAxisLabel()` method that formats based on granularity:
+     - Week: Short day abbreviations using `DateFormat('EEE')` (Mon, Tue, …)
+     - Month: Week ranges showing start-end day (e.g., "3-9", "10-16")
+     - Year: 3-letter month abbreviations using `DateFormat('MMM')` (Jan, Feb, …)
+   - ✅ Labels styled with `AppTextStyles.caption` and `AppColors.textSecondary`
+   - ✅ Reserved size 30px for bottom titles
+
+### 3.4 Tooltip design & behavior ✅ **COMPLETED**
 
 **Objective**: Reuse the feel of `FluidVolumeBarChart` tooltips, adapted to textual breakdowns.
 
-1. Interaction:
-   - Use `BarTouchData` with `handleBuiltInTouches: false` and custom `touchCallback`, like `FluidVolumeBarChart`.
-   - On tap:
-     - Store `touchedBarGroupIndex` and `touchPosition` in state.
-     - Trigger a small scale/opacity animation for the tooltip card.
-2. Tooltip contents:
-   - Line 1: **period label**:
-     - Week view: `EEE dd MMM` for that day.
-     - Month view: “Week of Nov 3–9”.
-     - Year view: “Mar 2025”.
-   - Line 2: **total symptom days in that bucket**, e.g. `Total symptom days: 7`.
-   - Following lines: per-symptom breakdown:
-     - Example: `Vomiting: 3 days`, `Diarrhea: 1 day`, `Lethargy: 2 days`, `Other: 1 day`.
-   - In single-symptom mode:
-     - Period label + e.g. `Vomiting: 3 days`.
-3. Styling:
-   - Card: white background, 8px radius, soft shadow (same as `_TooltipCard` in `FluidVolumeBarChart`).
-   - Arrow: small triangle using `Icons.change_history`, pointing towards the bar, left/right based on bar index to avoid off-screen overflow.
-   - Font: `AppTextStyles.body`/`caption` with `AppColors.textPrimary` and `textSecondary`.
+**Implementation Status**: ✅ Completed
+
+1. ✅ **Interaction**:
+   - ✅ Converted widget to `ConsumerStatefulWidget` with local touch state (`_touchedBarGroupIndex`, `_touchPosition`).
+   - ✅ Implemented `_buildTouchData()` with `BarTouchData` using `handleBuiltInTouches: false` and custom `touchCallback`, matching `FluidVolumeBarChart` pattern.
+   - ✅ On tap: stores `touchedBarGroupIndex` and `touchPosition` in state with haptic feedback (`HapticFeedback.selectionClick()`).
+   - ✅ On tap up/cancel: clears touch state.
+   - ✅ Triggered scale/opacity animation via `TweenAnimationBuilder` (0.9 → 1.0 scale, 160ms duration, `Curves.easeOutCubic`).
+2. ✅ **Tooltip contents**:
+   - ✅ Line 1: **period label** formatted via `_formatTooltipPeriodLabel()`:
+     - ✅ Week view: `EEE dd MMM` format (e.g., "Mon 15 Jan").
+     - ✅ Month view: "Week of Nov 3–9" format with start/end days.
+     - ✅ Year view: `MMM yyyy` format (e.g., "Mar 2025").
+   - ✅ Line 2: **total symptom days** display: `Total symptom days: X`.
+   - ✅ Following lines: per-symptom breakdown via `_buildSymptomTooltipRows()`:
+     - ✅ Stacked mode: shows visible symptoms (top 5) + "Other" if applicable, each with colored dot indicator and count (e.g., "Vomiting: 3 days").
+     - ✅ Single-symptom mode: shows only selected symptom with period label and count.
+3. ✅ **Styling**:
+   - ✅ Card: white background, 8px radius, soft shadow matching `_TooltipCard` in `FluidVolumeBarChart`.
+   - ✅ Arrow: small triangle using `Icons.change_history`, rotated ±90 degrees, positioned left/right based on bar index (left half → tooltip on right, right half → tooltip on left).
+   - ✅ Font: `AppTextStyles.body` (bold, 13px) for period label, `AppTextStyles.caption` (11px) for total days and symptom rows, using `AppColors.textPrimary` and `textSecondary`.
+4. ✅ **Positioning and overlay**:
+   - ✅ Wrapped chart in `Stack` with tooltip overlay layer.
+   - ✅ Smart positioning: tooltip appears on right for left half of bars, left for right half to avoid off-screen overflow.
+   - ✅ Positioned relative to touch point (`_touchPosition.dx + 8` or `screenWidth - _touchPosition.dx + 8`).
+   - ✅ Vertical offset: `_touchPosition.dy - 40` to position above touch point.
+5. ✅ **Edge cases and accessibility**:
+   - ✅ Guards against stale indices (checks `_touchedBarGroupIndex < viewModel.buckets.length`).
+   - ✅ Empty/zero buckets: no tooltip shown when `totalSymptomDays == 0` or selected symptom count is 0.
+   - ✅ Added `Semantics` label via `_buildTooltipSemanticsLabel()` for screen reader support.
+   - ✅ TODO added for future widget tests covering tooltip behavior.
 
 ### 3.5 Legend
 
@@ -403,17 +624,21 @@
 ## 6. Implementation Checklist (High-Level)
 
 1. **Foundations**
-   - [ ] Implement `SymptomGranularity` enum.
-   - [ ] Implement `SymptomBucket` model.
-   - [ ] Add `SymptomColors` helper + update `ui_guidelines`.
+   - [x] Implement `SymptomGranularity` enum.
+   - [x] Implement `SymptomBucket` model.
+   - [x] Add `SymptomColors` helper + update `ui_guidelines`.
 2. **Providers & Aggregation**
-   - [ ] Implement `symptomsChartStateProvider` (focused date, granularity, selection).
-   - [ ] Implement weekly, monthly, and yearly buckets providers.
-   - [ ] Implement unified `symptomsChartDataProvider` with top-5 + Other logic.
+   - [x] Implement `symptomsChartStateProvider` (focused date, granularity, selection).
+   - [x] Implement weekly buckets provider (`weeklySymptomBucketsProvider`).
+   - [x] Implement monthly buckets provider (`monthlySymptomBucketsProvider`).
+   - [x] Implement yearly buckets provider (`yearlySymptomBucketsProvider`).
+   - [x] Implement unified `symptomsChartDataProvider` with top-5 + Other logic.
 3. **Chart Widget**
-   - [ ] Create `SymptomsStackedBarChart` widget using `fl_chart`.
-   - [ ] Implement stacked vs single-symptom rendering.
-   - [ ] Implement tooltips and legend matching existing chart styling.
+   - [x] Create `SymptomsStackedBarChart` widget structure and placement (section 3.1).
+   - [x] Implement stacked vs single-symptom rendering (section 3.2).
+   - [x] Implement basic visual styling and alignment (section 3.3 - layout, colors, grid, borders, x-axis labels).
+   - [x] Implement tooltips matching existing chart styling (section 3.4).
+   - [ ] Implement legend matching existing chart styling (section 3.5).
 4. **Screen Integration**
    - [ ] Extend `SymptomsScreen` to show chart instead of only empty state when data exists.
    - [ ] Add Week/Month/Year segmented control wired to chart state.
@@ -421,9 +646,9 @@
    - [ ] Add symptom selection dropdown and wire to chart.
 5. **Performance & Testing**
    - [ ] Sanity-check Firestore read patterns in debug logs.
-   - [ ] Add unit tests for aggregation/top-5 logic.
+   - [x] Add unit tests for aggregation/top-5 logic.
    - [ ] Add at least one widget test for chart rendering.
-   - [ ] Run `flutter analyze` and `flutter test` before manual UX testing.
+   - [x] Run `flutter analyze` and `flutter test` before manual UX testing.
 
 Once this plan is implemented, we’ll have a cohesive, low-cost symptom visualization that feels native to HydraCat’s existing analytics and UI patterns, and can be extended later with premium, long-range analytics without changing the underlying data model.
 
