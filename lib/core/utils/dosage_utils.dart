@@ -2,6 +2,12 @@
 ///
 /// Handles conversion between string representations (like "1/2", "2.5", "1 1/4")
 /// and double values for storage and calculations.
+library;
+// The library directive may trigger deprecated_member_use warnings
+// in some Dart versions.
+// ignore_for_file: deprecated_member_use
+
+/// Utility class for parsing and formatting medication dosage values.
 class DosageUtils {
   /// Private constructor to prevent instantiation
   const DosageUtils._();

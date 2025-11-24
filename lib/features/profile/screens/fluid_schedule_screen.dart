@@ -207,7 +207,7 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
           appBar: HydraAppBar(
             title: Text("$petName's Fluid Schedule"),
             backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-            leading: IconButton(
+            leading: HydraBackButton(
               onPressed: () {
                 if (_hasChanges) {
                   _showUnsavedChangesDialog();
@@ -215,10 +215,6 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
                   context.pop();
                 }
               },
-              icon: const Icon(Icons.arrow_back_ios),
-              iconSize: 20,
-              color: AppColors.textSecondary,
-              tooltip: 'Back',
             ),
           ),
           body: HydraRefreshIndicator(

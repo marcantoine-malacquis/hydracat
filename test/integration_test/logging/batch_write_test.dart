@@ -119,6 +119,9 @@ void main() {
 
       // Assert
       await assertWeeklySummaryExists(fakeFirestore, now);
+      // The library directive may trigger deprecated_member_use warnings
+      // in some Dart versions.
+      // ignore: deprecated_member_use
       expect(weekId, matches(RegExp(r'^\d{4}-W\d{2}$')));
     });
 
@@ -149,6 +152,9 @@ void main() {
 
       // Assert
       await assertMonthlySummaryExists(fakeFirestore, now);
+      // The library directive may trigger deprecated_member_use warnings
+      // in some Dart versions.
+      // ignore: deprecated_member_use
       expect(monthId, matches(RegExp(r'^\d{4}-\d{2}$')));
     });
 

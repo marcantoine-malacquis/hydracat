@@ -241,6 +241,10 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                   ),
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(
+                      // The library directive may trigger
+                      // deprecated_member_use warnings
+                      // in some Dart versions.
+                      // ignore: deprecated_member_use
                       RegExp('[0-9./,]'),
                     ),
                   ],
@@ -365,6 +369,10 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                   ),
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(
+                      // The library directive may trigger
+                      // deprecated_member_use warnings
+                      // in some Dart versions.
+                      // ignore: deprecated_member_use
                       RegExp('[0-9./,]'),
                     ),
                   ],

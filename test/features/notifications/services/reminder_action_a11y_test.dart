@@ -61,6 +61,9 @@ void main() {
 
       expect(
         logNow,
+        // The library directive may trigger deprecated_member_use warnings
+        // in some Dart versions.
+        // ignore: deprecated_member_use
         isNot(matches(RegExp(r'\b(min|sec|hr|hrs)\b'))),
         reason: 'Log action should not contain time abbreviations',
       );

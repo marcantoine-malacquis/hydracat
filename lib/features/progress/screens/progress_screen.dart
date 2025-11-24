@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +9,7 @@ import 'package:hydracat/features/progress/widgets/progress_day_detail_popup.dar
 import 'package:hydracat/features/progress/widgets/progress_week_calendar.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/calendar_help_provider.dart';
+import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/progress_provider.dart';
 import 'package:hydracat/shared/models/daily_summary.dart';
@@ -76,6 +78,19 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       body: hasCompletedOnboarding
           ? HydraRefreshIndicator(
               onRefresh: () async {
+                // Clear monthly cache for current month to force fresh read
+                final user = ref.read(currentUserProvider);
+                final pet = ref.read(primaryPetProvider);
+                if (user != null && pet != null) {
+                  ref
+                      .read(summaryServiceProvider)
+                      .clearMonthlyCacheForMonth(
+                        userId: user.id,
+                        petId: pet.id,
+                        date: DateTime.now(),
+                      );
+                }
+
                 // Invalidate schedule data
                 // (may have changed in Profile screen)
                 ref
@@ -182,6 +197,12 @@ class _SymptomsCard extends ConsumerWidget {
 
     final metadata = monthlySummaryAsync.maybeWhen(
       data: (summary) {
+        if (kDebugMode) {
+          final summaryStr = summary == null
+              ? 'null'
+              : 'days=${summary.daysWithAnySymptoms}';
+          debugPrint('[SymptomsCard] summary=$summaryStr');
+        }
         if (summary == null) {
           return 'No symptoms logged yet this month';
         }

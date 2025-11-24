@@ -132,8 +132,8 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
     FocusScope.of(context).unfocus();
 
     setState(() {
-      _initialWeightController.text =
-          _lastBagWeight!.finalWeightG.toStringAsFixed(1);
+      _initialWeightController.text = _lastBagWeight!.finalWeightG
+          .toStringAsFixed(1);
       _errorMessage = null;
     });
 
@@ -178,7 +178,8 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
     final l10n = AppLocalizations.of(context)!;
 
     // Determine if "Use This Volume" button should be enabled
-    final isValid = _calculatedVolume != null &&
+    final isValid =
+        _calculatedVolume != null &&
         _calculatedVolume! >= 1 &&
         _calculatedVolume! <= 500;
 
@@ -281,6 +282,10 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
                 ),
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(
+                    // The library directive may trigger
+                    // deprecated_member_use warnings
+                    // in some Dart versions.
+                    // ignore: deprecated_member_use
                     RegExp(r'^\d*[.,]?\d{0,1}'),
                   ),
                 ],
@@ -322,6 +327,10 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
                 ),
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(
+                    // The library directive may trigger
+                    // deprecated_member_use warnings
+                    // in some Dart versions.
+                    // ignore: deprecated_member_use
                     RegExp(r'^\d*[.,]?\d{0,1}'),
                   ),
                 ],

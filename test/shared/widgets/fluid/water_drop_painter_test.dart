@@ -20,8 +20,9 @@ void main() {
       expect(find.byType(CustomPaint), findsOneWidget);
     });
 
-    testWidgets('shows completion badge when fillPercentage >= 1.0',
-        (tester) async {
+    testWidgets('shows completion badge when fillPercentage >= 1.0', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -39,8 +40,9 @@ void main() {
       expect(find.byIcon(Icons.check), findsOneWidget);
     });
 
-    testWidgets('hides completion badge when fillPercentage < 1.0',
-        (tester) async {
+    testWidgets('hides completion badge when fillPercentage < 1.0', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -72,6 +74,9 @@ void main() {
 
       // Find semantics by label pattern
       final semanticsFinder = find.bySemanticsLabel(
+        // The library directive may trigger deprecated_member_use warnings
+        // in some Dart versions.
+        // ignore: deprecated_member_use
         RegExp('Water drop showing .* percent progress'),
       );
 

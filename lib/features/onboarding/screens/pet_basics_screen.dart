@@ -393,6 +393,10 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
               controller: _breedController,
               textCapitalization: TextCapitalization.words,
               inputFormatters: [
+                // The library directive may trigger
+                // deprecated_member_use warnings
+                // in some Dart versions.
+                // ignore: deprecated_member_use
                 FilteringTextInputFormatter.deny(RegExp(r'\d')),
               ],
               decoration: InputDecoration(

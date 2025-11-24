@@ -77,8 +77,10 @@ class _VolumeInputAdjusterState extends State<VolumeInputAdjuster> {
     super.didUpdateWidget(oldWidget);
     // Update internal state when parent changes initialValue
     if (oldWidget.initialValue != widget.initialValue) {
-      final newValue =
-          widget.initialValue.clamp(widget.minValue, widget.maxValue);
+      final newValue = widget.initialValue.clamp(
+        widget.minValue,
+        widget.maxValue,
+      );
       setState(() {
         _currentValue = newValue;
         _controller.text = _formatValue(newValue);
@@ -127,8 +129,10 @@ class _VolumeInputAdjusterState extends State<VolumeInputAdjuster> {
   /// Increments the value by the configured step
   void _incrementValue() {
     if (_currentValue < widget.maxValue) {
-      final newValue = (_currentValue + widget.incrementStep)
-          .clamp(widget.minValue, widget.maxValue);
+      final newValue = (_currentValue + widget.incrementStep).clamp(
+        widget.minValue,
+        widget.maxValue,
+      );
       setState(() {
         _currentValue = newValue;
         _controller.text = _formatValue(newValue);
@@ -140,8 +144,10 @@ class _VolumeInputAdjusterState extends State<VolumeInputAdjuster> {
   /// Decrements the value by the configured step
   void _decrementValue() {
     if (_currentValue > widget.minValue) {
-      final newValue = (_currentValue - widget.incrementStep)
-          .clamp(widget.minValue, widget.maxValue);
+      final newValue = (_currentValue - widget.incrementStep).clamp(
+        widget.minValue,
+        widget.maxValue,
+      );
       setState(() {
         _currentValue = newValue;
         _controller.text = _formatValue(newValue);
@@ -185,6 +191,10 @@ class _VolumeInputAdjusterState extends State<VolumeInputAdjuster> {
                     fontSize: widget.fontSize,
                   ),
                   inputFormatters: [
+                    // The library directive may trigger
+                    // deprecated_member_use warnings
+                    // in some Dart versions.
+                    // ignore: deprecated_member_use
                     FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                     LengthLimitingTextInputFormatter(5),
                   ],

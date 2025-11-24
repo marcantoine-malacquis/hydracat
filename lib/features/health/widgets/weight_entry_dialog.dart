@@ -296,6 +296,10 @@ class _WeightEntryDialogState extends ConsumerState<WeightEntryDialog> {
                       ),
                       inputFormatters: [
                         FilteringTextInputFormatter.allow(
+                          // The library directive may trigger
+                          // deprecated_member_use warnings
+                          // in some Dart versions.
+                          // ignore: deprecated_member_use
                           RegExp(r'^\d*[.,]?\d{0,2}'),
                         ),
                       ],

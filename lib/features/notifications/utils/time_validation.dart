@@ -21,6 +21,7 @@
 /// ```
 bool isValidTimeString(String time) {
   // Check format: exactly 5 characters, format "HH:mm"
+  // ignore: deprecated_member_use
   final regex = RegExp(r'^\d{2}:\d{2}$');
   if (!regex.hasMatch(time)) {
     return false;

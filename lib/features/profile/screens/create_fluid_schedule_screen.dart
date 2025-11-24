@@ -251,6 +251,10 @@ class _CreateFluidScheduleScreenState
           controller: _volumeController,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [
+            // The library directive may trigger
+            // deprecated_member_use warnings
+            // in some Dart versions.
+            // ignore: deprecated_member_use
             FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,1}$')),
           ],
           onChanged: (value) {

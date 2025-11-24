@@ -297,12 +297,8 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
     return Row(
       children: [
         if (isEditMode)
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios),
-            iconSize: 20,
-            color: AppColors.textSecondary,
+          HydraBackButton(
             onPressed: _handleEditCancel,
-            tooltip: 'Back',
           ),
         Expanded(
           child: Text(

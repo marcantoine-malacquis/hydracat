@@ -187,7 +187,7 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
           appBar: HydraAppBar(
             title: Text("$petName's CKD Profile"),
             backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-            leading: IconButton(
+            leading: HydraBackButton(
               onPressed: () {
                 if (_hasChanges) {
                   _showUnsavedChangesDialog();
@@ -195,10 +195,6 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
                   context.pop();
                 }
               },
-              icon: const Icon(Icons.arrow_back_ios),
-              iconSize: 20,
-              color: AppColors.textSecondary,
-              tooltip: 'Back',
             ),
           ),
           body: HydraRefreshIndicator(

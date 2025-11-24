@@ -155,7 +155,6 @@ class _ProgressBarWithTick extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
         return Stack(
           children: [
             ClipRRect(
@@ -174,12 +173,6 @@ class _ProgressBarWithTick extends StatelessWidget {
                   color: color,
                 ),
               ),
-            ),
-            Positioned(
-              left: width - 2,
-              top: 0,
-              bottom: 0,
-              child: Container(width: 2, color: AppColors.border),
             ),
           ],
         );

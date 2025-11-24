@@ -12,7 +12,9 @@ import 'package:hydracat/features/health/services/symptoms_service.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/logging/widgets/logging_popup_wrapper.dart';
 import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
+import 'package:hydracat/providers/progress_provider.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 
@@ -156,6 +158,12 @@ class _SymptomsEntryDialogState extends ConsumerState<SymptomsEntryDialog> {
       );
 
       if (mounted) {
+        // Clear SummaryService TTL cache to ensure fresh data
+        ref.read(summaryServiceProvider).clearAllCaches();
+
+        // Invalidate monthly symptoms provider to refresh progress card
+        ref.invalidate(currentMonthSymptomsSummaryProvider);
+
         // Dismiss popup
         OverlayService.hide();
 

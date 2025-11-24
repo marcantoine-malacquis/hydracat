@@ -49,12 +49,8 @@ class _NotificationSettingsScreenState
         appBar: HydraAppBar(
           title: Text(l10n.notificationSettingsTitle),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          leading: IconButton(
+          leading: HydraBackButton(
             onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_back_ios),
-            iconSize: 20,
-            color: AppColors.textSecondary,
-            tooltip: 'Back',
           ),
         ),
         body: const Center(

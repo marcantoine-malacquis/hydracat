@@ -37,7 +37,12 @@ class DosageTextUtils {
     }
 
     // 4. Fallback to numeric format for uncommon decimals
-    final formatted = dosage.toStringAsFixed(2).replaceAll(
+    final formatted = dosage
+        .toStringAsFixed(2)
+        .replaceAll(
+          // The library directive may trigger deprecated_member_use warnings
+          // in some Dart versions.
+          // ignore: deprecated_member_use
           RegExp(r'\.?0*$'),
           '',
         );

@@ -195,10 +195,13 @@ This avoids multiple `Theme.of(context)` lookups during the same build cycle, wh
     - Cupertino: Custom implementation; no ink ripple, uses `GestureDetector` or `CupertinoButton` for interactions
 
 - **`HydraProgressIndicator`** (`lib/shared/widgets/feedback/hydra_progress_indicator.dart`) - ✅ Done
-  - Wraps `CircularProgressIndicator`, `LinearProgressIndicator` (Material) / `CupertinoActivityIndicator` (iOS/macOS)
+  - Wraps `CircularProgressIndicator`, `LinearProgressIndicator` (Material) / `CupertinoActivityIndicator`, `CupertinoLinearActivityIndicator` (iOS/macOS)
   - Platform-adaptive progress indicator with support for circular and linear types
   - **Material**: `CircularProgressIndicator` or `LinearProgressIndicator` depending on `type` parameter
-  - **Cupertino**: `CupertinoActivityIndicator` (circular only; linear type also displays as circular for API compatibility)
+  - **Cupertino**: 
+    - Circular type: `CupertinoActivityIndicator` (indeterminate only; `value` is ignored)
+    - Linear type with determinate `value`: `CupertinoLinearActivityIndicator` (supports `value`, `color`, `minHeight` → `height`)
+    - Linear type without `value`: falls back to `CupertinoActivityIndicator` (indeterminate)
   - **Used in**: 
     - `notification_settings_screen.dart` (migrated)
     - `loading_overlay.dart` (migrated)
@@ -217,7 +220,10 @@ This avoids multiple `Theme.of(context)` lookups during the same build cycle, wh
     - And other loading states throughout the app
   - **API Differences**: 
     - Material: `CircularProgressIndicator`, `LinearProgressIndicator` with `value`, `backgroundColor`, `color`, `strokeWidth` (circular), `minHeight` (linear)
-    - Cupertino: `CupertinoActivityIndicator` (only circular, no value/linear support; `value`, `backgroundColor`, `strokeWidth`, `minHeight` are ignored)
+    - Cupertino: 
+      - Circular: `CupertinoActivityIndicator` (indeterminate only; `value`, `backgroundColor`, `strokeWidth` are ignored)
+      - Linear (determinate): `CupertinoLinearActivityIndicator` with `progress` (from `value`), `color`, `height` (from `minHeight`, defaults to 4.5); `backgroundColor` is ignored
+      - Linear (indeterminate): falls back to `CupertinoActivityIndicator`
 
 - **`HydraRefreshIndicator`** (`lib/shared/widgets/feedback/hydra_refresh_indicator.dart`) - ✅ Done
   - Wraps `RefreshIndicator` (Material) / `CupertinoSliverRefreshControl` (iOS/macOS)
@@ -275,6 +281,25 @@ This avoids multiple `Theme.of(context)` lookups during the same build cycle, wh
     - Material: Uses elevation/shadow for depth, standard Material motion (160ms), larger icons (26px), heavier font weight (w600)
     - Cupertino: Flat design with border-only separator (0.5px hairline), lighter animations (120ms), smaller icons (24px), lighter font weight (w500), uses `Curves.easeOut` for snappier feel vs Material's `Curves.easeInOut`
 
+- **`HydraBackButton`** (`lib/shared/widgets/hydra_back_button.dart`) - ✅ Done
+  - Wraps `IconButton` (Material) / `CupertinoNavigationBarBackButton` (iOS/macOS)
+  - Platform-adaptive back button with consistent styling and behavior
+  - **Material**: `IconButton` widget with iOS-style chevron icon (Icons.arrow_back_ios), 20px icon size, textSecondary color (#636E72), and tooltip support
+  - **Cupertino**: `CupertinoNavigationBarBackButton` widget with native iOS styling and behavior. Tooltips are not supported on Cupertino (tooltip parameter is ignored).
+  - **Used in**: 
+    - `settings_screen.dart` (migrated)
+    - `weight_screen.dart` (migrated)
+    - `symptoms_screen.dart` (migrated)
+    - `medication_schedule_screen.dart` (migrated)
+    - `ckd_profile_screen.dart` (migrated)
+    - `fluid_schedule_screen.dart` (migrated)
+    - `notification_settings_screen.dart` (migrated)
+    - `progress_day_detail_popup.dart` (migrated)
+    - `fluid_logging_screen.dart` (migrated)
+  - **API Differences**: 
+    - Material: Full `IconButton` API with `tooltip`, `color`, `iconSize`, etc.
+    - Cupertino: `CupertinoNavigationBarBackButton` with `onPressed`; `tooltip` is ignored, color is controlled via `CupertinoTheme` override to match `AppColors.textSecondary`
+
 ---
 
 ## 🔴 High Priority (Frequently Used, High Visual Impact)
@@ -298,11 +323,6 @@ This avoids multiple `Theme.of(context)` lookups during the same build cycle, wh
 - **Cupertino**: No direct equivalent (iOS uses segmented controls or list selections)
 - **Current Usage**: None found (0 instances)
 - **Priority**: Low - Not currently used
-
-### 15. **Back Button** → `HydraBackButton` (Already exists)
-- **Current**: `HydraBackButton` exists in `lib/shared/widgets/hydra_back_button.dart`
-- **Issue**: Need to verify if it branches on platform or always uses Material `BackButton`
-- **Priority**: Low - Already exists, just needs verification
 
 ### 16. **IconButton** → `HydraIconButton`
 - **Material**: `IconButton`

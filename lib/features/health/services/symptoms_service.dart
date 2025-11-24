@@ -574,10 +574,12 @@ class SymptomsService {
         newDailySummary,
       );
 
+      // Read current monthly data once for reuse
+      final currentMonthlyData =
+          monthlySummaryDoc.data() as Map<String, dynamic>?;
+
       // Add max score update if needed
       if (newTotal != null) {
-        final currentMonthlyData =
-            monthlySummaryDoc.data() as Map<String, dynamic>?;
         final currentMax = currentMonthlyData?['symptomScoreMax'] as int?;
         if (currentMax == null || newTotal > currentMax) {
           monthlyDeltas['symptomScoreMax'] = newTotal;
@@ -590,12 +592,28 @@ class SymptomsService {
             newDailySummary.symptomScoreAverage;
       }
 
-      // Add startDate/endDate if creating new monthly summary
+      // Add startDate/endDate if creating new monthly summary OR if missing
       if (!monthlySummaryDoc.exists) {
         final monthDates = AppDateUtils.getMonthStartEnd(normalizedDate);
         monthlyDeltas['startDate'] = Timestamp.fromDate(monthDates['start']!);
         monthlyDeltas['endDate'] = Timestamp.fromDate(monthDates['end']!);
         monthlyDeltas['createdAt'] = FieldValue.serverTimestamp();
+      } else if (currentMonthlyData?['startDate'] == null ||
+          currentMonthlyData?['endDate'] == null) {
+        // Document exists but missing date fields - set them
+        final monthDates = AppDateUtils.getMonthStartEnd(normalizedDate);
+        if (currentMonthlyData?['startDate'] == null) {
+          monthlyDeltas['startDate'] = Timestamp.fromDate(monthDates['start']!);
+        }
+        if (currentMonthlyData?['endDate'] == null) {
+          monthlyDeltas['endDate'] = Timestamp.fromDate(monthDates['end']!);
+        }
+        if (kDebugMode) {
+          debugPrint(
+            '[SymptomsService] Setting missing date fields in existing '
+            'monthly summary',
+          );
+        }
       }
 
       batch.set(

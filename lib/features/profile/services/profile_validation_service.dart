@@ -92,11 +92,15 @@ class ProfileValidationService {
     }
 
     // Character validation
+    // The library directive may trigger deprecated_member_use warnings
+    // in some Dart versions.
+    // ignore: deprecated_member_use
     final nameRegex = RegExp(r"^[a-zA-Z0-9\s\-'.,]+$");
     if (!nameRegex.hasMatch(trimmedName)) {
       errors.add(
         const ValidationError(
-          message: 'Pet name contains invalid characters. '
+          message:
+              'Pet name contains invalid characters. '
               'Only letters, numbers, spaces, hyphens, apostrophes, '
               'periods, and commas are allowed',
           fieldName: 'petName',
@@ -111,6 +115,9 @@ class ProfileValidationService {
     }
 
     // Warning for numbers in names (unusual but allowed)
+    // The library directive may trigger deprecated_member_use warnings
+    // in some Dart versions.
+    // ignore: deprecated_member_use
     if (trimmedName.contains(RegExp(r'\d'))) {
       warnings.add('Names with numbers are unusual for pets');
     }
@@ -141,7 +148,8 @@ class ProfileValidationService {
     } else if (ageYears > 30) {
       errors.add(
         ValidationError(
-          message: 'Age of $ageYears years exceeds typical cat lifespan. '
+          message:
+              'Age of $ageYears years exceeds typical cat lifespan. '
               'Please double-check this value',
           fieldName: 'age',
           type: ValidationErrorType.invalid,
@@ -175,7 +183,8 @@ class ProfileValidationService {
     } else if (weightKg > 15) {
       errors.add(
         ValidationError(
-          message: 'Weight of ${weightKg.toStringAsFixed(1)}kg is extremely '
+          message:
+              'Weight of ${weightKg.toStringAsFixed(1)}kg is extremely '
               'high for a cat. Please verify this is correct',
           fieldName: 'weight',
           type: ValidationErrorType.invalid,
@@ -317,7 +326,8 @@ class ProfileValidationService {
       if (yearsSinceDiagnosis > profile.ageYears) {
         errors.add(
           const ValidationError(
-            message: 'CKD diagnosis date suggests your pet was diagnosed '
+            message:
+                'CKD diagnosis date suggests your pet was diagnosed '
                 'before they were born. Please check the age or diagnosis date',
             fieldName: 'ckdDiagnosisDate',
             type: ValidationErrorType.inconsistent,

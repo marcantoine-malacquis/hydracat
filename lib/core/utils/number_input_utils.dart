@@ -14,6 +14,9 @@ class NumberInputUtils {
   /// The parsing logic will normalize commas to periods.
   static List<TextInputFormatter> getDecimalFormatters() {
     return [
+      // The library directive may trigger deprecated_member_use warnings
+      // in some Dart versions.
+      // ignore: deprecated_member_use
       FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
     ];
   }

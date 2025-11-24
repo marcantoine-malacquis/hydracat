@@ -356,17 +356,46 @@ currentMonthSymptomsSummaryProvider =
     FutureProvider.autoDispose<MonthlySummary?>((
       ref,
     ) async {
+      if (kDebugMode) {
+        debugPrint(
+          '[currentMonthSymptomsSummaryProvider] Provider executing...',
+        );
+      }
+
       // Watch for invalidation triggers (refetch after logging)
       ref.watch(dailyCacheProvider);
 
       final user = ref.read(currentUserProvider);
       final pet = ref.read(primaryPetProvider);
 
+      if (kDebugMode) {
+        debugPrint(
+          '[currentMonthSymptomsSummaryProvider] '
+          'After reading providers: user=${user?.id ?? 'null'} '
+          'pet=${pet?.id ?? 'null'}',
+        );
+      }
+
       if (user == null || pet == null) {
+        if (kDebugMode) {
+          debugPrint(
+            '[currentMonthSymptomsSummaryProvider] '
+            'Early return: user=${user == null ? 'null' : user.id} '
+            'pet=${pet == null ? 'null' : pet.id}',
+          );
+        }
         return null;
       }
 
       final summaryService = ref.read(summaryServiceProvider);
+
+      if (kDebugMode) {
+        debugPrint(
+          '[currentMonthSymptomsSummaryProvider] '
+          'About to fetch monthly summary for user=${user.id} '
+          'pet=${pet.id}',
+        );
+      }
 
       try {
         final monthlySummary = await summaryService.getMonthlySummary(
@@ -374,6 +403,18 @@ currentMonthSymptomsSummaryProvider =
           petId: pet.id,
           date: DateTime.now(),
         );
+
+        if (kDebugMode) {
+          final monthStr = AppDateUtils.formatMonthForSummary(DateTime.now());
+          final summaryStr = monthlySummary == null
+              ? 'null'
+              : 'daysWithAnySymptoms=${monthlySummary.daysWithAnySymptoms}';
+          debugPrint(
+            '[currentMonthSymptomsSummaryProvider] '
+            'user=${user.id} pet=${pet.id} month=$monthStr '
+            'summary=$summaryStr',
+          );
+        }
 
         return monthlySummary;
       } on Exception catch (e) {

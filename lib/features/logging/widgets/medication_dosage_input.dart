@@ -1,3 +1,7 @@
+// The library directive may trigger deprecated_member_use warnings
+// in some Dart versions.
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';

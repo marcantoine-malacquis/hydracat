@@ -115,7 +115,11 @@ class HydraSnackBar {
     final announcement = actionLabel != null
         ? '$message. $actionLabel button available.'
         : message;
-    SemanticsService.announce(announcement, TextDirection.ltr);
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      announcement,
+      TextDirection.ltr,
+    );
 
     if (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS) {
       _showCupertinoToast(

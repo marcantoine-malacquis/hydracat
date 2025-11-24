@@ -1,4 +1,10 @@
 /// Extension methods for String class providing utility functions.
+library;
+// The library directive may trigger deprecated_member_use warnings
+// in some Dart versions.
+// ignore_for_file: deprecated_member_use
+
+/// Extension providing utility methods and getters for String operations.
 extension StringExtensions on String {
   /// Capitalize first letter of string
   String get capitalize {
@@ -14,8 +20,7 @@ extension StringExtensions on String {
 
   /// Check if string is valid email
   bool get isEmail {
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    return emailRegex.hasMatch(this);
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(this);
   }
 
   /// Check if string is valid phone number

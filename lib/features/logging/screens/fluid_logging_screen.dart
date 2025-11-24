@@ -7,7 +7,6 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/constants/app_animations.dart';
-import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/features/logging/exceptions/logging_error_handler.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
@@ -404,7 +403,11 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
     if (!mounted) return;
     LoggingErrorHandler.showLoggingError(context, message);
     // Announce to screen readers
-    SemanticsService.announce(message, TextDirection.ltr);
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      TextDirection.ltr,
+    );
   }
 
   /// Build standard form view with volume input
@@ -630,11 +633,7 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
           ? l10n.fluidLoggingTitle
           : l10n.weightCalculatorTitle,
       leading: _inputMode == _FluidInputMode.calculator
-          ? IconButton(
-              icon: const Icon(Icons.arrow_back_ios),
-              iconSize: 20,
-              color: AppColors.textSecondary,
-              tooltip: 'Back',
+          ? HydraBackButton(
               onPressed: _handleCalculatorCancel,
             )
           : null,

@@ -13,13 +13,16 @@ enum HydraProgressIndicatorType {
 /// Platform-adaptive progress indicator for HydraCat.
 ///
 /// Wraps [CircularProgressIndicator] and [LinearProgressIndicator] on Material
-/// platforms, and [CupertinoActivityIndicator] on iOS/macOS.
+/// platforms, and [CupertinoActivityIndicator] / [CupertinoLinearActivityIndicator]
+/// on iOS/macOS.
 ///
-/// On iOS/macOS, both circular and linear types display as
-/// [CupertinoActivityIndicator] since there is no native linear equivalent.
-/// Note: [CupertinoActivityIndicator] doesn't support determinate progress,
-/// so the [value] parameter is ignored on iOS/macOS and the indicator
-/// always displays as indeterminate.
+/// On iOS/macOS:
+/// - Circular type: displays as [CupertinoActivityIndicator]
+///  (indeterminate only).
+/// - Linear type with determinate [value]:
+///  displays as [CupertinoLinearActivityIndicator].
+/// - Linear type without [value]:
+///  falls back to [CupertinoActivityIndicator] (indeterminate).
 ///
 /// Example:
 /// ```dart
@@ -68,14 +71,15 @@ class HydraProgressIndicator extends StatelessWidget {
   ///
   /// For circular indicators, this is the color of the track.
   /// For linear indicators, this is the background color of the progress bar.
-  /// Ignored on iOS/macOS (CupertinoActivityIndicator doesn't support it).
+  /// Ignored on iOS/macOS (Cupertino widgets don't support it).
   final Color? backgroundColor;
 
   /// Color of the progress indicator.
   ///
   /// For circular indicators, this is the color of the progress arc.
   /// For linear indicators, this is the color of the progress bar.
-  /// On iOS/macOS, this maps to the [CupertinoActivityIndicator] color.
+  /// On iOS/macOS, this maps to the [CupertinoActivityIndicator] or
+  /// [CupertinoLinearActivityIndicator] color.
   final Color? color;
 
   /// Width of the stroke for circular indicators.
@@ -86,8 +90,9 @@ class HydraProgressIndicator extends StatelessWidget {
 
   /// Minimum height for linear indicators.
   ///
-  /// Only applies to linear indicators. Ignored for circular indicators
-  /// and on iOS/macOS.
+  /// Only applies to linear indicators. Ignored for circular indicators.
+  /// On iOS/macOS, this maps to the 'height' property of
+  /// [CupertinoLinearActivityIndicator] (defaults to 4.5 if not provided).
   final double? minHeight;
 
   /// Semantic label for accessibility.
@@ -101,7 +106,10 @@ class HydraProgressIndicator extends StatelessWidget {
     final platform = Theme.of(context).platform;
 
     if (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS) {
-      return _buildCupertinoIndicator(context);
+      if (type == HydraProgressIndicatorType.linear) {
+        return _buildCupertinoLinearIndicator(context);
+      }
+      return _buildCupertinoCircularIndicator(context);
     }
 
     return _buildMaterialIndicator(context);
@@ -130,17 +138,41 @@ class HydraProgressIndicator extends StatelessWidget {
     }
   }
 
-  Widget _buildCupertinoIndicator(BuildContext context) {
-    // CupertinoActivityIndicator only supports circular indicators.
-    // For linear type, we still show a circular indicator for
-    // API compatibility.
-    // Note: CupertinoActivityIndicator doesn't support determinate progress
+  Widget _buildCupertinoCircularIndicator(BuildContext context) {
+    // CupertinoActivityIndicator doesn't support determinate progress
     // (value parameter), so we always show an indeterminate spinner.
-    // Properties like backgroundColor, strokeWidth, and minHeight are ignored.
+    // Properties like backgroundColor and strokeWidth are ignored.
     final resolvedColor = color ?? CupertinoTheme.of(context).primaryColor;
 
-    return CupertinoActivityIndicator(
-      color: resolvedColor,
+    return Semantics(
+      label: semanticsLabel,
+      value: semanticsValue,
+      child: CupertinoActivityIndicator(
+        color: resolvedColor,
+      ),
+    );
+  }
+
+  Widget _buildCupertinoLinearIndicator(BuildContext context) {
+    // For determinate linear progress, use CupertinoLinearActivityIndicator.
+    // For indeterminate (value == null), fall back to circular indicator.
+    if (value == null) {
+      return _buildCupertinoCircularIndicator(context);
+    }
+
+    // Clamp value to [0, 1] range
+    final clampedValue = value!.clamp(0.0, 1.0);
+    final resolvedColor = color ?? CupertinoTheme.of(context).primaryColor;
+    final resolvedHeight = minHeight ?? 4.5;
+
+    return Semantics(
+      label: semanticsLabel,
+      value: semanticsValue,
+      child: CupertinoLinearActivityIndicator(
+        progress: clampedValue,
+        color: resolvedColor,
+        height: resolvedHeight,
+      ),
     );
   }
 }

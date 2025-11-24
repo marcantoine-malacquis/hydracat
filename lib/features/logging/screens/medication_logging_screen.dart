@@ -376,7 +376,11 @@ class _MedicationLoggingScreenState
     if (!mounted) return;
     LoggingErrorHandler.showLoggingError(context, message);
     // Announce to screen readers
-    SemanticsService.announce(message, TextDirection.ltr);
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      TextDirection.ltr,
+    );
   }
 
   @override

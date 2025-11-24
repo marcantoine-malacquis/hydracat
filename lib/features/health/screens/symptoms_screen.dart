@@ -77,12 +77,8 @@ class _SymptomsScreenState extends ConsumerState<SymptomsScreen> {
       appBar: HydraAppBar(
         title: const Text('Symptoms'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        leading: IconButton(
+        leading: HydraBackButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back_ios),
-          iconSize: 20,
-          color: AppColors.textSecondary,
-          tooltip: 'Back',
         ),
       ),
       body: SingleChildScrollView(

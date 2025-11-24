@@ -220,6 +220,45 @@ class SummaryService {
     }
   }
 
+  /// Clears the cached monthly summary for a specific month
+  ///
+  /// Use this when the user explicitly refreshes analytics
+  /// (e.g. pull-to-refresh) and you want to force a fresh read for that
+  /// month only, without discarding all other cached summaries.
+  ///
+  /// This respects Firestore cost rules by:
+  /// - Only clearing the specific month's cache (not all months)
+  /// - Forcing at most one additional Firestore read for that month
+  /// - Preserving cached data for other months/weeks
+  ///
+  /// Cost: 0 Firestore reads (only clears in-memory cache)
+  ///
+  /// Usage:
+  /// ```dart
+  /// // On pull-to-refresh, clear current month's cache
+  /// summaryService.clearMonthlyCacheForMonth(
+  ///   userId: user.id,
+  ///   petId: pet.id,
+  ///   date: DateTime.now(),
+  /// );
+  /// ```
+  void clearMonthlyCacheForMonth({
+    required String userId,
+    required String petId,
+    required DateTime date,
+  }) {
+    final key = _monthlyKey(userId, petId, date);
+    _monthlyMemCache.remove(key);
+
+    if (kDebugMode) {
+      final monthStr = AppDateUtils.formatMonthForSummary(date);
+      debugPrint(
+        '[SummaryService] Cleared monthly cache for user:$userId '
+        'pet:$petId month:$monthStr',
+      );
+    }
+  }
+
   // ============================================
   // PUBLIC API - Weekly Summary Reads
   // ============================================
@@ -333,7 +372,22 @@ class SummaryService {
       final key = _monthlyKey(userId, petId, date);
       final cached = _monthlyMemCache[key];
       if (cached != null && _isValid(cached.$1, _monthlyTtl)) {
+        if (kDebugMode) {
+          final monthStr = AppDateUtils.formatMonthForSummary(date);
+          debugPrint(
+            '[SummaryService] Monthly summary cache hit for $monthStr: '
+            'daysWithAnySymptoms=${cached.$2?.daysWithAnySymptoms ?? 'null'}',
+          );
+        }
         return cached.$2;
+      }
+
+      if (kDebugMode) {
+        final monthStr = AppDateUtils.formatMonthForSummary(date);
+        debugPrint(
+          '[SummaryService] Fetching monthly summary from Firestore: '
+          'user=$userId pet=$petId month=$monthStr',
+        );
       }
 
       final docRef = _getMonthlySummaryRef(userId, petId, date);
@@ -355,8 +409,36 @@ class SummaryService {
         return null;
       }
 
-      final summary =
-          MonthlySummary.fromJson(monthlySummaryData as Map<String, dynamic>);
+      final dataMap = monthlySummaryData as Map<String, dynamic>;
+      if (kDebugMode) {
+        debugPrint(
+          '[SummaryService] Parsing monthly summary data: '
+          'daysWithAnySymptoms=${dataMap['daysWithAnySymptoms']}, '
+          'startDate=${dataMap['startDate']}, '
+          'endDate=${dataMap['endDate']}',
+        );
+      }
+
+      MonthlySummary summary;
+      try {
+        summary = MonthlySummary.fromJson(dataMap);
+      } catch (e, stackTrace) {
+        if (kDebugMode) {
+          debugPrint(
+            '[SummaryService] Error parsing monthly summary: $e\n'
+            'Stack trace: $stackTrace',
+          );
+        }
+        rethrow;
+      }
+
+      if (kDebugMode) {
+        debugPrint(
+          '[SummaryService] Successfully parsed monthly summary: '
+          'daysWithAnySymptoms=${summary.daysWithAnySymptoms}',
+        );
+      }
+
       _monthlyMemCache[key] = (_CacheClock(DateTime.now()), summary);
       return summary;
     } on FirebaseException catch (e) {
