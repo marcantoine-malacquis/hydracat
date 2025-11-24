@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/app/app.dart';
 import 'package:hydracat/core/config/flavor_config.dart';
@@ -20,7 +21,10 @@ import 'package:timezone/timezone.dart' as tz;
 
 Future<void> main() async {
   // Ensure Flutter bindings are initialized
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+
+  // Preserve the native splash screen while async initialization runs
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   // Initialize Firebase (required for background handler registration)
   await Firebase.initializeApp(
@@ -39,6 +43,9 @@ Future<void> main() async {
 
   // Initialize notification plugin
   final reminderPlugin = await _initializeNotifications();
+
+  // Remove the native splash screen now that initialization is complete
+  FlutterNativeSplash.remove();
 
   runApp(
     ProviderScope(

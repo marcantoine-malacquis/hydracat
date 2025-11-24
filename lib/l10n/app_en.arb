@@ -261,6 +261,18 @@
   "profile": "Profile",
   "logging": "Session Logging",
   "progress": "Progress & Analytics",
+  "progressChartEmptyTitle": "No data yet for this week",
+  "@progressChartEmptyTitle": {
+    "description": "Title shown in empty state when no fluid data exists for the focused week"
+  },
+  "progressChartEmptySubtitle": "Log today's fluids to see your progress here.",
+  "@progressChartEmptySubtitle": {
+    "description": "Subtitle shown in empty state explaining how to populate the chart"
+  },
+  "progressChartEmptyCta": "Log fluids",
+  "@progressChartEmptyCta": {
+    "description": "Button text to navigate to fluid logging screen from empty chart state"
+  },
   "resources": "Resources & Tips",
   "login": "Login",
   "logout": "Logout",

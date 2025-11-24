@@ -6,8 +6,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
+import 'package:hydracat/core/utils/date_utils.dart';
+import 'package:hydracat/features/logging/screens/fluid_logging_screen.dart';
+import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/progress/models/fluid_chart_data.dart';
 import 'package:hydracat/features/progress/providers/fluid_chart_provider.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/progress_provider.dart';
 import 'package:intl/intl.dart';
 
@@ -92,9 +96,20 @@ class _FluidVolumeBarChartState extends ConsumerState<FluidVolumeBarChart>
       );
     }
 
-    // Hide chart entirely when there are no scheduled sessions for the week.
+    // Show ghost empty state when there are no scheduled sessions for the week.
     if (!chartData.shouldShowChart) {
-      return const SizedBox.shrink();
+      final currentWeekStart = AppDateUtils.startOfWeekMonday(DateTime.now());
+      final isCurrentWeek =
+          weekStart.year == currentWeekStart.year &&
+          weekStart.month == currentWeekStart.month &&
+          weekStart.day == currentWeekStart.day;
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: FluidVolumeChartEmptyState(
+          chartData: chartData,
+          showLogCta: isCurrentWeek,
+        ),
+      );
     }
 
     // Trigger animation only when week changes (not on every rebuild)
@@ -605,5 +620,318 @@ class _TooltipCard extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+/// Ghost empty-state widget for weekly fluid chart
+///
+/// Displays a placeholder chart with ghost bars, optional goal line,
+/// and informative copy when no data exists for the focused week.
+/// Shows a CTA button only for the current week.
+class FluidVolumeChartEmptyState extends StatelessWidget {
+  /// Creates a [FluidVolumeChartEmptyState]
+  const FluidVolumeChartEmptyState({
+    required this.chartData,
+    required this.showLogCta,
+    super.key,
+  });
+
+  /// Chart data for the week (used for goal line positioning)
+  final FluidChartData chartData;
+
+  /// Whether to show the log fluids CTA (true only for current week)
+  final bool showLogCta;
+
+  static const double _chartHeight = 200;
+  static const double _barWidth = 40;
+  static const double _barBorderRadius = 10;
+  static const double _ghostBarHeight = 30; // Small placeholder height
+  static const double _ghostBarOpacity = 0.15; // Very light ghost bars
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) {
+      return const SizedBox(height: _chartHeight);
+    }
+
+    final semanticsLabel = showLogCta
+        ? 'Weekly fluid therapy chart – no data yet for this week. '
+              'Log fluids to see your progress.'
+        : 'Weekly fluid therapy chart – no data for this week.';
+    return Semantics(
+      label: semanticsLabel,
+      child: AnimatedOpacity(
+        opacity: 1,
+        duration: const Duration(milliseconds: 250),
+        child: SizedBox(
+          height: _chartHeight,
+          child: Stack(
+            children: [
+              // Ghost bars row
+              _buildGhostBars(),
+
+              // Goal line (if exists)
+              if (chartData.goalLineY != null) _buildGoalLine(context),
+
+              // Empty state content overlay
+              _buildEmptyStateContent(context, l10n),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Builds a row of 7 ghost bars aligned with weekday columns
+  Widget _buildGhostBars() {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: List.generate(7, (index) {
+            return Container(
+              width: _barWidth,
+              height: _ghostBarHeight,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    AppColors.primary.withValues(alpha: _ghostBarOpacity * 0.8),
+                    AppColors.primary.withValues(alpha: _ghostBarOpacity),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(_barBorderRadius),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
+  /// Builds goal line overlay (same style as real chart)
+  Widget _buildGoalLine(BuildContext context) {
+    final goalY = chartData.goalLineY!;
+    final goalValue = chartData.days
+        .firstWhere(
+          (d) => d.goalMl > 0,
+          orElse: () => chartData.days.first,
+        )
+        .goalMl;
+
+    // Map chart Y-value to pixel offset
+    final clampedGoal = goalY.clamp(0, chartData.maxVolume);
+    final ratio = 1 - (clampedGoal / chartData.maxVolume);
+    final goalLineTop = (ratio * _chartHeight)
+        .clamp(0, _chartHeight - 24)
+        .toDouble();
+
+    return Stack(
+      children: [
+        // Dashed goal line spanning the width
+        Positioned(
+          left: 0,
+          right: 0,
+          top: goalLineTop,
+          child: CustomPaint(
+            painter: _DashedLinePainter(
+              color: Colors.amber[600]!,
+              dashWidth: 8,
+              dashSpace: 4,
+            ),
+            child: const SizedBox(
+              height: 1,
+              width: double.infinity,
+            ),
+          ),
+        ),
+        // Goal label pill
+        Positioned(
+          right: 8,
+          top: goalLineTop - 12.0,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 4,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: Colors.amber[600]!.withValues(alpha: 0.8),
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Text(
+              'Goal ${goalValue.toStringAsFixed(0)}ml',
+              style: AppTextStyles.caption.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Builds centered empty state content with optional CTA
+  Widget _buildEmptyStateContent(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 45, // Reserve bottom 45px for ghost bars
+      //(30px height + 4px padding + margin)
+      child: SingleChildScrollView(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon
+                Icon(
+                  Icons.water_drop_outlined,
+                  size: 36,
+                  color: AppColors.primary.withValues(alpha: 0.4),
+                ),
+                const SizedBox(height: 10),
+
+                // Title
+                Text(
+                  l10n.progressChartEmptyTitle,
+                  style: AppTextStyles.h3.copyWith(
+                    color: AppColors.textPrimary,
+                    fontSize: 17,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 5),
+
+                // Subtitle
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    l10n.progressChartEmptySubtitle,
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+
+                // CTA button (only for current week)
+                if (showLogCta) ...[
+                  const SizedBox(height: 12),
+                  _buildLogCtaButton(context, l10n),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Builds the log fluids CTA button
+  Widget _buildLogCtaButton(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return Semantics(
+      button: true,
+      label: l10n.progressChartEmptyCta,
+      child: Material(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(24),
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            OverlayService.showFullScreenPopup(
+              context: context,
+              child: const FluidLoggingScreen(),
+            );
+          },
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 10,
+            ),
+            child: Text(
+              l10n.progressChartEmptyCta,
+              style: AppTextStyles.buttonPrimary.copyWith(
+                color: AppColors.onPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Custom painter for drawing dashed horizontal lines
+class _DashedLinePainter extends CustomPainter {
+  /// Creates a [_DashedLinePainter]
+  const _DashedLinePainter({
+    required this.color,
+    required this.dashWidth,
+    required this.dashSpace,
+  });
+
+  /// Color of the dashed line
+  final Color color;
+
+  /// Width of each dash segment
+  final double dashWidth;
+
+  /// Space between dash segments
+  final double dashSpace;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+
+    double startX = 0;
+    while (startX < size.width) {
+      canvas.drawLine(
+        Offset(startX, 0),
+        Offset(startX + dashWidth, 0),
+        paint,
+      );
+      startX += dashWidth + dashSpace;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedLinePainter oldDelegate) {
+    return color != oldDelegate.color ||
+        dashWidth != oldDelegate.dashWidth ||
+        dashSpace != oldDelegate.dashSpace;
   }
 }

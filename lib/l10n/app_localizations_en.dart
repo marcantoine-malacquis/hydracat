@@ -392,6 +392,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get progress => 'Progress & Analytics';
 
   @override
+  String get progressChartEmptyTitle => 'No data yet for this week';
+
+  @override
+  String get progressChartEmptySubtitle =>
+      'Log today\'s fluids to see your progress here.';
+
+  @override
+  String get progressChartEmptyCta => 'Log fluids';
+
+  @override
   String get resources => 'Resources & Tips';
 
   @override

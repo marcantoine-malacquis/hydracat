@@ -802,6 +802,24 @@ abstract class AppLocalizations {
   /// **'Progress & Analytics'**
   String get progress;
 
+  /// Title shown in empty state when no fluid data exists for the focused week
+  ///
+  /// In en, this message translates to:
+  /// **'No data yet for this week'**
+  String get progressChartEmptyTitle;
+
+  /// Subtitle shown in empty state explaining how to populate the chart
+  ///
+  /// In en, this message translates to:
+  /// **'Log today\'s fluids to see your progress here.'**
+  String get progressChartEmptySubtitle;
+
+  /// Button text to navigate to fluid logging screen from empty chart state
+  ///
+  /// In en, this message translates to:
+  /// **'Log fluids'**
+  String get progressChartEmptyCta;
+
   /// No description provided for @resources.
   ///
   /// In en, this message translates to:

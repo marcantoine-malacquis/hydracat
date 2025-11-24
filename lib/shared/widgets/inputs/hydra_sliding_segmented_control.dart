@@ -79,10 +79,8 @@ class HydraSlidingSegmentedControl<T extends Object> extends StatelessWidget {
   }
 
   Widget _buildCupertino(BuildContext context) {
-    final resolvedBackground =
-        backgroundColor ?? CupertinoTheme.of(context).barBackgroundColor;
-    final resolvedSelectedColor =
-        selectedColor ?? AppColors.primaryLight;
+    final resolvedBackground = backgroundColor ?? AppColors.divider;
+    final resolvedSelectedColor = selectedColor ?? AppColors.primaryLight;
 
     return CupertinoSlidingSegmentedControl<T>(
       groupValue: value,
@@ -95,7 +93,7 @@ class HydraSlidingSegmentedControl<T extends Object> extends StatelessWidget {
             padding: segmentPadding,
             child: DefaultTextStyle.merge(
               style: AppTextStyles.buttonSecondary.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
                 fontSize: 13,
               ),
               child: Center(child: child),
@@ -112,12 +110,10 @@ class HydraSlidingSegmentedControl<T extends Object> extends StatelessWidget {
   }
 
   Widget _buildMaterial(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final keys = segments.keys.toList(growable: false);
     final selectedIndex = keys.indexOf(value);
 
-    final resolvedBackground =
-        backgroundColor ?? (isDark ? Colors.grey[900] : Colors.grey[100]);
+    final resolvedBackground = backgroundColor ?? AppColors.divider;
     final resolvedSelectedColor = selectedColor ?? AppColors.primaryLight;
     final resolvedUnselectedColor = unselectedColor ?? AppColors.textSecondary;
 
@@ -127,7 +123,6 @@ class HydraSlidingSegmentedControl<T extends Object> extends StatelessWidget {
       decoration: BoxDecoration(
         color: resolvedBackground,
         borderRadius: borderRadius,
-        border: Border.all(color: AppColors.border),
         boxShadow: elevation > 0
             ? [
                 BoxShadow(
@@ -187,7 +182,7 @@ class HydraSlidingSegmentedControl<T extends Object> extends StatelessWidget {
                         child: Center(
                           child: DefaultTextStyle.merge(
                             style: AppTextStyles.buttonSecondary.copyWith(
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                               fontSize: 13,
                               color: isSelected
                                   ? Colors.white

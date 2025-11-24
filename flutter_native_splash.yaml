@@ -1,0 +1,60 @@
+flutter_native_splash:
+  # This package generates native code to customize Flutter's default white native splash screen
+  # with background color and splash image.
+  # Steps to make this work:
+  # 1. Customize the parameters below.
+  # 2. run the following command in the terminal:
+  # dart run flutter_native_splash:create
+  # 3. voila, done!
+
+  # NOTES:
+  # - in case you got some trouble, cleaning up flutter project might help:
+  # flutter clean ; flutter pub get
+  # - To restore Flutter's default white splash screen, run the following command in the terminal:
+  # dart run flutter_native_splash:remove
+
+  # IMPORTANT NOTE: These parameter do not affect the configuration of Android 12 and later, which
+  # handle splash screens differently that prior versions of Android.  Android 12 and later must be
+  # configured specifically in the android_12 section below, at the very end.
+
+  #======================================================================
+  
+  # FOR ALL PLATFORM, except Android 12+:
+
+  # General color for all platform (except android 12+):
+  color: "#F6F4F2"  # AppColors.background - warm off-white
+  color_dark: "#1A1A1A"  # AppColors.darkBackground
+
+  # General image for all platform (except android 12+):
+  # allows you to specify an image used in the splash screen. It must be a
+  # png file and should be sized for 4x pixel density.
+  image: assets/branding/HydracatLogo.png
+  image_dark: assets/branding/HydracatLogo.png
+
+  # Image alignment (default center if not specified):
+  # android_gravity: center
+  # ios_content_mode: center
+  # web_image_mode: center
+
+  # Hide notification bar on android. ios already hides it by default. 
+  # Has no effect in web since web has no notification bar.
+  fullscreen: true
+
+  #======================================================================
+  
+  # Android 12+ configuration (API 31+)
+  # Android 12 and later handle splash screens differently than prior versions.
+  # This section configures the splash screen for Android 12+ devices.
+  
+  android_12:
+    # Background color for Android 12+ splash screen
+    color: "#F6F4F2"  # AppColors.background - warm off-white
+    color_dark: "#1A1A1A"  # AppColors.darkBackground
+    
+    # Image for Android 12+ splash screen
+    image: assets/branding/HydracatLogo.png
+    image_dark: assets/branding/HydracatLogo.png
+    
+    # Image alignment for Android 12+
+    # android_12_gravity: center
+
