@@ -111,6 +111,19 @@ This avoids multiple `Theme.of(context)` lookups during the same build cycle, wh
     - Material: Full `InputDecoration` support including `errorText`, `counter`, `labelText`, `hintText`, `suffixText`, etc.
     - Cupertino: `placeholder` from `decoration?.hintText`, `prefix`/`suffix` from `decoration?.prefixIcon`/`suffixIcon` or `suffixText`. Error text and counter are shown separately below the field on iOS.
 
+- **`HydraDropdown`** (`lib/shared/widgets/inputs/hydra_dropdown.dart`) - ✅ Done
+  - Wraps `CustomDropdown` (Material) / `CupertinoButton` + bottom sheet (iOS/macOS)
+  - Platform-adaptive dropdown with native-feeling iOS bottom sheet selector
+  - Mirrors the core `CustomDropdown` API used in the app
+  - **Material**: `CustomDropdown` widget with overlay-based dropdown menu
+  - **Cupertino**: `CupertinoButton` that opens a modal bottom sheet with `CupertinoListTile` options, matching iOS native patterns
+  - **Used in**: 
+    - `symptoms_screen.dart` (symptom selector)
+    - `add_medication_screen.dart` (medication unit and strength unit selectors)
+  - **API Differences**: 
+    - Material: Uses `CustomDropdown` with overlay positioning, scrollable menu, checkmarks for selected items
+    - Cupertino: Uses `CupertinoButton` styled as form field, opens `showCupertinoModalPopup` with `HydraBottomSheet` containing scrollable list of `CupertinoListTile` options with trailing checkmarks
+
 - **`HydraTimePicker`** (`lib/shared/widgets/pickers/hydra_time_picker.dart`) - ✅ Done
   - Wraps `showTimePicker()` (Material) / `CupertinoDatePicker` with custom bottom sheet (iOS/macOS)
   - Includes `show()` static method

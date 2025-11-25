@@ -8,7 +8,6 @@ import 'package:hydracat/features/onboarding/widgets/rotating_wheel_picker.dart'
 import 'package:hydracat/features/onboarding/widgets/time_picker_group.dart';
 import 'package:hydracat/features/onboarding/widgets/treatment_popup_wrapper.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
-import 'package:hydracat/shared/widgets/custom_dropdown.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// Multi-step screen for adding/editing medications
@@ -253,7 +252,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
               const SizedBox(width: 12),
               Expanded(
                 flex: 2,
-                child: CustomDropdown<MedicationStrengthUnit>(
+                child: HydraDropdown<MedicationStrengthUnit>(
                   value: _strengthUnit,
                   items: MedicationStrengthUnit.values,
                   onChanged: (value) {
@@ -381,7 +380,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
               const SizedBox(width: 12),
               Expanded(
                 flex: 2,
-                child: CustomDropdown<MedicationUnit>(
+                child: HydraDropdown<MedicationUnit>(
                   value: _selectedUnit,
                   items: MedicationUnit.values,
                   onChanged: (value) {

@@ -141,19 +141,24 @@ class SymptomsChartNotifier extends StateNotifier<SymptomsChartState> {
 
   /// Changes the graph granularity
   ///
-  /// Optionally normalizes the focused date to the start of the new period
-  /// for cleaner period boundaries. Resets the selected symptom to null
-  /// to avoid confusing state when switching scales.
+  /// Always snaps to the current period for the new granularity (current week,
+  /// current month, or current year), matching the Weight screen behavior.
+  /// This ensures that switching granularity always returns to today's period,
+  /// regardless of where the user had navigated before.
+  /// Resets the selected symptom to null to avoid confusing state when
+  /// switching scales.
   void setGranularity(SymptomGranularity newGranularity) {
+    final now = DateTime.now();
     final newFocusedDate = _normalizeFocusedDate(
       newGranularity,
-      state.focusedDate,
+      now,
     );
 
     if (kDebugMode) {
       debugPrint(
         '[SymptomsChartNotifier] Setting granularity to '
-        '${newGranularity.label}, focusedDate: $newFocusedDate',
+        '${newGranularity.label}, focusedDate: $newFocusedDate '
+        '(snapped to current period)',
       );
     }
 
@@ -1149,5 +1154,81 @@ final symptomsChartDataProvider =
       visibleSymptoms: visibleSymptoms,
       hasOther: hasOther,
     );
+  },
+);
+
+/// Provider that determines if the user has any symptom history
+///
+/// Checks multiple sources to determine if the user has ever logged symptoms:
+/// 1. Current month's summary (via [currentMonthSymptomsSummaryProvider])
+/// 2. Current year's monthly buckets (via [yearlySymptomBucketsProvider])
+/// 3. Previous year's monthly buckets (via [yearlySymptomBucketsProvider])
+///
+/// Returns `true` if any of these sources indicate symptom data exists,
+/// `false` otherwise. This provider is used to decide whether to show the
+/// onboarding empty state (first-time user) or the analytics layout.
+///
+/// **Cost**: Reuses existing providers with TTL caching, no additional
+/// Firestore reads beyond what's already loaded.
+///
+/// **Reactivity**: Automatically recomputes when underlying summary providers
+/// update (e.g., after logging new symptoms).
+final AutoDisposeFutureProvider<bool> hasSymptomsHistoryProvider =
+    FutureProvider.autoDispose<bool>(
+  (ref) async {
+    // Check current month summary first (fastest path)
+    final currentMonthSummaryAsync =
+        ref.watch(currentMonthSymptomsSummaryProvider);
+    final currentMonthSummary = currentMonthSummaryAsync.valueOrNull;
+    if (currentMonthSummary != null &&
+        currentMonthSummary.daysWithAnySymptoms > 0) {
+      if (kDebugMode) {
+        debugPrint(
+          '[hasSymptomsHistoryProvider] Found data in current month: '
+          '${currentMonthSummary.daysWithAnySymptoms} days',
+        );
+      }
+      return true;
+    }
+
+    // Check current year's buckets
+    final now = DateTime.now();
+    final currentYearStart = DateTime(now.year);
+    final currentYearBucketsAsync =
+        ref.watch(yearlySymptomBucketsProvider(currentYearStart));
+    final currentYearBuckets = currentYearBucketsAsync.valueOrNull;
+    if (currentYearBuckets != null &&
+        currentYearBuckets.isNotEmpty &&
+        currentYearBuckets.any((bucket) => bucket.totalSymptomDays > 0)) {
+      if (kDebugMode) {
+        debugPrint(
+          '[hasSymptomsHistoryProvider] Found data in current year: '
+          '${currentYearBuckets.length} buckets',
+        );
+      }
+      return true;
+    }
+
+    // Check previous year's buckets (for extra robustness)
+    final previousYearStart = DateTime(now.year - 1);
+    final previousYearBucketsAsync =
+        ref.watch(yearlySymptomBucketsProvider(previousYearStart));
+    final previousYearBuckets = previousYearBucketsAsync.valueOrNull;
+    if (previousYearBuckets != null &&
+        previousYearBuckets.isNotEmpty &&
+        previousYearBuckets.any((bucket) => bucket.totalSymptomDays > 0)) {
+      if (kDebugMode) {
+        debugPrint(
+          '[hasSymptomsHistoryProvider] Found data in previous year: '
+          '${previousYearBuckets.length} buckets',
+        );
+      }
+      return true;
+    }
+
+    if (kDebugMode) {
+      debugPrint('[hasSymptomsHistoryProvider] No symptom history found');
+    }
+    return false;
   },
 );

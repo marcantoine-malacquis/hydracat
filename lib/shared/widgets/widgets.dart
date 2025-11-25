@@ -9,6 +9,7 @@ export 'dialogs/dialogs.dart';
 export 'feedback/feedback.dart';
 export 'hydra_back_button.dart';
 export 'icons/icons.dart';
+export 'inputs/hydra_dropdown.dart';
 export 'inputs/hydra_slider.dart';
 export 'inputs/hydra_sliding_segmented_control.dart';
 export 'inputs/hydra_switch.dart';

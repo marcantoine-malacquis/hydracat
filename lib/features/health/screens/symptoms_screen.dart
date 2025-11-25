@@ -9,10 +9,7 @@ import 'package:hydracat/features/health/models/symptom_type.dart';
 import 'package:hydracat/features/health/widgets/symptoms_entry_dialog.dart';
 import 'package:hydracat/features/health/widgets/symptoms_stacked_bar_chart.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
-import 'package:hydracat/providers/progress_provider.dart';
 import 'package:hydracat/providers/symptoms_chart_provider.dart';
-import 'package:hydracat/shared/models/monthly_summary.dart';
-import 'package:hydracat/shared/widgets/custom_dropdown.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 
@@ -33,6 +30,7 @@ class SymptomsScreen extends ConsumerStatefulWidget {
 class _SymptomsScreenState extends ConsumerState<SymptomsScreen> {
   ScrollController? _scrollController;
   bool _showFab = true;
+  bool _hasEverHadSymptomData = false;
 
   /// Static priority order for symptoms
   ///
@@ -123,43 +121,48 @@ class _SymptomsScreenState extends ConsumerState<SymptomsScreen> {
   }
 
   Widget _buildBody() {
-    // Watch providers for data detection
-    final summaryAsync = ref.watch(currentMonthSymptomsSummaryProvider);
+    // Watch the global symptom history provider
+    final hasHistoryAsync = ref.watch(hasSymptomsHistoryProvider);
+
+    // Also check current view model for immediate feedback
     final viewModel = ref.watch(symptomsChartDataProvider);
 
-    // Check if we have any symptom data
-    final hasData = _hasAnySymptomData(summaryAsync, viewModel);
+    // Check if current view model has data (for immediate feedback)
+    final currentViewModelHasData =
+        viewModel != null &&
+        viewModel.buckets.isNotEmpty &&
+        viewModel.buckets.any((bucket) => bucket.totalSymptomDays > 0);
 
-    if (!hasData) {
+    // Update the local flag if we detect data (either from history provider
+    // or current view model). This prevents regression to empty state once
+    // data has been seen.
+    final hasHistory = hasHistoryAsync.valueOrNull ?? false;
+    if ((hasHistory || currentViewModelHasData) && !_hasEverHadSymptomData) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _hasEverHadSymptomData = true;
+          });
+        }
+      });
+    }
+
+    // Determine if we should show analytics layout or empty state.
+    // Use local flag OR history provider result (local flag prevents
+    // regression).
+    final shouldShowAnalytics = hasHistoryAsync.when(
+      data: (hasHistory) => _hasEverHadSymptomData || hasHistory,
+      // Optimistically show analytics if we've seen data
+      loading: () => _hasEverHadSymptomData || currentViewModelHasData,
+      // On error, prefer analytics if we've seen data
+      error: (_, _) => _hasEverHadSymptomData || currentViewModelHasData,
+    );
+
+    if (!shouldShowAnalytics) {
       return _buildEmptyState();
     }
 
     return _buildAnalyticsLayout();
-  }
-
-  /// Determines if any symptom data exists
-  ///
-  /// Returns true if:
-  /// - Current month summary has daysWithAnySymptoms > 0, or
-  /// - Chart view model has at least one bucket with totalSymptomDays > 0
-  bool _hasAnySymptomData(
-    AsyncValue<MonthlySummary?> summaryAsync,
-    SymptomsChartViewModel? viewModel,
-  ) {
-    // Check monthly summary
-    final summary = summaryAsync.valueOrNull;
-    if (summary != null && summary.daysWithAnySymptoms > 0) {
-      return true;
-    }
-
-    // Check chart buckets
-    if (viewModel != null &&
-        viewModel.buckets.isNotEmpty &&
-        viewModel.buckets.any((bucket) => bucket.totalSymptomDays > 0)) {
-      return true;
-    }
-
-    return false;
   }
 
   /// Builds the analytics layout with chart and controls
@@ -169,11 +172,11 @@ class _SymptomsScreenState extends ConsumerState<SymptomsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Period header (placeholder for section 4.2-4.3)
-          _buildGraphHeader(),
-          const SizedBox(height: AppSpacing.sm),
-          // Granularity selector (placeholder for section 4.2)
+          // Granularity selector (Week/Month/Year)
           _buildGranularitySelector(),
+          const SizedBox(height: AppSpacing.sm),
+          // Period header with chevrons and Today button
+          _buildGraphHeader(),
           const SizedBox(height: AppSpacing.sm),
           // Symptom selection dropdown
           _buildSymptomSelector(),
@@ -319,7 +322,7 @@ class _SymptomsScreenState extends ConsumerState<SymptomsScreen> {
       alignment: Alignment.centerLeft,
       child: SizedBox(
         width: 200, // Fixed width for consistent layout
-        child: CustomDropdown<String?>(
+        child: HydraDropdown<String?>(
           value: state.selectedSymptomKey,
           items: items,
           onChanged: (newKey) {
