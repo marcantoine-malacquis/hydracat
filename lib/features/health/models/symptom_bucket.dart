@@ -2,14 +2,15 @@ import 'package:flutter/foundation.dart';
 
 /// Bucket model for symptom chart visualization
 ///
-/// Represents aggregated symptom counts over a date range (day, week segment,
-/// or month). Used across all chart granularities (week, month, year views).
+/// Represents aggregated symptom counts over a date range (day or month).
+/// Used across all chart granularities (week, month, year views).
 ///
 /// **Week view**: Each bucket represents a single day (`start == end`), with
 /// `daysWithSymptom` entries of `0` or `1` per symptom for that day.
 ///
-/// **Month view**: Each bucket represents a week segment within the month,
-/// aggregating multiple days into weekly counts.
+/// **Month view**: Each bucket represents a single
+/// calendar day (`start == end`),
+/// providing per-day granularity for daily "sticks" visualization.
 ///
 /// **Year view**: Each bucket represents a calendar month, with counts
 /// populated directly from monthly summary fields.

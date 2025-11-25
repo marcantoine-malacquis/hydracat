@@ -97,7 +97,7 @@
      - Proper `==`, `hashCode`, and `toString` overrides with value-based map comparison
 2. ✅ Usage patterns documented:
    - **Week view**: Each bucket is a **single day**, so `start == end` (via `SymptomBucket.empty()`)
-   - **Month view**: Each bucket represents a **week segment** in the displayed month (see 2.3), using `SymptomBucket.forRange()` for initialization
+   - **Month view**: Each bucket represents a **single calendar day** (daily "sticks"), so `start == end` (via `SymptomBucket.empty()`)
    - **Year view**: Each bucket represents a **calendar month** (start = first day, end = last day), populated from monthly summaries
 3. ✅ Unit tests added in `test/features/health/models/symptom_bucket_test.dart`:
    - ✅ Constructor behavior and immutability validation
@@ -199,9 +199,9 @@
    - ✅ Correct ordering (Monday to Sunday) verification
    - ✅ Date normalization handling
 
-### 2.4 Month view buckets (1 bar per week of the month) ✅ **COMPLETED**
+### 2.4 Month view buckets (1 bar per day - daily "sticks") ✅ **COMPLETED**
 
-**Objective**: Build 4–5 weekly buckets for the visible month using **daily summaries**, respecting cost limits.
+**Objective**: Build 28–31 daily buckets (one per calendar day) for the visible month using **daily summaries**, respecting cost limits.
 
 **Implementation Status**: ✅ Completed
 
@@ -212,21 +212,18 @@
    - ✅ Iterates through all days in the month (up to 31 days)
    - ✅ For each day:
      - ✅ Only processes days where `currentDate.month == monthStart.month` to avoid mixing months
-     - ✅ Computes `weekStart = AppDateUtils.startOfWeekMonday(currentDate)` as the week anchor
-     - ✅ Maintains a `Map<DateTime, SymptomBucket>` keyed by `weekStart`
-     - ✅ Creates new bucket using `SymptomBucket.forRange()` if week segment doesn't exist
-     - ✅ Extends bucket's `end` date when adding further days to the same week segment
-     - ✅ For each symptom boolean that is `true`, increments `daysWithSymptom[symptomKey]` by 1
-     - ✅ If `daily.hasSymptoms == true`, increments `daysWithAnySymptoms` by 1
-   - ✅ After processing all days, sorts buckets by `start` date ascending and returns as `List<SymptomBucket>`
-   - ✅ Documentation explains why daily summaries are used (not weekly summaries) for correct "weeks of the month" visualization
+     - ✅ Creates one `SymptomBucket` per day using `SymptomBucket.empty(currentDate)` (single-day bucket with `start == end`)
+     - ✅ For each symptom boolean that is `true`, sets `daysWithSymptom[symptomKey]` to 1 (not accumulated)
+     - ✅ If `daily.hasSymptoms == true`, sets `daysWithAnySymptoms` to 1
+   - ✅ Returns list of buckets sorted by `start` date ascending (one per calendar day)
+   - ✅ Documentation explains daily buckets for month view (daily "sticks" visualization)
 2. ✅ Added `monthlySymptomBucketsProvider` as `AutoDisposeFutureProviderFamily<List<SymptomBucket>?, DateTime>`:
    - ✅ Normalizes `monthStart` to first day of month at start-of-day
    - ✅ Generates all dates from `monthStart` to `monthEnd` (inclusive)
    - ✅ Fetches daily summaries in parallel using `Future.wait` with `SummaryService.getDailySummary()`
    - ✅ Builds `Map<DateTime, DailySummary?>` from results
    - ✅ Delegates to `buildMonthlySymptomBuckets()` for aggregation
-   - ✅ Returns `null` while loading or on error, `List<SymptomBucket>` (4-6 buckets) when data is available
+   - ✅ Returns `null` while loading or on error, `List<SymptomBucket>` (28-31 buckets, one per day) when data is available
    - ✅ Watches `dailyCacheProvider` for reactivity (automatically recomputes when today's cache updates)
    - ✅ Includes debug logging for fetch operations
 3. ✅ Cost validation:
@@ -235,15 +232,15 @@
    - ✅ Only fetched when user views that month; no background polling
    - ✅ Documentation describes Firestore cost characteristics and alignment with `firebase_CRUDrules.md`
 4. ✅ Unit tests added in `test/features/health/providers/monthly_symptom_buckets_provider_test.dart`:
-   - ✅ Empty month (all null summaries) → 4-6 empty buckets (depending on how weeks fall)
+   - ✅ Empty month (all null summaries) → exactly one empty bucket per day (28-31 buckets)
    - ✅ Single-day symptoms → correct bucket has symptom keys with count 1
-   - ✅ Multiple days in same week segment → bucket accumulates counts correctly
-   - ✅ Weeks spanning two months → days from adjacent months are correctly excluded
+   - ✅ Multiple days → each day has its own separate bucket (no accumulation)
+   - ✅ Months spanning boundaries → days from adjacent months are correctly excluded
    - ✅ Months with 28, 30, and 31 days → correct handling of different month lengths
    - ✅ Day with `hasSymptoms=false` → bucket correctly excludes that day from symptom counts
    - ✅ Correct ordering (buckets sorted by start date ascending)
    - ✅ Date normalization handling
-   - ✅ Mixed month with various symptom combinations → correct aggregation across multiple buckets
+   - ✅ Mixed month with various symptom combinations → correct per-day buckets
 
 ### 2.5 Year view buckets (1 bar per month) ✅ **COMPLETED**
 
@@ -446,7 +443,7 @@
 4. ✅ **X-axis labels**:
    - ✅ Implemented `_formatXAxisLabel()` method that formats based on granularity:
      - Week: Short day abbreviations using `DateFormat('EEE')` (Mon, Tue, …)
-     - Month: Week ranges showing start-end day (e.g., "3-9", "10-16")
+     - Month: Day numbers shown on selected days (1st, 7th, 14th, 21st, 28th) to avoid clutter, empty string for other days
      - Year: 3-letter month abbreviations using `DateFormat('MMM')` (Jan, Feb, …)
    - ✅ Labels styled with `AppTextStyles.caption` and `AppColors.textSecondary`
    - ✅ Reserved size 30px for bottom titles
@@ -466,7 +463,7 @@
 2. ✅ **Tooltip contents**:
    - ✅ Line 1: **period label** formatted via `_formatTooltipPeriodLabel()`:
      - ✅ Week view: `EEE dd MMM` format (e.g., "Mon 15 Jan").
-     - ✅ Month view: "Week of Nov 3–9" format with start/end days.
+     - ✅ Month view: `EEE d MMM` format (e.g., "Wed 5 Nov") - single day.
      - ✅ Year view: `MMM yyyy` format (e.g., "Mar 2025").
    - ✅ Line 2: **total symptom days** display: `Total symptom days: X`.
    - ✅ Following lines: per-symptom breakdown via `_buildSymptomTooltipRows()`:

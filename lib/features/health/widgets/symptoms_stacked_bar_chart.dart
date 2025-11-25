@@ -283,10 +283,25 @@ class _SymptomsStackedBarChartState
     return (maxY / 5).ceilToDouble();
   }
 
+  /// Computes bar width based on granularity and bucket count
+  ///
+  /// Returns appropriate bar width for the chart:
+  /// - Week: 40px (7 buckets)
+  /// - Year: 40px (up to 12 buckets)
+  /// - Month: 8px (28-31 daily buckets, narrow "sticks")
+  double _barWidthFor(SymptomGranularity granularity, int bucketCount) {
+    return switch (granularity) {
+      SymptomGranularity.week => 40,
+      SymptomGranularity.year => 40,
+      SymptomGranularity.month => 8, // Narrow sticks for daily view
+    };
+  }
+
   /// Formats X-axis label based on granularity and bucket
   ///
   /// - Week: Short day abbreviation (Mon, Tue, etc.)
-  /// - Month: Week range or week number
+  /// - Month: Day number, shown only on selected days to avoid
+  ///  clutter (1st, 7th, 14th, 21st, 28th)
   /// - Year: 3-letter month (Jan, Feb, etc.)
   String _formatXAxisLabel(
     SymptomBucket bucket,
@@ -295,13 +310,13 @@ class _SymptomsStackedBarChartState
     return switch (granularity) {
       SymptomGranularity.week => DateFormat('EEE').format(bucket.start),
       SymptomGranularity.month => () {
-        // Show week range (e.g., "3-9" for Nov 3-9)
-        final startDay = bucket.start.day;
-        final endDay = bucket.end.day;
-        if (startDay == endDay) {
-          return startDay.toString();
+        // Show day number only on selected days to avoid clutter
+        // Show on 1st, and then every 7 days (7, 14, 21, 28)
+        final day = bucket.start.day;
+        if (day == 1 || day % 7 == 0) {
+          return day.toString();
         }
-        return '$startDay-$endDay';
+        return ''; // Empty string for non-labeled days
       }(),
       SymptomGranularity.year => DateFormat('MMM').format(bucket.start),
     };
@@ -323,7 +338,7 @@ class _SymptomsStackedBarChartState
       if (isStackedMode) {
         return _buildStackedBarGroup(bucket, index, viewModel);
       } else {
-        return _buildSingleSymptomBarGroup(bucket, index);
+        return _buildSingleSymptomBarGroup(bucket, index, viewModel);
       }
     }).toList();
   }
@@ -382,12 +397,17 @@ class _SymptomsStackedBarChartState
       );
     }
 
+    final barWidth = _barWidthFor(
+      widget.granularity,
+      viewModel.buckets.length,
+    );
+
     return BarChartGroupData(
       x: index,
       barRods: [
         BarChartRodData(
           toY: runningTotal,
-          width: 40,
+          width: barWidth,
           borderRadius: BorderRadius.circular(8),
           rodStackItems: stackItems,
         ),
@@ -402,16 +422,22 @@ class _SymptomsStackedBarChartState
   BarChartGroupData _buildSingleSymptomBarGroup(
     SymptomBucket bucket,
     int index,
+    SymptomsChartViewModel viewModel,
   ) {
     final count = (bucket.daysWithSymptom[widget.selectedSymptomKey] ?? 0)
         .toDouble();
+
+    final barWidth = _barWidthFor(
+      widget.granularity,
+      viewModel.buckets.length,
+    );
 
     return BarChartGroupData(
       x: index,
       barRods: [
         BarChartRodData(
           toY: count,
-          width: 40,
+          width: barWidth,
           borderRadius: BorderRadius.circular(8),
           color: SymptomColors.colorForSymptom(widget.selectedSymptomKey!),
         ),
@@ -517,21 +543,12 @@ class _SymptomsStackedBarChartState
   /// Formats the period label for tooltip based on granularity
   ///
   /// - Week: "Mon 15 Jan" format
-  /// - Month: "Week of Nov 3–9" format
+  /// - Month: "Tue 5 Nov" format (single day)
   /// - Year: "Mar 2025" format
   String _formatTooltipPeriodLabel(SymptomBucket bucket) {
     return switch (widget.granularity) {
       SymptomGranularity.week => DateFormat('EEE dd MMM').format(bucket.start),
-      SymptomGranularity.month => () {
-        // Format as "Week of Nov 3–9"
-        final startMonth = DateFormat('MMM').format(bucket.start);
-        final startDay = bucket.start.day;
-        final endDay = bucket.end.day;
-        if (startDay == endDay) {
-          return 'Week of $startMonth $startDay';
-        }
-        return 'Week of $startMonth $startDay–$endDay';
-      }(),
+      SymptomGranularity.month => DateFormat('EEE d MMM').format(bucket.start),
       SymptomGranularity.year => DateFormat('MMM yyyy').format(bucket.start),
     };
   }

@@ -460,29 +460,28 @@ weeklySymptomBucketsProvider = Provider.autoDispose
       },
     );
 
-/// Builds 4-5 weekly symptom buckets for a given month from daily summaries
+/// Builds daily symptom buckets for a given month from daily summaries
 ///
-/// Transforms a map of daily summaries into
-/// a list of [SymptomBucket] instances,
-/// where each bucket represents a week segment within the visible month. Days
-/// are grouped by their week start (Monday), but only days within the target
-/// month are included in each bucket.
+/// Transforms a map of daily summaries into a list
+/// of [SymptomBucket] instances,
+/// where each bucket represents a single calendar day within the visible month.
+/// This provides per-day granularity for the month view,
+/// showing one "stick" per
+/// day (28-31 buckets depending on month length).
 ///
 /// **Important**: This function uses **daily summaries**, not weekly summaries,
-/// because weekly summaries aggregate full Mon-Sun weeks and cannot be split
-/// to exclude days from adjacent months. For correct "weeks of the month"
-/// visualization, we need per-day granularity.
+/// because we need per-day granularity for the daily sticks visualization.
 ///
 /// Parameters:
 /// - [monthStart]: First day of the target month at 00:00
-/// (should be normalized)
+///  (should be normalized)
 /// - [dailySummaries]: Map of date → DailySummary? for all days in the month
 ///
 /// Returns:
-/// A list of [SymptomBucket] instances, one per week segment that contains
-/// at least one day from the target month. Buckets are sorted by `start` date
-/// ascending. Each bucket's `start` and `end` represent the first and last
-/// in-month days of that week segment.
+/// A list of [SymptomBucket] instances, one per calendar day from monthStart
+/// to monthEnd (inclusive). Buckets are sorted by `start` date ascending. Each
+/// bucket's `start` and `end` are the same date (single day), matching the
+/// week view pattern.
 ///
 /// Example:
 /// ```dart
@@ -492,7 +491,7 @@ weeklySymptomBucketsProvider = Provider.autoDispose
 ///   monthStart: monthStart,
 ///   dailySummaries: summaries,
 /// );
-/// // buckets.length == 4 or 5 (depending on how weeks fall in the month)
+/// // buckets.length == 31 (October has 31 days)
 /// ```
 List<SymptomBucket> buildMonthlySymptomBuckets({
   required DateTime monthStart,
@@ -502,8 +501,7 @@ List<SymptomBucket> buildMonthlySymptomBuckets({
   final normalizedMonthStart = DateTime(monthStart.year, monthStart.month);
   final monthEnd = AppDateUtils.endOfMonth(normalizedMonthStart);
 
-  // Map of weekStart (Monday) -> SymptomBucket for that week segment
-  final weekBuckets = <DateTime, SymptomBucket>{};
+  final buckets = <SymptomBucket>[];
 
   // Iterate through all days in the month
   var currentDate = normalizedMonthStart;
@@ -512,83 +510,60 @@ List<SymptomBucket> buildMonthlySymptomBuckets({
     // Only process days that belong to the target month
     if (currentDate.month == normalizedMonthStart.month) {
       final summary = dailySummaries[currentDate];
-      final weekStart = AppDateUtils.startOfWeekMonday(currentDate);
 
-      // Get or create bucket for this week segment
-      var bucket = weekBuckets[weekStart];
-      if (bucket == null) {
-        // Initialize bucket with current date as both start and end
-        bucket = SymptomBucket.forRange(
-          start: currentDate,
-          end: currentDate,
-        );
-      } else {
-        // Extend bucket's end date to include current day
-        bucket = bucket.copyWith(end: currentDate);
-      }
-
-      // Build or update daysWithSymptom map
-      final daysWithSymptom = Map<String, int>.from(bucket.daysWithSymptom);
-      var daysWithAnySymptoms = bucket.daysWithAnySymptoms;
+      // Start with empty bucket for this day
+      var bucket = SymptomBucket.empty(currentDate);
 
       if (summary != null) {
-        // Increment symptom counts for each present symptom
+        // Build daysWithSymptom map: only include symptoms that were present
+        final daysWithSymptom = <String, int>{};
+
         if (summary.hadVomiting) {
-          daysWithSymptom[SymptomType.vomiting] =
-              (daysWithSymptom[SymptomType.vomiting] ?? 0) + 1;
+          daysWithSymptom[SymptomType.vomiting] = 1;
         }
         if (summary.hadDiarrhea) {
-          daysWithSymptom[SymptomType.diarrhea] =
-              (daysWithSymptom[SymptomType.diarrhea] ?? 0) + 1;
+          daysWithSymptom[SymptomType.diarrhea] = 1;
         }
         if (summary.hadConstipation) {
-          daysWithSymptom[SymptomType.constipation] =
-              (daysWithSymptom[SymptomType.constipation] ?? 0) + 1;
+          daysWithSymptom[SymptomType.constipation] = 1;
         }
         if (summary.hadLethargy) {
-          daysWithSymptom[SymptomType.lethargy] =
-              (daysWithSymptom[SymptomType.lethargy] ?? 0) + 1;
+          daysWithSymptom[SymptomType.lethargy] = 1;
         }
         if (summary.hadSuppressedAppetite) {
-          daysWithSymptom[SymptomType.suppressedAppetite] =
-              (daysWithSymptom[SymptomType.suppressedAppetite] ?? 0) + 1;
+          daysWithSymptom[SymptomType.suppressedAppetite] = 1;
         }
         if (summary.hadInjectionSiteReaction) {
-          daysWithSymptom[SymptomType.injectionSiteReaction] =
-              (daysWithSymptom[SymptomType.injectionSiteReaction] ?? 0) + 1;
+          daysWithSymptom[SymptomType.injectionSiteReaction] = 1;
         }
 
-        // Increment daysWithAnySymptoms if any symptom was present
-        if (summary.hasSymptoms) {
-          daysWithAnySymptoms++;
-        }
+        // Set daysWithAnySymptoms based on hasSymptoms flag
+        final daysWithAnySymptoms = summary.hasSymptoms ? 1 : 0;
+
+        // Update bucket with symptom data
+        bucket = bucket.copyWith(
+          daysWithSymptom: daysWithSymptom,
+          daysWithAnySymptoms: daysWithAnySymptoms,
+        );
       }
+      // If summary is null, bucket remains empty (already initialized)
 
-      // Update bucket with accumulated counts
-      bucket = bucket.copyWith(
-        daysWithSymptom: daysWithSymptom,
-        daysWithAnySymptoms: daysWithAnySymptoms,
-      );
-
-      weekBuckets[weekStart] = bucket;
+      buckets.add(bucket);
     }
 
     // Move to next day
     currentDate = currentDate.add(const Duration(days: 1));
   }
 
-  // Sort buckets by start date ascending and return as list
-  final sortedBuckets = weekBuckets.values.toList()
-    ..sort((a, b) => a.start.compareTo(b.start));
-
-  return sortedBuckets;
+  return buckets;
 }
 
-/// Provides symptom buckets for a given month (4-5 weekly buckets)
+/// Provides symptom buckets for a given month (28-31 daily buckets)
 ///
 /// Transforms daily summaries for a month into [SymptomBucket] instances ready
-/// for chart visualization. Each bucket represents a week segment within the
-/// visible month, aggregating symptom counts from the days in that segment.
+/// for chart visualization. Each bucket represents a single calendar day within
+/// the visible month, providing per-day granularity for the month view (daily
+/// "sticks").
 ///
 /// **Cost**: At most 31 Firestore reads per month (one per day), TTL-cached
 /// for 5 minutes. This aligns with `firebase_CRUDrules.md` and is similar to
@@ -600,7 +575,7 @@ List<SymptomBucket> buildMonthlySymptomBuckets({
 ///
 /// Returns:
 /// - `null` while data is loading or if an error occurs
-/// - `List<SymptomBucket>` (4-5 buckets) when data is available
+/// - `List<SymptomBucket>` (28-31 buckets, one per day) when data is available
 ///
 /// Example:
 /// ```dart
@@ -880,8 +855,7 @@ yearlySymptomBucketsProvider = FutureProvider.autoDispose
 
         // Build map from results
         final monthlySummaries = {
-          for (var i = 0; i < monthDates.length; i++)
-            monthDates[i]: results[i],
+          for (var i = 0; i < monthDates.length; i++) monthDates[i]: results[i],
         };
 
         if (kDebugMode) {
@@ -955,12 +929,11 @@ class SymptomsChartViewModel {
           hasOther == other.hasOther;
 
   @override
-  int get hashCode =>
-      Object.hash(
-        Object.hashAll(buckets),
-        Object.hashAll(visibleSymptoms),
-        hasOther,
-      );
+  int get hashCode => Object.hash(
+    Object.hashAll(buckets),
+    Object.hashAll(visibleSymptoms),
+    hasOther,
+  );
 
   @override
   String toString() {
@@ -1016,31 +989,29 @@ List<String> _buildVisibleSymptoms(List<SymptomBucket> buckets) {
   }
 
   // Get all symptom keys that have non-zero counts
-  final symptomsWithCounts = totalCounts.entries
-      .where((e) => e.value > 0)
-      .map((e) => e.key)
-      .toList()
-    ..sort((a, b) {
-    final countA = totalCounts[a]!;
-    final countB = totalCounts[b]!;
-    if (countA != countB) {
-      return countB.compareTo(countA); // Descending by count
-    }
-    // Tie-breaker: use static priority order
-    final priorityA = _symptomPriorityOrder.indexOf(a);
-    final priorityB = _symptomPriorityOrder.indexOf(b);
-    // If not in priority list, treat as lowest priority
-    if (priorityA == -1 && priorityB == -1) {
-      return 0;
-    }
-    if (priorityA == -1) {
-      return 1;
-    }
-    if (priorityB == -1) {
-      return -1;
-    }
-    return priorityA.compareTo(priorityB); // Ascending by priority index
-  });
+  final symptomsWithCounts =
+      totalCounts.entries.where((e) => e.value > 0).map((e) => e.key).toList()
+        ..sort((a, b) {
+          final countA = totalCounts[a]!;
+          final countB = totalCounts[b]!;
+          if (countA != countB) {
+            return countB.compareTo(countA); // Descending by count
+          }
+          // Tie-breaker: use static priority order
+          final priorityA = _symptomPriorityOrder.indexOf(a);
+          final priorityB = _symptomPriorityOrder.indexOf(b);
+          // If not in priority list, treat as lowest priority
+          if (priorityA == -1 && priorityB == -1) {
+            return 0;
+          }
+          if (priorityA == -1) {
+            return 1;
+          }
+          if (priorityB == -1) {
+            return -1;
+          }
+          return priorityA.compareTo(priorityB); // Ascending by priority index
+        });
 
   // Take top 5 (or fewer if fewer exist)
   return symptomsWithCounts.take(5).toList();
@@ -1107,8 +1078,7 @@ bool _hasOtherSymptoms(
 /// );
 /// ```
 // ignore: specify_nonobvious_property_types
-final symptomsChartDataProvider =
-    Provider.autoDispose<SymptomsChartViewModel?>(
+final symptomsChartDataProvider = Provider.autoDispose<SymptomsChartViewModel?>(
   (ref) {
     final state = ref.watch(symptomsChartStateProvider);
 
@@ -1175,60 +1145,63 @@ final symptomsChartDataProvider =
 /// update (e.g., after logging new symptoms).
 final AutoDisposeFutureProvider<bool> hasSymptomsHistoryProvider =
     FutureProvider.autoDispose<bool>(
-  (ref) async {
-    // Check current month summary first (fastest path)
-    final currentMonthSummaryAsync =
-        ref.watch(currentMonthSymptomsSummaryProvider);
-    final currentMonthSummary = currentMonthSummaryAsync.valueOrNull;
-    if (currentMonthSummary != null &&
-        currentMonthSummary.daysWithAnySymptoms > 0) {
-      if (kDebugMode) {
-        debugPrint(
-          '[hasSymptomsHistoryProvider] Found data in current month: '
-          '${currentMonthSummary.daysWithAnySymptoms} days',
+      (ref) async {
+        // Check current month summary first (fastest path)
+        final currentMonthSummaryAsync = ref.watch(
+          currentMonthSymptomsSummaryProvider,
         );
-      }
-      return true;
-    }
+        final currentMonthSummary = currentMonthSummaryAsync.valueOrNull;
+        if (currentMonthSummary != null &&
+            currentMonthSummary.daysWithAnySymptoms > 0) {
+          if (kDebugMode) {
+            debugPrint(
+              '[hasSymptomsHistoryProvider] Found data in current month: '
+              '${currentMonthSummary.daysWithAnySymptoms} days',
+            );
+          }
+          return true;
+        }
 
-    // Check current year's buckets
-    final now = DateTime.now();
-    final currentYearStart = DateTime(now.year);
-    final currentYearBucketsAsync =
-        ref.watch(yearlySymptomBucketsProvider(currentYearStart));
-    final currentYearBuckets = currentYearBucketsAsync.valueOrNull;
-    if (currentYearBuckets != null &&
-        currentYearBuckets.isNotEmpty &&
-        currentYearBuckets.any((bucket) => bucket.totalSymptomDays > 0)) {
-      if (kDebugMode) {
-        debugPrint(
-          '[hasSymptomsHistoryProvider] Found data in current year: '
-          '${currentYearBuckets.length} buckets',
+        // Check current year's buckets
+        final now = DateTime.now();
+        final currentYearStart = DateTime(now.year);
+        final currentYearBucketsAsync = ref.watch(
+          yearlySymptomBucketsProvider(currentYearStart),
         );
-      }
-      return true;
-    }
+        final currentYearBuckets = currentYearBucketsAsync.valueOrNull;
+        if (currentYearBuckets != null &&
+            currentYearBuckets.isNotEmpty &&
+            currentYearBuckets.any((bucket) => bucket.totalSymptomDays > 0)) {
+          if (kDebugMode) {
+            debugPrint(
+              '[hasSymptomsHistoryProvider] Found data in current year: '
+              '${currentYearBuckets.length} buckets',
+            );
+          }
+          return true;
+        }
 
-    // Check previous year's buckets (for extra robustness)
-    final previousYearStart = DateTime(now.year - 1);
-    final previousYearBucketsAsync =
-        ref.watch(yearlySymptomBucketsProvider(previousYearStart));
-    final previousYearBuckets = previousYearBucketsAsync.valueOrNull;
-    if (previousYearBuckets != null &&
-        previousYearBuckets.isNotEmpty &&
-        previousYearBuckets.any((bucket) => bucket.totalSymptomDays > 0)) {
-      if (kDebugMode) {
-        debugPrint(
-          '[hasSymptomsHistoryProvider] Found data in previous year: '
-          '${previousYearBuckets.length} buckets',
+        // Check previous year's buckets (for extra robustness)
+        final previousYearStart = DateTime(now.year - 1);
+        final previousYearBucketsAsync = ref.watch(
+          yearlySymptomBucketsProvider(previousYearStart),
         );
-      }
-      return true;
-    }
+        final previousYearBuckets = previousYearBucketsAsync.valueOrNull;
+        if (previousYearBuckets != null &&
+            previousYearBuckets.isNotEmpty &&
+            previousYearBuckets.any((bucket) => bucket.totalSymptomDays > 0)) {
+          if (kDebugMode) {
+            debugPrint(
+              '[hasSymptomsHistoryProvider] Found data in previous year: '
+              '${previousYearBuckets.length} buckets',
+            );
+          }
+          return true;
+        }
 
-    if (kDebugMode) {
-      debugPrint('[hasSymptomsHistoryProvider] No symptom history found');
-    }
-    return false;
-  },
-);
+        if (kDebugMode) {
+          debugPrint('[hasSymptomsHistoryProvider] No symptom history found');
+        }
+        return false;
+      },
+    );

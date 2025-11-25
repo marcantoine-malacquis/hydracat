@@ -19,10 +19,8 @@ void main() {
         dailySummaries: summaries,
       );
 
-      // October 2025 starts on Wednesday, ends on Friday
-      // Week segments can be 4-6 depending on how weeks fall in the month
-      expect(buckets.length, greaterThanOrEqualTo(4));
-      expect(buckets.length, lessThanOrEqualTo(6));
+      // Should have exactly one bucket per day
+      expect(buckets.length, 31);
 
       for (final bucket in buckets) {
         expect(bucket.daysWithSymptom, isEmpty);
@@ -31,6 +29,8 @@ void main() {
         // Verify bucket dates are within the month
         expect(bucket.start.month, 10);
         expect(bucket.end.month, 10);
+        // Each bucket represents a single day
+        expect(bucket.start.isAtSameMomentAs(bucket.end), isTrue);
       }
     });
 
@@ -57,19 +57,16 @@ void main() {
         dailySummaries: summaries,
       );
 
-      // Find buckets containing Oct 5 and Oct 15
-      // A bucket contains a date if the date is between start
-      // and end (inclusive)
+      // Should have exactly one bucket per day
+      expect(buckets.length, 31);
+
+      // Find buckets for Oct 5 and Oct 15 (each bucket represents a single day)
       final oct5Bucket = buckets.firstWhere(
-        (b) =>
-            (b.start.isBefore(oct5) || b.start.isAtSameMomentAs(oct5)) &&
-            (b.end.isAfter(oct5) || b.end.isAtSameMomentAs(oct5)),
+        (b) => b.start.isAtSameMomentAs(oct5),
         orElse: () => throw StateError('Oct 5 bucket not found'),
       );
       final oct15Bucket = buckets.firstWhere(
-        (b) =>
-            (b.start.isBefore(oct15) || b.start.isAtSameMomentAs(oct15)) &&
-            (b.end.isAfter(oct15) || b.end.isAtSameMomentAs(oct15)),
+        (b) => b.start.isAtSameMomentAs(oct15),
         orElse: () => throw StateError('Oct 15 bucket not found'),
       );
 
@@ -79,15 +76,17 @@ void main() {
       expect(oct5Bucket.daysWithSymptom.length, 2);
       expect(oct5Bucket.daysWithAnySymptoms, 1);
       expect(oct5Bucket.totalSymptomDays, 2);
+      expect(oct5Bucket.start.isAtSameMomentAs(oct5Bucket.end), isTrue);
 
       // Oct 15 bucket should have diarrhea
       expect(oct15Bucket.daysWithSymptom[SymptomType.diarrhea], 1);
       expect(oct15Bucket.daysWithSymptom.length, 1);
       expect(oct15Bucket.daysWithAnySymptoms, 1);
       expect(oct15Bucket.totalSymptomDays, 1);
+      expect(oct15Bucket.start.isAtSameMomentAs(oct15Bucket.end), isTrue);
     });
 
-    test('should accumulate multiple days in same week segment', () {
+    test('should create separate buckets for each day', () {
       // Oct 6-12 is a full week (Mon-Sun)
       final oct6 = DateTime(2025, 10, 6); // Monday
       final oct8 = DateTime(2025, 10, 8); // Wednesday
@@ -116,67 +115,83 @@ void main() {
         dailySummaries: summaries,
       );
 
-      // Find the bucket for Oct 6-12 week
-      // A bucket contains a date if the date is between
-      // start and end (inclusive)
-      final weekBucket = buckets.firstWhere(
-        (b) =>
-            (b.start.isBefore(oct6) || b.start.isAtSameMomentAs(oct6)) &&
-            (b.end.isAfter(oct6) || b.end.isAtSameMomentAs(oct6)),
-        orElse: () => throw StateError('Week bucket not found'),
+      // Should have exactly one bucket per day
+      expect(buckets.length, 31);
+
+      // Find individual day buckets
+      final oct6Bucket = buckets.firstWhere(
+        (b) => b.start.isAtSameMomentAs(oct6),
+        orElse: () => throw StateError('Oct 6 bucket not found'),
+      );
+      final oct8Bucket = buckets.firstWhere(
+        (b) => b.start.isAtSameMomentAs(oct8),
+        orElse: () => throw StateError('Oct 8 bucket not found'),
+      );
+      final oct10Bucket = buckets.firstWhere(
+        (b) => b.start.isAtSameMomentAs(oct10),
+        orElse: () => throw StateError('Oct 10 bucket not found'),
       );
 
-      // Should accumulate counts from all three days
-      expect(weekBucket.daysWithSymptom[SymptomType.vomiting], 2); // Oct 6,
-      // Oct 8
-      expect(weekBucket.daysWithSymptom[SymptomType.lethargy], 1); // Oct 8
-      expect(weekBucket.daysWithSymptom[SymptomType.diarrhea], 1); // Oct 10
-      expect(weekBucket.daysWithSymptom.length, 3);
-      expect(weekBucket.daysWithAnySymptoms, 3); // 3 days with symptoms
-      expect(weekBucket.totalSymptomDays, 4); // 2 + 1 + 1
+      // Each day should have its own bucket with correct counts
+      expect(oct6Bucket.daysWithSymptom[SymptomType.vomiting], 1);
+      expect(oct6Bucket.daysWithAnySymptoms, 1);
+      expect(oct6Bucket.totalSymptomDays, 1);
+
+      expect(oct8Bucket.daysWithSymptom[SymptomType.vomiting], 1);
+      expect(oct8Bucket.daysWithSymptom[SymptomType.lethargy], 1);
+      expect(oct8Bucket.daysWithAnySymptoms, 1);
+      expect(oct8Bucket.totalSymptomDays, 2);
+
+      expect(oct10Bucket.daysWithSymptom[SymptomType.diarrhea], 1);
+      expect(oct10Bucket.daysWithAnySymptoms, 1);
+      expect(oct10Bucket.totalSymptomDays, 1);
     });
 
-    test('should handle weeks spanning two months correctly', () {
-      // September 2025 - last week includes days from October
-      final septStart = DateTime(2025, 9);
-      final sept30 = DateTime(2025, 9, 30); // Tuesday
-      final oct1 = DateTime(2025, 10); // Wednesday
+    test(
+      'should handle months correctly without including adjacent months',
+      () {
+        // September 2025 - last day is Sept 30
+        final septStart = DateTime(2025, 9);
+        final sept30 = DateTime(2025, 9, 30); // Tuesday
+        final oct1 = DateTime(2025, 10); // Wednesday
 
-      final summaries = <DateTime, DailySummary?>{
-        for (var i = 0; i < 30; i++) septStart.add(Duration(days: i)): null,
-        sept30: DailySummary.empty(sept30).copyWith(
-          hadVomiting: true,
-          hasSymptoms: true,
-        ),
-        oct1: DailySummary.empty(oct1).copyWith(
-          hadDiarrhea: true,
-          hasSymptoms: true,
-        ),
-      };
+        final summaries = <DateTime, DailySummary?>{
+          for (var i = 0; i < 30; i++) septStart.add(Duration(days: i)): null,
+          sept30: DailySummary.empty(sept30).copyWith(
+            hadVomiting: true,
+            hasSymptoms: true,
+          ),
+          oct1: DailySummary.empty(oct1).copyWith(
+            hadDiarrhea: true,
+            hasSymptoms: true,
+          ),
+        };
 
-      final buckets = buildMonthlySymptomBuckets(
-        monthStart: septStart,
-        dailySummaries: summaries,
-      );
+        final buckets = buildMonthlySymptomBuckets(
+          monthStart: septStart,
+          dailySummaries: summaries,
+        );
 
-      // September buckets should only include September days
-      // Sept 30 is in a week that starts Sept 29 (Mon), but we only count
-      // Sept days
-      final lastSeptBucket = buckets.last;
-      expect(lastSeptBucket.end.month, 9);
-      expect(lastSeptBucket.end.day, 30);
+        // September should have exactly 30 buckets (one per day)
+        expect(buckets.length, 30);
 
-      // Sept 30 should be in the last bucket
-      expect(
-        lastSeptBucket.daysWithSymptom[SymptomType.vomiting],
-        1,
-      );
-      // Oct 1 should NOT be in any September bucket
-      expect(
-        lastSeptBucket.daysWithSymptom[SymptomType.diarrhea],
-        isNull,
-      );
-    });
+        // All buckets should be in September
+        for (final bucket in buckets) {
+          expect(bucket.start.month, 9);
+          expect(bucket.end.month, 9);
+          expect(bucket.start.isAtSameMomentAs(bucket.end), isTrue);
+        }
+
+        // Sept 30 should have its own bucket with vomiting
+        final sept30Bucket = buckets.firstWhere(
+          (b) => b.start.isAtSameMomentAs(sept30),
+          orElse: () => throw StateError('Sept 30 bucket not found'),
+        );
+        expect(sept30Bucket.daysWithSymptom[SymptomType.vomiting], 1);
+        // Oct 1 should NOT be in any September bucket
+        expect(sept30Bucket.daysWithSymptom[SymptomType.diarrhea], isNull);
+      },
+    );
 
     test('should handle months with different day counts', () {
       // Test February (28 days in non-leap year)
@@ -190,13 +205,14 @@ void main() {
         dailySummaries: summaries,
       );
 
-      expect(buckets.length, greaterThanOrEqualTo(4));
-      expect(buckets.length, lessThanOrEqualTo(6));
+      // Should have exactly one bucket per day
+      expect(buckets.length, 28);
 
       // All buckets should be in February
       for (final bucket in buckets) {
         expect(bucket.start.month, 2);
         expect(bucket.end.month, 2);
+        expect(bucket.start.isAtSameMomentAs(bucket.end), isTrue);
       }
 
       // Test April (30 days)
@@ -210,8 +226,8 @@ void main() {
         dailySummaries: aprSummaries,
       );
 
-      expect(aprBuckets.length, greaterThanOrEqualTo(4));
-      expect(aprBuckets.length, lessThanOrEqualTo(5));
+      // Should have exactly one bucket per day
+      expect(aprBuckets.length, 30);
     });
 
     test('should handle day with hasSymptoms=false (no symptoms present)', () {
@@ -232,19 +248,19 @@ void main() {
         dailySummaries: summaries,
       );
 
-      // Find bucket containing Oct 10
-      // A bucket contains a date if the date is between start
-      // and end (inclusive)
+      // Should have exactly one bucket per day
+      expect(buckets.length, 31);
+
+      // Find bucket for Oct 10 (each bucket represents a single day)
       final oct10Bucket = buckets.firstWhere(
-        (b) =>
-            (b.start.isBefore(oct10) || b.start.isAtSameMomentAs(oct10)) &&
-            (b.end.isAfter(oct10) || b.end.isAtSameMomentAs(oct10)),
+        (b) => b.start.isAtSameMomentAs(oct10),
         orElse: () => throw StateError('Oct 10 bucket not found'),
       );
 
       // Bucket should not have symptoms from this day
       expect(oct10Bucket.daysWithSymptom[SymptomType.vomiting], isNull);
       expect(oct10Bucket.daysWithAnySymptoms, 0);
+      expect(oct10Bucket.start.isAtSameMomentAs(oct10Bucket.end), isTrue);
     });
 
     test('should sort buckets by start date ascending', () {
@@ -330,8 +346,8 @@ void main() {
         dailySummaries: summaries,
       );
 
-      // Verify we have multiple buckets
-      expect(buckets.length, greaterThanOrEqualTo(4));
+      // Should have exactly one bucket per day
+      expect(buckets.length, 31);
 
       // Verify symptom counts are correct across buckets
       var totalVomiting = 0;
@@ -342,6 +358,8 @@ void main() {
         totalVomiting += bucket.daysWithSymptom[SymptomType.vomiting] ?? 0;
         totalLethargy += bucket.daysWithSymptom[SymptomType.lethargy] ?? 0;
         totalDiarrhea += bucket.daysWithSymptom[SymptomType.diarrhea] ?? 0;
+        // Each bucket represents a single day
+        expect(bucket.start.isAtSameMomentAs(bucket.end), isTrue);
       }
 
       expect(totalVomiting, 2); // Oct 3, Oct 25

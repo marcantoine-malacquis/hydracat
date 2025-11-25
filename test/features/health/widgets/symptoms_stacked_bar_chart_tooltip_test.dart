@@ -243,18 +243,15 @@ void main() {
         expect(find.textContaining('Jan'), findsOneWidget);
       });
 
-      testWidgets('month granularity shows week range format', (tester) async {
-        final week1Start = AppDateUtils.startOfWeekMonday(
-          DateTime(2025, 11, 3),
-        );
-        final week1End = week1Start.add(const Duration(days: 6));
+      testWidgets('month granularity shows single-day format', (tester) async {
+        final day = DateTime(2025, 11, 5); // Wednesday, Nov 5
 
         final buckets = [
           SymptomBucket(
-            start: week1Start,
-            end: week1End,
-            daysWithSymptom: const {SymptomType.vomiting: 2},
-            daysWithAnySymptoms: 2,
+            start: day,
+            end: day, // Single day bucket
+            daysWithSymptom: const {SymptomType.vomiting: 1},
+            daysWithAnySymptoms: 1,
           ),
         ];
 
@@ -268,9 +265,10 @@ void main() {
 
         await tapBarAtIndex(tester, 0, totalBars: buckets.length);
 
-        // Month format: "Week of Nov 3–9" or "Week of Nov 3"
-        expect(find.textContaining('Week of'), findsOneWidget);
+        // Month format: "EEE d MMM" (e.g., "Wed 5 Nov")
+        expect(find.textContaining('Wed'), findsOneWidget);
         expect(find.textContaining('Nov'), findsOneWidget);
+        expect(find.textContaining('5'), findsOneWidget);
       });
 
       testWidgets('year granularity shows month format (MMM yyyy)', (
