@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/config/flavor_config.dart';
+import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/features/logging/exceptions/logging_error_handler.dart';
 import 'package:hydracat/features/logging/screens/fluid_logging_screen.dart';
@@ -26,6 +27,7 @@ import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/logging_queue_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
+import 'package:hydracat/shared/widgets/bottom_sheets/hydra_bottom_sheet.dart';
 import 'package:hydracat/shared/widgets/dialogs/no_schedules_dialog.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -214,19 +216,21 @@ class _AppShellState extends ConsumerState<AppShell>
         context,
         TreatmentChoicePopup(
           onMedicationSelected: () {
-            OverlayService.hide();
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
             _showLoggingDialog(
               context,
               const MedicationLoggingScreen(),
-              animationType: OverlayAnimationType.slideFromRight,
             );
           },
           onFluidSelected: () {
-            OverlayService.hide();
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
             _showLoggingDialog(
               context,
               const FluidLoggingScreen(),
-              animationType: OverlayAnimationType.slideFromRight,
             );
           },
         ),
@@ -248,16 +252,17 @@ class _AppShellState extends ConsumerState<AppShell>
 
   void _showLoggingDialog(
     BuildContext context,
-    Widget child, {
-    OverlayAnimationType animationType = OverlayAnimationType.slideUp,
-  }) {
-    OverlayService.showFullScreenPopup(
+    Widget child,
+  ) {
+    showHydraBottomSheet<void>(
       context: context,
-      child: child,
-      animationType: animationType,
-      onDismiss: () {
-        // Handle any cleanup if needed
-      },
+      isScrollControlled: true,
+      enableDrag: true,
+      backgroundColor: AppColors.background,
+      builder: (sheetContext) => HydraBottomSheet(
+        backgroundColor: AppColors.background,
+        child: child,
+      ),
     );
   }
 
@@ -564,10 +569,17 @@ class _AppShellState extends ConsumerState<AppShell>
             '  Opening MedicationLoggingScreen with '
             'initialScheduleId: ${scheduleExists ? scheduleId : "null"}',
           );
-          OverlayService.showFullScreenPopup(
+          showHydraBottomSheet<void>(
             context: context,
-            child: MedicationLoggingScreen(
-              initialScheduleId: scheduleExists ? scheduleId : null,
+            isScrollControlled: true,
+            enableDrag: true,
+            backgroundColor: AppColors.background,
+            builder: (sheetContext) => HydraBottomSheet(
+              heightFraction: 0.85,
+              backgroundColor: AppColors.background,
+              child: MedicationLoggingScreen(
+                initialScheduleId: scheduleExists ? scheduleId : null,
+              ),
             ),
           );
         } else {
@@ -575,10 +587,17 @@ class _AppShellState extends ConsumerState<AppShell>
             '  Opening FluidLoggingScreen with '
             'initialScheduleId: ${scheduleExists ? scheduleId : "null"}',
           );
-          OverlayService.showFullScreenPopup(
+          showHydraBottomSheet<void>(
             context: context,
-            child: FluidLoggingScreen(
-              initialScheduleId: scheduleExists ? scheduleId : null,
+            isScrollControlled: true,
+            enableDrag: true,
+            backgroundColor: AppColors.background,
+            builder: (sheetContext) => HydraBottomSheet(
+              heightFraction: 0.85,
+              backgroundColor: AppColors.background,
+              child: FluidLoggingScreen(
+                initialScheduleId: scheduleExists ? scheduleId : null,
+              ),
             ),
           );
         }

@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
+import 'package:hydracat/shared/widgets/inputs/hydra_sliding_segmented_control.dart';
 
-/// A Material 3 segmented button selector for stress levels.
+/// A platform-adaptive segmented control selector for stress levels.
 ///
 /// Provides three options: low, medium, high with icon indicators.
 /// Used in fluid logging to track the pet's stress during treatment.
 ///
 /// Features:
-/// - Material 3 SegmentedButton for single selection
+/// - Platform-adaptive HydraSlidingSegmentedControl (Cupertino on iOS/macOS, Material on Android)
 /// - Icons from AppIcons (stressLow, stressMedium, stressHigh)
-/// - Optional field (can be null/unselected)
+/// - Always has a selected value (defaults to 'medium')
 /// - Haptic feedback on selection
 /// - Full accessibility support
 ///
@@ -21,7 +23,7 @@ import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
 /// ```dart
 /// StressLevelSelector(
 ///   value: _selectedStressLevel,
-///   onChanged: (String? newValue) {
+///   onChanged: (String newValue) {
 ///     setState(() {
 ///       _selectedStressLevel = newValue;
 ///     });
@@ -37,11 +39,11 @@ class StressLevelSelector extends StatelessWidget {
     super.key,
   });
 
-  /// Currently selected stress level ('low', 'medium', 'high', or null)
-  final String? value;
+  /// Currently selected stress level ('low', 'medium', or 'high')
+  final String value;
 
   /// Callback when selection changes
-  final ValueChanged<String?> onChanged;
+  final ValueChanged<String> onChanged;
 
   /// Whether the selector is enabled
   final bool enabled;
@@ -53,74 +55,74 @@ class StressLevelSelector extends StatelessWidget {
 
     return Semantics(
       label: l10n.stressLevelSelectorSemantic,
-      hint: value != null
-          ? l10n.stressLevelCurrentSelection(value!)
-          : l10n.stressLevelNoSelection,
-      child: SizedBox(
-        width: double.infinity,
-        child: SegmentedButton<String>(
-          segments: [
-            ButtonSegment<String>(
-              value: 'low',
-              label: Text(l10n.stressLevelLow),
-              icon: HydraIcon(
-                icon: AppIcons.stressLow,
-                size: 18,
-                color: theme.colorScheme.onSurface,
-              ),
-              tooltip: l10n.stressLevelLowTooltip,
+      hint: l10n.stressLevelCurrentSelection(value),
+      child: Opacity(
+        opacity: enabled ? 1.0 : 0.5,
+        child: HydraSlidingSegmentedControl<String>(
+          segments: {
+            'low': Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                HydraIcon(
+                  icon: AppIcons.stressLow,
+                  size: 18,
+                  color: theme.colorScheme.onSurface,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Text(
+                  l10n.stressLevelLow,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+              ],
             ),
-            ButtonSegment<String>(
-              value: 'medium',
-              label: Text(l10n.stressLevelMedium),
-              icon: HydraIcon(
-                icon: AppIcons.stressMedium,
-                size: 18,
-                color: theme.colorScheme.onSurface,
-              ),
-              tooltip: l10n.stressLevelMediumTooltip,
+            'medium': Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                HydraIcon(
+                  icon: AppIcons.stressMedium,
+                  size: 18,
+                  color: theme.colorScheme.onSurface,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Text(
+                  l10n.stressLevelMedium,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+              ],
             ),
-            ButtonSegment<String>(
-              value: 'high',
-              label: Text(l10n.stressLevelHigh),
-              icon: HydraIcon(
-                icon: AppIcons.stressHigh,
-                size: 18,
-                color: theme.colorScheme.onSurface,
-              ),
-              tooltip: l10n.stressLevelHighTooltip,
+            'high': Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                HydraIcon(
+                  icon: AppIcons.stressHigh,
+                  size: 18,
+                  color: theme.colorScheme.onSurface,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Text(
+                  l10n.stressLevelHigh,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+              ],
             ),
-          ],
-          selected: value != null ? {value!} : {},
-          onSelectionChanged: enabled
-              ? (Set<String> newSelection) {
+          },
+          value: value,
+          onChanged: enabled
+              ? (String newValue) {
                   // Haptic feedback on selection
                   HapticFeedback.selectionClick();
-
-                  // Handle selection (allow deselection by tapping same button)
-                  if (newSelection.isEmpty) {
-                    onChanged(null);
-                  } else {
-                    onChanged(newSelection.first);
-                  }
+                  onChanged(newValue);
                 }
-              : null,
-          emptySelectionAllowed: true,
-          showSelectedIcon: false,
-          style: ButtonStyle(
-            padding: WidgetStateProperty.all(
-              const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.sm,
-              ),
-            ),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            textStyle: WidgetStateProperty.all(
-              theme.textTheme.labelMedium?.copyWith(
-                fontSize: 13,
-              ),
-            ),
-          ),
+              : (_) {},
         ),
       ),
     );

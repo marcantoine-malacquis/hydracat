@@ -143,24 +143,20 @@ Future<T?> showHydraBottomSheet<T>({
   AnimationController? transitionAnimationController,
   Offset? anchorPoint,
 }) {
-  final platform = Theme.of(context).platform;
   final theme = Theme.of(context);
-
-  if (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS) {
-    return _showCupertinoBottomSheet<T>(
-      context: context,
-      builder: builder,
-      barrierColor: barrierColor,
-      useRootNavigator: useRootNavigator,
-      isDismissible: isDismissible,
-      routeSettings: routeSettings,
-    );
-  }
+  final platform = Theme.of(context).platform;
 
   // Provide a default background color if none is specified
   // This ensures the bottom sheet is never transparent by default
   final resolvedBackgroundColor =
       backgroundColor ?? theme.scaffoldBackgroundColor;
+
+  // Give iOS/macOS a slightly stronger dimmed background by default,
+  // while keeping Material platforms on the framework default when null.
+  final resolvedBarrierColor = barrierColor ??
+      (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS
+          ? CupertinoColors.black.withValues(alpha: 0.4)
+          : null);
 
   return showModalBottomSheet<T>(
     context: context,
@@ -170,7 +166,7 @@ Future<T?> showHydraBottomSheet<T>({
     shape: shape,
     clipBehavior: clipBehavior,
     constraints: constraints,
-    barrierColor: barrierColor,
+    barrierColor: resolvedBarrierColor,
     isScrollControlled: isScrollControlled,
     useRootNavigator: useRootNavigator,
     isDismissible: isDismissible,
@@ -179,27 +175,5 @@ Future<T?> showHydraBottomSheet<T>({
     routeSettings: routeSettings,
     transitionAnimationController: transitionAnimationController,
     anchorPoint: anchorPoint,
-  );
-}
-
-/// Internal helper to show Cupertino-style bottom sheet.
-Future<T?> _showCupertinoBottomSheet<T>({
-  required BuildContext context,
-  required WidgetBuilder builder,
-  Color? barrierColor,
-  bool useRootNavigator = false,
-  bool isDismissible = true,
-  RouteSettings? routeSettings,
-}) {
-  // For Cupertino, we use showCupertinoModalPopup which provides the
-  // iOS-style modal presentation. The builder should return a widget
-  // wrapped in HydraBottomSheet for consistent styling.
-  return showCupertinoModalPopup<T>(
-    context: context,
-    builder: builder,
-    barrierColor: barrierColor ?? CupertinoColors.black.withValues(alpha: 0.4),
-    useRootNavigator: useRootNavigator,
-    semanticsDismissible: isDismissible,
-    routeSettings: routeSettings,
   );
 }

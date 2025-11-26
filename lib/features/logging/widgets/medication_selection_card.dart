@@ -63,84 +63,87 @@ class MedicationSelectionCard extends StatelessWidget {
               ? theme.colorScheme.primary.withValues(alpha: 0.1)
               : theme.colorScheme.surface,
         ),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Row(
-              children: [
-                // Medication icon
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? theme.colorScheme.primary.withValues(alpha: 0.2)
-                        : theme.colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                children: [
+                  // Medication icon
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? theme.colorScheme.primary.withValues(alpha: 0.2)
+                          : theme.colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      _getMedicationIcon(),
+                      color: theme.colorScheme.primary,
+                      size: 20,
+                    ),
                   ),
-                  child: Icon(
-                    _getMedicationIcon(),
-                    color: theme.colorScheme.primary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
+                  const SizedBox(width: AppSpacing.md),
 
-                // Left side: Medication name and strength
-                Expanded(
-                  child: RichText(
-                    text: TextSpan(
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      children: [
-                        // Medication name
-                        TextSpan(text: medication.medicationName ?? ''),
-                        // Strength (if available)
-                        if (medication.formattedStrength != null)
-                          TextSpan(
-                            text: ', ${medication.formattedStrength}',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.normal,
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.6,
+                  // Left side: Medication name and strength
+                  Expanded(
+                    child: RichText(
+                      text: TextSpan(
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                        children: [
+                          // Medication name
+                          TextSpan(text: medication.medicationName ?? ''),
+                          // Strength (if available)
+                          if (medication.formattedStrength != null)
+                            TextSpan(
+                              text: ', ${medication.formattedStrength}',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.normal,
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
+                                ),
                               ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
 
-                // Right side: Dosage
-                if (dosageText != null) ...[
+                  // Right side: Dosage
+                  if (dosageText != null) ...[
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      dosageText,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ],
+
+                  // Selection indicator
                   const SizedBox(width: AppSpacing.sm),
-                  Text(
-                    dosageText,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
+                  if (isSelected)
+                    Icon(
+                      Icons.check_circle,
                       color: theme.colorScheme.primary,
+                      size: 24,
+                    )
+                  else
+                    Icon(
+                      Icons.radio_button_unchecked,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                      size: 24,
                     ),
-                  ),
                 ],
-
-                // Selection indicator
-                const SizedBox(width: AppSpacing.sm),
-                if (isSelected)
-                  Icon(
-                    Icons.check_circle,
-                    color: theme.colorScheme.primary,
-                    size: 24,
-                  )
-                else
-                  Icon(
-                    Icons.radio_button_unchecked,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
-                    size: 24,
-                  ),
-              ],
+              ),
             ),
           ),
         ),

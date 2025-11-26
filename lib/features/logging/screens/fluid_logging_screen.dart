@@ -10,7 +10,6 @@ import 'package:hydracat/core/constants/app_animations.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/features/logging/exceptions/logging_error_handler.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
-import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/logging/services/weight_calculator_service.dart';
 import 'package:hydracat/features/logging/widgets/injection_site_selector.dart';
 import 'package:hydracat/features/logging/widgets/logging_popup_wrapper.dart';
@@ -78,7 +77,7 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
 
   // Selection state
   FluidLocation _selectedInjectionSite = FluidLocation.shoulderBladeLeft;
-  String? _selectedStressLevel;
+  String _selectedStressLevel = 'medium';
 
   // UI state
   LoadingOverlayState _loadingState = LoadingOverlayState.none;
@@ -353,7 +352,9 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
           // Note: Reset happens after cache is updated to ensure
           // consistent state
           ref.read(loggingProvider.notifier).reset();
-          OverlayService.hide();
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
         }
       } else {
         // Error occurred - check error provider
@@ -471,12 +472,19 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
 
         // Weight calculator button
         Center(
-          child: TextButton.icon(
-            icon: const Icon(Icons.calculate, size: 18),
-            label: Text(l10n.calculateFromWeight),
+          child: HydraButton(
+            variant: HydraButtonVariant.text,
             onPressed: _loadingState == LoadingOverlayState.none
                 ? _toggleToCalculator
                 : null,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.calculate, size: 18),
+                const SizedBox(width: AppSpacing.xs),
+                Text(l10n.calculateFromWeight),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -509,7 +517,7 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
             const SizedBox(height: AppSpacing.sm),
             StressLevelSelector(
               value: _selectedStressLevel,
-              onChanged: (String? newValue) {
+              onChanged: (String newValue) {
                 if (_loadingState == LoadingOverlayState.none) {
                   setState(() {
                     _selectedStressLevel = newValue;
@@ -562,27 +570,15 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
           label: l10n.fluidLogButtonLabel,
           hint: l10n.fluidLogButtonHint,
           button: true,
-          child: FilledButton(
+          child: HydraButton(
+            variant: HydraButtonVariant.primary,
+            isFullWidth: true,
+            isLoading: _loadingState == LoadingOverlayState.loading,
             onPressed: _isFormValid && _loadingState == LoadingOverlayState.none
                 ? _logFluidSession
                 : null,
-            style: FilledButton.styleFrom(
-              backgroundColor: theme.colorScheme.primary,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.md,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: Text(
-              l10n.fluidLoggingTitle,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            semanticLabel: l10n.fluidLogButtonLabel,
+            child: Text(l10n.fluidLoggingTitle),
           ),
         ),
       ],
@@ -638,6 +634,9 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
             )
           : null,
       onDismiss: () {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
         ref.read(loggingProvider.notifier).reset();
       },
       child: LoadingOverlay(

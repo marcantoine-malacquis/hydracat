@@ -199,6 +199,8 @@ class _VolumeInputAdjusterState extends State<VolumeInputAdjuster> {
                     LengthLimitingTextInputFormatter(5),
                   ],
                   decoration: InputDecoration(
+                    filled: true,
+                    fillColor: AppColors.background,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.sm,
                       vertical: AppSpacing.xs,
@@ -229,6 +231,7 @@ class _VolumeInputAdjusterState extends State<VolumeInputAdjuster> {
                   widget.unit,
                   style: AppTextStyles.caption.copyWith(
                     color: AppColors.textSecondary,
+                    decoration: TextDecoration.none,
                   ),
                 ),
               ],

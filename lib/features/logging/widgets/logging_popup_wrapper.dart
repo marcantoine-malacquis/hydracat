@@ -1,31 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
-import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/shared/widgets/accessibility/touch_target_icon_button.dart';
 
-/// A reusable bottom-sheet-style popup container for logging screens.
+/// A reusable bottom-sheet-style content container for logging screens.
 ///
 /// Provides a consistent popup experience with:
-/// - Bottom-positioned container
-/// - Responsive sizing (max 80% screen height)
 /// - Header with title and close button
 /// - Scrollable content area
-/// - Tap-outside or back-button dismissal
+/// - Back-button dismissal support
 ///
-/// Note: Blurred background is handled by OverlayService
+/// Designed to be used inside a modal bottom sheet (via `showHydraBottomSheet`).
+/// The sheet itself handles animations, drag-to-dismiss, and backdrop.
 ///
 /// Usage:
 /// ```dart
-/// LoggingPopupWrapper(
-///   title: 'Log Medication',
-///   onDismiss: () {
-///     ref.read(loggingProvider.notifier).reset();
-///   },
-///   child: MedicationFormContent(),
-/// )
+/// showHydraBottomSheet(
+///   context: context,
+///   isScrollControlled: true,
+///   builder: (context) => HydraBottomSheet(
+///     child: LoggingPopupWrapper(
+///       title: 'Log Medication',
+///       onDismiss: () {
+///         Navigator.pop(context);
+///         ref.read(loggingProvider.notifier).reset();
+///       },
+///       child: MedicationFormContent(),
+///     ),
+///   ),
+/// );
 /// ```
-class LoggingPopupWrapper extends StatefulWidget {
+class LoggingPopupWrapper extends StatelessWidget {
   /// Creates a [LoggingPopupWrapper].
   const LoggingPopupWrapper({
     required this.title,
@@ -54,7 +60,8 @@ class LoggingPopupWrapper extends StatefulWidget {
 
   /// Callback when the popup is dismissed.
   ///
-  /// Should typically call `ref.read(loggingProvider.notifier).reset()`.
+  /// Should typically call `Navigator.pop(context)` and
+  /// `ref.read(loggingProvider.notifier).reset()`.
   final VoidCallback? onDismiss;
 
   /// Whether to show the close button in the header.
@@ -67,79 +74,6 @@ class LoggingPopupWrapper extends StatefulWidget {
   final Widget? headerContent;
 
   @override
-  State<LoggingPopupWrapper> createState() => _LoggingPopupWrapperState();
-}
-
-class _LoggingPopupWrapperState extends State<LoggingPopupWrapper>
-    with SingleTickerProviderStateMixin {
-  // Require a fairly intentional pull to dismiss.
-  static const double _dragDismissThreshold = 140;
-  static const double _velocityDismissThreshold = 600;
-
-  late final AnimationController _animationController;
-  Animation<double>? _animation;
-  late double _dragOffset;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-    );
-    _dragOffset = 0;
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  void _animateBackToOrigin() {
-    _animationController
-      ..stop()
-      ..reset();
-    _animation =
-        Tween<double>(
-            begin: _dragOffset,
-            end: 0,
-          ).animate(
-            CurvedAnimation(
-              parent: _animationController,
-              curve: Curves.easeOut,
-            ),
-          )
-          ..addListener(() {
-            setState(() {
-              _dragOffset = _animation!.value;
-            });
-          });
-
-    _animationController.forward();
-  }
-
-  void _handleDragUpdate(DragUpdateDetails details) {
-    setState(() {
-      _dragOffset = (_dragOffset + details.delta.dy).clamp(0.0, 300.0);
-    });
-  }
-
-  void _handleDragEnd(DragEndDetails details) {
-    final velocity = details.primaryVelocity ?? 0;
-    final shouldDismiss =
-        _dragOffset > _dragDismissThreshold ||
-        velocity > _velocityDismissThreshold;
-
-    if (shouldDismiss && velocity >= 0) {
-      widget.onDismiss?.call();
-      OverlayService.hide();
-    } else {
-      _animateBackToOrigin();
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
@@ -147,67 +81,37 @@ class _LoggingPopupWrapperState extends State<LoggingPopupWrapper>
 
     return PopScope(
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop && widget.onDismiss != null) {
-          widget.onDismiss!();
+        if (didPop && onDismiss != null) {
+          onDismiss!();
         }
       },
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Material(
-          type: MaterialType.transparency,
-          child: Semantics(
-            label: l10n.loggingPopupSemantic(widget.title),
-            child: Transform.translate(
-              offset: Offset(0, _dragOffset),
-              child: Container(
-                constraints: BoxConstraints(
-                  maxHeight: mediaQuery.size.height * 0.8,
-                ),
-                margin: EdgeInsets.only(
-                  // Add keyboard padding when visible, plus safe area padding
-                  bottom:
-                      mediaQuery.viewInsets.bottom +
-                      mediaQuery.padding.bottom +
-                      AppSpacing.sm,
-                ),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, -4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Header (also acts as drag handle)
-                    _buildHeader(context, theme),
+      child: Semantics(
+        label: l10n.loggingPopupSemantic(title),
+        child: Container(
+          color: AppColors.background,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: mediaQuery.size.height * 0.85,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header with drag handle
+                _buildHeader(context, theme),
 
-                    // Scrollable content area
-                    Flexible(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          // Design for 640px height minimum (iPhone SE)
-                          // Show subtle scroll indicator if content exceeds
-                          return SingleChildScrollView(
-                            padding: const EdgeInsets.only(
-                              left: AppSpacing.lg,
-                              right: AppSpacing.lg,
-                              top: AppSpacing.sm,
-                              bottom: AppSpacing.lg,
-                            ),
-                            child: widget.child,
-                          );
-                        },
-                      ),
+                // Scrollable content area
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.only(
+                      left: AppSpacing.lg,
+                      right: AppSpacing.lg,
+                      top: AppSpacing.sm,
+                      bottom: AppSpacing.lg,
                     ),
-                  ],
+                    child: child,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
@@ -218,73 +122,69 @@ class _LoggingPopupWrapperState extends State<LoggingPopupWrapper>
   Widget _buildHeader(BuildContext context, ThemeData theme) {
     final l10n = AppLocalizations.of(context)!;
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onVerticalDragUpdate: _handleDragUpdate,
-      onVerticalDragEnd: _handleDragEnd,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
-        ),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
-            ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
           ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Drag handle pill
-            Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.25,
-                ),
-                borderRadius: BorderRadius.circular(999),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Drag handle pill
+          Container(
+            width: 36,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.onSurfaceVariant.withValues(
+                alpha: 0.25,
               ),
+              borderRadius: BorderRadius.circular(999),
             ),
-            Row(
-              children: [
-                if (widget.leading != null) widget.leading!,
-                Expanded(
-                  child:
-                      widget.headerContent ??
-                      Text(
-                        widget.title,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface,
-                        ),
+          ),
+          Row(
+            children: [
+              if (leading != null) leading!,
+              Expanded(
+                child: headerContent ??
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
                       ),
-                ),
-                if (widget.trailing != null)
-                  widget.trailing!
-                else if (widget.showCloseButton)
-                  TouchTargetIconButton(
-                    onPressed: () {
-                      widget.onDismiss?.call();
-                      OverlayService.hide();
-                    },
-                    icon: Icon(
-                      Icons.close,
-                      color: theme.colorScheme.onSurfaceVariant,
-                      size: 24,
                     ),
-                    tooltip: l10n.loggingCloseTooltip,
-                    semanticLabel: l10n.loggingClosePopupSemantic,
+              ),
+              if (trailing != null)
+                trailing!
+              else if (showCloseButton)
+                TouchTargetIconButton(
+                  onPressed: () {
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    }
+                    onDismiss?.call();
+                  },
+                  icon: Icon(
+                    Icons.close,
+                    color: theme.colorScheme.onSurfaceVariant,
+                    size: 24,
                   ),
-              ],
-            ),
-          ],
-        ),
+                  tooltip: l10n.loggingCloseTooltip,
+                  semanticLabel: l10n.loggingClosePopupSemantic,
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }

@@ -95,6 +95,8 @@ class HydraSlidingSegmentedControl<T extends Object> extends StatelessWidget {
               style: AppTextStyles.buttonSecondary.copyWith(
                 fontWeight: FontWeight.w500,
                 fontSize: 13,
+                decoration: TextDecoration.none,
+                color: AppColors.textSecondary,
               ),
               child: Center(child: child),
             ),
@@ -184,6 +186,7 @@ class HydraSlidingSegmentedControl<T extends Object> extends StatelessWidget {
                             style: AppTextStyles.buttonSecondary.copyWith(
                               fontWeight: FontWeight.w500,
                               fontSize: 13,
+                              decoration: TextDecoration.none,
                               color: isSelected
                                   ? Colors.white
                                   : resolvedUnselectedColor,

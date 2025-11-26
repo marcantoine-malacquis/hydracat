@@ -1,33 +1,37 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
+import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
+import 'package:hydracat/shared/widgets/bottom_sheets/hydra_bottom_sheet.dart';
 
-/// A custom dropdown selector for fluid injection sites.
+/// A platform-adaptive selector for fluid injection sites.
 ///
-/// Provides a dropdown menu with all FluidLocation enum values.
-/// Used in fluid logging to specify where the treatment was administered.
+/// Provides a tappable field that opens a bottom sheet with all FluidLocation
+/// enum values. Used in fluid logging to specify where the treatment was
+/// administered.
 ///
 /// Features:
 /// - All FluidLocation enum options
 /// - User-friendly display names
 /// - Pre-filled from schedule's preferredLocation
 /// - Defaults to shoulderBladeLeft when no schedule
-/// - Matches TextField styling for consistency
-/// - Custom dropdown that works within overlay popups
+/// - Platform-adaptive bottom sheet (Material on Android, Cupertino on iOS/macOS)
+/// - Works correctly within overlay popups by using host context
 ///
 /// Example:
 /// ```dart
 /// InjectionSiteSelector(
 ///   value: _selectedInjectionSite,
-///   onChanged: (FluidLocation? newValue) {
+///   onChanged: (FluidLocation newValue) {
 ///     setState(() {
 ///       _selectedInjectionSite = newValue;
 ///     });
 ///   },
 /// )
 /// ```
-class InjectionSiteSelector extends StatefulWidget {
+class InjectionSiteSelector extends StatelessWidget {
   /// Creates an [InjectionSiteSelector].
   const InjectionSiteSelector({
     required this.value,
@@ -45,117 +49,94 @@ class InjectionSiteSelector extends StatefulWidget {
   /// Whether the selector is enabled
   final bool enabled;
 
-  @override
-  State<InjectionSiteSelector> createState() => _InjectionSiteSelectorState();
-}
+  void _showSelectionSheet(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final platform = Theme.of(context).platform;
+    final isCupertino =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
 
-class _InjectionSiteSelectorState extends State<InjectionSiteSelector> {
-  final LayerLink _layerLink = LayerLink();
-  OverlayEntry? _overlayEntry;
-  bool _isOpen = false;
+    // Use host context from OverlayService if available (for overlay popups),
+    // otherwise use the widget's context
+    final hostContext = OverlayService.hostContext ?? context;
 
-  @override
-  void dispose() {
-    _removeOverlay();
-    super.dispose();
-  }
-
-  void _toggleDropdown() {
-    if (_isOpen) {
-      _removeOverlay();
-    } else {
-      _showOverlay();
-    }
-  }
-
-  void _showOverlay() {
-    final overlay = Overlay.of(context);
-    final renderBox = context.findRenderObject()! as RenderBox;
-    final size = renderBox.size;
-
-    _overlayEntry = OverlayEntry(
-      builder: (context) => GestureDetector(
-        onTap: _removeOverlay,
-        behavior: HitTestBehavior.translucent,
-        child: Stack(
+    showHydraBottomSheet<FluidLocation>(
+      context: hostContext,
+      useRootNavigator: true,
+      builder: (sheetContext) => HydraBottomSheet(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Positioned(
-              width: size.width,
-              child: CompositedTransformFollower(
-                link: _layerLink,
-                showWhenUnlinked: false,
-                offset: Offset(0, size.height + 4),
-                child: Material(
-                  elevation: 8,
-                  borderRadius: BorderRadius.circular(10),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 300),
-                    child: ListView(
-                      padding: EdgeInsets.zero,
-                      shrinkWrap: true,
-                      children: FluidLocation.values.map((location) {
-                        final isSelected = widget.value == location;
-                        final theme = Theme.of(context);
-                        return InkWell(
-                          onTap: () {
-                            widget.onChanged(location);
-                            _removeOverlay();
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.md,
-                              vertical: AppSpacing.sm,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? theme.colorScheme.primary.withValues(
-                                      alpha: 0.1,
-                                    )
-                                  : null,
-                            ),
-                            child: Row(
-                              children: [
-                                if (isSelected)
-                                  Icon(
-                                    Icons.check,
-                                    size: 20,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                if (isSelected)
-                                  const SizedBox(width: AppSpacing.sm),
-                                Expanded(
-                                  child: Text(
-                                    location.getLocalizedName(context),
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodyLarge,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: AppSpacing.sm),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            // Title
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Text(
+                l10n.injectionSiteLabel,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
+            const SizedBox(height: AppSpacing.md),
+            // Options list
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: FluidLocation.values.map((location) {
+                  final isSelected = value == location;
+                  final locationName = location.getLocalizedName(sheetContext);
+
+                  if (isCupertino) {
+                    return CupertinoListTile(
+                      title: Text(locationName),
+                      trailing: isSelected
+                          ? Icon(
+                              CupertinoIcons.check_mark,
+                              color: theme.colorScheme.primary,
+                              size: 20,
+                            )
+                          : null,
+                      onTap: () {
+                        onChanged(location);
+                        Navigator.of(sheetContext).pop();
+                      },
+                    );
+                  } else {
+                    return ListTile(
+                      title: Text(locationName),
+                      trailing: isSelected
+                          ? Icon(
+                              Icons.check,
+                              color: theme.colorScheme.primary,
+                              size: 24,
+                            )
+                          : null,
+                      selected: isSelected,
+                      onTap: () {
+                        onChanged(location);
+                        Navigator.of(sheetContext).pop();
+                      },
+                    );
+                  }
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
           ],
         ),
       ),
     );
-
-    overlay.insert(_overlayEntry!);
-    setState(() {
-      _isOpen = true;
-    });
-  }
-
-  void _removeOverlay() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-    _isOpen = false;
   }
 
   @override
@@ -163,41 +144,38 @@ class _InjectionSiteSelectorState extends State<InjectionSiteSelector> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
-    return CompositedTransformTarget(
-      link: _layerLink,
-      child: Semantics(
-        label: l10n.injectionSiteSelectorSemantic,
-        hint: l10n.injectionSiteCurrentSelection(
-          widget.value.getLocalizedName(context),
-        ),
-        button: true,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: widget.enabled ? _toggleDropdown : null,
-            borderRadius: BorderRadius.circular(10),
-            child: InputDecorator(
-              decoration: InputDecoration(
-                labelText: l10n.injectionSiteLabel,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.md,
-                ),
-                suffixIcon: Icon(
-                  _isOpen ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-                  color: widget.enabled
-                      ? theme.colorScheme.onSurfaceVariant
-                      : theme.colorScheme.onSurface.withValues(alpha: 0.38),
-                ),
+    return Semantics(
+      label: l10n.injectionSiteSelectorSemantic,
+      hint: l10n.injectionSiteCurrentSelection(
+        value.getLocalizedName(context),
+      ),
+      button: true,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: enabled ? () => _showSelectionSheet(context) : null,
+          borderRadius: BorderRadius.circular(10),
+          child: InputDecorator(
+            decoration: InputDecoration(
+              labelText: l10n.injectionSiteLabel,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Text(
-                widget.value.getLocalizedName(context),
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurface,
-                ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.md,
+              ),
+              suffixIcon: Icon(
+                Icons.arrow_drop_down,
+                color: enabled
+                    ? theme.colorScheme.onSurfaceVariant
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.38),
+              ),
+            ),
+            child: Text(
+              value.getLocalizedName(context),
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),

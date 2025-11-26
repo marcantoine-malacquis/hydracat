@@ -1986,40 +1986,18 @@ class _MedicationEditInlineFormState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ElevatedButton(
+        HydraButton(
+          variant: HydraButtonVariant.primary,
+          isFullWidth: true,
           onPressed: _handleSave,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: Text(
-            'Save',
-            style: AppTextStyles.buttonPrimary.copyWith(
-              color: Colors.white,
-            ),
-          ),
+          child: const Text('Save'),
         ),
         const SizedBox(height: AppSpacing.sm),
-        OutlinedButton(
+        HydraButton(
+          variant: HydraButtonVariant.secondary,
+          isFullWidth: true,
           onPressed: widget.onCancel,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.textPrimary,
-            side: const BorderSide(color: AppColors.border),
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: Text(
-            'Cancel',
-            style: AppTextStyles.buttonSecondary.copyWith(
-              color: AppColors.textPrimary,
-            ),
-          ),
+          child: const Text('Cancel'),
         ),
       ],
     );
@@ -2045,7 +2023,7 @@ class _FluidEditInlineForm extends StatefulWidget {
 class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
   late double _volumeGiven;
   late FluidLocation _injectionSite;
-  late String? _stressLevel;
+  late String _stressLevel;
   late TextEditingController _notesController;
   bool _notesExpanded = false;
   final FocusNode _notesFocusNode = FocusNode();
@@ -2055,7 +2033,7 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
     super.initState();
     _volumeGiven = widget.session.volumeGiven;
     _injectionSite = widget.session.injectionSite;
-    _stressLevel = widget.session.stressLevel;
+    _stressLevel = widget.session.stressLevel ?? 'medium';
 
     _notesController = TextEditingController(text: widget.session.notes ?? '');
 
@@ -2088,7 +2066,7 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
   bool get _hasChanges =>
       _volumeGiven != widget.session.volumeGiven ||
       _injectionSite != widget.session.injectionSite ||
-      _stressLevel != widget.session.stressLevel ||
+      _stressLevel != (widget.session.stressLevel ?? 'medium') ||
       _notesController.text != (widget.session.notes ?? '');
 
   void _handleSave() {
@@ -2104,7 +2082,7 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
     final updatedSession = widget.session.copyWith(
       volumeGiven: _volumeGiven,
       injectionSite: _injectionSite,
-      stressLevel: _stressLevel,
+      stressLevel: _stressLevel, // Now always non-null
       notes: _notesController.text.isEmpty ? null : _notesController.text,
       updatedAt: DateTime.now(),
     );
@@ -2175,7 +2153,7 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Stress Level (optional):',
+          'Stress Level',
           style: AppTextStyles.body.copyWith(
             fontWeight: FontWeight.w500,
             color: theme.colorScheme.onSurface,
@@ -2184,7 +2162,7 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
         const SizedBox(height: AppSpacing.sm),
         StressLevelSelector(
           value: _stressLevel,
-          onChanged: (String? value) {
+          onChanged: (String value) {
             setState(() {
               _stressLevel = value;
             });
@@ -2206,7 +2184,7 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
-        TextField(
+        HydraTextField(
           controller: _notesController,
           focusNode: _notesFocusNode,
           maxLength: _notesExpanded ? 500 : null,
@@ -2247,40 +2225,18 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ElevatedButton(
+        HydraButton(
+          variant: HydraButtonVariant.primary,
+          isFullWidth: true,
           onPressed: _handleSave,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: Text(
-            'Save',
-            style: AppTextStyles.buttonPrimary.copyWith(
-              color: Colors.white,
-            ),
-          ),
+          child: const Text('Save'),
         ),
         const SizedBox(height: AppSpacing.sm),
-        OutlinedButton(
+        HydraButton(
+          variant: HydraButtonVariant.secondary,
+          isFullWidth: true,
           onPressed: widget.onCancel,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.textPrimary,
-            side: const BorderSide(color: AppColors.border),
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: Text(
-            'Cancel',
-            style: AppTextStyles.buttonSecondary.copyWith(
-              color: AppColors.textPrimary,
-            ),
-          ),
+          child: const Text('Cancel'),
         ),
       ],
     );

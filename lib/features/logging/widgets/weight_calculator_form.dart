@@ -209,6 +209,7 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
                     style: AppTextStyles.h3.copyWith(
                       fontWeight: FontWeight.w600,
                       color: theme.colorScheme.onSurface,
+                      decoration: TextDecoration.none,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -220,6 +221,7 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
                       color: theme.colorScheme.onSurface.withValues(
                         alpha: 0.8,
                       ),
+                      decoration: TextDecoration.none,
                     ),
                   ),
                   Text(
@@ -233,6 +235,7 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
                       color: theme.colorScheme.onSurface.withValues(
                         alpha: 0.6,
                       ),
+                      decoration: TextDecoration.none,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -258,6 +261,7 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
                 style: AppTextStyles.h3.copyWith(
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.onSurface,
+                  decoration: TextDecoration.none,
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -271,7 +275,19 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
                 autofocus: _lastBagWeight == null,
                 decoration: InputDecoration(
                   labelText: l10n.initialWeightLabel,
-                  suffixText: 'g',
+                  suffixIcon: Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.md),
+                    child: Align(
+                      widthFactor: 1.0,
+                      child: Text(
+                        'g',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                    ),
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -304,6 +320,7 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
                 style: AppTextStyles.h3.copyWith(
                   fontWeight: FontWeight.w600,
                   color: theme.colorScheme.onSurface,
+                  decoration: TextDecoration.none,
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -316,7 +333,19 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
                 textInputAction: TextInputAction.done,
                 decoration: InputDecoration(
                   labelText: l10n.finalWeightLabel,
-                  suffixText: 'g',
+                  suffixIcon: Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.md),
+                    child: Align(
+                      widthFactor: 1.0,
+                      child: Text(
+                        'g',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                    ),
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -364,6 +393,7 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
                   style: AppTextStyles.body.copyWith(
                     fontWeight: FontWeight.w600,
                     color: theme.colorScheme.onSurface,
+                    decoration: TextDecoration.none,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -373,6 +403,7 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
                     color: theme.colorScheme.onSurface.withValues(
                       alpha: 0.6,
                     ),
+                    decoration: TextDecoration.none,
                   ),
                 ),
               ],
@@ -428,6 +459,7 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
                   style: AppTextStyles.caption.copyWith(
                     fontWeight: FontWeight.w600,
                     color: theme.colorScheme.onSurface,
+                    decoration: TextDecoration.none,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -437,6 +469,7 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
                     color: theme.colorScheme.onSurface.withValues(
                       alpha: 0.8,
                     ),
+                    decoration: TextDecoration.none,
                   ),
                 ),
                 Text(
@@ -445,6 +478,7 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
                     color: theme.colorScheme.onSurface.withValues(
                       alpha: 0.8,
                     ),
+                    decoration: TextDecoration.none,
                   ),
                 ),
               ],
