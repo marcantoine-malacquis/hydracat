@@ -306,6 +306,212 @@ void main() {
       });
     });
 
+    group('hasMedicationCompletedNear', () {
+      test('returns false when medication not logged today', () {
+        const cache = DailySummaryCache(
+          date: '2025-10-13',
+          medicationSessionCount: 0,
+          fluidSessionCount: 0,
+          medicationNames: [],
+          totalMedicationDosesGiven: 0,
+          totalFluidVolumeGiven: 0,
+          medicationCompletedTimes: {},
+        );
+
+        final scheduledTime = DateTime(2025, 10, 13, 8); // 8:00 AM
+        final result = cache.hasMedicationCompletedNear(
+          'Benazepril',
+          scheduledTime,
+        );
+
+        expect(result, false);
+      });
+
+      test(
+        'returns false when medication logged but not completed '
+        '(only in recentTimes)',
+        () {
+          final scheduledTime = DateTime(2025, 10, 13, 8); // 8:00 AM
+          final loggedTime = DateTime(2025, 10, 13, 8, 30); // 8:30 AM
+
+          final cache = DailySummaryCache(
+            date: '2025-10-13',
+            medicationSessionCount: 1,
+            fluidSessionCount: 0,
+            medicationNames: const ['Benazepril'],
+            totalMedicationDosesGiven: 1,
+            totalFluidVolumeGiven: 0,
+            medicationRecentTimes: {
+              'Benazepril': [loggedTime.toIso8601String()],
+            },
+            // Empty completedTimes - session was not completed
+            medicationCompletedTimes: const {},
+          );
+
+          final result = cache.hasMedicationCompletedNear(
+            'Benazepril',
+            scheduledTime,
+          );
+
+          expect(result, false);
+        },
+      );
+
+      test(
+        'returns true when completed dose exists within ±2h window',
+        () {
+          final scheduledTime = DateTime(2025, 10, 13, 9); // 9:00 AM
+          final completedTime = DateTime(2025, 10, 13, 9, 30); // 9:30 AM
+
+          final cache = DailySummaryCache(
+            date: '2025-10-13',
+            medicationSessionCount: 1,
+            fluidSessionCount: 0,
+            medicationNames: const ['Benazepril'],
+            totalMedicationDosesGiven: 1,
+            totalFluidVolumeGiven: 0,
+            medicationCompletedTimes: {
+              'Benazepril': [completedTime.toIso8601String()],
+            },
+          );
+
+          final result = cache.hasMedicationCompletedNear(
+            'Benazepril',
+            scheduledTime,
+          );
+
+          expect(result, true);
+        },
+      );
+
+      test(
+        'returns true for multi-dose schedule when first dose completed',
+        () {
+          // Twice-daily medication: 9:00 AM and 9:00 PM
+          final morningScheduled = DateTime(2025, 10, 13, 9); // 9:00 AM
+          final eveningScheduled = DateTime(2025, 10, 13, 21); // 9:00 PM
+          final morningCompleted = DateTime(2025, 10, 13, 9, 15); // 9:15 AM
+
+          final cache = DailySummaryCache(
+            date: '2025-10-13',
+            medicationSessionCount: 1,
+            fluidSessionCount: 0,
+            medicationNames: const ['Benazepril'],
+            totalMedicationDosesGiven: 1,
+            totalFluidVolumeGiven: 0,
+            medicationCompletedTimes: {
+              'Benazepril': [morningCompleted.toIso8601String()],
+            },
+          );
+
+          // Morning dose completed
+          expect(
+            cache.hasMedicationCompletedNear('Benazepril', morningScheduled),
+            true,
+          );
+
+          // Evening dose not completed yet
+          expect(
+            cache.hasMedicationCompletedNear('Benazepril', eveningScheduled),
+            false,
+          );
+        },
+      );
+
+      test(
+        'returns true for multi-dose schedule when both doses completed',
+        () {
+          // Twice-daily medication: 9:00 AM and 9:00 PM
+          final morningScheduled = DateTime(2025, 10, 13, 9); // 9:00 AM
+          final eveningScheduled = DateTime(2025, 10, 13, 21); // 9:00 PM
+          final morningCompleted = DateTime(2025, 10, 13, 9, 15); // 9:15 AM
+          final eveningCompleted = DateTime(2025, 10, 13, 21, 10); // 9:10 PM
+
+          final cache = DailySummaryCache(
+            date: '2025-10-13',
+            medicationSessionCount: 2,
+            fluidSessionCount: 0,
+            medicationNames: const ['Benazepril'],
+            totalMedicationDosesGiven: 2,
+            totalFluidVolumeGiven: 0,
+            medicationCompletedTimes: {
+              'Benazepril': [
+                morningCompleted.toIso8601String(),
+                eveningCompleted.toIso8601String(),
+              ],
+            },
+          );
+
+          // Both doses completed
+          expect(
+            cache.hasMedicationCompletedNear('Benazepril', morningScheduled),
+            true,
+          );
+          expect(
+            cache.hasMedicationCompletedNear('Benazepril', eveningScheduled),
+            true,
+          );
+        },
+      );
+
+      test(
+        'returns false when completed dose is outside ±2h window',
+        () {
+          final scheduledTime = DateTime(2025, 10, 13, 9); // 9:00 AM
+          final completedTime = DateTime(
+            2025,
+            10,
+            13,
+            12,
+          ); // 12:00 PM (3h later)
+
+          final cache = DailySummaryCache(
+            date: '2025-10-13',
+            medicationSessionCount: 1,
+            fluidSessionCount: 0,
+            medicationNames: const ['Benazepril'],
+            totalMedicationDosesGiven: 1,
+            totalFluidVolumeGiven: 0,
+            medicationCompletedTimes: {
+              'Benazepril': [completedTime.toIso8601String()],
+            },
+          );
+
+          final result = cache.hasMedicationCompletedNear(
+            'Benazepril',
+            scheduledTime,
+          );
+
+          expect(result, false);
+        },
+      );
+
+      test('returns false for different medication', () {
+        final scheduledTime = DateTime(2025, 10, 13, 9);
+        final completedTime = DateTime(2025, 10, 13, 9, 30);
+
+        final cache = DailySummaryCache(
+          date: '2025-10-13',
+          medicationSessionCount: 1,
+          fluidSessionCount: 0,
+          medicationNames: const ['Benazepril'],
+          totalMedicationDosesGiven: 1,
+          totalFluidVolumeGiven: 0,
+          medicationCompletedTimes: {
+            'Benazepril': [completedTime.toIso8601String()],
+          },
+        );
+
+        // Query for different medication
+        final result = cache.hasMedicationCompletedNear(
+          'Amlodipine',
+          scheduledTime,
+        );
+
+        expect(result, false);
+      });
+    });
+
     group('Factory Constructors', () {
       test('empty() creates cache with all counts at zero', () {
         final cache = DailySummaryCache.empty('2025-10-13');

@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -92,6 +93,10 @@ class _SymptomsScreenState extends ConsumerState<SymptomsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final platform = Theme.of(context).platform;
+    final isIOS =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: HydraAppBar(
@@ -100,22 +105,55 @@ class _SymptomsScreenState extends ConsumerState<SymptomsScreen> {
         leading: HydraBackButton(
           onPressed: () => context.pop(),
         ),
+        actions: isIOS
+            ? [
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    _showAddSymptomsDialog();
+                  },
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        CupertinoIcons.add,
+                        size: 18,
+                        color:
+                            AppColors.primaryDark, // Darker teal for visibility
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'Add',
+                        style: TextStyle(
+                          color: AppColors
+                              .primaryDark, // Darker teal for visibility
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ]
+            : null,
       ),
       body: SingleChildScrollView(
         controller: _scrollController,
         child: _buildBody(),
       ),
-      floatingActionButton: _showFab
-          ? HydraExtendedFab(
-              onPressed: _showAddSymptomsDialog,
-              icon: Icons.add,
-              label: 'Add Symptoms',
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.textPrimary,
-              elevation: 0,
-              useGlassEffect: true,
-            )
-          : null,
+      // On iOS, use navigation bar button instead of FAB
+      // On Android, show solid FAB (no glass effect)
+      floatingActionButton: isIOS
+          ? null
+          : (_showFab
+                ? HydraExtendedFab(
+                    onPressed: _showAddSymptomsDialog,
+                    icon: Icons.add,
+                    label: 'Add Symptoms',
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 4,
+                  )
+                : null),
       floatingActionButtonAnimator: FloatingActionButtonAnimator.scaling,
     );
   }
@@ -319,7 +357,6 @@ class _SymptomsScreenState extends ConsumerState<SymptomsScreen> {
     final items = <String?>[null, ..._symptomPriorityOrder];
 
     return Align(
-      alignment: Alignment.centerLeft,
       child: SizedBox(
         width: 200, // Fixed width for consistent layout
         child: HydraDropdown<String?>(
@@ -335,7 +372,6 @@ class _SymptomsScreenState extends ConsumerState<SymptomsScreen> {
             key == null ? 'All symptoms' : _getSymptomLabel(key),
             style: AppTextStyles.body,
           ),
-          labelText: 'Symptom',
           hintText: 'All symptoms',
         ),
       ),

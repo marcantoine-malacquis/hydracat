@@ -31,6 +31,13 @@ import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 
+/// Provider that tracks bottom navigation bar visibility throughout the app.
+///
+/// Used by snackbar positioning to calculate proper bottom offset.
+/// Value updates whenever nav bar visibility changes
+/// (onboarding, settings, overlays).
+final navigationBarVisibilityProvider = StateProvider<bool>((ref) => true);
+
 /// Main app shell that provides consistent navigation and layout.
 class AppShell extends ConsumerStatefulWidget {
   /// Creates an AppShell with the specified child.
@@ -1279,6 +1286,19 @@ class _AppShellState extends ConsumerState<AppShell>
           ref.read(syncToastMessageProvider.notifier).state = null;
         }
       });
+
+    // Update navigation bar visibility provider for snackbar positioning
+    final isNavBarVisible =
+        !(isInOnboardingFlow || shouldHideNavBar || isOverlayVisible);
+
+    // Schedule provider update after build completes to avoid modification
+    // during build phase
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(navigationBarVisibilityProvider.notifier).state =
+            isNavBarVisible;
+      }
+    });
 
     return Scaffold(
       body: Column(

@@ -192,8 +192,8 @@ class LoggingService {
       final scheduledDosesCount = alreadyCounted
           ? 0
           : todaysSchedules
-              .map((s) => s.reminderTimesOnDate(session.dateTime).length)
-              .fold(0, (total, reminderCount) => total + reminderCount);
+                .map((s) => s.reminderTimesOnDate(session.dateTime).length)
+                .fold(0, (total, reminderCount) => total + reminderCount);
 
       if (kDebugMode) {
         debugPrint(
@@ -525,8 +525,8 @@ class LoggingService {
       final scheduledSessionsCount = alreadyCounted
           ? 0
           : (fluidSchedule != null
-              ? fluidSchedule.reminderTimesOnDate(session.dateTime).length
-              : 0);
+                ? fluidSchedule.reminderTimesOnDate(session.dateTime).length
+                : 0);
 
       if (kDebugMode) {
         debugPrint(
@@ -825,15 +825,18 @@ class LoggingService {
   /// // Returns: (sessionCount: 5, medicationNames: [...], ...)
   /// ```
   Future<
-      ({
-        int sessionCount,
-        int medicationSessionCount,
-        int fluidSessionCount,
-        List<String> medicationNames,
-        double totalMedicationDoses,
-        double totalFluidVolume,
-        Map<String, List<String>> medicationRecentTimes,
-      })> quickLogAllTreatments({
+    ({
+      int sessionCount,
+      int medicationSessionCount,
+      int fluidSessionCount,
+      List<String> medicationNames,
+      double totalMedicationDoses,
+      double totalFluidVolume,
+      Map<String, List<String>> medicationRecentTimes,
+      Map<String, List<String>> medicationCompletedTimes,
+    })
+  >
+  quickLogAllTreatments({
     required String userId,
     required String petId,
     required List<Schedule> todaysSchedules,
@@ -882,22 +885,33 @@ class LoggingService {
 
       for (final schedule in activeSchedules) {
         if (schedule.treatmentType == TreatmentType.medication) {
-          // Skip if medication already logged today
           final medicationName = schedule.medicationName;
           if (medicationName == null) continue;
 
-          if (cache != null && cache.hasMedicationLogged(medicationName)) {
-            if (kDebugMode) {
-              debugPrint(
-                '[LoggingService] Skipping $medicationName - already logged',
-              );
-            }
-            continue;
-          }
-
-          // Create sessions for this medication
+          // Check each reminder time individually for multi-dose schedules
+          // Only create sessions for reminder times that don't have a completed
+          // dose within the ±2h window
           final todaysReminders = schedule.todaysReminderTimes(now).toList();
           for (final reminderTime in todaysReminders) {
+            // Skip if this specific reminder time already has a completed dose
+            if (cache != null &&
+                cache.hasMedicationCompletedNear(
+                  medicationName,
+                  reminderTime,
+                )) {
+              if (kDebugMode) {
+                final hour = reminderTime.hour;
+                final minute = reminderTime.minute.toString().padLeft(2, '0');
+                final timeStr = '$hour:$minute';
+                debugPrint(
+                  '[LoggingService] Skipping $medicationName at $timeStr - '
+                  'already completed',
+                );
+              }
+              continue;
+            }
+
+            // Create session for this remaining reminder time
             medicationSessions.add(
               MedicationSession.fromSchedule(
                 schedule: schedule,
@@ -971,11 +985,26 @@ class LoggingService {
         );
       }
 
-      // STEP 5: Aggregate summary deltas (used for summaries)
+      // STEP 5: Check if scheduled doses/sessions already counted for this date
+      // (to avoid double-counting when some doses were logged manually earlier)
       final todayDate = AppDateUtils.startOfDay(now);
+      final scheduledDosesAlreadyCounted = await _hasScheduledDosesCounted(
+        userId,
+        petId,
+        todayDate,
+      );
+      final fluidScheduledAlreadyCounted = await _hasFluidScheduledCounted(
+        userId,
+        petId,
+        todayDate,
+      );
+
+      // STEP 6: Aggregate summary deltas (used for summaries)
       final aggregatedDto = _aggregateSummaryForQuickLog(
         medicationSessions: medicationSessions,
         fluidSessions: fluidSessions,
+        scheduledDosesAlreadyCounted: scheduledDosesAlreadyCounted,
+        fluidScheduledAlreadyCounted: fluidScheduledAlreadyCounted,
       );
 
       // STEP 6: Guardrail — split into chunks if near Firestore 500 op limit
@@ -1054,12 +1083,26 @@ class LoggingService {
           .toSet()
           .toList();
 
+      // Build medicationRecentTimes (all sessions for duplicate detection)
       final medicationRecentTimes = <String, List<String>>{};
       for (final session in medicationSessions) {
         final time = session.scheduledTime ?? session.dateTime;
         medicationRecentTimes
             .putIfAbsent(session.medicationName, () => [])
             .add(time.toIso8601String());
+      }
+
+      // Build medicationCompletedTimes (only completed sessions for dashboard)
+      // This is the source of truth for home dashboard completion detection
+      final medicationCompletedTimes = <String, List<String>>{};
+      for (final session in medicationSessions) {
+        if (session.completed) {
+          // Use scheduledTime if available (same basis as dashboard matching)
+          final time = session.scheduledTime ?? session.dateTime;
+          medicationCompletedTimes
+              .putIfAbsent(session.medicationName, () => [])
+              .add(time.toIso8601String());
+        }
       }
 
       final totalMedicationDoses = medicationSessions.fold<double>(
@@ -1080,6 +1123,7 @@ class LoggingService {
         totalMedicationDoses: totalMedicationDoses,
         totalFluidVolume: totalFluidVolume,
         medicationRecentTimes: medicationRecentTimes,
+        medicationCompletedTimes: medicationCompletedTimes,
       );
     } on LoggingException {
       rethrow; // UI handles these
@@ -1797,9 +1841,17 @@ class LoggingService {
   /// Instead of writing daily/weekly/monthly summaries per session, we
   /// compute a single [SummaryUpdateDto] representing the union of all
   /// sessions and perform exactly three writes (one per period).
+  ///
+  /// Note: If [scheduledDosesAlreadyCounted] is true, medicationScheduledDelta
+  /// will be null to avoid double-counting scheduled doses that were already
+  /// set when the first medication session was logged manually.
+  /// Similarly, if [fluidScheduledAlreadyCounted] is true, fluidScheduledDelta
+  /// will be null to avoid double-counting scheduled fluid sessions.
   SummaryUpdateDto _aggregateSummaryForQuickLog({
     required List<MedicationSession> medicationSessions,
     required List<FluidSession> fluidSessions,
+    required bool scheduledDosesAlreadyCounted,
+    required bool fluidScheduledAlreadyCounted,
   }) {
     var completedMedicationDoses = 0;
     var scheduledMedicationDoses = 0;
@@ -1825,15 +1877,26 @@ class LoggingService {
       medicationDosesDelta: completedMedicationDoses == 0
           ? null
           : completedMedicationDoses,
-      medicationScheduledDelta: scheduledMedicationDoses == 0
+      // Only increment scheduled doses if they haven't been counted yet
+      // (first medication log of the day sets the total scheduled count)
+      medicationScheduledDelta: scheduledDosesAlreadyCounted
           ? null
-          : scheduledMedicationDoses,
+          : (scheduledMedicationDoses == 0 ? null : scheduledMedicationDoses),
       medicationMissedDelta: missedMedicationDoses == 0
           ? null
           : missedMedicationDoses,
       fluidVolumeDelta: fluidVolumeTotal == 0.0 ? null : fluidVolumeTotal,
       fluidSessionDelta: fluidSessionsCount == 0 ? null : fluidSessionsCount,
+      // Only increment scheduled fluid sessions if they haven't been
+      // counted yet
+      // (first fluid log of the day sets the total scheduled count)
+      fluidScheduledDelta: fluidScheduledAlreadyCounted
+          ? null
+          : (fluidSessionsCount == 0 ? null : fluidSessionsCount),
       fluidTreatmentDone: fluidSessions.isNotEmpty,
+      // Quick-log only creates remaining sessions,
+      // so after quick-log completes,
+      // all primary treatments for the day are indeed logged
       overallTreatmentDone: true,
     );
   }

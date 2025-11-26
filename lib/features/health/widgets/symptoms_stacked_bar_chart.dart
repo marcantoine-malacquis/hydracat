@@ -6,6 +6,7 @@ import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/constants/symptom_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
+import 'package:hydracat/core/utils/chart_utils.dart';
 import 'package:hydracat/features/health/models/symptom_bucket.dart';
 import 'package:hydracat/features/health/models/symptom_granularity.dart';
 import 'package:hydracat/features/health/models/symptom_type.dart';
@@ -91,6 +92,48 @@ class _SymptomsStackedBarChartState
       );
     }
 
+    // Error state: show error message with retry option
+    if (viewModel.error != null) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: SizedBox(
+          height: _chartHeight,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: AppColors.textSecondary.withValues(alpha: 0.5),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Unable to load symptom data',
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                TextButton(
+                  onPressed: () {
+                    // Invalidate the provider to trigger a refresh
+                    ref.invalidate(symptomsChartDataProvider);
+                  },
+                  child: Text(
+                    'Retry',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     // Empty state: no buckets or all zero
     if (viewModel.buckets.isEmpty ||
         viewModel.buckets.every(
@@ -155,7 +198,14 @@ class _SymptomsStackedBarChartState
   ) {
     final isStackedMode = widget.selectedSymptomKey == null;
     final maxY = _computeMaxY(viewModel, isStackedMode);
+    final yAxisInterval = _computeYAxisInterval(maxY);
     final barGroups = _buildBarGroups(viewModel, isStackedMode);
+
+    // Calculate optimal Y-axis reserved size
+    final yAxisReservedSize = _calculateYAxisReservedSize(
+      maxY: maxY,
+      interval: yAxisInterval,
+    );
 
     return BarChart(
       BarChartData(
@@ -168,8 +218,8 @@ class _SymptomsStackedBarChartState
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 30,
-              interval: _computeYAxisInterval(maxY),
+              reservedSize: yAxisReservedSize,
+              interval: yAxisInterval,
               getTitlesWidget: (value, meta) {
                 // Only show integer labels
                 if (value != value.roundToDouble()) {
@@ -215,7 +265,7 @@ class _SymptomsStackedBarChartState
         ),
         gridData: FlGridData(
           drawVerticalLine: false,
-          horizontalInterval: _computeYAxisInterval(maxY),
+          horizontalInterval: yAxisInterval,
           getDrawingHorizontalLine: (value) {
             return FlLine(
               color: AppColors.border.withValues(alpha: 0.3),
@@ -281,6 +331,35 @@ class _SymptomsStackedBarChartState
     if (maxY <= 20) return 5;
     if (maxY <= 50) return 10;
     return (maxY / 5).ceilToDouble();
+  }
+
+  /// Calculates optimal Y-axis reserved size for integer labels
+  ///
+  /// Dynamically measures the width of Y-axis labels to minimize
+  /// wasted space and improve chart centering.
+  /// Adapts automatically to different data ranges.
+  double _calculateYAxisReservedSize({
+    required double maxY,
+    required double interval,
+  }) {
+    // Generate all integer Y-axis labels that will be displayed
+    final labels = <String>[];
+    var current = 0.0;
+    while (current <= maxY) {
+      if (current == current.roundToDouble()) {
+        labels.add(current.toInt().toString());
+      }
+      current += interval;
+    }
+
+    // Calculate optimal width
+    return ChartUtils.calculateYAxisReservedSize(
+      labels: labels,
+      textStyle: AppTextStyles.caption.copyWith(
+        color: AppColors.textSecondary,
+      ),
+      fallbackSize: 24, // Conservative fallback (smaller than weight)
+    );
   }
 
   /// Computes bar width based on granularity and bucket count

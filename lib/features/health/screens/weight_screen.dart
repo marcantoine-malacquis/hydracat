@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -51,7 +52,7 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
     if (_scrollController == null || !_scrollController!.hasClients) return;
 
     final direction = _scrollController!.position.userScrollDirection;
-    
+
     // Hide FAB when scrolling down
     if (direction == ScrollDirection.reverse) {
       if (_showFab) {
@@ -106,6 +107,9 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
   @override
   Widget build(BuildContext context) {
     final weightState = ref.watch(weightProvider);
+    final platform = Theme.of(context).platform;
+    final isIOS =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -115,6 +119,36 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
         leading: HydraBackButton(
           onPressed: () => context.pop(),
         ),
+        actions: isIOS
+            ? [
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    _showAddWeightDialog();
+                  },
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        CupertinoIcons.add,
+                        size: 18,
+                        color: AppColors.primaryDark, // Darker teal
+                        // for visibility
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'Add',
+                        style: TextStyle(
+                          color: AppColors.primaryDark, // Darker teal
+                          // for visibility
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ]
+            : null,
       ),
       body: weightState.isLoading && weightState.historyEntries.isEmpty
           ? _buildLoadingState()
@@ -123,17 +157,20 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
           : weightState.historyEntries.isEmpty
           ? _buildEmptyState()
           : _buildContentView(weightState),
-      floatingActionButton: _showFab
-          ? HydraExtendedFab(
-              onPressed: _showAddWeightDialog,
-              icon: Icons.add,
-              label: 'Add Weight',
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.textPrimary,
-              elevation: 0,
-              useGlassEffect: true,
-            )
-          : null,
+      // On iOS, use navigation bar button instead of FAB
+      // On Android, show solid FAB (no glass effect)
+      floatingActionButton: isIOS
+          ? null
+          : (_showFab
+                ? HydraExtendedFab(
+                    onPressed: _showAddWeightDialog,
+                    icon: Icons.add,
+                    label: 'Add Weight',
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 4,
+                  )
+                : null),
       floatingActionButtonAnimator: FloatingActionButtonAnimator.scaling,
     );
   }
@@ -549,7 +586,9 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
     // Provide haptic feedback
     unawaited(HapticFeedback.mediumImpact());
 
-    final success = await ref.read(weightProvider.notifier).deleteWeight(
+    final success = await ref
+        .read(weightProvider.notifier)
+        .deleteWeight(
           date: date,
         );
 

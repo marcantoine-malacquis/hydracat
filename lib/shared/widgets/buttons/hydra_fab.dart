@@ -48,12 +48,39 @@ class HydraFab extends StatefulWidget {
   State<HydraFab> createState() => _HydraFabState();
 }
 
-class _HydraFabState extends State<HydraFab> {
+class _HydraFabState extends State<HydraFab>
+    with SingleTickerProviderStateMixin {
   Timer? _longPressTimer;
+  late AnimationController _longPressAnimationController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    // Animation duration matches long-press detection time (500ms)
+    _longPressAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+
+    // Scale animation for visual feedback during long-press
+    _scaleAnimation =
+        Tween<double>(
+          begin: 1,
+          end: 0.92, // Slightly more pronounced than selection card
+          // for FAB visibility
+        ).animate(
+          CurvedAnimation(
+            parent: _longPressAnimationController,
+            curve: Curves.easeInOut,
+          ),
+        );
+  }
 
   @override
   void dispose() {
     _longPressTimer?.cancel();
+    _longPressAnimationController.dispose();
     super.dispose();
   }
 
@@ -62,18 +89,34 @@ class _HydraFabState extends State<HydraFab> {
     HapticFeedback.selectionClick();
 
     if (widget.onLongPress != null && !widget.isLoading) {
+      // Start visual feedback animation
+      _longPressAnimationController.forward();
+
       _longPressTimer = Timer(const Duration(milliseconds: 500), () {
+        // Long-press detected - trigger action
         widget.onLongPress!();
+        // Animation will stay at end state until user lifts finger,
+        // then _onTapUp will reverse it back to normal
       });
     }
   }
 
   void _onTapUp(TapUpDetails details) {
     _longPressTimer?.cancel();
+    // Reverse animation if long-press wasn't completed
+    if (_longPressAnimationController.isAnimating ||
+        _longPressAnimationController.value > 0) {
+      _longPressAnimationController.reverse();
+    }
   }
 
   void _onTapCancel() {
     _longPressTimer?.cancel();
+    // Reverse animation if long-press was cancelled
+    if (_longPressAnimationController.isAnimating ||
+        _longPressAnimationController.value > 0) {
+      _longPressAnimationController.reverse();
+    }
   }
 
   @override
@@ -91,41 +134,50 @@ class _HydraFabState extends State<HydraFab> {
     // If we have a long press handler, create a custom FAB that handles
     // gestures properly
     if (widget.onLongPress != null) {
-      return Material(
-        shape: const CircleBorder(
-          side: BorderSide(
-            color: AppColors.border,
-          ),
-        ),
-        color: AppColors.surface,
-        child: InkWell(
-          onTap: widget.isLoading ? null : widget.onPressed,
-          // Use InkWell's native long-press to avoid conflicts
-          onLongPress: widget.isLoading
-              ? null
-              : () {
-                  widget.onLongPress?.call();
-                },
-          // Keep these for safety, but long-press above is the primary path
-          onTapDown: _onTapDown,
-          onTapUp: _onTapUp,
-          onTapCancel: _onTapCancel,
-          customBorder: const CircleBorder(),
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
+      return AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: Material(
+              shape: const CircleBorder(
+                side: BorderSide(
+                  color: AppColors.border,
+                ),
+              ),
+              color: AppColors.surface,
+              child: InkWell(
+                onTap: widget.isLoading ? null : widget.onPressed,
+                // Use InkWell's native long-press to avoid conflicts
+                onLongPress: widget.isLoading
+                    ? null
+                    : () {
+                        widget.onLongPress?.call();
+                      },
+                // Keep these for safety,
+                // but long-press above is the primary path
+                onTapDown: _onTapDown,
+                onTapUp: _onTapUp,
+                onTapCancel: _onTapCancel,
+                customBorder: const CircleBorder(),
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                  ),
+                  // IMPORTANT: Do NOT wrap in Tooltip here; Tooltip captures
+                  // long-press gestures on mobile and prevents our handler
+                  child: Icon(
+                    widget.icon,
+                    size: 32,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
             ),
-            // IMPORTANT: Do NOT wrap in Tooltip here; Tooltip captures
-            // long-press gestures on mobile and prevents our handler
-            child: Icon(
-              widget.icon,
-              size: 32,
-              color: AppColors.primary,
-            ),
-          ),
-        ),
+          );
+        },
       );
     }
 
@@ -156,6 +208,36 @@ class _HydraFabState extends State<HydraFab> {
     // Cupertino interaction patterns (no ink ripple, no tooltip).
     final isDisabled = widget.isLoading || widget.onPressed == null;
 
+    Widget fabContent = Opacity(
+      opacity: isDisabled ? 0.5 : 1.0,
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: AppColors.surface,
+          border: Border.all(
+            color: AppColors.border,
+          ),
+        ),
+        child: _buildFabContent(),
+      ),
+    );
+
+    // Apply scale animation if long-press is enabled
+    if (widget.onLongPress != null) {
+      fabContent = AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: child,
+          );
+        },
+        child: fabContent,
+      );
+    }
+
     return GestureDetector(
       onTap: widget.isLoading ? null : widget.onPressed,
       onLongPress: widget.isLoading
@@ -166,21 +248,12 @@ class _HydraFabState extends State<HydraFab> {
               widget.onLongPress?.call();
             }
           : null,
-      child: Opacity(
-        opacity: isDisabled ? 0.5 : 1.0,
-        child: Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.surface,
-            border: Border.all(
-              color: AppColors.border,
-            ),
-          ),
-          child: _buildFabContent(),
-        ),
-      ),
+      onTapDown: widget.onLongPress != null && !widget.isLoading
+          ? _onTapDown
+          : null,
+      onTapUp: widget.onLongPress != null ? _onTapUp : null,
+      onTapCancel: widget.onLongPress != null ? _onTapCancel : null,
+      child: fabContent,
     );
   }
 

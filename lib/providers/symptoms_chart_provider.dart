@@ -748,9 +748,10 @@ List<SymptomBucket> buildYearlySymptomBuckets({
       }
 
       // Create bucket with summary data
+      // Use summary dates if available, otherwise fall back to calculated dates
       final bucket = SymptomBucket(
-        start: summary.startDate,
-        end: summary.endDate,
+        start: summary.startDate ?? monthStart,
+        end: summary.endDate ?? monthEnd,
         daysWithSymptom: daysWithSymptom,
         daysWithAnySymptoms: summary.daysWithAnySymptoms,
       );
@@ -892,10 +893,12 @@ class SymptomsChartViewModel {
   ///   stacked segments (top 5 by total count)
   /// - [hasOther]: Whether an "Other" segment is needed for symptoms not in
   ///   [visibleSymptoms]
+  /// - [error]: Optional error that occurred while fetching data
   const SymptomsChartViewModel({
     required this.buckets,
     required this.visibleSymptoms,
     required this.hasOther,
+    this.error,
   });
 
   /// List of symptom buckets for the current period
@@ -919,6 +922,12 @@ class SymptomsChartViewModel {
   /// `bucket.totalSymptomDays`.
   final bool hasOther;
 
+  /// Optional error that occurred while fetching symptom data
+  ///
+  /// When non-null, indicates that data fetching failed and an error message
+  /// should be displayed to the user instead of showing chart data.
+  final String? error;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -926,13 +935,15 @@ class SymptomsChartViewModel {
           runtimeType == other.runtimeType &&
           _listEquals(buckets, other.buckets) &&
           _listEquals(visibleSymptoms, other.visibleSymptoms) &&
-          hasOther == other.hasOther;
+          hasOther == other.hasOther &&
+          error == other.error;
 
   @override
   int get hashCode => Object.hash(
     Object.hashAll(buckets),
     Object.hashAll(visibleSymptoms),
     hasOther,
+    error,
   );
 
   @override
@@ -1082,8 +1093,10 @@ final symptomsChartDataProvider = Provider.autoDispose<SymptomsChartViewModel?>(
   (ref) {
     final state = ref.watch(symptomsChartStateProvider);
 
-    // Get buckets based on granularity
+    // Get buckets based on granularity, track errors
     List<SymptomBucket>? buckets;
+    String? error;
+
     switch (state.granularity) {
       case SymptomGranularity.week:
         // Weekly provider returns List<SymptomBucket>? directly
@@ -1093,18 +1106,52 @@ final symptomsChartDataProvider = Provider.autoDispose<SymptomsChartViewModel?>(
         final bucketsAsync = ref.watch(
           monthlySymptomBucketsProvider(state.monthStart),
         );
-        buckets = bucketsAsync.valueOrNull;
+        // Check for error state
+        if (bucketsAsync.hasError) {
+          error = bucketsAsync.error.toString();
+          buckets = [];
+          if (kDebugMode) {
+            debugPrint(
+              '[symptomsChartDataProvider] Month view error: $error\n'
+              'Stack trace: ${bucketsAsync.stackTrace}',
+            );
+          }
+        } else {
+          buckets = bucketsAsync.valueOrNull;
+        }
       case SymptomGranularity.year:
         // Yearly provider returns AsyncValue
         final bucketsAsync = ref.watch(
           yearlySymptomBucketsProvider(state.yearStart),
         );
-        buckets = bucketsAsync.valueOrNull;
+        // Check for error state
+        if (bucketsAsync.hasError) {
+          error = bucketsAsync.error.toString();
+          buckets = [];
+          if (kDebugMode) {
+            debugPrint(
+              '[symptomsChartDataProvider] Year view error: $error\n'
+              'Stack trace: ${bucketsAsync.stackTrace}',
+            );
+          }
+        } else {
+          buckets = bucketsAsync.valueOrNull;
+        }
     }
 
-    // Return null if buckets are not available (loading or error)
+    // Return null if buckets are not available (still loading)
     if (buckets == null) {
       return null;
+    }
+
+    // If we have an error, return view model with error
+    if (error != null) {
+      return SymptomsChartViewModel(
+        buckets: const [],
+        visibleSymptoms: const [],
+        hasOther: false,
+        error: error,
+      );
     }
 
     // Compute visible symptoms and hasOther

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
+import 'package:hydracat/core/utils/chart_utils.dart';
 import 'package:hydracat/features/health/models/weight_data_point.dart';
 import 'package:hydracat/features/health/models/weight_granularity.dart';
 import 'package:intl/intl.dart';
@@ -73,6 +74,32 @@ class WeightLineChart extends StatelessWidget {
     return nice * magnitude;
   }
 
+  /// Calculates optimal Y-axis reserved size based on label widths
+  ///
+  /// Dynamically measures the width of Y-axis labels to minimize
+  /// wasted space and improve chart centering.
+  /// Adapts automatically to different data ranges.
+  double _calculateYAxisReservedSize({
+    required double minY,
+    required double maxY,
+    required double interval,
+  }) {
+    // Generate all Y-axis labels that will be displayed
+    final labels = ChartUtils.generateYAxisLabels(
+      minY: minY,
+      maxY: maxY,
+      interval: interval,
+    );
+
+    // Calculate optimal width
+    return ChartUtils.calculateYAxisReservedSize(
+      labels: labels,
+      textStyle: AppTextStyles.caption.copyWith(
+        color: AppColors.textSecondary,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Handle empty state with x-axis labels
@@ -127,6 +154,13 @@ class WeightLineChart extends StatelessWidget {
     final alignedMin = (yMin / niceInterval).floor() * niceInterval;
     final alignedMax = (yMax / niceInterval).ceil() * niceInterval;
 
+    // Calculate optimal Y-axis reserved size
+    final yAxisReservedSize = _calculateYAxisReservedSize(
+      minY: alignedMin,
+      maxY: alignedMax,
+      interval: niceInterval,
+    );
+
     return AspectRatio(
       aspectRatio: 1.7,
       child: LineChart(
@@ -145,7 +179,7 @@ class WeightLineChart extends StatelessWidget {
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                reservedSize: 50,
+                reservedSize: yAxisReservedSize,
                 interval: niceInterval,
                 getTitlesWidget: (value, meta) {
                   return Text(
@@ -271,6 +305,13 @@ class WeightLineChart extends StatelessWidget {
     // Generate x-axis labels based on granularity
     final xLabels = _generateEmptyStateLabels(now);
 
+    // Calculate reserved size for empty state (2.00 to 8.00 range)
+    final yAxisReservedSize = _calculateYAxisReservedSize(
+      minY: 2,
+      maxY: 8,
+      interval: 2,
+    );
+
     return AspectRatio(
       aspectRatio: 1.7,
       child: LineChart(
@@ -290,7 +331,7 @@ class WeightLineChart extends StatelessWidget {
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                reservedSize: 50,
+                reservedSize: yAxisReservedSize,
                 interval: 2,
                 getTitlesWidget: (value, meta) {
                   return Text(

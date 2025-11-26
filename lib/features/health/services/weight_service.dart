@@ -328,13 +328,26 @@ class WeightService {
       }
     }
 
-    // Set startDate if it doesn't exist (needed for graph queries)
-    if (!currentSummaryDoc.exists || currentData?['startDate'] == null) {
-      final monthStart = DateTime(
-        normalizedNewDate.year,
-        normalizedNewDate.month,
-      );
-      newSummaryUpdates['startDate'] = Timestamp.fromDate(monthStart);
+    // Set startDate and endDate if they don't exist (needed for graph queries)
+    if (!currentSummaryDoc.exists) {
+      // New document - set both dates
+      final monthDates = AppDateUtils.getMonthStartEnd(normalizedNewDate);
+      newSummaryUpdates['startDate'] = Timestamp.fromDate(monthDates['start']!);
+      newSummaryUpdates['endDate'] = Timestamp.fromDate(monthDates['end']!);
+    } else {
+      // Existing document - backfill missing dates
+      if (currentData?['startDate'] == null ||
+          currentData?['endDate'] == null) {
+        final monthDates = AppDateUtils.getMonthStartEnd(normalizedNewDate);
+        if (currentData?['startDate'] == null) {
+          newSummaryUpdates['startDate'] =
+              Timestamp.fromDate(monthDates['start']!);
+        }
+        if (currentData?['endDate'] == null) {
+          newSummaryUpdates['endDate'] =
+              Timestamp.fromDate(monthDates['end']!);
+        }
+      }
     }
 
     batch.set(

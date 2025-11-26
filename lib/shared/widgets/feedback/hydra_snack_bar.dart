@@ -3,7 +3,11 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hydracat/app/app_shell.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
+import 'package:hydracat/core/theme/app_spacing.dart';
+import 'package:hydracat/core/utils/snackbar_layout_utils.dart';
 
 /// Platform-adaptive snackbar/toast for HydraCat.
 ///
@@ -157,6 +161,13 @@ class HydraSnackBar {
       borderRadius: BorderRadius.circular(8),
     );
 
+    // Add margin to ensure 8px gap above nav bar
+    const margin = EdgeInsets.only(
+      bottom: AppSpacing.sm, // 8px gap above navigation bar
+      left: AppSpacing.md, // 16px horizontal padding
+      right: AppSpacing.md, // 16px horizontal padding
+    );
+
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
       ..showSnackBar(
@@ -165,6 +176,7 @@ class HydraSnackBar {
           backgroundColor: backgroundColor,
           behavior: behavior,
           shape: shape,
+          margin: margin,
           duration: duration,
           action: (actionLabel != null && onAction != null)
               ? SnackBarAction(
@@ -253,7 +265,7 @@ enum HydraSnackBarType {
 ///
 /// Displays a capsule-shaped toast positioned above the bottom navigation bar.
 /// Animates in with fade and slide-up, then auto-dismisses after [duration].
-class _HydraToast extends StatefulWidget {
+class _HydraToast extends ConsumerStatefulWidget {
   const _HydraToast({
     required this.message,
     required this.type,
@@ -271,10 +283,10 @@ class _HydraToast extends StatefulWidget {
   final VoidCallback onDismiss;
 
   @override
-  State<_HydraToast> createState() => _HydraToastState();
+  ConsumerState<_HydraToast> createState() => _HydraToastState();
 }
 
-class _HydraToastState extends State<_HydraToast>
+class _HydraToastState extends ConsumerState<_HydraToast>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
@@ -322,9 +334,17 @@ class _HydraToastState extends State<_HydraToast>
     final bottomPadding = mediaQuery.padding.bottom;
     final bottomInset = mediaQuery.viewInsets.bottom;
 
-    // Position above bottom nav bar (typically 80-90px from bottom)
-    // Add extra space for safe area and bottom navigation
-    final bottomOffset = 90.0 + bottomPadding + bottomInset;
+    // Read navigation bar visibility to calculate proper positioning
+    final isNavBarVisible = ref.watch(navigationBarVisibilityProvider);
+
+    // Calculate proper bottom offset using centralized utility
+    // Positions snackbar 8px above the navigation bar (or same distance from
+    // bottom when nav bar is hidden)
+    final bottomOffset = SnackbarLayoutUtils.calculateBottomOffset(
+      safeAreaBottom: bottomPadding,
+      keyboardInset: bottomInset,
+      isNavigationBarVisible: isNavBarVisible,
+    );
 
     return Positioned(
       left: 16,

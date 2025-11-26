@@ -484,6 +484,14 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
   /// - totalMedicationDosesGiven: Uses medicationTotalDoses (completed doses)
   /// - totalFluidVolumeGiven: Maps to fluidTotalVolume
   ///
+  /// Cache time maps:
+  /// - medicationRecentTimes: Includes all recent sessions (completed or not)
+  ///   for duplicate detection. Used by duplicate detection logic.
+  /// - medicationCompletedTimes: Includes only completed sessions
+  ///   (completed == true)
+  ///   and is the source of truth for home dashboard completion detection.
+  ///   Used by DashboardNotifier._isMedicationCompleted().
+  ///
   /// Note: medicationNames will be populated incrementally as sessions are
   /// logged. This is acceptable since duplicate detection also queries
   /// Firestore for exact session matches.
@@ -859,11 +867,25 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
           ...result.medicationNames,
         }.toList();
 
+        // Merge medicationRecentTimes (all sessions for duplicate detection)
         final updatedMedicationRecentTimes = Map<String, List<String>>.from(
           cache.medicationRecentTimes,
         );
         result.medicationRecentTimes.forEach((name, times) {
           updatedMedicationRecentTimes
+              .putIfAbsent(name, () => [])
+              .addAll(times);
+        });
+
+        // Merge medicationCompletedTimes
+        // (only completed sessions for dashboard)
+        // This is critical for home dashboard to correctly detect completed
+        // doses
+        final updatedMedicationCompletedTimes = Map<String, List<String>>.from(
+          cache.medicationCompletedTimes,
+        );
+        result.medicationCompletedTimes.forEach((name, times) {
+          updatedMedicationCompletedTimes
               .putIfAbsent(name, () => [])
               .addAll(times);
         });
@@ -878,6 +900,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
           totalFluidVolumeGiven:
               cache.totalFluidVolumeGiven + result.totalFluidVolume,
           medicationRecentTimes: updatedMedicationRecentTimes,
+          medicationCompletedTimes: updatedMedicationCompletedTimes,
         );
 
         // Save to SharedPreferences
@@ -899,6 +922,7 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
           totalMedicationDosesGiven: result.totalMedicationDoses,
           totalFluidVolumeGiven: result.totalFluidVolume,
           medicationRecentTimes: result.medicationRecentTimes,
+          medicationCompletedTimes: result.medicationCompletedTimes,
         );
 
         // Save to SharedPreferences
@@ -1734,9 +1758,13 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
   /// Check if there are remaining medications to log
   ///
   /// Compares the cache with active medication schedules to determine
-  /// if any scheduled medications have not been logged yet today.
+  /// if any scheduled medication doses have not been logged yet today.
   ///
-  /// Returns true if at least one medication schedule has not been logged.
+  /// For multi-dose schedules (e.g., twice-daily), checks each reminder time
+  /// individually to see if a completed dose exists within the ±2h window.
+  ///
+  /// Returns true if at least one scheduled reminder time does not have a
+  /// completed dose logged yet.
   bool _hasRemainingMedications(
     DailySummaryCache cache,
     List<Schedule> schedules,
@@ -1749,9 +1777,14 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
       final medicationName = schedule.medicationName;
       if (medicationName == null) continue;
 
-      // If not logged yet, we have remaining work
-      if (!cache.hasMedicationLogged(medicationName)) {
-        return true;
+      // Check each reminder time individually for multi-dose schedules
+      final todaysReminders = schedule.todaysReminderTimes(now).toList();
+      for (final reminderTime in todaysReminders) {
+        // If this reminder time doesn't have a completed dose within ±2h,
+        // we have remaining work
+        if (!cache.hasMedicationCompletedNear(medicationName, reminderTime)) {
+          return true;
+        }
       }
     }
     return false;

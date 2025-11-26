@@ -20,8 +20,6 @@ const _undefined = Object();
 class MonthlySummary extends TreatmentSummaryBase {
   /// Creates a [MonthlySummary] instance
   const MonthlySummary({
-    required this.startDate,
-    required this.endDate,
     required this.fluidTreatmentDays,
     required this.fluidMissedDays,
     required this.fluidLongestStreak,
@@ -42,6 +40,8 @@ class MonthlySummary extends TreatmentSummaryBase {
     required super.fluidScheduledSessions,
     required super.overallTreatmentDone,
     required super.createdAt,
+    this.startDate,
+    this.endDate,
     super.updatedAt,
     this.weightEntriesCount = 0,
     this.weightLatest,
@@ -121,8 +121,6 @@ class MonthlySummary extends TreatmentSummaryBase {
     }
 
     return MonthlySummary(
-      startDate: TreatmentSummaryBase.parseDateTime(json['startDate']),
-      endDate: TreatmentSummaryBase.parseDateTime(json['endDate']),
       fluidTreatmentDays: (json['fluidTreatmentDays'] as num?)?.toInt() ?? 0,
       fluidMissedDays: (json['fluidMissedDays'] as num?)?.toInt() ?? 0,
       fluidLongestStreak: (json['fluidLongestStreak'] as num?)?.toInt() ?? 0,
@@ -155,6 +153,8 @@ class MonthlySummary extends TreatmentSummaryBase {
       createdAt:
           TreatmentSummaryBase.parseDateTimeNullable(json['createdAt']) ??
           DateTime.now(),
+      startDate: TreatmentSummaryBase.parseDateTimeNullable(json['startDate']),
+      endDate: TreatmentSummaryBase.parseDateTimeNullable(json['endDate']),
       updatedAt: TreatmentSummaryBase.parseDateTimeNullable(json['updatedAt']),
       weightEntriesCount: (json['weightEntriesCount'] as num?)?.toInt() ?? 0,
       weightLatest: (json['weightLatest'] as num?)?.toDouble(),
@@ -186,10 +186,16 @@ class MonthlySummary extends TreatmentSummaryBase {
   }
 
   /// First day of the month (00:00:00)
-  final DateTime startDate;
+  ///
+  /// Nullable for backward compatibility with legacy data that may not have
+  /// this field. New summaries should always include start and end dates.
+  final DateTime? startDate;
 
   /// Last day of the month (23:59:59)
-  final DateTime endDate;
+  ///
+  /// Nullable for backward compatibility with legacy data that may not have
+  /// this field. New summaries should always include start and end dates.
+  final DateTime? endDate;
 
   /// Number of days with at least one fluid session
   ///
@@ -312,12 +318,14 @@ class MonthlySummary extends TreatmentSummaryBase {
   final int? symptomScoreMax;
 
   @override
-  String get documentId => AppDateUtils.formatMonthForSummary(startDate);
+  String get documentId =>
+      AppDateUtils.formatMonthForSummary(startDate ?? DateTime.now());
 
   /// Whether this month is the current month
   bool get isCurrentMonth {
+    if (startDate == null) return false;
     final now = DateTime.now();
-    return now.year == startDate.year && now.month == startDate.month;
+    return now.year == startDate!.year && now.month == startDate!.month;
   }
 
   /// Medication adherence as percentage (0-100)
@@ -336,7 +344,8 @@ class MonthlySummary extends TreatmentSummaryBase {
 
   /// Number of days in this month (28-31)
   int get daysInMonth {
-    return endDate.day; // Last day of month = number of days
+    if (endDate == null) return 30; // Default fallback
+    return endDate!.day; // Last day of month = number of days
   }
 
   /// Whether any symptoms were logged this month
@@ -345,8 +354,8 @@ class MonthlySummary extends TreatmentSummaryBase {
   @override
   Map<String, dynamic> toJson() {
     return {
-      'startDate': startDate.toIso8601String(),
-      'endDate': endDate.toIso8601String(),
+      'startDate': startDate?.toIso8601String(),
+      'endDate': endDate?.toIso8601String(),
       'fluidTreatmentDays': fluidTreatmentDays,
       'fluidMissedDays': fluidMissedDays,
       'fluidLongestStreak': fluidLongestStreak,
@@ -399,12 +408,18 @@ class MonthlySummary extends TreatmentSummaryBase {
     final errors = validateBase();
 
     // Date validation
-    if (endDate.isBefore(startDate)) {
+    if (startDate == null || endDate == null) {
+      errors.add('Start date and end date are required');
+      return errors; // Skip further date validation if dates are missing
+    }
+
+    if (endDate!.isBefore(startDate!)) {
       errors.add('End date must be after start date');
     }
 
     // Month validation (both dates must be in same month)
-    if (startDate.year != endDate.year || startDate.month != endDate.month) {
+    if (startDate!.year != endDate!.year ||
+        startDate!.month != endDate!.month) {
       errors.add('Start and end dates must be in the same month');
     }
 
