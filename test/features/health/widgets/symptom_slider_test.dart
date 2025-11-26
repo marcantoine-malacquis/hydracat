@@ -5,8 +5,9 @@ import 'package:hydracat/features/health/widgets/symptom_slider.dart';
 
 void main() {
   group('SymptomSlider', () {
-    testWidgets('shows label and N/A by default when value is null',
-        (tester) async {
+    testWidgets('shows label and N/A by default when value is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -25,8 +26,9 @@ void main() {
       expect(find.text('N/A'), findsOneWidget);
     });
 
-    testWidgets('moving slider off zero calls onChanged with first option',
-        (tester) async {
+    testWidgets('moving slider off zero calls onChanged with first option', (
+      tester,
+    ) async {
       DiarrheaQuality? changedValue;
 
       await tester.pumpWidget(
@@ -71,8 +73,9 @@ void main() {
       expect(find.text('Soft'), findsOneWidget);
     });
 
-    testWidgets('renders label, descriptor, and slider together',
-        (tester) async {
+    testWidgets('renders label, descriptor, and slider together', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -97,5 +100,3 @@ void main() {
 }
 
 String _diarrheaLabel(DiarrheaQuality quality) => quality.label;
-
-

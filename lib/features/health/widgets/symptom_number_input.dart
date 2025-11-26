@@ -6,7 +6,7 @@ import 'package:hydracat/core/theme/app_text_styles.dart';
 /// Number input widget for vomiting episodes.
 ///
 /// NOTE: This widget is kept for backward compatibility and potential
-/// future reuse, but the main symptoms entry flow now uses [SymptomSlider]
+/// future reuse, but the main symptoms entry flow now uses `SymptomSlider`
 /// for a more compact slider-based UX.
 ///
 /// Allows users to enter 0-10+ episodes with +/- buttons and direct input.

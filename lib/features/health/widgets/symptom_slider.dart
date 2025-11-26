@@ -9,7 +9,10 @@ import 'package:hydracat/shared/widgets/inputs/hydra_slider.dart';
 /// - Index 0 => N/A (null value)
 /// - Indices 1..N => entries from [options]
 /// - A compact label row showing the current descriptor only
+/// Creates a platform-adaptive symptom slider with N/A handling and
+/// per-option descriptors.
 class SymptomSlider<T> extends StatelessWidget {
+  /// Creates a [SymptomSlider]
   const SymptomSlider({
     required this.label,
     required this.value,
@@ -64,10 +67,9 @@ class SymptomSlider<T> extends StatelessWidget {
     }();
 
     final activeColor = theme.colorScheme.primary;
-    final inactiveColor = theme.colorScheme.primary.withOpacity(0.2);
+    final inactiveColor = theme.colorScheme.primary.withValues(alpha: 0.2);
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Symptom name on the left, vertically centered
         Expanded(
@@ -102,16 +104,17 @@ class SymptomSlider<T> extends StatelessWidget {
                     value: descriptor,
                     child: HydraSlider(
                       value: sliderValue,
-                      min: 0,
                       max: options.length.toDouble(),
                       divisions: options.length,
                       activeColor: activeColor,
                       inactiveColor: inactiveColor,
                       onChanged: (double newValue) {
                         if (!enabled) return;
-                        final rounded =
-                            newValue.round().clamp(0, options.length);
-                        final newIndex = rounded.toInt();
+                        final rounded = newValue.round().clamp(
+                          0,
+                          options.length,
+                        );
+                        final newIndex = rounded;
                         final newValueMapped = _indexToValue(newIndex);
                         if (newValueMapped != value) {
                           onChanged(newValueMapped);
@@ -128,5 +131,3 @@ class SymptomSlider<T> extends StatelessWidget {
     );
   }
 }
-
-

@@ -25,14 +25,16 @@ import 'package:hydracat/shared/widgets/accessibility/touch_target_icon_button.d
 ///   child: MedicationFormContent(),
 /// )
 /// ```
-class LoggingPopupWrapper extends StatelessWidget {
+class LoggingPopupWrapper extends StatefulWidget {
   /// Creates a [LoggingPopupWrapper].
   const LoggingPopupWrapper({
     required this.title,
     required this.child,
     this.leading,
+    this.trailing,
     this.onDismiss,
     this.showCloseButton = true,
+    this.headerContent,
     super.key,
   });
 
@@ -45,6 +47,11 @@ class LoggingPopupWrapper extends StatelessWidget {
   /// Optional widget displayed before the title (e.g., back button).
   final Widget? leading;
 
+  /// Optional widget displayed after the title (e.g., Done/Save button).
+  ///
+  /// When provided, this is rendered instead of the default close button.
+  final Widget? trailing;
+
   /// Callback when the popup is dismissed.
   ///
   /// Should typically call `ref.read(loggingProvider.notifier).reset()`.
@@ -52,6 +59,85 @@ class LoggingPopupWrapper extends StatelessWidget {
 
   /// Whether to show the close button in the header.
   final bool showCloseButton;
+
+  /// Optional custom content to display in the header instead of [title].
+  ///
+  /// When provided, this widget is rendered in the center of the header,
+  /// while [title] continues to be used for accessibility semantics.
+  final Widget? headerContent;
+
+  @override
+  State<LoggingPopupWrapper> createState() => _LoggingPopupWrapperState();
+}
+
+class _LoggingPopupWrapperState extends State<LoggingPopupWrapper>
+    with SingleTickerProviderStateMixin {
+  // Require a fairly intentional pull to dismiss.
+  static const double _dragDismissThreshold = 140;
+  static const double _velocityDismissThreshold = 600;
+
+  late final AnimationController _animationController;
+  Animation<double>? _animation;
+  late double _dragOffset;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _dragOffset = 0;
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _animateBackToOrigin() {
+    _animationController
+      ..stop()
+      ..reset();
+    _animation =
+        Tween<double>(
+            begin: _dragOffset,
+            end: 0,
+          ).animate(
+            CurvedAnimation(
+              parent: _animationController,
+              curve: Curves.easeOut,
+            ),
+          )
+          ..addListener(() {
+            setState(() {
+              _dragOffset = _animation!.value;
+            });
+          });
+
+    _animationController.forward();
+  }
+
+  void _handleDragUpdate(DragUpdateDetails details) {
+    setState(() {
+      _dragOffset = (_dragOffset + details.delta.dy).clamp(0.0, 300.0);
+    });
+  }
+
+  void _handleDragEnd(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    final shouldDismiss =
+        _dragOffset > _dragDismissThreshold ||
+        velocity > _velocityDismissThreshold;
+
+    if (shouldDismiss && velocity >= 0) {
+      widget.onDismiss?.call();
+      OverlayService.hide();
+    } else {
+      _animateBackToOrigin();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,25 +147,18 @@ class LoggingPopupWrapper extends StatelessWidget {
 
     return PopScope(
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop && onDismiss != null) {
-          onDismiss!();
+        if (didPop && widget.onDismiss != null) {
+          widget.onDismiss!();
         }
       },
       child: Align(
         alignment: Alignment.bottomCenter,
-        child: GestureDetector(
-          onVerticalDragEnd: (details) {
-            // Dismiss on swipe down
-            if (details.primaryVelocity != null &&
-                details.primaryVelocity! > 300) {
-              onDismiss?.call();
-              OverlayService.hide();
-            }
-          },
-          child: Material(
-            type: MaterialType.transparency,
-            child: Semantics(
-              label: l10n.loggingPopupSemantic(title),
+        child: Material(
+          type: MaterialType.transparency,
+          child: Semantics(
+            label: l10n.loggingPopupSemantic(widget.title),
+            child: Transform.translate(
+              offset: Offset(0, _dragOffset),
               child: Container(
                 constraints: BoxConstraints(
                   maxHeight: mediaQuery.size.height * 0.8,
@@ -105,7 +184,7 @@ class LoggingPopupWrapper extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Header
+                    // Header (also acts as drag handle)
                     _buildHeader(context, theme),
 
                     // Scrollable content area
@@ -121,7 +200,7 @@ class LoggingPopupWrapper extends StatelessWidget {
                               top: AppSpacing.sm,
                               bottom: AppSpacing.lg,
                             ),
-                            child: child,
+                            child: widget.child,
                           );
                         },
                       ),
@@ -139,47 +218,73 @@ class LoggingPopupWrapper extends StatelessWidget {
   Widget _buildHeader(BuildContext context, ThemeData theme) {
     final l10n = AppLocalizations.of(context)!;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.md,
-      ),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onVerticalDragUpdate: _handleDragUpdate,
+      onVerticalDragEnd: _handleDragEnd,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+            ),
           ),
         ),
-      ),
-      child: Row(
-        children: [
-          if (leading != null) leading!,
-          Expanded(
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Drag handle pill
+            Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.25,
+                ),
+                borderRadius: BorderRadius.circular(999),
               ),
             ),
-          ),
-          if (showCloseButton)
-            TouchTargetIconButton(
-              onPressed: () {
-                onDismiss?.call();
-                OverlayService.hide();
-              },
-              icon: Icon(
-                Icons.close,
-                color: theme.colorScheme.onSurfaceVariant,
-                size: 24,
-              ),
-              tooltip: l10n.loggingCloseTooltip,
-              semanticLabel: l10n.loggingClosePopupSemantic,
+            Row(
+              children: [
+                if (widget.leading != null) widget.leading!,
+                Expanded(
+                  child:
+                      widget.headerContent ??
+                      Text(
+                        widget.title,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                ),
+                if (widget.trailing != null)
+                  widget.trailing!
+                else if (widget.showCloseButton)
+                  TouchTargetIconButton(
+                    onPressed: () {
+                      widget.onDismiss?.call();
+                      OverlayService.hide();
+                    },
+                    icon: Icon(
+                      Icons.close,
+                      color: theme.colorScheme.onSurfaceVariant,
+                      size: 24,
+                    ),
+                    tooltip: l10n.loggingCloseTooltip,
+                    semanticLabel: l10n.loggingClosePopupSemantic,
+                  ),
+              ],
             ),
-        ],
+          ],
+        ),
       ),
     );
   }

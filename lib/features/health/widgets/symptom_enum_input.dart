@@ -6,7 +6,7 @@ import 'package:hydracat/shared/widgets/inputs/hydra_sliding_segmented_control.d
 /// Enum input widget using segmented control.
 ///
 /// NOTE: This widget is kept for backward compatibility and potential
-/// future reuse, but the main symptoms entry flow now uses [SymptomSlider]
+/// future reuse, but the main symptoms entry flow now uses `SymptomSlider`
 /// for a more compact slider-based UX.
 ///
 /// Used for diarrhea, constipation, appetite, injection site, and energy.
@@ -54,8 +54,8 @@ class SymptomEnumInput<T extends Enum> extends StatelessWidget {
               value: value != null,
               onChanged: enabled
                   ? (checked) => onChanged(
-                        (checked ?? false) ? options.first : null,
-                      )
+                      (checked ?? false) ? options.first : null,
+                    )
                   : null,
             ),
             const Text(
@@ -73,13 +73,15 @@ class SymptomEnumInput<T extends Enum> extends StatelessWidget {
               child: HydraSlidingSegmentedControl<T>(
                 value: value!,
                 segments: Map.fromEntries(
-                  options.map((option) => MapEntry(
-                    option,
-                    Text(
-                      getLabel(option),
-                      style: AppTextStyles.caption,
+                  options.map(
+                    (option) => MapEntry(
+                      option,
+                      Text(
+                        getLabel(option),
+                        style: AppTextStyles.caption,
+                      ),
                     ),
-                  )),
+                  ),
                 ),
                 onChanged: onChanged,
               ),
