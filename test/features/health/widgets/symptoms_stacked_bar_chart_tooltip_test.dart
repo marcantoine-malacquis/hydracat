@@ -177,7 +177,7 @@ void main() {
             daysWithSymptom: {
               SymptomType.vomiting: 2,
               SymptomType.diarrhea: 1,
-              SymptomType.lethargy: 1,
+              SymptomType.energy: 1,
             },
             daysWithAnySymptoms: 1,
           ),
@@ -192,7 +192,7 @@ void main() {
           visibleSymptoms: [
             SymptomType.vomiting,
             SymptomType.diarrhea,
-            SymptomType.lethargy,
+            SymptomType.energy,
           ],
         );
 
@@ -207,7 +207,7 @@ void main() {
         // Verify symptom breakdown appears
         expect(find.textContaining('Vomiting: 2 days'), findsOneWidget);
         expect(find.textContaining('Diarrhea: 1 day'), findsOneWidget);
-        expect(find.textContaining('Lethargy: 1 day'), findsOneWidget);
+        expect(find.textContaining('Energy: 1 day'), findsOneWidget);
       });
     });
 
@@ -310,7 +310,7 @@ void main() {
             daysWithSymptom: {
               SymptomType.vomiting: 3,
               SymptomType.diarrhea: 2,
-              SymptomType.lethargy: 1,
+              SymptomType.energy: 1,
             },
             daysWithAnySymptoms: 1,
           ),
@@ -325,7 +325,7 @@ void main() {
           visibleSymptoms: [
             SymptomType.vomiting,
             SymptomType.diarrhea,
-            SymptomType.lethargy,
+            SymptomType.energy,
           ],
         );
 
@@ -340,7 +340,7 @@ void main() {
         // Verify exact counts match bucket data
         expect(find.textContaining('Vomiting: 3 days'), findsOneWidget);
         expect(find.textContaining('Diarrhea: 2 days'), findsOneWidget);
-        expect(find.textContaining('Lethargy: 1 day'), findsOneWidget);
+        expect(find.textContaining('Energy: 1 day'), findsOneWidget);
 
         // Verify total matches sum
         expect(find.textContaining('Total symptom days: 6'), findsOneWidget);
@@ -398,7 +398,7 @@ void main() {
             daysWithSymptom: {
               SymptomType.vomiting: 2,
               SymptomType.diarrhea: 1,
-              SymptomType.lethargy: 1,
+              SymptomType.energy: 1,
             },
             daysWithAnySymptoms: 1,
           ),
@@ -424,7 +424,7 @@ void main() {
 
         // Verify other symptoms do NOT appear
         expect(find.textContaining('Diarrhea'), findsNothing);
-        expect(find.textContaining('Lethargy'), findsNothing);
+        expect(find.textContaining('Energy'), findsNothing);
 
         // Verify total matches only the selected symptom
         expect(find.textContaining('Total symptom days: 2'), findsOneWidget);

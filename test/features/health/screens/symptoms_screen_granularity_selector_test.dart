@@ -45,7 +45,7 @@ void main() {
                 daysWithAnySymptoms: 5,
                 daysWithVomiting: 2,
                 daysWithDiarrhea: 1,
-                daysWithLethargy: 1,
+                daysWithEnergy: 1,
                 daysWithSuppressedAppetite: 1,
               ),
             ),
@@ -204,7 +204,7 @@ void main() {
                 daysWithAnySymptoms: 5,
                 daysWithVomiting: 2,
                 daysWithDiarrhea: 1,
-                daysWithLethargy: 1,
+                daysWithEnergy: 1,
                 daysWithSuppressedAppetite: 1,
               ),
             ),
@@ -521,7 +521,7 @@ void main() {
                 daysWithAnySymptoms: 5,
                 daysWithVomiting: 2,
                 daysWithDiarrhea: 1,
-                daysWithLethargy: 1,
+                daysWithEnergy: 1,
                 daysWithSuppressedAppetite: 1,
               ),
             ),
@@ -682,13 +682,13 @@ void main() {
         tester,
         initialState: SymptomsChartState(
           focusedDate: DateTime.now(),
-          selectedSymptomKey: SymptomType.lethargy,
+          selectedSymptomKey: SymptomType.energy,
         ),
       );
 
       // Verify initial state has a selected symptom
       final initialState = container.read(symptomsChartStateProvider);
-      expect(initialState.selectedSymptomKey, SymptomType.lethargy);
+      expect(initialState.selectedSymptomKey, SymptomType.energy);
 
       // Tap Month segment to change granularity
       await tester.tap(find.text('Month'));
@@ -1127,7 +1127,7 @@ void main() {
                 daysWithAnySymptoms: 5,
                 daysWithVomiting: 2,
                 daysWithDiarrhea: 1,
-                daysWithLethargy: 1,
+                daysWithEnergy: 1,
                 daysWithSuppressedAppetite: 1,
               ),
             ),

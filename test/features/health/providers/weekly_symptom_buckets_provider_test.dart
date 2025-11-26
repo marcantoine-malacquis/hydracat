@@ -35,7 +35,9 @@ void main() {
         for (var i = 0; i < 7; i++) testWeekStart.add(Duration(days: i)): null,
         wednesday: DailySummary.empty(wednesday).copyWith(
           hadVomiting: true,
-          hadLethargy: true,
+          vomitingMaxScore: 1,
+          hadEnergy: true,
+          energyMaxScore: 1,
           hasSymptoms: true,
         ),
       };
@@ -52,7 +54,7 @@ void main() {
       expect(wednesdayBucket.start, wednesdayBucket.end);
       expect(wednesdayBucket.start, wednesday);
       expect(wednesdayBucket.daysWithSymptom[SymptomType.vomiting], 1);
-      expect(wednesdayBucket.daysWithSymptom[SymptomType.lethargy], 1);
+      expect(wednesdayBucket.daysWithSymptom[SymptomType.energy], 1);
       expect(wednesdayBucket.daysWithSymptom.length, 2);
       expect(wednesdayBucket.daysWithAnySymptoms, 1);
       expect(wednesdayBucket.totalSymptomDays, 2);
@@ -72,11 +74,17 @@ void main() {
         for (var i = 0; i < 7; i++) testWeekStart.add(Duration(days: i)): null,
         friday: DailySummary.empty(friday).copyWith(
           hadVomiting: true,
+          vomitingMaxScore: 1,
           hadDiarrhea: true,
+          diarrheaMaxScore: 1,
           hadConstipation: true,
-          hadLethargy: true,
+          constipationMaxScore: 1,
+          hadEnergy: true,
+          energyMaxScore: 1,
           hadSuppressedAppetite: true,
+          suppressedAppetiteMaxScore: 1,
           hadInjectionSiteReaction: true,
+          injectionSiteReactionMaxScore: 1,
           hasSymptoms: true,
         ),
       };
@@ -91,7 +99,7 @@ void main() {
       expect(fridayBucket.daysWithSymptom[SymptomType.vomiting], 1);
       expect(fridayBucket.daysWithSymptom[SymptomType.diarrhea], 1);
       expect(fridayBucket.daysWithSymptom[SymptomType.constipation], 1);
-      expect(fridayBucket.daysWithSymptom[SymptomType.lethargy], 1);
+      expect(fridayBucket.daysWithSymptom[SymptomType.energy], 1);
       expect(fridayBucket.daysWithSymptom[SymptomType.suppressedAppetite], 1);
       expect(
         fridayBucket.daysWithSymptom[SymptomType.injectionSiteReaction],
@@ -111,20 +119,26 @@ void main() {
         for (var i = 0; i < 7; i++) testWeekStart.add(Duration(days: i)): null,
         monday: DailySummary.empty(monday).copyWith(
           hadVomiting: true,
+          vomitingMaxScore: 1,
           hasSymptoms: true,
         ),
         tuesday: DailySummary.empty(tuesday).copyWith(
           hadDiarrhea: true,
-          hadLethargy: true,
+          diarrheaMaxScore: 1,
+          hadEnergy: true,
+          energyMaxScore: 1,
           hasSymptoms: true,
         ),
         thursday: DailySummary.empty(thursday).copyWith(
           hadConstipation: true,
+          constipationMaxScore: 1,
           hasSymptoms: true,
         ),
         saturday: DailySummary.empty(saturday).copyWith(
           hadSuppressedAppetite: true,
+          suppressedAppetiteMaxScore: 1,
           hadInjectionSiteReaction: true,
+          injectionSiteReactionMaxScore: 1,
           hasSymptoms: true,
         ),
       };
@@ -143,7 +157,7 @@ void main() {
 
       // Tuesday (index 1)
       expect(buckets[1].daysWithSymptom[SymptomType.diarrhea], 1);
-      expect(buckets[1].daysWithSymptom[SymptomType.lethargy], 1);
+      expect(buckets[1].daysWithSymptom[SymptomType.energy], 1);
       expect(buckets[1].daysWithSymptom.length, 2);
       expect(buckets[1].daysWithAnySymptoms, 1);
 
@@ -237,6 +251,56 @@ void main() {
         expect(bucket.start.minute, 0);
         expect(bucket.start.second, 0);
       }
+    });
+
+    test('should use severity scores from maxScore fields', () {
+      final monday = testWeekStart;
+      final summaries = <DateTime, DailySummary?>{
+        for (var i = 0; i < 7; i++) testWeekStart.add(Duration(days: i)): null,
+        monday: DailySummary.empty(monday).copyWith(
+          hadVomiting: true,
+          vomitingMaxScore: 3,
+          hadDiarrhea: true,
+          diarrheaMaxScore: 1,
+          hadEnergy: true,
+          energyMaxScore: 2,
+          hasSymptoms: true,
+        ),
+      };
+
+      final buckets = buildWeeklySymptomBuckets(
+        weekStart: testWeekStart,
+        summaries: summaries,
+      );
+
+      final mondayBucket = buckets[0];
+      expect(mondayBucket.daysWithSymptom[SymptomType.vomiting], 3);
+      expect(mondayBucket.daysWithSymptom[SymptomType.diarrhea], 1);
+      expect(mondayBucket.daysWithSymptom[SymptomType.energy], 2);
+      expect(mondayBucket.totalSymptomDays, 6); // 3+1+2
+      expect(mondayBucket.daysWithAnySymptoms, 1);
+    });
+
+    test('should handle missing maxScore fields gracefully', () {
+      final monday = testWeekStart;
+      final summaries = <DateTime, DailySummary?>{
+        for (var i = 0; i < 7; i++) testWeekStart.add(Duration(days: i)): null,
+        monday: DailySummary.empty(monday).copyWith(
+          hadVomiting: true,
+          vomitingMaxScore: null, // Missing score
+          hasSymptoms: true,
+        ),
+      };
+
+      final buckets = buildWeeklySymptomBuckets(
+        weekStart: testWeekStart,
+        summaries: summaries,
+      );
+
+      final mondayBucket = buckets[0];
+      expect(mondayBucket.daysWithSymptom, isEmpty); // No segment
+      expect(mondayBucket.totalSymptomDays, 0);
+      expect(mondayBucket.daysWithAnySymptoms, 1);
     });
   });
 }

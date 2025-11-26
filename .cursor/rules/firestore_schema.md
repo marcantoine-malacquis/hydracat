@@ -14,8 +14,10 @@ This schema supports comprehensive CKD management while maintaining strict cost 
 - `schedules` - Treatment scheduling
 - `schedules/history` - Schedule version history tracking for accurate historical data
 
+✅ **Fully Implemented:**
+- `healthParameters` - Weight, appetite, symptoms tracking (hybrid symptom model with rawValue + severityScore)
+
 🚧 **Planned/Not Yet Implemented:**
-- `healthParameters` - Weight, appetite, symptoms tracking (UI placeholder exists)
 - `labResults` - Bloodwork and lab test tracking
 - `fluidInventory` - Fluid volume tracking
 - `crossPetSummaries` - Premium multi-pet analytics
@@ -36,6 +38,20 @@ This design provides:
 - **Extensibility**: Easy to add new summary types (e.g., yearly) without cluttering pet subcollections
 - **Query flexibility**: Can query across all summary types or target specific periods
 - **Cost optimization**: Maintains the same read cost while improving structure
+
+### Hybrid Symptom Tracking Model
+Symptoms in `healthParameters` use a hybrid model that stores both raw user inputs and normalized severity scores:
+- **Raw Values**: User-entered data (episode counts for vomiting, enum strings for others)
+- **Severity Scores**: All symptoms normalized to 0-3 scale for consistent analytics
+  - 0: None/normal
+  - 1: Mild
+  - 2: Moderate
+  - 3: Severe
+
+This approach provides:
+- **Medically Accurate Inputs**: Tailored inputs per symptom (episodes, stool quality, appetite fraction, etc.)
+- **Unified Analytics**: All symptoms use the same 0-3 severity scale for charts and summaries
+- **Data Preservation**: Raw values stored for future analysis and vet reports
 
 ## Root Collections
 
@@ -150,16 +166,28 @@ users/
                   │     └── {YYYY-MM-DD} (date-based document ID)
                   │           ├── weight: number             # kg, optional
                   │           ├── appetite: string           # all/3-4/half/1-4/nothing, optional
-                  │           ├── symptoms: map              # per-symptom 0-10 scores, optional
-                  │           │     ├── vomiting: number     # 0-10, optional
-                  │           │     ├── diarrhea: number     # 0-10, optional
-                  │           │     ├── constipation: number # 0-10, optional
-                  │           │     ├── lethargy: number     # 0-10, optional
-                  │           │     ├── suppressedAppetite: number    # 0-10, optional
-                  │           │     └── injectionSiteReaction: number # 0-10, optional
-                  │           ├── hasSymptoms: boolean       # true if any symptom score > 0, optional
-                  │           ├── symptomScoreTotal: number  # sum of all present scores (0-60), optional
-                  │           ├── symptomScoreAverage: number # average of present scores (0-10), optional
+                  │           ├── symptoms: map              # per-symptom entries with rawValue + severityScore, optional
+                  │           │     ├── vomiting: map
+                  │           │     │     ├── rawValue: number     # number of episodes (0-10+)
+                  │           │     │     └── severityScore: number # severity 0-3
+                  │           │     ├── diarrhea: map
+                  │           │     │     ├── rawValue: string     # enum: "normal", "soft", "loose", "watery"
+                  │           │     │     └── severityScore: number # severity 0-3
+                  │           │     ├── constipation: map
+                  │           │     │     ├── rawValue: string     # enum: "normal", "mildStraining", "noStool", "painful"
+                  │           │     │     └── severityScore: number # severity 0-3
+                  │           │     ├── energy: map          # renamed from lethargy
+                  │           │     │     ├── rawValue: string     # enum: "normal", "slightlyReduced", "low", "veryLow"
+                  │           │     │     └── severityScore: number # severity 0-3
+                  │           │     ├── suppressedAppetite: map
+                  │           │     │     ├── rawValue: string     # enum: "all", "threeQuarters", "half", "quarter", "nothing"
+                  │           │     │     └── severityScore: number # severity 0-3
+                  │           │     └── injectionSiteReaction: map
+                  │           │           ├── rawValue: string     # enum: "none", "mildSwelling", "visibleSwelling", "redPainful"
+                  │           │           └── severityScore: number # severity 0-3
+                  │           ├── hasSymptoms: boolean       # true if any symptom severityScore > 0, optional
+                  │           ├── symptomScoreTotal: number  # sum of all present severity scores (0-18), optional
+                  │           ├── symptomScoreAverage: number # average of present severity scores (0-3), optional
                   │           ├── notes: string              # optional daily health notes
                   │           ├── createdAt: Timestamp
                   │           └── updatedAt: Timestamp
@@ -203,21 +231,21 @@ users/
                   │     │                 ├── overallStreak: number            # consecutive days of adherence
                   │     │                 │
                   │     │                 # Symptom Tracking Summary
-                  │     │                 ├── hadVomiting: boolean              # vomiting present (score > 0)
-                  │     │                 ├── hadDiarrhea: boolean              # diarrhea present (score > 0)
-                  │     │                 ├── hadConstipation: boolean          # constipation present (score > 0)
-                  │     │                 ├── hadLethargy: boolean              # lethargy present (score > 0)
-                  │     │                 ├── hadSuppressedAppetite: boolean    # suppressed appetite present (score > 0)
-                  │     │                 ├── hadInjectionSiteReaction: boolean # injection site reaction present (score > 0)
-                  │     │                 ├── vomitingMaxScore: number          # max vomiting score (0-10, optional)
-                  │     │                 ├── diarrheaMaxScore: number          # max diarrhea score (0-10, optional)
-                  │     │                 ├── constipationMaxScore: number      # max constipation score (0-10, optional)
-                  │     │                 ├── lethargyMaxScore: number          # max lethargy score (0-10, optional)
-                  │     │                 ├── suppressedAppetiteMaxScore: number # max suppressed appetite score (0-10, optional)
-                  │     │                 ├── injectionSiteReactionMaxScore: number # max injection site reaction score (0-10, optional)
-                  │     │                 ├── symptomScoreTotal: number         # sum of all present scores (0-60, optional)
-                  │     │                 ├── symptomScoreAverage: number       # average of present scores (0-10, optional)
-                  │     │                 ├── hasSymptoms: boolean              # true if any symptom score > 0
+                  │     │                 ├── hadVomiting: boolean              # vomiting present (severityScore > 0)
+                  │     │                 ├── hadDiarrhea: boolean              # diarrhea present (severityScore > 0)
+                  │     │                 ├── hadConstipation: boolean          # constipation present (severityScore > 0)
+                  │     │                 ├── hadEnergy: boolean               # energy present (severityScore > 0, renamed from lethargy)
+                  │     │                 ├── hadSuppressedAppetite: boolean    # suppressed appetite present (severityScore > 0)
+                  │     │                 ├── hadInjectionSiteReaction: boolean # injection site reaction present (severityScore > 0)
+                  │     │                 ├── vomitingMaxScore: number          # max vomiting severity (0-3, optional)
+                  │     │                 ├── diarrheaMaxScore: number          # max diarrhea severity (0-3, optional)
+                  │     │                 ├── constipationMaxScore: number      # max constipation severity (0-3, optional)
+                  │     │                 ├── energyMaxScore: number            # max energy severity (0-3, optional, renamed from lethargyMaxScore)
+                  │     │                 ├── suppressedAppetiteMaxScore: number # max suppressed appetite severity (0-3, optional)
+                  │     │                 ├── injectionSiteReactionMaxScore: number # max injection site reaction severity (0-3, optional)
+                  │     │                 ├── symptomScoreTotal: number         # sum of all present severity scores (0-18, optional)
+                  │     │                 ├── symptomScoreAverage: number       # average of present severity scores (0-3, optional)
+                  │     │                 ├── hasSymptoms: boolean              # true if any symptom severityScore > 0
                   │     │                 │
                   │     │                 ├── createdAt: Timestamp
                   │     │                 └── updatedAt: Timestamp
@@ -247,15 +275,15 @@ users/
                   │     │                 ├── overallTreatmentDone: boolean
                   │     │                 │
                   │     │                 # Symptom Tracking Summary
-                  │     │                 ├── daysWithVomiting: number              # days with vomiting (score > 0)
-                  │     │                 ├── daysWithDiarrhea: number              # days with diarrhea (score > 0)
-                  │     │                 ├── daysWithConstipation: number          # days with constipation (score > 0)
-                  │     │                 ├── daysWithLethargy: number              # days with lethargy (score > 0)
-                  │     │                 ├── daysWithSuppressedAppetite: number    # days with suppressed appetite (score > 0)
-                  │     │                 ├── daysWithInjectionSiteReaction: number # days with injection site reaction (score > 0)
+                  │     │                 ├── daysWithVomiting: number              # days with vomiting (severityScore > 0)
+                  │     │                 ├── daysWithDiarrhea: number              # days with diarrhea (severityScore > 0)
+                  │     │                 ├── daysWithConstipation: number          # days with constipation (severityScore > 0)
+                  │     │                 ├── daysWithEnergy: number                # days with energy (severityScore > 0, renamed from daysWithLethargy)
+                  │     │                 ├── daysWithSuppressedAppetite: number    # days with suppressed appetite (severityScore > 0)
+                  │     │                 ├── daysWithInjectionSiteReaction: number # days with injection site reaction (severityScore > 0)
                   │     │                 ├── daysWithAnySymptoms: number           # count of days this week where hasSymptoms == true
                   │     │                 ├── symptomScoreTotal: number             # sum of daily symptomScoreTotal over week (optional)
-                  │     │                 ├── symptomScoreAverage: number           # average daily score across days with symptoms (optional)
+                  │     │                 ├── symptomScoreAverage: number           # average daily severity score across days with symptoms (0-3, optional)
                   │     │                 ├── symptomScoreMax: number               # max daily symptomScoreTotal in week (optional)
                   │     │                 │
                   │     │                 ├── createdAt: Timestamp
@@ -292,15 +320,15 @@ users/
                   │                       ├── overallTreatmentDone: boolean
                   │                       │
                   │                       # Symptom Tracking Summary
-                  │                       ├── daysWithVomiting: number              # days with vomiting (score > 0)
-                  │                       ├── daysWithDiarrhea: number              # days with diarrhea (score > 0)
-                  │                       ├── daysWithConstipation: number          # days with constipation (score > 0)
-                  │                       ├── daysWithLethargy: number              # days with lethargy (score > 0)
-                  │                       ├── daysWithSuppressedAppetite: number    # days with suppressed appetite (score > 0)
-                  │                       ├── daysWithInjectionSiteReaction: number # days with injection site reaction (score > 0)
+                  │                       ├── daysWithVomiting: number              # days with vomiting (severityScore > 0)
+                  │                       ├── daysWithDiarrhea: number              # days with diarrhea (severityScore > 0)
+                  │                       ├── daysWithConstipation: number          # days with constipation (severityScore > 0)
+                  │                       ├── daysWithEnergy: number                # days with energy (severityScore > 0, renamed from daysWithLethargy)
+                  │                       ├── daysWithSuppressedAppetite: number    # days with suppressed appetite (severityScore > 0)
+                  │                       ├── daysWithInjectionSiteReaction: number # days with injection site reaction (severityScore > 0)
                   │                       ├── daysWithAnySymptoms: number             # count of days this month where hasSymptoms == true
                   │                       ├── symptomScoreTotal: number             # sum of daily symptomScoreTotal over month (optional)
-                  │                       ├── symptomScoreAverage: number           # average daily score across days with symptoms (optional)
+                  │                       ├── symptomScoreAverage: number           # average daily severity score across days with symptoms (0-3, optional)
                   │                       ├── symptomScoreMax: number               # max daily symptomScoreTotal in month (optional)
                   │                       │
                   │                       ├── createdAt: Timestamp

@@ -38,7 +38,7 @@ class _SymptomsScreenState extends ConsumerState<SymptomsScreen> {
   /// Matches _symptomPriorityOrder in provider. Used to order dropdown
   /// options consistently with chart ranking logic.
   static const List<String> _symptomPriorityOrder = [
-    SymptomType.lethargy,
+    SymptomType.energy,
     SymptomType.suppressedAppetite,
     SymptomType.vomiting,
     SymptomType.injectionSiteReaction,
@@ -390,8 +390,8 @@ class _SymptomsScreenState extends ConsumerState<SymptomsScreen> {
         return 'Diarrhea';
       case SymptomType.constipation:
         return 'Constipation';
-      case SymptomType.lethargy:
-        return 'Lethargy';
+      case SymptomType.energy:
+        return 'Energy';
       case SymptomType.suppressedAppetite:
         return 'Suppressed Appetite';
       case SymptomType.injectionSiteReaction:
@@ -431,7 +431,7 @@ class _SymptomsScreenState extends ConsumerState<SymptomsScreen> {
             const SizedBox(height: AppSpacing.md),
             Text(
               "Monitor daily symptoms to help manage your pet's CKD. "
-              'Tracking symptoms like vomiting, diarrhea, and lethargy helps '
+              'Tracking symptoms like vomiting, diarrhea, and energy helps '
               'you and your vet identify patterns and adjust treatment.',
               style: AppTextStyles.body.copyWith(
                 color: AppColors.textSecondary,

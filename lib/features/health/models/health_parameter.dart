@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:hydracat/features/health/models/symptom_entry.dart';
 import 'package:intl/intl.dart';
 
 /// Sentinel value for [HealthParameter.copyWith] to distinguish between
@@ -31,16 +32,9 @@ class HealthParameter {
     required DateTime date,
     double? weight,
     String? appetite,
-    Map<String, int>? symptoms,
+    Map<String, SymptomEntry>? symptoms,
     String? notes,
   }) {
-    // Validate symptom scores
-    if (symptoms != null) {
-      for (final entry in symptoms.entries) {
-        _validateSymptomScore(entry.value);
-      }
-    }
-
     // Compute derived fields
     final hasSymptoms = _computeHasSymptoms(symptoms);
     final symptomScoreTotal = _computeSymptomScoreTotal(symptoms);
@@ -66,20 +60,29 @@ class HealthParameter {
       throw ArgumentError('Document data is null');
     }
 
-    // Parse symptoms map (handle both old string and new map format)
-    Map<String, int>? symptomsMap;
-    if (data['symptoms'] != null) {
-      if (data['symptoms'] is Map) {
-        // New format: map of symptom scores
-        final symptomsData = data['symptoms'] as Map<String, dynamic>;
-        symptomsMap = symptomsData.map((key, value) {
-          if (value is num) {
-            return MapEntry(key, value.toInt());
-          }
-          return MapEntry(key, value as int);
-        });
+    // Parse symptoms map (new nested structure with rawValue + severityScore)
+    Map<String, SymptomEntry>? symptomsMap;
+    if (data['symptoms'] != null && data['symptoms'] is Map) {
+      final symptomsData = data['symptoms'] as Map<String, dynamic>;
+      final result = <String, SymptomEntry>{};
+      for (final entry in symptomsData.entries) {
+        final value = entry.value;
+        if (value is Map<String, dynamic>) {
+          result[entry.key] = SymptomEntry.fromJson(
+            entry.key,
+            value,
+          );
+        } else if (value is Map) {
+          // Fallback for Map<dynamic, dynamic> from Firestore
+          result[entry.key] = SymptomEntry.fromJson(
+            entry.key,
+            Map<String, dynamic>.from(value),
+          );
+        }
       }
-      // Old string format is ignored (backward compatibility)
+      if (result.isNotEmpty) {
+        symptomsMap = result;
+      }
     }
 
     return HealthParameter(
@@ -112,21 +115,21 @@ class HealthParameter {
   /// Values: "all", "3-4", "half", "1-4", "nothing"
   final String? appetite;
 
-  /// Per-symptom scores (optional)
-  /// Map of symptom type keys to severity scores (0-10)
-  /// Keys: vomiting, diarrhea, constipation, lethargy,
+  /// Per-symptom entries with raw values and severity scores (optional)
+  /// Map of symptom type keys to [SymptomEntry] objects
+  /// Keys: vomiting, diarrhea, constipation, energy,
   /// suppressedAppetite, injectionSiteReaction
-  /// Values: integers 0-10 (omitted if N/A)
-  final Map<String, int>? symptoms;
+  /// Values: nested objects with { rawValue, severityScore } (omitted if N/A)
+  final Map<String, SymptomEntry>? symptoms;
 
   /// Whether any symptom score > 0 (computed and stored)
   final bool? hasSymptoms;
 
-  /// Sum of all present symptom scores
-  /// (0-60 for 6 symptoms, computed and stored)
+  /// Sum of all present symptom severity scores
+  /// (0-18 for 6 symptoms × max severity 3, computed and stored)
   final int? symptomScoreTotal;
 
-  /// Average of present symptom scores (0-10, computed and stored)
+  /// Average of present symptom severity scores (0-3, computed and stored)
   final double? symptomScoreAverage;
 
   /// Optional notes (max 500 characters)
@@ -147,9 +150,10 @@ class HealthParameter {
     Map<String, dynamic>? symptomsJson;
     final symptomsValue = symptoms;
     if (symptomsValue != null && symptomsValue.isNotEmpty) {
-      symptomsJson = <String, dynamic>{
-        for (final entry in symptomsValue.entries) entry.key: entry.value,
-      };
+      symptomsJson = <String, dynamic>{};
+      for (final entry in symptomsValue.entries) {
+        symptomsJson[entry.key] = entry.value.toJson();
+      }
     }
 
     return {
@@ -186,7 +190,7 @@ class HealthParameter {
       appetite: appetite == _undefined ? this.appetite : appetite as String?,
       symptoms: symptoms == _undefined
           ? this.symptoms
-          : symptoms as Map<String, int>?,
+          : symptoms as Map<String, SymptomEntry>?,
       hasSymptoms: hasSymptoms == _undefined
           ? this.hasSymptoms
           : hasSymptoms as bool?,
@@ -222,7 +226,10 @@ class HealthParameter {
   }
 
   /// Helper to compare maps by value
-  static bool _mapEquals(Map<String, int>? a, Map<String, int>? b) {
+  static bool _mapEquals(
+    Map<String, SymptomEntry>? a,
+    Map<String, SymptomEntry>? b,
+  ) {
     if (a == null && b == null) return true;
     if (a == null || b == null) return false;
     if (a.length != b.length) return false;
@@ -304,32 +311,31 @@ class HealthParameter {
   // Symptom computation helpers
 
   /// Computes whether any symptom score > 0
-  static bool? _computeHasSymptoms(Map<String, int>? symptoms) {
+  static bool? _computeHasSymptoms(Map<String, SymptomEntry>? symptoms) {
     if (symptoms == null || symptoms.isEmpty) return false;
-    return symptoms.values.any((score) => score > 0);
+    return symptoms.values.any((entry) => entry.severityScore > 0);
   }
 
   /// Computes sum of all present symptom scores
-  static int? _computeSymptomScoreTotal(Map<String, int>? symptoms) {
+  static int? _computeSymptomScoreTotal(Map<String, SymptomEntry>? symptoms) {
     if (symptoms == null || symptoms.isEmpty) return null;
-    return symptoms.values.fold<int>(0, (total, score) => total + score);
+    return symptoms.values.fold<int>(
+      0,
+      (total, entry) => total + entry.severityScore,
+    );
   }
 
   /// Computes average of present symptom scores
-  static double? _computeSymptomScoreAverage(Map<String, int>? symptoms) {
+  static double? _computeSymptomScoreAverage(
+    Map<String, SymptomEntry>? symptoms,
+  ) {
     if (symptoms == null || symptoms.isEmpty) return null;
-    final scores = symptoms.values.toList();
-    if (scores.isEmpty) return null;
-    final total = scores.fold<int>(0, (acc, score) => acc + score);
-    return total / scores.length;
-  }
-
-  /// Validates that a symptom score is in the valid range (0-10)
-  static void _validateSymptomScore(int? score) {
-    if (score != null && (score < 0 || score > 10)) {
-      throw ArgumentError(
-        'Symptom score must be between 0 and 10 (inclusive), got: $score',
-      );
-    }
+    final entries = symptoms.values.toList();
+    if (entries.isEmpty) return null;
+    final total = entries.fold<int>(
+      0,
+      (acc, entry) => acc + entry.severityScore,
+    );
+    return total / entries.length;
   }
 }

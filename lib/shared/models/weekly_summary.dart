@@ -42,7 +42,7 @@ class WeeklySummary extends TreatmentSummaryBase {
     this.daysWithVomiting = 0,
     this.daysWithDiarrhea = 0,
     this.daysWithConstipation = 0,
-    this.daysWithLethargy = 0,
+    this.daysWithEnergy = 0,
     this.daysWithSuppressedAppetite = 0,
     this.daysWithInjectionSiteReaction = 0,
     this.daysWithAnySymptoms = 0,
@@ -132,7 +132,7 @@ class WeeklySummary extends TreatmentSummaryBase {
       daysWithDiarrhea: (json['daysWithDiarrhea'] as num?)?.toInt() ?? 0,
       daysWithConstipation:
           (json['daysWithConstipation'] as num?)?.toInt() ?? 0,
-      daysWithLethargy: (json['daysWithLethargy'] as num?)?.toInt() ?? 0,
+      daysWithEnergy: (json['daysWithEnergy'] as num?)?.toInt() ?? 0,
       daysWithSuppressedAppetite:
           (json['daysWithSuppressedAppetite'] as num?)?.toInt() ?? 0,
       daysWithInjectionSiteReaction:
@@ -200,8 +200,8 @@ class WeeklySummary extends TreatmentSummaryBase {
   /// Number of days with constipation present (score > 0)
   final int daysWithConstipation;
 
-  /// Number of days with lethargy present (score > 0)
-  final int daysWithLethargy;
+  /// Number of days with energy present (score > 0)
+  final int daysWithEnergy;
 
   /// Number of days with suppressed appetite present (score > 0)
   final int daysWithSuppressedAppetite;
@@ -270,7 +270,7 @@ class WeeklySummary extends TreatmentSummaryBase {
       'daysWithVomiting': daysWithVomiting,
       'daysWithDiarrhea': daysWithDiarrhea,
       'daysWithConstipation': daysWithConstipation,
-      'daysWithLethargy': daysWithLethargy,
+      'daysWithEnergy': daysWithEnergy,
       'daysWithSuppressedAppetite': daysWithSuppressedAppetite,
       'daysWithInjectionSiteReaction': daysWithInjectionSiteReaction,
       'daysWithAnySymptoms': daysWithAnySymptoms,
@@ -352,7 +352,7 @@ class WeeklySummary extends TreatmentSummaryBase {
     int? daysWithVomiting,
     int? daysWithDiarrhea,
     int? daysWithConstipation,
-    int? daysWithLethargy,
+    int? daysWithEnergy,
     int? daysWithSuppressedAppetite,
     int? daysWithInjectionSiteReaction,
     int? daysWithAnySymptoms,
@@ -392,7 +392,7 @@ class WeeklySummary extends TreatmentSummaryBase {
       daysWithVomiting: daysWithVomiting ?? this.daysWithVomiting,
       daysWithDiarrhea: daysWithDiarrhea ?? this.daysWithDiarrhea,
       daysWithConstipation: daysWithConstipation ?? this.daysWithConstipation,
-      daysWithLethargy: daysWithLethargy ?? this.daysWithLethargy,
+      daysWithEnergy: daysWithEnergy ?? this.daysWithEnergy,
       daysWithSuppressedAppetite:
           daysWithSuppressedAppetite ?? this.daysWithSuppressedAppetite,
       daysWithInjectionSiteReaction:
@@ -426,7 +426,7 @@ class WeeklySummary extends TreatmentSummaryBase {
         other.daysWithVomiting == daysWithVomiting &&
         other.daysWithDiarrhea == daysWithDiarrhea &&
         other.daysWithConstipation == daysWithConstipation &&
-        other.daysWithLethargy == daysWithLethargy &&
+        other.daysWithEnergy == daysWithEnergy &&
         other.daysWithSuppressedAppetite == daysWithSuppressedAppetite &&
         other.daysWithInjectionSiteReaction == daysWithInjectionSiteReaction &&
         other.daysWithAnySymptoms == daysWithAnySymptoms &&
@@ -451,7 +451,7 @@ class WeeklySummary extends TreatmentSummaryBase {
       daysWithVomiting,
       daysWithDiarrhea,
       daysWithConstipation,
-      daysWithLethargy,
+      daysWithEnergy,
       daysWithSuppressedAppetite,
       daysWithInjectionSiteReaction,
       daysWithAnySymptoms,
@@ -484,7 +484,7 @@ class WeeklySummary extends TreatmentSummaryBase {
         'daysWithVomiting: $daysWithVomiting, '
         'daysWithDiarrhea: $daysWithDiarrhea, '
         'daysWithConstipation: $daysWithConstipation, '
-        'daysWithLethargy: $daysWithLethargy, '
+        'daysWithEnergy: $daysWithEnergy, '
         'daysWithSuppressedAppetite: $daysWithSuppressedAppetite, '
         'daysWithInjectionSiteReaction: $daysWithInjectionSiteReaction, '
         'daysWithAnySymptoms: $daysWithAnySymptoms, '

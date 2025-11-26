@@ -31,7 +31,7 @@ void main() {
         final bucket = SymptomBucket(
           start: testDate,
           end: testDate,
-          daysWithSymptom: const {SymptomType.lethargy: 1},
+          daysWithSymptom: const {SymptomType.energy: 1},
           daysWithAnySymptoms: 1,
         );
 
@@ -73,7 +73,7 @@ void main() {
           daysWithSymptom: const {
             SymptomType.vomiting: 3,
             SymptomType.diarrhea: 2,
-            SymptomType.lethargy: 1,
+            SymptomType.energy: 1,
           },
           daysWithAnySymptoms: 4,
         );
@@ -227,13 +227,13 @@ void main() {
 
         final updated = original.copyWith(
           start: DateTime(2025, 10, 2),
-          daysWithSymptom: {SymptomType.lethargy: 1},
+          daysWithSymptom: {SymptomType.energy: 1},
           daysWithAnySymptoms: 1,
         );
 
         expect(updated.start, DateTime(2025, 10, 2));
         expect(updated.end, testEnd);
-        expect(updated.daysWithSymptom[SymptomType.lethargy], 1);
+        expect(updated.daysWithSymptom[SymptomType.energy], 1);
         expect(updated.daysWithAnySymptoms, 1);
       });
 

@@ -23,7 +23,7 @@ class SymptomColors {
   static const Map<String, Color> _symptomColorMap = {
     SymptomType.vomiting: AppColors.primaryLight, // Pastel teal #9DCBBF
     SymptomType.diarrhea: AppColors.successLight, // Pastel amber #F0C980
-    SymptomType.lethargy: AppColors.warningLight, // Pastel coral #EDA08F
+    SymptomType.energy: AppColors.warningLight, // Pastel coral #EDA08F
     SymptomType.suppressedAppetite: _pastelLavender, // Soft lavender #C4B5FD
     SymptomType.constipation: _pastelAqua, // Soft aqua #A8D5E2
     SymptomType.injectionSiteReaction: _pastelPeach, // Soft peach #F5C9A8

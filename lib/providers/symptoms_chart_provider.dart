@@ -371,26 +371,38 @@ List<SymptomBucket> buildWeeklySymptomBuckets({
     var bucket = SymptomBucket.empty(date);
 
     if (summary != null) {
-      // Build daysWithSymptom map: only include symptoms that were present
+      // Build daysWithSymptom map using severity scores (0-3)
+      // For week/month views, we use maxScore instead of binary presence
       final daysWithSymptom = <String, int>{};
 
-      if (summary.hadVomiting) {
-        daysWithSymptom[SymptomType.vomiting] = 1;
+      final vomitingSeverity = summary.vomitingMaxScore ?? 0;
+      if (vomitingSeverity > 0) {
+        daysWithSymptom[SymptomType.vomiting] = vomitingSeverity;
       }
-      if (summary.hadDiarrhea) {
-        daysWithSymptom[SymptomType.diarrhea] = 1;
+
+      final diarrheaSeverity = summary.diarrheaMaxScore ?? 0;
+      if (diarrheaSeverity > 0) {
+        daysWithSymptom[SymptomType.diarrhea] = diarrheaSeverity;
       }
-      if (summary.hadConstipation) {
-        daysWithSymptom[SymptomType.constipation] = 1;
+
+      final constipationSeverity = summary.constipationMaxScore ?? 0;
+      if (constipationSeverity > 0) {
+        daysWithSymptom[SymptomType.constipation] = constipationSeverity;
       }
-      if (summary.hadLethargy) {
-        daysWithSymptom[SymptomType.lethargy] = 1;
+
+      final energySeverity = summary.energyMaxScore ?? 0;
+      if (energySeverity > 0) {
+        daysWithSymptom[SymptomType.energy] = energySeverity;
       }
-      if (summary.hadSuppressedAppetite) {
-        daysWithSymptom[SymptomType.suppressedAppetite] = 1;
+
+      final appetiteSeverity = summary.suppressedAppetiteMaxScore ?? 0;
+      if (appetiteSeverity > 0) {
+        daysWithSymptom[SymptomType.suppressedAppetite] = appetiteSeverity;
       }
-      if (summary.hadInjectionSiteReaction) {
-        daysWithSymptom[SymptomType.injectionSiteReaction] = 1;
+
+      final injectionSeverity = summary.injectionSiteReactionMaxScore ?? 0;
+      if (injectionSeverity > 0) {
+        daysWithSymptom[SymptomType.injectionSiteReaction] = injectionSeverity;
       }
 
       // Set daysWithAnySymptoms based on hasSymptoms flag
@@ -515,26 +527,39 @@ List<SymptomBucket> buildMonthlySymptomBuckets({
       var bucket = SymptomBucket.empty(currentDate);
 
       if (summary != null) {
-        // Build daysWithSymptom map: only include symptoms that were present
+        // Build daysWithSymptom map using severity scores (0-3)
+        // For week/month views, we use maxScore instead of binary presence
         final daysWithSymptom = <String, int>{};
 
-        if (summary.hadVomiting) {
-          daysWithSymptom[SymptomType.vomiting] = 1;
+        final vomitingSeverity = summary.vomitingMaxScore ?? 0;
+        if (vomitingSeverity > 0) {
+          daysWithSymptom[SymptomType.vomiting] = vomitingSeverity;
         }
-        if (summary.hadDiarrhea) {
-          daysWithSymptom[SymptomType.diarrhea] = 1;
+
+        final diarrheaSeverity = summary.diarrheaMaxScore ?? 0;
+        if (diarrheaSeverity > 0) {
+          daysWithSymptom[SymptomType.diarrhea] = diarrheaSeverity;
         }
-        if (summary.hadConstipation) {
-          daysWithSymptom[SymptomType.constipation] = 1;
+
+        final constipationSeverity = summary.constipationMaxScore ?? 0;
+        if (constipationSeverity > 0) {
+          daysWithSymptom[SymptomType.constipation] = constipationSeverity;
         }
-        if (summary.hadLethargy) {
-          daysWithSymptom[SymptomType.lethargy] = 1;
+
+        final energySeverity = summary.energyMaxScore ?? 0;
+        if (energySeverity > 0) {
+          daysWithSymptom[SymptomType.energy] = energySeverity;
         }
-        if (summary.hadSuppressedAppetite) {
-          daysWithSymptom[SymptomType.suppressedAppetite] = 1;
+
+        final appetiteSeverity = summary.suppressedAppetiteMaxScore ?? 0;
+        if (appetiteSeverity > 0) {
+          daysWithSymptom[SymptomType.suppressedAppetite] = appetiteSeverity;
         }
-        if (summary.hadInjectionSiteReaction) {
-          daysWithSymptom[SymptomType.injectionSiteReaction] = 1;
+
+        final injectionSeverity = summary.injectionSiteReactionMaxScore ?? 0;
+        if (injectionSeverity > 0) {
+          daysWithSymptom[SymptomType.injectionSiteReaction] =
+              injectionSeverity;
         }
 
         // Set daysWithAnySymptoms based on hasSymptoms flag
@@ -735,8 +760,8 @@ List<SymptomBucket> buildYearlySymptomBuckets({
         daysWithSymptom[SymptomType.constipation] =
             summary.daysWithConstipation;
       }
-      if (summary.daysWithLethargy > 0) {
-        daysWithSymptom[SymptomType.lethargy] = summary.daysWithLethargy;
+      if (summary.daysWithEnergy > 0) {
+        daysWithSymptom[SymptomType.energy] = summary.daysWithEnergy;
       }
       if (summary.daysWithSuppressedAppetite > 0) {
         daysWithSymptom[SymptomType.suppressedAppetite] =
@@ -970,7 +995,7 @@ class SymptomsChartViewModel {
 /// Used as a tie-breaker when sorting symptoms by total count. This ensures
 /// deterministic ordering when multiple symptoms have the same total count.
 const List<String> _symptomPriorityOrder = [
-  SymptomType.lethargy,
+  SymptomType.energy,
   SymptomType.suppressedAppetite,
   SymptomType.vomiting,
   SymptomType.injectionSiteReaction,

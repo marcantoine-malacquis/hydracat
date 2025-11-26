@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/health/exceptions/health_exceptions.dart';
 import 'package:hydracat/features/health/models/health_parameter.dart';
+import 'package:hydracat/features/health/models/symptom_entry.dart';
 import 'package:hydracat/features/health/models/symptom_type.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/shared/models/daily_summary.dart';
@@ -120,17 +121,16 @@ class SymptomsService {
 
   /// Validates symptom scores
   ///
-  /// Ensures all symptom scores are in the 0-10 range.
+  /// Ensures all symptom severity scores are in the 0-3 range.
   /// Throws [SymptomValidationException] if any score is invalid.
-  void _validateSymptomScores(Map<String, int>? symptoms) {
+  void _validateSymptomScores(Map<String, SymptomEntry>? symptoms) {
     if (symptoms == null) return;
 
     for (final entry in symptoms.entries) {
-      final score = entry.value;
-      if (score < 0 || score > 10) {
+      final severity = entry.value.severityScore;
+      if (severity < 0 || severity > 3) {
         throw SymptomValidationException(
-          'Symptom score for "${entry.key}" must be between 0 and 10 '
-          '(inclusive), got: $score',
+          'Severity score must be 0-3, got: $severity for ${entry.key}',
         );
       }
     }
@@ -168,43 +168,50 @@ class SymptomsService {
 
     // Compute symptom boolean fields from new entry
     final symptoms = newEntry.symptoms;
-    final hadVomiting = (symptoms?[SymptomType.vomiting] ?? 0) > 0;
-    final hadDiarrhea = (symptoms?[SymptomType.diarrhea] ?? 0) > 0;
-    final hadConstipation = (symptoms?[SymptomType.constipation] ?? 0) > 0;
-    final hadLethargy = (symptoms?[SymptomType.lethargy] ?? 0) > 0;
+    final hadVomiting =
+        (symptoms?[SymptomType.vomiting]?.severityScore ?? 0) > 0;
+    final hadDiarrhea =
+        (symptoms?[SymptomType.diarrhea]?.severityScore ?? 0) > 0;
+    final hadConstipation =
+        (symptoms?[SymptomType.constipation]?.severityScore ?? 0) > 0;
+    final hadEnergy = (symptoms?[SymptomType.energy]?.severityScore ?? 0) > 0;
     final hadSuppressedAppetite =
-        (symptoms?[SymptomType.suppressedAppetite] ?? 0) > 0;
+        (symptoms?[SymptomType.suppressedAppetite]?.severityScore ?? 0) > 0;
     final hadInjectionSiteReaction =
-        (symptoms?[SymptomType.injectionSiteReaction] ?? 0) > 0;
+        (symptoms?[SymptomType.injectionSiteReaction]?.severityScore ?? 0) >
+            0;
 
     // Compute max scores for each symptom (for single day, max = current score)
     updates['hadVomiting'] = hadVomiting;
     updates['hadDiarrhea'] = hadDiarrhea;
     updates['hadConstipation'] = hadConstipation;
-    updates['hadLethargy'] = hadLethargy;
+    updates['hadEnergy'] = hadEnergy;
     updates['hadSuppressedAppetite'] = hadSuppressedAppetite;
     updates['hadInjectionSiteReaction'] = hadInjectionSiteReaction;
 
     // Set max scores (only if symptom is present)
     if (hadVomiting && symptoms != null) {
-      updates['vomitingMaxScore'] = symptoms[SymptomType.vomiting];
+      updates['vomitingMaxScore'] =
+          symptoms[SymptomType.vomiting]!.severityScore;
     }
     if (hadDiarrhea && symptoms != null) {
-      updates['diarrheaMaxScore'] = symptoms[SymptomType.diarrhea];
+      updates['diarrheaMaxScore'] =
+          symptoms[SymptomType.diarrhea]!.severityScore;
     }
     if (hadConstipation && symptoms != null) {
-      updates['constipationMaxScore'] = symptoms[SymptomType.constipation];
+      updates['constipationMaxScore'] =
+          symptoms[SymptomType.constipation]!.severityScore;
     }
-    if (hadLethargy && symptoms != null) {
-      updates['lethargyMaxScore'] = symptoms[SymptomType.lethargy];
+    if (hadEnergy && symptoms != null) {
+      updates['energyMaxScore'] = symptoms[SymptomType.energy]!.severityScore;
     }
     if (hadSuppressedAppetite && symptoms != null) {
       updates['suppressedAppetiteMaxScore'] =
-          symptoms[SymptomType.suppressedAppetite];
+          symptoms[SymptomType.suppressedAppetite]!.severityScore;
     }
     if (hadInjectionSiteReaction && symptoms != null) {
       updates['injectionSiteReactionMaxScore'] =
-          symptoms[SymptomType.injectionSiteReaction];
+          symptoms[SymptomType.injectionSiteReaction]!.severityScore;
     }
 
     // Set overall scores from newEntry (computed by HealthParameter.create())
@@ -243,7 +250,7 @@ class SymptomsService {
     final oldHadVomiting = oldDaily?.hadVomiting ?? false;
     final oldHadDiarrhea = oldDaily?.hadDiarrhea ?? false;
     final oldHadConstipation = oldDaily?.hadConstipation ?? false;
-    final oldHadLethargy = oldDaily?.hadLethargy ?? false;
+    final oldHadEnergy = oldDaily?.hadEnergy ?? false;
     final oldHadSuppressedAppetite = oldDaily?.hadSuppressedAppetite ?? false;
     final oldHadInjectionSiteReaction =
         oldDaily?.hadInjectionSiteReaction ?? false;
@@ -268,10 +275,10 @@ class SymptomsService {
       deltas['daysWithConstipation'] = FieldValue.increment(-1);
     }
 
-    if (oldHadLethargy == false && newDaily.hadLethargy == true) {
-      deltas['daysWithLethargy'] = FieldValue.increment(1);
-    } else if (oldHadLethargy == true && newDaily.hadLethargy == false) {
-      deltas['daysWithLethargy'] = FieldValue.increment(-1);
+    if (oldHadEnergy == false && newDaily.hadEnergy == true) {
+      deltas['daysWithEnergy'] = FieldValue.increment(1);
+    } else if (oldHadEnergy == true && newDaily.hadEnergy == false) {
+      deltas['daysWithEnergy'] = FieldValue.increment(-1);
     }
 
     if (oldHadSuppressedAppetite == false &&
@@ -385,7 +392,7 @@ class SymptomsService {
     required String userId,
     required String petId,
     required DateTime date,
-    Map<String, int>? symptoms,
+    Map<String, SymptomEntry>? symptoms,
     String? notes,
   }) async {
     try {
@@ -468,21 +475,25 @@ class SymptomsService {
         overallTreatmentDone: oldDailySummary?.overallTreatmentDone ?? false,
         createdAt: oldDailySummary?.createdAt ?? DateTime.now(),
         fluidDailyGoalMl: oldDailySummary?.fluidDailyGoalMl,
-        hadVomiting: (symptoms?[SymptomType.vomiting] ?? 0) > 0,
-        hadDiarrhea: (symptoms?[SymptomType.diarrhea] ?? 0) > 0,
-        hadConstipation: (symptoms?[SymptomType.constipation] ?? 0) > 0,
-        hadLethargy: (symptoms?[SymptomType.lethargy] ?? 0) > 0,
+        hadVomiting: (symptoms?[SymptomType.vomiting]?.severityScore ?? 0) > 0,
+        hadDiarrhea: (symptoms?[SymptomType.diarrhea]?.severityScore ?? 0) > 0,
+        hadConstipation:
+            (symptoms?[SymptomType.constipation]?.severityScore ?? 0) > 0,
+        hadEnergy: (symptoms?[SymptomType.energy]?.severityScore ?? 0) > 0,
         hadSuppressedAppetite:
-            (symptoms?[SymptomType.suppressedAppetite] ?? 0) > 0,
+            (symptoms?[SymptomType.suppressedAppetite]?.severityScore ?? 0) > 0,
         hadInjectionSiteReaction:
-            (symptoms?[SymptomType.injectionSiteReaction] ?? 0) > 0,
-        vomitingMaxScore: symptoms?[SymptomType.vomiting],
-        diarrheaMaxScore: symptoms?[SymptomType.diarrhea],
-        constipationMaxScore: symptoms?[SymptomType.constipation],
-        lethargyMaxScore: symptoms?[SymptomType.lethargy],
-        suppressedAppetiteMaxScore: symptoms?[SymptomType.suppressedAppetite],
+            (symptoms?[SymptomType.injectionSiteReaction]?.severityScore ?? 0) >
+                0,
+        vomitingMaxScore: symptoms?[SymptomType.vomiting]?.severityScore,
+        diarrheaMaxScore: symptoms?[SymptomType.diarrhea]?.severityScore,
+        constipationMaxScore:
+            symptoms?[SymptomType.constipation]?.severityScore,
+        energyMaxScore: symptoms?[SymptomType.energy]?.severityScore,
+        suppressedAppetiteMaxScore:
+            symptoms?[SymptomType.suppressedAppetite]?.severityScore,
         injectionSiteReactionMaxScore:
-            symptoms?[SymptomType.injectionSiteReaction],
+            symptoms?[SymptomType.injectionSiteReaction]?.severityScore,
         symptomScoreTotal: finalEntry.symptomScoreTotal,
         symptomScoreAverage: finalEntry.symptomScoreAverage,
         hasSymptoms: finalEntry.hasSymptoms ?? false,
@@ -635,11 +646,13 @@ class SymptomsService {
           (existingHealthParam.hasSymptoms == null ||
               existingHealthParam.hasSymptoms == false);
       final symptomMap = finalEntry.symptoms;
-      final symptomCount =
-          symptomMap?.values.where((score) => score > 0).length ?? 0;
+      final symptomCount = symptomMap?.values
+              .where((entry) => entry.severityScore > 0)
+              .length ??
+          0;
       final hasInjectionSiteReaction =
           symptomMap?[SymptomType.injectionSiteReaction] != null &&
-          (symptomMap![SymptomType.injectionSiteReaction] ?? 0) > 0;
+          symptomMap![SymptomType.injectionSiteReaction]!.severityScore > 0;
 
       final analyticsService = _analyticsService;
       if (analyticsService != null) {

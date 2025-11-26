@@ -610,7 +610,7 @@ class _SymptomsStackedBarChartState
           ),
           child: _SymptomsTooltipCard(
             periodLabel: periodLabel,
-            totalSymptomDays: totalDays,
+            totalLabel: _getTotalLabel(totalDays),
             symptomRows: symptomRows,
             pointsLeft: showOnRight,
           ),
@@ -648,11 +648,13 @@ class _SymptomsStackedBarChartState
       for (final symptomKey in viewModel.visibleSymptoms) {
         final count = bucket.daysWithSymptom[symptomKey] ?? 0;
         if (count > 0) {
+          final label = _getSymptomLabel(symptomKey);
           rows.add(
             _SymptomTooltipRow(
-              label: _getSymptomLabel(symptomKey),
+              label: label,
               count: count,
               color: SymptomColors.colorForSymptom(symptomKey),
+              formattedLabel: _getSymptomRowLabel(label, count),
             ),
           );
         }
@@ -671,6 +673,7 @@ class _SymptomsStackedBarChartState
               label: 'Other',
               count: otherCount,
               color: SymptomColors.colorForOther(),
+              formattedLabel: _getSymptomRowLabel('Other', otherCount),
             ),
           );
         }
@@ -679,11 +682,13 @@ class _SymptomsStackedBarChartState
       // Single-symptom mode: show only selected symptom
       final count = bucket.daysWithSymptom[widget.selectedSymptomKey] ?? 0;
       if (count > 0) {
+        final label = _getSymptomLabel(widget.selectedSymptomKey!);
         rows.add(
           _SymptomTooltipRow(
-            label: _getSymptomLabel(widget.selectedSymptomKey!),
+            label: label,
             count: count,
             color: SymptomColors.colorForSymptom(widget.selectedSymptomKey!),
+            formattedLabel: _getSymptomRowLabel(label, count),
           ),
         );
       }
@@ -703,8 +708,8 @@ class _SymptomsStackedBarChartState
         return 'Diarrhea';
       case SymptomType.constipation:
         return 'Constipation';
-      case SymptomType.lethargy:
-        return 'Lethargy';
+      case SymptomType.energy:
+        return 'Energy';
       case SymptomType.suppressedAppetite:
         return 'Suppressed Appetite';
       case SymptomType.injectionSiteReaction:
@@ -712,6 +717,34 @@ class _SymptomsStackedBarChartState
       default:
         return symptomKey;
     }
+  }
+
+  /// Get granularity-aware total label for tooltip
+  ///
+  /// Returns severity-based label for week/month views and
+  /// day-count label for year view.
+  String _getTotalLabel(int total) {
+    return switch (widget.granularity) {
+      SymptomGranularity.week || SymptomGranularity.month =>
+        'Total severity: $total',
+      SymptomGranularity.year =>
+        'Total symptom days: $total',
+    };
+  }
+
+  /// Get granularity-aware symptom row label for tooltip
+  ///
+  /// Returns severity format for week/month views and
+  /// day count format for year view.
+  String _getSymptomRowLabel(String symptomLabel, int count) {
+    return switch (widget.granularity) {
+      SymptomGranularity.week || SymptomGranularity.month =>
+        '$symptomLabel: Severity $count',
+      SymptomGranularity.year => () {
+        final dayLabel = count == 1 ? 'day' : 'days';
+        return '$symptomLabel: $count $dayLabel';
+      }(),
+    };
   }
 
   /// Builds an accessibility label for the tooltip
@@ -722,17 +755,17 @@ class _SymptomsStackedBarChartState
     int totalDays,
     List<_SymptomTooltipRow> symptomRows,
   ) {
-    final buffer = StringBuffer('$periodLabel. Total symptom days: $totalDays');
+    final buffer = StringBuffer('$periodLabel. ${_getTotalLabel(totalDays)}');
     if (symptomRows.isNotEmpty) {
       buffer
         ..write('. ')
         ..write(
           symptomRows
               .map(
-                (row) {
+                (row) => row.formattedLabel ?? () {
                   final dayLabel = row.count == 1 ? 'day' : 'days';
                   return '${row.label}: ${row.count} $dayLabel';
-                },
+                }(),
               )
               .join(', '),
         );
@@ -883,6 +916,7 @@ class _SymptomTooltipRow {
     required this.label,
     required this.count,
     required this.color,
+    this.formattedLabel,
   });
 
   /// Display label for the symptom (e.g., "Vomiting", "Other")
@@ -893,6 +927,10 @@ class _SymptomTooltipRow {
 
   /// Color for the symptom indicator
   final Color color;
+
+  /// Optional formatted label (e.g., "Vomiting: Severity 3")
+  /// If null, falls back to default formatting
+  final String? formattedLabel;
 }
 
 /// Data class for a single legend item
@@ -921,7 +959,7 @@ class _SymptomsTooltipCard extends StatelessWidget {
   /// Creates a [_SymptomsTooltipCard]
   const _SymptomsTooltipCard({
     required this.periodLabel,
-    required this.totalSymptomDays,
+    required this.totalLabel,
     required this.symptomRows,
     required this.pointsLeft,
   });
@@ -929,8 +967,8 @@ class _SymptomsTooltipCard extends StatelessWidget {
   /// Period label (formatted based on granularity)
   final String periodLabel;
 
-  /// Total number of symptom days in the bucket
-  final int totalSymptomDays;
+  /// Total label (formatted based on granularity)
+  final String totalLabel;
 
   /// List of symptom rows to display
   final List<_SymptomTooltipRow> symptomRows;
@@ -972,9 +1010,9 @@ class _SymptomsTooltipCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              // Line 2: Total symptom days
+              // Line 2: Total label (granularity-aware)
               Text(
-                'Total symptom days: $totalSymptomDays',
+                totalLabel,
                 style: AppTextStyles.caption.copyWith(
                   color: AppColors.textSecondary,
                   fontSize: 11,
@@ -1001,7 +1039,7 @@ class _SymptomsTooltipCard extends StatelessWidget {
                         const SizedBox(width: 6),
                         // Symptom label and count
                         Text(
-                          () {
+                          row.formattedLabel ?? () {
                             final dayLabel = row.count == 1 ? 'day' : 'days';
                             return '${row.label}: ${row.count} $dayLabel';
                           }(),

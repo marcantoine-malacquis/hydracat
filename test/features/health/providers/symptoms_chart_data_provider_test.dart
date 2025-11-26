@@ -79,14 +79,14 @@ void main() {
         final buckets = [
           SymptomBucket.empty(weekStart).copyWith(
             daysWithSymptom: {
-              SymptomType.lethargy: 1,
+              SymptomType.energy: 1,
               SymptomType.vomiting: 1,
             },
             daysWithAnySymptoms: 1,
           ),
           SymptomBucket.empty(weekStart.add(const Duration(days: 1))).copyWith(
             daysWithSymptom: {
-              SymptomType.lethargy: 1,
+              SymptomType.energy: 1,
               SymptomType.diarrhea: 1,
             },
             daysWithAnySymptoms: 1,
@@ -118,12 +118,12 @@ void main() {
 
         expect(viewModel, isNotNull);
         expect(viewModel!.buckets.length, 7);
-        // lethargy appears 2 times, vomiting 1, diarrhea 1
-        // Should be ordered by count: lethargy, then vomiting/diarrhea
-        // With tie-breaker: lethargy (priority 0), vomiting (priority 2),
+        // energy appears 2 times, vomiting 1, diarrhea 1
+        // Should be ordered by count: energy, then vomiting/diarrhea
+        // With tie-breaker: energy (priority 0), vomiting (priority 2),
         // diarrhea (priority 5)
         expect(viewModel.visibleSymptoms.length, 3);
-        expect(viewModel.visibleSymptoms[0], SymptomType.lethargy);
+        expect(viewModel.visibleSymptoms[0], SymptomType.energy);
         expect(viewModel.visibleSymptoms[1], SymptomType.vomiting);
         expect(viewModel.visibleSymptoms[2], SymptomType.diarrhea);
         expect(viewModel.hasOther, isFalse);
@@ -235,7 +235,7 @@ void main() {
             end: DateTime(2025, 1, 31),
           ).copyWith(
             daysWithSymptom: {
-              SymptomType.lethargy: 5,
+              SymptomType.energy: 5,
             },
             daysWithAnySymptoms: 5,
           ),
@@ -267,7 +267,7 @@ void main() {
 
         expect(viewModel, isNotNull);
         expect(viewModel!.buckets, equals(buckets));
-        expect(viewModel.visibleSymptoms, [SymptomType.lethargy]);
+        expect(viewModel.visibleSymptoms, [SymptomType.energy]);
         expect(viewModel.hasOther, isFalse);
       });
     });
@@ -279,7 +279,7 @@ void main() {
         final buckets = [
           SymptomBucket.empty(weekStart).copyWith(
             daysWithSymptom: {
-              SymptomType.lethargy: 10, // Highest count
+              SymptomType.energy: 10, // Highest count
               SymptomType.suppressedAppetite: 8,
               SymptomType.vomiting: 6,
               SymptomType.injectionSiteReaction: 4,
@@ -315,9 +315,9 @@ void main() {
 
         expect(viewModel, isNotNull);
         expect(viewModel!.visibleSymptoms.length, 5);
-        // Should be ordered by count: lethargy, suppressedAppetite, vomiting,
+        // Should be ordered by count: energy, suppressedAppetite, vomiting,
         // injectionSiteReaction, constipation
-        expect(viewModel.visibleSymptoms[0], SymptomType.lethargy);
+        expect(viewModel.visibleSymptoms[0], SymptomType.energy);
         expect(viewModel.visibleSymptoms[1], SymptomType.suppressedAppetite);
         expect(viewModel.visibleSymptoms[2], SymptomType.vomiting);
         expect(
@@ -339,8 +339,8 @@ void main() {
         final buckets = [
           SymptomBucket.empty(weekStart).copyWith(
             daysWithSymptom: {
-              SymptomType.vomiting: 5, // Same count as lethargy
-              SymptomType.lethargy:
+              SymptomType.vomiting: 5, // Same count as energy
+              SymptomType.energy:
                   5, // Same count as vomiting, but higher priority
               SymptomType.diarrhea: 5, // Same count, lowest priority
             },
@@ -374,9 +374,9 @@ void main() {
         expect(viewModel, isNotNull);
         expect(viewModel!.visibleSymptoms.length, 3);
         // With same counts, should be ordered by static priority:
-        // lethargy (priority 0), vomiting (priority 2),
+        // energy (priority 0), vomiting (priority 2),
         // diarrhea (priority 5)
-        expect(viewModel.visibleSymptoms[0], SymptomType.lethargy);
+        expect(viewModel.visibleSymptoms[0], SymptomType.energy);
         expect(viewModel.visibleSymptoms[1], SymptomType.vomiting);
         expect(viewModel.visibleSymptoms[2], SymptomType.diarrhea);
       });
@@ -387,7 +387,7 @@ void main() {
         final buckets = [
           SymptomBucket.empty(weekStart).copyWith(
             daysWithSymptom: {
-              SymptomType.lethargy: 3,
+              SymptomType.energy: 3,
               SymptomType.vomiting: 2,
               SymptomType.diarrhea: 1,
             },
@@ -433,7 +433,7 @@ void main() {
           final buckets = [
             SymptomBucket.empty(weekStart).copyWith(
               daysWithSymptom: {
-                SymptomType.lethargy: 10,
+                SymptomType.energy: 10,
                 SymptomType.suppressedAppetite: 9,
                 SymptomType.vomiting: 8,
                 SymptomType.injectionSiteReaction: 7,
@@ -482,25 +482,25 @@ void main() {
       test('should have correct equality and hashCode', () {
         final buckets1 = [
           SymptomBucket.empty(DateTime(2025, 10)).copyWith(
-            daysWithSymptom: {SymptomType.lethargy: 1},
+            daysWithSymptom: {SymptomType.energy: 1},
             daysWithAnySymptoms: 1,
           ),
         ];
         final buckets2 = [
           SymptomBucket.empty(DateTime(2025, 10)).copyWith(
-            daysWithSymptom: {SymptomType.lethargy: 1},
+            daysWithSymptom: {SymptomType.energy: 1},
             daysWithAnySymptoms: 1,
           ),
         ];
 
         final viewModel1 = SymptomsChartViewModel(
           buckets: buckets1,
-          visibleSymptoms: const [SymptomType.lethargy],
+          visibleSymptoms: const [SymptomType.energy],
           hasOther: false,
         );
         final viewModel2 = SymptomsChartViewModel(
           buckets: buckets2,
-          visibleSymptoms: const [SymptomType.lethargy],
+          visibleSymptoms: const [SymptomType.energy],
           hasOther: false,
         );
 
@@ -511,14 +511,14 @@ void main() {
       test('should have different equality for different visible symptoms', () {
         final buckets = [
           SymptomBucket.empty(DateTime(2025, 10)).copyWith(
-            daysWithSymptom: {SymptomType.lethargy: 1},
+            daysWithSymptom: {SymptomType.energy: 1},
             daysWithAnySymptoms: 1,
           ),
         ];
 
         final viewModel1 = SymptomsChartViewModel(
           buckets: buckets,
-          visibleSymptoms: const [SymptomType.lethargy],
+          visibleSymptoms: const [SymptomType.energy],
           hasOther: false,
         );
         final viewModel2 = SymptomsChartViewModel(

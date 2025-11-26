@@ -18,8 +18,8 @@ class SymptomType {
   /// Constipation symptom
   static const String constipation = 'constipation';
 
-  /// Lethargy symptom
-  static const String lethargy = 'lethargy';
+  /// Energy symptom
+  static const String energy = 'energy';
 
   /// Suppressed appetite symptom
   static const String suppressedAppetite = 'suppressedAppetite';
@@ -32,7 +32,7 @@ class SymptomType {
     vomiting,
     diarrhea,
     constipation,
-    lethargy,
+    energy,
     suppressedAppetite,
     injectionSiteReaction,
   ];

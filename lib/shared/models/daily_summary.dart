@@ -36,13 +36,13 @@ class DailySummary extends TreatmentSummaryBase {
     this.hadVomiting = false,
     this.hadDiarrhea = false,
     this.hadConstipation = false,
-    this.hadLethargy = false,
+    this.hadEnergy = false,
     this.hadSuppressedAppetite = false,
     this.hadInjectionSiteReaction = false,
     this.vomitingMaxScore,
     this.diarrheaMaxScore,
     this.constipationMaxScore,
-    this.lethargyMaxScore,
+    this.energyMaxScore,
     this.suppressedAppetiteMaxScore,
     this.injectionSiteReactionMaxScore,
     this.symptomScoreTotal,
@@ -121,13 +121,13 @@ class DailySummary extends TreatmentSummaryBase {
       hadVomiting: asBool(json['hadVomiting']),
       hadDiarrhea: asBool(json['hadDiarrhea']),
       hadConstipation: asBool(json['hadConstipation']),
-      hadLethargy: asBool(json['hadLethargy']),
+      hadEnergy: asBool(json['hadEnergy']),
       hadSuppressedAppetite: asBool(json['hadSuppressedAppetite']),
       hadInjectionSiteReaction: asBool(json['hadInjectionSiteReaction']),
       vomitingMaxScore: (json['vomitingMaxScore'] as num?)?.toInt(),
       diarrheaMaxScore: (json['diarrheaMaxScore'] as num?)?.toInt(),
       constipationMaxScore: (json['constipationMaxScore'] as num?)?.toInt(),
-      lethargyMaxScore: (json['lethargyMaxScore'] as num?)?.toInt(),
+      energyMaxScore: (json['energyMaxScore'] as num?)?.toInt(),
       suppressedAppetiteMaxScore: (json['suppressedAppetiteMaxScore'] as num?)
           ?.toInt(),
       injectionSiteReactionMaxScore:
@@ -168,8 +168,8 @@ class DailySummary extends TreatmentSummaryBase {
   /// Whether constipation was present (score > 0)
   final bool hadConstipation;
 
-  /// Whether lethargy was present (score > 0)
-  final bool hadLethargy;
+  /// Whether energy was present (score > 0)
+  final bool hadEnergy;
 
   /// Whether suppressed appetite was present (score > 0)
   final bool hadSuppressedAppetite;
@@ -186,8 +186,8 @@ class DailySummary extends TreatmentSummaryBase {
   /// Maximum constipation score for the day (0-10)
   final int? constipationMaxScore;
 
-  /// Maximum lethargy score for the day (0-10)
-  final int? lethargyMaxScore;
+  /// Maximum energy score for the day (0-10)
+  final int? energyMaxScore;
 
   /// Maximum suppressed appetite score for the day (0-10)
   final int? suppressedAppetiteMaxScore;
@@ -232,14 +232,14 @@ class DailySummary extends TreatmentSummaryBase {
       'hadVomiting': hadVomiting,
       'hadDiarrhea': hadDiarrhea,
       'hadConstipation': hadConstipation,
-      'hadLethargy': hadLethargy,
+      'hadEnergy': hadEnergy,
       'hadSuppressedAppetite': hadSuppressedAppetite,
       'hadInjectionSiteReaction': hadInjectionSiteReaction,
       if (vomitingMaxScore != null) 'vomitingMaxScore': vomitingMaxScore,
       if (diarrheaMaxScore != null) 'diarrheaMaxScore': diarrheaMaxScore,
       if (constipationMaxScore != null)
         'constipationMaxScore': constipationMaxScore,
-      if (lethargyMaxScore != null) 'lethargyMaxScore': lethargyMaxScore,
+      if (energyMaxScore != null) 'energyMaxScore': energyMaxScore,
       if (suppressedAppetiteMaxScore != null)
         'suppressedAppetiteMaxScore': suppressedAppetiteMaxScore,
       if (injectionSiteReactionMaxScore != null)
@@ -293,13 +293,13 @@ class DailySummary extends TreatmentSummaryBase {
     bool? hadVomiting,
     bool? hadDiarrhea,
     bool? hadConstipation,
-    bool? hadLethargy,
+    bool? hadEnergy,
     bool? hadSuppressedAppetite,
     bool? hadInjectionSiteReaction,
     Object? vomitingMaxScore = _undefined,
     Object? diarrheaMaxScore = _undefined,
     Object? constipationMaxScore = _undefined,
-    Object? lethargyMaxScore = _undefined,
+    Object? energyMaxScore = _undefined,
     Object? suppressedAppetiteMaxScore = _undefined,
     Object? injectionSiteReactionMaxScore = _undefined,
     Object? symptomScoreTotal = _undefined,
@@ -330,7 +330,7 @@ class DailySummary extends TreatmentSummaryBase {
       hadVomiting: hadVomiting ?? this.hadVomiting,
       hadDiarrhea: hadDiarrhea ?? this.hadDiarrhea,
       hadConstipation: hadConstipation ?? this.hadConstipation,
-      hadLethargy: hadLethargy ?? this.hadLethargy,
+      hadEnergy: hadEnergy ?? this.hadEnergy,
       hadSuppressedAppetite:
           hadSuppressedAppetite ?? this.hadSuppressedAppetite,
       hadInjectionSiteReaction:
@@ -344,9 +344,9 @@ class DailySummary extends TreatmentSummaryBase {
       constipationMaxScore: constipationMaxScore == _undefined
           ? this.constipationMaxScore
           : constipationMaxScore as int?,
-      lethargyMaxScore: lethargyMaxScore == _undefined
-          ? this.lethargyMaxScore
-          : lethargyMaxScore as int?,
+      energyMaxScore: energyMaxScore == _undefined
+          ? this.energyMaxScore
+          : energyMaxScore as int?,
       suppressedAppetiteMaxScore: suppressedAppetiteMaxScore == _undefined
           ? this.suppressedAppetiteMaxScore
           : suppressedAppetiteMaxScore as int?,
@@ -374,13 +374,13 @@ class DailySummary extends TreatmentSummaryBase {
         other.hadVomiting == hadVomiting &&
         other.hadDiarrhea == hadDiarrhea &&
         other.hadConstipation == hadConstipation &&
-        other.hadLethargy == hadLethargy &&
+        other.hadEnergy == hadEnergy &&
         other.hadSuppressedAppetite == hadSuppressedAppetite &&
         other.hadInjectionSiteReaction == hadInjectionSiteReaction &&
         other.vomitingMaxScore == vomitingMaxScore &&
         other.diarrheaMaxScore == diarrheaMaxScore &&
         other.constipationMaxScore == constipationMaxScore &&
-        other.lethargyMaxScore == lethargyMaxScore &&
+        other.energyMaxScore == energyMaxScore &&
         other.suppressedAppetiteMaxScore == suppressedAppetiteMaxScore &&
         other.injectionSiteReactionMaxScore == injectionSiteReactionMaxScore &&
         other.symptomScoreTotal == symptomScoreTotal &&
@@ -399,13 +399,13 @@ class DailySummary extends TreatmentSummaryBase {
       hadVomiting,
       hadDiarrhea,
       hadConstipation,
-      hadLethargy,
+      hadEnergy,
       hadSuppressedAppetite,
       hadInjectionSiteReaction,
       vomitingMaxScore,
       diarrheaMaxScore,
       constipationMaxScore,
-      lethargyMaxScore,
+      energyMaxScore,
       suppressedAppetiteMaxScore,
       injectionSiteReactionMaxScore,
       symptomScoreTotal,
@@ -432,13 +432,13 @@ class DailySummary extends TreatmentSummaryBase {
         'hadVomiting: $hadVomiting, '
         'hadDiarrhea: $hadDiarrhea, '
         'hadConstipation: $hadConstipation, '
-        'hadLethargy: $hadLethargy, '
+        'hadEnergy: $hadEnergy, '
         'hadSuppressedAppetite: $hadSuppressedAppetite, '
         'hadInjectionSiteReaction: $hadInjectionSiteReaction, '
         'vomitingMaxScore: $vomitingMaxScore, '
         'diarrheaMaxScore: $diarrheaMaxScore, '
         'constipationMaxScore: $constipationMaxScore, '
-        'lethargyMaxScore: $lethargyMaxScore, '
+        'energyMaxScore: $energyMaxScore, '
         'suppressedAppetiteMaxScore: $suppressedAppetiteMaxScore, '
         'injectionSiteReactionMaxScore: $injectionSiteReactionMaxScore, '
         'symptomScoreTotal: $symptomScoreTotal, '

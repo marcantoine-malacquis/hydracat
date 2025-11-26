@@ -43,11 +43,14 @@ void main() {
           testMonthStart.add(Duration(days: i)): null,
         oct5: DailySummary.empty(oct5).copyWith(
           hadVomiting: true,
-          hadLethargy: true,
+          vomitingMaxScore: 1,
+          hadEnergy: true,
+          energyMaxScore: 1,
           hasSymptoms: true,
         ),
         oct15: DailySummary.empty(oct15).copyWith(
           hadDiarrhea: true,
+          diarrheaMaxScore: 1,
           hasSymptoms: true,
         ),
       };
@@ -72,7 +75,7 @@ void main() {
 
       // Oct 5 bucket should have symptoms
       expect(oct5Bucket.daysWithSymptom[SymptomType.vomiting], 1);
-      expect(oct5Bucket.daysWithSymptom[SymptomType.lethargy], 1);
+      expect(oct5Bucket.daysWithSymptom[SymptomType.energy], 1);
       expect(oct5Bucket.daysWithSymptom.length, 2);
       expect(oct5Bucket.daysWithAnySymptoms, 1);
       expect(oct5Bucket.totalSymptomDays, 2);
@@ -97,15 +100,19 @@ void main() {
           testMonthStart.add(Duration(days: i)): null,
         oct6: DailySummary.empty(oct6).copyWith(
           hadVomiting: true,
+          vomitingMaxScore: 1,
           hasSymptoms: true,
         ),
         oct8: DailySummary.empty(oct8).copyWith(
           hadVomiting: true,
-          hadLethargy: true,
+          vomitingMaxScore: 1,
+          hadEnergy: true,
+          energyMaxScore: 1,
           hasSymptoms: true,
         ),
         oct10: DailySummary.empty(oct10).copyWith(
           hadDiarrhea: true,
+          diarrheaMaxScore: 1,
           hasSymptoms: true,
         ),
       };
@@ -138,7 +145,7 @@ void main() {
       expect(oct6Bucket.totalSymptomDays, 1);
 
       expect(oct8Bucket.daysWithSymptom[SymptomType.vomiting], 1);
-      expect(oct8Bucket.daysWithSymptom[SymptomType.lethargy], 1);
+      expect(oct8Bucket.daysWithSymptom[SymptomType.energy], 1);
       expect(oct8Bucket.daysWithAnySymptoms, 1);
       expect(oct8Bucket.totalSymptomDays, 2);
 
@@ -159,10 +166,12 @@ void main() {
           for (var i = 0; i < 30; i++) septStart.add(Duration(days: i)): null,
           sept30: DailySummary.empty(sept30).copyWith(
             hadVomiting: true,
+            vomitingMaxScore: 1,
             hasSymptoms: true,
           ),
           oct1: DailySummary.empty(oct1).copyWith(
             hadDiarrhea: true,
+            diarrheaMaxScore: 1,
             hasSymptoms: true,
           ),
         };
@@ -318,25 +327,33 @@ void main() {
           testMonthStart.add(Duration(days: i)): null,
         oct3: DailySummary.empty(oct3).copyWith(
           hadVomiting: true,
+          vomitingMaxScore: 1,
           hasSymptoms: true,
         ),
         oct7: DailySummary.empty(oct7).copyWith(
           hadDiarrhea: true,
-          hadLethargy: true,
+          diarrheaMaxScore: 1,
+          hadEnergy: true,
+          energyMaxScore: 1,
           hasSymptoms: true,
         ),
         oct14: DailySummary.empty(oct14).copyWith(
           hadConstipation: true,
+          constipationMaxScore: 1,
           hasSymptoms: true,
         ),
         oct20: DailySummary.empty(oct20).copyWith(
           hadSuppressedAppetite: true,
+          suppressedAppetiteMaxScore: 1,
           hadInjectionSiteReaction: true,
+          injectionSiteReactionMaxScore: 1,
           hasSymptoms: true,
         ),
         oct25: DailySummary.empty(oct25).copyWith(
           hadVomiting: true,
-          hadLethargy: true,
+          vomitingMaxScore: 1,
+          hadEnergy: true,
+          energyMaxScore: 1,
           hasSymptoms: true,
         ),
       };
@@ -351,19 +368,19 @@ void main() {
 
       // Verify symptom counts are correct across buckets
       var totalVomiting = 0;
-      var totalLethargy = 0;
+      var totalEnergy = 0;
       var totalDiarrhea = 0;
 
       for (final bucket in buckets) {
         totalVomiting += bucket.daysWithSymptom[SymptomType.vomiting] ?? 0;
-        totalLethargy += bucket.daysWithSymptom[SymptomType.lethargy] ?? 0;
+        totalEnergy += bucket.daysWithSymptom[SymptomType.energy] ?? 0;
         totalDiarrhea += bucket.daysWithSymptom[SymptomType.diarrhea] ?? 0;
         // Each bucket represents a single day
         expect(bucket.start.isAtSameMomentAs(bucket.end), isTrue);
       }
 
       expect(totalVomiting, 2); // Oct 3, Oct 25
-      expect(totalLethargy, 2); // Oct 7, Oct 25
+      expect(totalEnergy, 2); // Oct 7, Oct 25
       expect(totalDiarrhea, 1); // Oct 7
     });
   });

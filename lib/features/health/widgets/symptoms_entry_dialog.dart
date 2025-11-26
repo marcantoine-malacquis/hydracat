@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/constants/app_animations.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
@@ -7,8 +6,16 @@ import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/features/health/exceptions/health_exceptions.dart';
 import 'package:hydracat/features/health/models/health_parameter.dart';
+import 'package:hydracat/features/health/models/symptom_entry.dart';
+import 'package:hydracat/features/health/models/symptom_raw_value.dart';
 import 'package:hydracat/features/health/models/symptom_type.dart';
+import 'package:hydracat/features/health/services/symptom_severity_converter.dart';
 import 'package:hydracat/features/health/services/symptoms_service.dart';
+import 'dart:math' as math;
+
+import 'package:hydracat/features/health/widgets/symptom_enum_input.dart';
+import 'package:hydracat/features/health/widgets/symptom_number_input.dart';
+import 'package:hydracat/features/health/widgets/symptom_slider.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/logging/widgets/logging_popup_wrapper.dart';
 import 'package:hydracat/providers/auth_provider.dart';
@@ -18,14 +25,23 @@ import 'package:hydracat/providers/progress_provider.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 
-/// Full-screen popup dialog for logging symptoms with 0-10 sliders per symptom
+/// Full-screen popup dialog for logging symptoms using hybrid tracking system
+///
+/// Uses symptom-specific inputs that capture medically accurate raw values:
+/// - Vomiting: Number of episodes (SymptomNumberInput)
+/// - Diarrhea: Stool quality enum (SymptomEnumInput)
+/// - Constipation: Straining level enum (SymptomEnumInput)
+/// - Energy: Energy level enum (SymptomEnumInput)
+/// - Suppressed Appetite: Fraction eaten enum (SymptomEnumInput)
+/// - Injection Site: Reaction severity enum (SymptomEnumInput)
+///
+/// Raw values are converted to 0-3 severity scores via SymptomSeverityConverter
+/// for consistent analytics and visualization.
 ///
 /// Supports:
 /// - Add mode (existingEntry == null)
 /// - Edit mode (existingEntry != null)
 /// - Date selection (backdate allowed, future dates blocked)
-/// - 6 symptom sliders (vomiting, diarrhea, constipation, lethargy,
-/// suppressed appetite, injection site reaction)
 /// - Optional notes field (max 500 chars, expands when used)
 /// - Validation and save via SymptomsService
 class SymptomsEntryDialog extends ConsumerStatefulWidget {
@@ -48,7 +64,15 @@ class _SymptomsEntryDialogState extends ConsumerState<SymptomsEntryDialog> {
   late final FocusNode _notesFocusNode;
 
   late DateTime _selectedDate;
-  late Map<String, int?> _symptomScores;
+
+  // Raw values for each symptom (null = N/A)
+  int? _vomitingEpisodes;
+  DiarrheaQuality? _diarrheaQuality;
+  ConstipationLevel? _constipationLevel;
+  EnergyLevel? _energyLevel;
+  AppetiteFraction? _appetiteFraction;
+  InjectionSiteReaction? _injectionSiteReaction;
+
   bool _isSaving = false;
   String? _errorMessage;
 
@@ -59,11 +83,60 @@ class _SymptomsEntryDialogState extends ConsumerState<SymptomsEntryDialog> {
     _selectedDate = widget.existingEntry?.date ?? DateTime.now();
     _notesFocusNode = FocusNode();
 
-    // Initialize symptom scores from existing entry or set all to null
-    _symptomScores = {};
-    for (final symptomKey in SymptomType.all) {
-      _symptomScores[symptomKey] = widget.existingEntry?.symptoms?[symptomKey];
+    // Pre-fill from existing entry
+    // (extracting raw values from SymptomEntry objects)
+    final existingSymptoms = widget.existingEntry?.symptoms;
+
+    // Vomiting: int (clamped to 0-10 for slider 0-10+ UX)
+    final vomitingRaw = existingSymptoms?[SymptomType.vomiting]?.rawValue;
+    if (vomitingRaw is int) {
+      _vomitingEpisodes = math.max(0, math.min(10, vomitingRaw));
+    } else {
+      _vomitingEpisodes = null;
     }
+
+    // Diarrhea: enum (deserialize from string)
+    final diarrheaRaw = existingSymptoms?[SymptomType.diarrhea]?.rawValue;
+    _diarrheaQuality = diarrheaRaw != null
+        ? (diarrheaRaw is String
+            ? DiarrheaQuality.fromString(diarrheaRaw)
+            : diarrheaRaw as DiarrheaQuality)
+        : null;
+
+    // Constipation: enum (deserialize from string)
+    final constipationRaw =
+        existingSymptoms?[SymptomType.constipation]?.rawValue;
+    _constipationLevel = constipationRaw != null
+        ? (constipationRaw is String
+            ? ConstipationLevel.fromString(constipationRaw)
+            : constipationRaw as ConstipationLevel)
+        : null;
+
+    // Energy: enum (deserialize from string)
+    final energyRaw = existingSymptoms?[SymptomType.energy]?.rawValue;
+    _energyLevel = energyRaw != null
+        ? (energyRaw is String
+            ? EnergyLevel.fromString(energyRaw)
+            : energyRaw as EnergyLevel)
+        : null;
+
+    // Suppressed Appetite: enum (deserialize from string)
+    final appetiteRaw =
+        existingSymptoms?[SymptomType.suppressedAppetite]?.rawValue;
+    _appetiteFraction = appetiteRaw != null
+        ? (appetiteRaw is String
+            ? AppetiteFraction.fromString(appetiteRaw)
+            : appetiteRaw as AppetiteFraction)
+        : null;
+
+    // Injection Site: enum (deserialize from string)
+    final injectionRaw =
+        existingSymptoms?[SymptomType.injectionSiteReaction]?.rawValue;
+    _injectionSiteReaction = injectionRaw != null
+        ? (injectionRaw is String
+            ? InjectionSiteReaction.fromString(injectionRaw)
+            : injectionRaw as InjectionSiteReaction)
+        : null;
 
     _notesController = TextEditingController(
       text: widget.existingEntry?.notes ?? '',
@@ -132,16 +205,65 @@ class _SymptomsEntryDialogState extends ConsumerState<SymptomsEntryDialog> {
       return;
     }
 
-    // Filter out null values - only include symptoms with scores
-    final symptomsToSave = <String, int>{};
-    for (final entry in _symptomScores.entries) {
-      if (entry.value != null) {
-        symptomsToSave[entry.key] = entry.value!;
-      }
+    // Build SymptomEntry map from raw values
+    final symptomEntries = <String, SymptomEntry>{};
+
+    // Vomiting (int)
+    if (_vomitingEpisodes != null) {
+      symptomEntries[SymptomType.vomiting] =
+          SymptomSeverityConverter.createEntry(
+        symptomType: SymptomType.vomiting,
+        rawValue: _vomitingEpisodes,
+      );
+    }
+
+    // Diarrhea (enum -> stored as enum.name string)
+    if (_diarrheaQuality != null) {
+      symptomEntries[SymptomType.diarrhea] =
+          SymptomSeverityConverter.createEntry(
+        symptomType: SymptomType.diarrhea,
+        rawValue: _diarrheaQuality!.name,
+      );
+    }
+
+    // Constipation (enum -> stored as enum.name string)
+    if (_constipationLevel != null) {
+      symptomEntries[SymptomType.constipation] =
+          SymptomSeverityConverter.createEntry(
+        symptomType: SymptomType.constipation,
+        rawValue: _constipationLevel!.name,
+      );
+    }
+
+    // Energy (enum -> stored as enum.name string)
+    if (_energyLevel != null) {
+      symptomEntries[SymptomType.energy] =
+          SymptomSeverityConverter.createEntry(
+        symptomType: SymptomType.energy,
+        rawValue: _energyLevel!.name,
+      );
+    }
+
+    // Suppressed Appetite (enum -> stored as enum.name string)
+    if (_appetiteFraction != null) {
+      symptomEntries[SymptomType.suppressedAppetite] =
+          SymptomSeverityConverter.createEntry(
+        symptomType: SymptomType.suppressedAppetite,
+        rawValue: _appetiteFraction!.name,
+      );
+    }
+
+    // Injection Site (enum -> stored as enum.name string)
+    if (_injectionSiteReaction != null) {
+      symptomEntries[SymptomType.injectionSiteReaction] =
+          SymptomSeverityConverter.createEntry(
+        symptomType: SymptomType.injectionSiteReaction,
+        rawValue: _injectionSiteReaction!.name,
+      );
     }
 
     // If no symptoms, pass null
-    final symptomsMap = symptomsToSave.isEmpty ? null : symptomsToSave;
+    final symptomsToSave = symptomEntries.isEmpty ? null : symptomEntries;
 
     setState(() {
       _isSaving = true;
@@ -153,7 +275,7 @@ class _SymptomsEntryDialogState extends ConsumerState<SymptomsEntryDialog> {
         userId: currentUser.id,
         petId: primaryPet.id,
         date: _selectedDate,
-        symptoms: symptomsMap,
+        symptoms: symptomsToSave,  // Now Map<String, SymptomEntry>?
         notes: notes.isEmpty ? null : notes,
       );
 
@@ -309,28 +431,141 @@ class _SymptomsEntryDialogState extends ConsumerState<SymptomsEntryDialog> {
 
           const SizedBox(height: AppSpacing.md),
 
-          // Symptom sliders (one per symptom from SymptomType.all)
-          ...SymptomType.all
-              .map(
-                (symptomKey) => [
-                  _SymptomSlider(
-                    symptomKey: symptomKey,
-                    symptomLabel: _getSymptomLabel(symptomKey),
-                    value: _symptomScores[symptomKey],
-                    onChanged: (newValue) {
-                      setState(() {
-                        _symptomScores[symptomKey] = newValue;
-                        // Clear error when user makes changes
-                        if (_errorMessage != null) {
-                          _errorMessage = null;
-                        }
-                      });
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                ],
-              )
-              .expand((x) => x),
+          // Symptom inputs (symptom-specific widgets)
+          const SizedBox(height: AppSpacing.xs),
+
+          // 1. Vomiting - Slider (0-10+, index 0 = N/A)
+          HydraCard(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
+            ),
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: SymptomSlider<int>(
+              label: 'Vomiting',
+              value: _vomitingEpisodes,
+              options: List<int>.generate(11, (index) => index),
+              getLabel: (episodes) {
+                if (episodes >= 10) return '10+ episodes';
+                if (episodes == 0) return '0 episodes';
+                if (episodes == 1) return '1 episode';
+                return '$episodes episodes';
+              },
+              onChanged: (value) {
+                setState(() {
+                  _vomitingEpisodes = value;
+                  if (_errorMessage != null) _errorMessage = null;
+                });
+              },
+            ),
+          ),
+
+          // 2. Diarrhea - Slider
+          HydraCard(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
+            ),
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: SymptomSlider<DiarrheaQuality>(
+              label: 'Diarrhea',
+              value: _diarrheaQuality,
+              options: DiarrheaQuality.values,
+              getLabel: (quality) => quality.label,
+              onChanged: (value) {
+                setState(() {
+                  _diarrheaQuality = value;
+                  if (_errorMessage != null) _errorMessage = null;
+                });
+              },
+            ),
+          ),
+
+          // 3. Constipation - Slider
+          HydraCard(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
+            ),
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: SymptomSlider<ConstipationLevel>(
+              label: 'Constipation',
+              value: _constipationLevel,
+              options: ConstipationLevel.values,
+              getLabel: (level) => level.label,
+              onChanged: (value) {
+                setState(() {
+                  _constipationLevel = value;
+                  if (_errorMessage != null) _errorMessage = null;
+                });
+              },
+            ),
+          ),
+
+          // 4. Energy - Slider
+          HydraCard(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
+            ),
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: SymptomSlider<EnergyLevel>(
+              label: 'Energy',
+              value: _energyLevel,
+              options: EnergyLevel.values,
+              getLabel: (level) => level.label,
+              onChanged: (value) {
+                setState(() {
+                  _energyLevel = value;
+                  if (_errorMessage != null) _errorMessage = null;
+                });
+              },
+            ),
+          ),
+
+          // 5. Suppressed Appetite - Slider
+          HydraCard(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
+            ),
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: SymptomSlider<AppetiteFraction>(
+              label: 'Suppressed Appetite',
+              value: _appetiteFraction,
+              options: AppetiteFraction.values,
+              getLabel: (fraction) => fraction.label,
+              onChanged: (value) {
+                setState(() {
+                  _appetiteFraction = value;
+                  if (_errorMessage != null) _errorMessage = null;
+                });
+              },
+            ),
+          ),
+
+          // 6. Injection Site Reaction - Slider
+          HydraCard(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
+            ),
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: SymptomSlider<InjectionSiteReaction>(
+              label: 'Injection Site Reaction',
+              value: _injectionSiteReaction,
+              options: InjectionSiteReaction.values,
+              getLabel: (reaction) => reaction.label,
+              onChanged: (value) {
+                setState(() {
+                  _injectionSiteReaction = value;
+                  if (_errorMessage != null) _errorMessage = null;
+                });
+              },
+            ),
+          ),
+
+          const SizedBox(height: AppSpacing.md),
 
           // Notes field
           _buildNotesField(),
@@ -344,106 +579,6 @@ class _SymptomsEntryDialogState extends ConsumerState<SymptomsEntryDialog> {
           _buildSaveButton(),
         ],
       ),
-    );
-  }
-
-  String _getSymptomLabel(String symptomKey) {
-    switch (symptomKey) {
-      case SymptomType.vomiting:
-        return 'Vomiting';
-      case SymptomType.diarrhea:
-        return 'Diarrhea';
-      case SymptomType.constipation:
-        return 'Constipation';
-      case SymptomType.lethargy:
-        return 'Lethargy';
-      case SymptomType.suppressedAppetite:
-        return 'Suppressed Appetite';
-      case SymptomType.injectionSiteReaction:
-        return 'Injection Site Reaction';
-      default:
-        return symptomKey;
-    }
-  }
-}
-
-/// Helper widget for a single symptom slider with N/A as first position
-class _SymptomSlider extends StatelessWidget {
-  const _SymptomSlider({
-    required this.symptomKey,
-    required this.symptomLabel,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final String symptomKey;
-  final String symptomLabel;
-  final int? value;
-  final ValueChanged<int?> onChanged;
-
-  /// Maps symptom score to slider position
-  /// Position 0 = N/A (null), positions 1-11 = scores 0-10
-  double _scoreToSliderPosition(int? score) {
-    return score == null ? 0.0 : (score + 1).toDouble();
-  }
-
-  /// Maps slider position to symptom score
-  /// Position 0 = N/A (null), positions 1-11 = scores 0-10
-  int? _sliderPositionToScore(double position) {
-    final pos = position.round();
-    return pos == 0 ? null : (pos - 1);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isNA = value == null;
-    final sliderPosition = _scoreToSliderPosition(value);
-
-    return Row(
-      children: [
-        // Symptom label (left side)
-        SizedBox(
-          width: 120,
-          child: Text(
-            symptomLabel,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        // Slider (middle, takes remaining space)
-        Expanded(
-          child: HydraSlider(
-            value: sliderPosition,
-            max: 11,
-            divisions: 11,
-            onChanged: (double newPosition) {
-              HapticFeedback.selectionClick();
-              final newScore = _sliderPositionToScore(newPosition);
-              onChanged(newScore);
-            },
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        // Value label (right side)
-        SizedBox(
-          width: 40,
-          child: Text(
-            isNA ? 'N/A' : value.toString(),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: isNA
-                  ? theme.colorScheme.onSurfaceVariant
-                  : AppColors.primary,
-            ),
-            textAlign: TextAlign.right,
-          ),
-        ),
-      ],
     );
   }
 }

@@ -37,7 +37,7 @@ void main() {
     test('should create correct buckets for single-month symptoms', () {
       final janSummary = MonthlySummary.empty(DateTime(2024, 1, 15)).copyWith(
         daysWithVomiting: 3,
-        daysWithLethargy: 2,
+        daysWithEnergy: 2,
         daysWithAnySymptoms: 5,
       );
       final marSummary = MonthlySummary.empty(DateTime(2024, 3, 15)).copyWith(
@@ -61,7 +61,7 @@ void main() {
       // January bucket (index 0)
       final janBucket = buckets[0];
       expect(janBucket.daysWithSymptom[SymptomType.vomiting], 3);
-      expect(janBucket.daysWithSymptom[SymptomType.lethargy], 2);
+      expect(janBucket.daysWithSymptom[SymptomType.energy], 2);
       expect(janBucket.daysWithSymptom.length, 2);
       expect(janBucket.daysWithAnySymptoms, 5);
       expect(janBucket.totalSymptomDays, 5);
@@ -82,7 +82,7 @@ void main() {
     test('should handle multiple months with various symptom combinations', () {
       final janSummary = MonthlySummary.empty(DateTime(2024, 1, 15)).copyWith(
         daysWithVomiting: 2,
-        daysWithLethargy: 1,
+        daysWithEnergy: 1,
         daysWithAnySymptoms: 3,
       );
       final aprSummary = MonthlySummary.empty(DateTime(2024, 4, 15)).copyWith(
@@ -97,7 +97,7 @@ void main() {
       );
       final decSummary = MonthlySummary.empty(DateTime(2024, 12, 15)).copyWith(
         daysWithVomiting: 1,
-        daysWithLethargy: 2,
+        daysWithEnergy: 2,
         daysWithDiarrhea: 1,
         daysWithAnySymptoms: 4,
       );
@@ -119,20 +119,20 @@ void main() {
 
       // Verify symptom counts across all buckets
       var totalVomiting = 0;
-      var totalLethargy = 0;
+      var totalEnergy = 0;
       var totalDiarrhea = 0;
       var totalSuppressedAppetite = 0;
 
       for (final bucket in buckets) {
         totalVomiting += bucket.daysWithSymptom[SymptomType.vomiting] ?? 0;
-        totalLethargy += bucket.daysWithSymptom[SymptomType.lethargy] ?? 0;
+        totalEnergy += bucket.daysWithSymptom[SymptomType.energy] ?? 0;
         totalDiarrhea += bucket.daysWithSymptom[SymptomType.diarrhea] ?? 0;
         totalSuppressedAppetite +=
             bucket.daysWithSymptom[SymptomType.suppressedAppetite] ?? 0;
       }
 
       expect(totalVomiting, 3); // Jan: 2, Dec: 1
-      expect(totalLethargy, 3); // Jan: 1, Dec: 2
+      expect(totalEnergy, 3); // Jan: 1, Dec: 2
       expect(totalDiarrhea, 4); // Apr: 3, Dec: 1
       expect(totalSuppressedAppetite, 5); // Jul: 5
     });
@@ -177,7 +177,7 @@ void main() {
           daysWithAnySymptoms: 1,
         );
         final junSummary = MonthlySummary.empty(DateTime(2024, 6, 15)).copyWith(
-          daysWithLethargy: 2,
+          daysWithEnergy: 2,
           daysWithAnySymptoms: 2,
         );
 
@@ -206,7 +206,7 @@ void main() {
 
         // June bucket (index 5) should have symptoms
         final junBucket = buckets[5];
-        expect(junBucket.daysWithSymptom[SymptomType.lethargy], 2);
+        expect(junBucket.daysWithSymptom[SymptomType.energy], 2);
         expect(junBucket.daysWithAnySymptoms, 2);
       },
     );
@@ -245,7 +245,7 @@ void main() {
         daysWithVomiting: 3,
         daysWithDiarrhea: 0, // Should not be in map
         daysWithConstipation: 0, // Should not be in map
-        daysWithLethargy: 2,
+        daysWithEnergy: 2,
         daysWithSuppressedAppetite: 0, // Should not be in map
         daysWithInjectionSiteReaction: 1,
         daysWithAnySymptoms: 6,
@@ -262,10 +262,10 @@ void main() {
       );
 
       final marBucket = buckets[2];
-      // Should only have 3 symptoms (vomiting, lethargy, injectionSiteReaction)
+      // Should only have 3 symptoms (vomiting, energy, injectionSiteReaction)
       expect(marBucket.daysWithSymptom.length, 3);
       expect(marBucket.daysWithSymptom[SymptomType.vomiting], 3);
-      expect(marBucket.daysWithSymptom[SymptomType.lethargy], 2);
+      expect(marBucket.daysWithSymptom[SymptomType.energy], 2);
       expect(marBucket.daysWithSymptom[SymptomType.injectionSiteReaction], 1);
       expect(marBucket.daysWithSymptom[SymptomType.diarrhea], isNull);
       expect(marBucket.daysWithSymptom[SymptomType.constipation], isNull);
@@ -347,7 +347,7 @@ void main() {
         daysWithVomiting: 1,
         daysWithDiarrhea: 2,
         daysWithConstipation: 3,
-        daysWithLethargy: 4,
+        daysWithEnergy: 4,
         daysWithSuppressedAppetite: 5,
         daysWithInjectionSiteReaction: 6,
         daysWithAnySymptoms: 21,
@@ -367,7 +367,7 @@ void main() {
       expect(mayBucket.daysWithSymptom[SymptomType.vomiting], 1);
       expect(mayBucket.daysWithSymptom[SymptomType.diarrhea], 2);
       expect(mayBucket.daysWithSymptom[SymptomType.constipation], 3);
-      expect(mayBucket.daysWithSymptom[SymptomType.lethargy], 4);
+      expect(mayBucket.daysWithSymptom[SymptomType.energy], 4);
       expect(mayBucket.daysWithSymptom[SymptomType.suppressedAppetite], 5);
       expect(mayBucket.daysWithSymptom[SymptomType.injectionSiteReaction], 6);
       expect(mayBucket.daysWithSymptom.length, 6);
