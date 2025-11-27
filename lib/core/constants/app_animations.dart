@@ -50,6 +50,23 @@ class AppAnimations {
   /// Curve for drag dismiss animation.
   static const Curve dragDismissCurve = Curves.easeInCubic;
 
+  // Tab navigation fade transitions
+  /// Duration for tab fade transition animation.
+  /// Fast, subtle fade to avoid "flash" effect while maintaining smoothness.
+  static const Duration tabFadeDuration = Duration(milliseconds: 150);
+
+  /// Animation curve for tab fade transitions.
+  static const Curve tabFadeCurve = Curves.easeInOut;
+
+  // Page slide transitions (for detail routes)
+  /// Duration for horizontal slide page transitions.
+  /// Used for navigating to/from detail screens (e.g., profile settings, progress insights).
+  /// Tuned for a subtle, modern push animation.
+  static const Duration pageSlideDuration = Duration(milliseconds: 260);
+
+  /// Animation curve for page slide transitions.
+  static const Curve pageSlideCurve = Curves.easeInOut;
+
   // Opacity values
   /// Opacity of content when overlay is visible.
   static const double contentDimmedOpacity = 0.3;

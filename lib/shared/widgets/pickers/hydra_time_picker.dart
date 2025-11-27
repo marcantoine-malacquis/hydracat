@@ -112,9 +112,9 @@ class _HydraTimePickerContentState extends State<_HydraTimePickerContent> {
     return Container(
       height: 350,
       padding: const EdgeInsets.only(top: 6),
-      decoration: BoxDecoration(
-        color: CupertinoColors.systemBackground.resolveFrom(context),
-        borderRadius: const BorderRadius.vertical(
+      decoration: const BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.vertical(
           top: Radius.circular(12),
         ),
       ),

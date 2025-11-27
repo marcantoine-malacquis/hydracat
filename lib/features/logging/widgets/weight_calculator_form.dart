@@ -278,7 +278,7 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
                   suffixIcon: Padding(
                     padding: const EdgeInsets.only(right: AppSpacing.md),
                     child: Align(
-                      widthFactor: 1.0,
+                      widthFactor: 1,
                       child: Text(
                         'g',
                         style: theme.textTheme.bodyMedium?.copyWith(
@@ -336,7 +336,7 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
                   suffixIcon: Padding(
                     padding: const EdgeInsets.only(right: AppSpacing.md),
                     child: Align(
-                      widthFactor: 1.0,
+                      widthFactor: 1,
                       child: Text(
                         'g',
                         style: theme.textTheme.bodyMedium?.copyWith(
@@ -487,20 +487,29 @@ class _WeightCalculatorFormState extends ConsumerState<WeightCalculatorForm> {
 
           const SizedBox(height: AppSpacing.lg),
 
-          // Action buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: widget.onCancel,
-                child: Text(l10n.cancel),
+          // Action button
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: isValid ? _useThisVolume : null,
+              style: FilledButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.md,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              FilledButton(
-                onPressed: isValid ? _useThisVolume : null,
-                child: Text(l10n.useThisVolume),
+              child: Text(
+                l10n.useThisVolume,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ],
+            ),
           ),
         ],
       ),

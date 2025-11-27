@@ -23,7 +23,7 @@ List<HydraNavigationItem> _items() => const [
 ];
 
 void main() {
-  testWidgets('renders only one top indicator for the selected index', (
+  testWidgets('renders single sliding indicator for the selected index', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -36,9 +36,13 @@ void main() {
       ),
     );
 
-    // Expect exactly one indicator with index 1
-    expect(find.byKey(const Key('navTopIndicator-1')), findsOneWidget);
+    await tester.pumpAndSettle();
+
+    // Expect exactly one indicator with the new single key
+    expect(find.byKey(const Key('navTopIndicator')), findsOneWidget);
+    // Old per-index keys should not exist
     expect(find.byKey(const Key('navTopIndicator-0')), findsNothing);
+    expect(find.byKey(const Key('navTopIndicator-1')), findsNothing);
     expect(find.byKey(const Key('navTopIndicator-2')), findsNothing);
     expect(find.byKey(const Key('navTopIndicator-3')), findsNothing);
   });
@@ -54,11 +58,105 @@ void main() {
       ),
     );
 
-    // No indicator keys should be present
-    expect(find.byKey(const Key('navTopIndicator-0')), findsNothing);
-    expect(find.byKey(const Key('navTopIndicator-1')), findsNothing);
-    expect(find.byKey(const Key('navTopIndicator-2')), findsNothing);
-    expect(find.byKey(const Key('navTopIndicator-3')), findsNothing);
+    await tester.pumpAndSettle();
+
+    // No indicator should be present
+    expect(find.byKey(const Key('navTopIndicator')), findsNothing);
+  });
+
+  testWidgets('indicator position changes when currentIndex changes', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrapWithScaffold(
+        HydraNavigationBar(
+          items: _items(),
+          currentIndex: 0,
+          onTap: (_) {},
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Get initial position
+    final initialFinder = find.byKey(const Key('navTopIndicator'));
+    expect(initialFinder, findsOneWidget);
+    final initialPosition = tester.getTopLeft(initialFinder);
+
+    // Change index to 3
+    await tester.pumpWidget(
+      _wrapWithScaffold(
+        HydraNavigationBar(
+          items: _items(),
+          currentIndex: 3,
+          onTap: (_) {},
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Get new position
+    final newFinder = find.byKey(const Key('navTopIndicator'));
+    expect(newFinder, findsOneWidget);
+    final newPosition = tester.getTopLeft(newFinder);
+
+    // Position should have changed (moved to the right)
+    expect(newPosition.dx, greaterThan(initialPosition.dx));
+  });
+
+  testWidgets('indicator respects reduced motion preference', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          platform: TargetPlatform.android,
+        ),
+        home: MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: Scaffold(
+            bottomNavigationBar: HydraNavigationBar(
+              items: _items(),
+              currentIndex: 0,
+              onTap: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Indicator should still be present
+    expect(find.byKey(const Key('navTopIndicator')), findsOneWidget);
+
+    // Change index - with reduced motion, should snap immediately
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          platform: TargetPlatform.android,
+        ),
+        home: MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: Scaffold(
+            bottomNavigationBar: HydraNavigationBar(
+              items: _items(),
+              currentIndex: 3,
+              onTap: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // With reduced motion, animation duration should be zero
+    // The indicator should appear at the new position immediately
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+
+    expect(find.byKey(const Key('navTopIndicator')), findsOneWidget);
   });
 
   testWidgets('semantics marks active tab as selected', (tester) async {

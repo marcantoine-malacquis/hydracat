@@ -494,6 +494,15 @@ class SymptomsService {
             symptoms?[SymptomType.suppressedAppetite]?.severityScore,
         injectionSiteReactionMaxScore:
             symptoms?[SymptomType.injectionSiteReaction]?.severityScore,
+        vomitingRawValue: symptoms?[SymptomType.vomiting]?.rawValue as int?,
+        diarrheaRawValue: symptoms?[SymptomType.diarrhea]?.rawValue as String?,
+        constipationRawValue:
+            symptoms?[SymptomType.constipation]?.rawValue as String?,
+        energyRawValue: symptoms?[SymptomType.energy]?.rawValue as String?,
+        suppressedAppetiteRawValue:
+            symptoms?[SymptomType.suppressedAppetite]?.rawValue as String?,
+        injectionSiteReactionRawValue:
+            symptoms?[SymptomType.injectionSiteReaction]?.rawValue as String?,
         symptomScoreTotal: finalEntry.symptomScoreTotal,
         symptomScoreAverage: finalEntry.symptomScoreAverage,
         hasSymptoms: finalEntry.hasSymptoms ?? false,

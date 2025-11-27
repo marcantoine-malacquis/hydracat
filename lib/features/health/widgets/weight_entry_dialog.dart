@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/core/utils/weight_utils.dart';
 import 'package:hydracat/features/health/models/health_parameter.dart';
+import 'package:hydracat/features/logging/widgets/logging_popup_wrapper.dart';
 import 'package:hydracat/providers/weight_unit_provider.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
@@ -151,6 +153,70 @@ class _WeightEntryDialogState extends ConsumerState<WeightEntryDialog> {
     }
   }
 
+  Widget _buildDateSelector() {
+    return InkWell(
+      onTap: _selectDate,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.md,
+        ),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.calendar_today, size: 20),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              DateFormat('MMM dd, yyyy').format(_selectedDate),
+              style: AppTextStyles.body,
+            ),
+            const Spacer(),
+            const Icon(Icons.arrow_drop_down),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Compact date selector used in the popup header.
+  Widget _buildHeaderDateSelector() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 260),
+        child: _buildDateSelector(),
+      ),
+    );
+  }
+
+  /// Platform-adaptive header action for saving.
+  Widget _buildHeaderAction() {
+    final isCupertino =
+        defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS;
+    final label = isCupertino
+        ? 'Done'
+        : (widget.existingEntry != null ? 'Save' : 'Add');
+
+    return TextButton(
+      onPressed: _save,
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(
+        label,
+        style: AppTextStyles.buttonPrimary.copyWith(
+          fontWeight: isCupertino ? FontWeight.w600 : FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
   void _save() {
     final weightKg = _getValidatedWeightKg();
     if (weightKg == null) return;
@@ -171,220 +237,130 @@ class _WeightEntryDialogState extends ConsumerState<WeightEntryDialog> {
     });
   }
 
+  Widget _buildErrorMessage() {
+    final theme = Theme.of(context);
+
+    if (_errorMessage == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.sm),
+      child: Text(
+        _errorMessage!,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.error,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEditMode = widget.existingEntry != null;
     final currentUnit = ref.watch(weightUnitProvider);
     final theme = Theme.of(context);
-    final mediaQuery = MediaQuery.of(context);
 
-    return HydraDialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          constraints: BoxConstraints(
-            maxWidth: 400,
-            maxHeight: mediaQuery.size.height * 0.75,
-          ),
-          decoration: const BoxDecoration(
-            color: AppColors.background,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with app bar color
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.inversePrimary,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
+    return LoggingPopupWrapper(
+      title: isEditMode ? 'Edit Weight' : 'Add Weight',
+      headerContent: _buildHeaderDateSelector(),
+      trailing: _buildHeaderAction(),
+      showCloseButton: false,
+      onDismiss: () {
+        // No special cleanup needed
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: AppSpacing.xs),
+
+          // Weight input
+          HydraTextField(
+            controller: _weightController,
+            keyboardType: const TextInputType.numberWithOptions(
+              decimal: true,
+            ),
+            textInputAction: TextInputAction.next,
+            autofocus: !isEditMode,
+            decoration: InputDecoration(
+              labelText: 'Weight',
+              hintText: currentUnit == 'kg' ? 'e.g., 4.2' : 'e.g., 9.3',
+              suffixIcon: IgnorePointer(
+                child: Container(
+                  padding: const EdgeInsets.only(
+                    right: AppSpacing.md,
                   ),
-                ),
-                child: Text(
-                  isEditMode ? 'Edit Weight' : 'Add Weight',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
+                  alignment: Alignment.centerRight,
+                  width: 40,
+                  child: Text(
+                    currentUnit,
+                    style: theme.textTheme.bodyMedium,
                   ),
                 ),
               ),
-
-              // Content
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Date picker
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: _selectDate,
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md,
-                            vertical: AppSpacing.md,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: AppColors.border),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.calendar_today, size: 20),
-                              const SizedBox(width: AppSpacing.sm),
-                              Text(
-                                DateFormat(
-                                  'MMM dd, yyyy',
-                                ).format(_selectedDate),
-                                style: AppTextStyles.body,
-                              ),
-                              const Spacer(),
-                              const Icon(Icons.arrow_drop_down),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // Weight input
-                    HydraTextField(
-                      controller: _weightController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      textInputAction: TextInputAction.next,
-                      autofocus: !isEditMode,
-                      decoration: InputDecoration(
-                        labelText: 'Weight',
-                        hintText: currentUnit == 'kg'
-                            ? 'e.g., 4.2'
-                            : 'e.g., 9.3',
-                        suffixIcon: IgnorePointer(
-                          child: Container(
-                            padding: const EdgeInsets.only(
-                              right: AppSpacing.md,
-                            ),
-                            alignment: Alignment.centerRight,
-                            width: 40,
-                            child: Text(
-                              currentUnit,
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                          ),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md,
-                          vertical: AppSpacing.md,
-                        ),
-                      ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(
-                          // The library directive may trigger
-                          // deprecated_member_use warnings
-                          // in some Dart versions.
-                          // ignore: deprecated_member_use
-                          RegExp(r'^\d*[.,]?\d{0,2}'),
-                        ),
-                      ],
-                      onChanged: (_) {
-                        if (_errorMessage != null) {
-                          setState(() {
-                            _errorMessage = null;
-                          });
-                        }
-                      },
-                    ),
-
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // Notes field (more compact)
-                    HydraTextField(
-                      controller: _notesController,
-                      focusNode: _notesFocusNode,
-                      maxLength: 500,
-                      keyboardType: TextInputType.text,
-                      textInputAction: TextInputAction.done,
-                      decoration: InputDecoration(
-                        labelText: 'Notes (optional)',
-                        hintText: 'e.g., "After vet visit", "Before fluids"',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md,
-                          vertical: AppSpacing.md,
-                        ),
-                        counter: AnimatedOpacity(
-                          opacity: _notesFocusNode.hasFocus ? 1.0 : 0.0,
-                          duration: AppAnimations.getDuration(
-                            context,
-                            const Duration(milliseconds: 200),
-                          ),
-                          child: Text('${_notesController.text.length}/500'),
-                        ),
-                      ),
-                      minLines: 1,
-                      maxLines:
-                          _notesFocusNode.hasFocus ||
-                              _notesController.text.isNotEmpty
-                          ? 2
-                          : 1,
-                      onChanged: (_) {
-                        setState(() {}); // Update counter and line count
-                      },
-                    ),
-
-                    // Error message
-                    if (_errorMessage != null) ...[
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        _errorMessage!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.error,
-                        ),
-                      ),
-                    ],
-
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // Action buttons
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Cancel'),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        FilledButton(
-                          onPressed: _save,
-                          child: Text(isEditMode ? 'Save' : 'Add'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.md,
+              ),
+            ),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(
+                // The library directive may trigger
+                // deprecated_member_use warnings
+                // in some Dart versions.
+                // ignore: deprecated_member_use
+                RegExp(r'^\d*[.,]?\d{0,2}'),
               ),
             ],
+            onChanged: (_) {
+              if (_errorMessage != null) {
+                setState(() {
+                  _errorMessage = null;
+                });
+              }
+            },
           ),
-        ),
+
+          const SizedBox(height: AppSpacing.md),
+
+          // Notes field
+          HydraTextField(
+            controller: _notesController,
+            focusNode: _notesFocusNode,
+            maxLength: 500,
+            keyboardType: TextInputType.text,
+            textInputAction: TextInputAction.done,
+            decoration: InputDecoration(
+              labelText: 'Notes (optional)',
+              hintText: 'e.g., "After vet visit", "Before fluids"',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.md,
+              ),
+              counter: AnimatedOpacity(
+                opacity: _notesFocusNode.hasFocus ? 1.0 : 0.0,
+                duration: AppAnimations.getDuration(
+                  context,
+                  const Duration(milliseconds: 200),
+                ),
+                child: Text('${_notesController.text.length}/500'),
+              ),
+            ),
+            minLines: _notesController.text.isNotEmpty ? 3 : 1,
+            maxLines: 5,
+            onChanged: (_) {
+              setState(() {}); // Update counter and line count
+            },
+          ),
+
+          // Error message
+          _buildErrorMessage(),
+        ],
       ),
     );
   }

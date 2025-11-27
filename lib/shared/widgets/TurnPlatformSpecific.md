@@ -85,13 +85,17 @@ This avoids multiple `Theme.of(context)` lookups during the same build cycle, wh
   - Includes `showHydraBottomSheet()` helper function
   - **Material**: `showModalBottomSheet()` function with Material bottom sheet styling
   - **Cupertino**: `showCupertinoModalPopup()` with Cupertino-style bottom sheet
+  - **Automatic bottom breathing room**: All bottom sheets automatically include safe area spacing plus a minimum breathing room constant (see `AppSpacing.bottomSheetInset`) to ensure content and primary actions have comfortable clearance from the system home indicator on all platforms
   - **Used in**: 
     - `notification_settings_screen.dart` (migrated to use `showHydraBottomSheet`)
     - `permission_preprompt.dart` (migrated to use `showHydraBottomSheet`)
     - `debug_panel.dart` (migrated to use `showHydraBottomSheet`)
+    - Logging screens (fluid, medication, weight, symptoms)
+    - Progress day detail popup
   - **API Differences**: 
     - Material: `showModalBottomSheet()` with full Material API support (`isScrollControlled`, `enableDrag`, `shape`, etc.)
     - Cupertino: `showCupertinoModalPopup()` with simplified API; Material-specific options are gracefully ignored
+  - **Note**: The `useSafeArea` parameter in `showHydraBottomSheet()` defaults to `false` because `HydraBottomSheet` handles safe area spacing internally. Setting it to `true` may result in double-padding.
 
 - **`HydraTextField`** (`lib/shared/widgets/inputs/hydra_text_field.dart`) - ✅ Done
   - Wraps `TextField` (Material) / `CupertinoTextField` (iOS)

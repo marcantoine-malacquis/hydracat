@@ -19,17 +19,44 @@ import 'package:hydracat/shared/widgets/widgets.dart';
 /// A screen that displays user progress and analytics.
 class ProgressScreen extends ConsumerStatefulWidget {
   /// Creates a progress screen.
-  const ProgressScreen({super.key});
+  ///
+  /// If [bodyOnly] is true, returns only the body content without Scaffold.
+  const ProgressScreen({super.key, this.bodyOnly = false});
+
+  /// If true, returns only the body content without Scaffold.
+  final bool bodyOnly;
 
   @override
   ConsumerState<ProgressScreen> createState() => _ProgressScreenState();
+
+  /// Builds the body content for the progress screen.
+  /// This static method can be used by AppShell to get body-only content.
+  static Widget buildBody(
+    BuildContext context,
+    WidgetRef ref,
+    bool hasCompletedOnboarding,
+  ) {
+    return _ProgressScreenContent.buildBody(context, ref, hasCompletedOnboarding);
+  }
 }
 
 class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   @override
+  void initState() {
+    super.initState();
+    // Auto-show calendar help popup logic needs to be handled in AppShell
+    // or moved to a separate lifecycle handler
+  }
+
+  @override
   Widget build(BuildContext context) {
     final hasCompletedOnboarding = ref.watch(hasCompletedOnboardingProvider);
-    final petName = ref.watch(petNameProvider);
+
+    final body = ProgressScreen.buildBody(context, ref, hasCompletedOnboarding);
+
+    if (widget.bodyOnly) {
+      return body;
+    }
 
     // Auto-show calendar help popup on first data load
     final hasSeenHelp = ref.watch(calendarHelpSeenProvider);
@@ -75,7 +102,19 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               ]
             : null,
       ),
-      body: hasCompletedOnboarding
+      body: body,
+    );
+  }
+}
+
+/// Internal helper class for ProgressScreen body content.
+class _ProgressScreenContent {
+  static Widget buildBody(
+    BuildContext context,
+    WidgetRef ref,
+    bool hasCompletedOnboarding,
+  ) {
+    return hasCompletedOnboarding
           ? HydraRefreshIndicator(
               onRefresh: () async {
                 // Clear monthly cache for current month to force fresh read
@@ -152,15 +191,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                           const SizedBox(height: 12),
 
                           // Weight tracking card
-                          NavigationCard(
-                            title: 'Weight',
-                            metadata: petName != null
-                                ? "Track $petName's weight"
-                                : "Track your cat's weight",
-                            icon: Icons.monitor_weight,
-                            onTap: () => context.push('/progress/weight'),
-                            margin: EdgeInsets.zero,
-                          ),
+                          _WeightCard(),
 
                           const SizedBox(height: 12),
 
@@ -179,7 +210,27 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             )
           : OnboardingEmptyStates.progress(
               onGetStarted: () => context.go('/onboarding/welcome'),
-            ),
+            );
+  }
+}
+
+/// Weight tracking card widget
+///
+/// Displays a NavigationCard for weight tracking with pet name in metadata.
+class _WeightCard extends ConsumerWidget {
+  const _WeightCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final petName = ref.watch(petNameProvider);
+    return NavigationCard(
+      title: 'Weight',
+      metadata: petName != null
+          ? "Track $petName's weight"
+          : "Track your cat's weight",
+      icon: Icons.monitor_weight,
+      onTap: () => context.push('/progress/weight'),
+      margin: EdgeInsets.zero,
     );
   }
 }

@@ -35,6 +35,8 @@ class ProfileScreen extends ConsumerWidget {
       });
     }
 
+    final body = buildBody(context, ref, hasCompletedOnboarding);
+
     return DevBanner(
       child: Scaffold(
         backgroundColor: AppColors.background,
@@ -43,32 +45,45 @@ class ProfileScreen extends ConsumerWidget {
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           actions: [
             IconButton(
-              onPressed: () => context.go('/profile/settings'),
+              onPressed: () => context.push('/profile/settings'),
               icon: const Icon(Icons.settings),
               tooltip: 'Settings',
             ),
           ],
         ),
-        drawer: _buildDrawer(context, ref),
-        body: hasCompletedOnboarding
-            ? HydraRefreshIndicator(
-                onRefresh: () => _handleRefresh(ref),
-                child: _buildProfileContent(context, ref),
-              )
-            : OnboardingEmptyStates.profile(
-                onGetStarted: () => context.go('/onboarding/welcome'),
-              ),
+        drawer: _ProfileScreenContent._buildDrawer(context, ref),
+        body: body,
       ),
     );
   }
 
-  /// Handles manual refresh of profile data
-  Future<void> _handleRefresh(WidgetRef ref) async {
-    await ref.read(profileProvider.notifier).refreshPrimaryPet();
+  /// Builds the body content for the profile screen.
+  /// This static method can be used by AppShell to get body-only content.
+  static Widget buildBody(
+    BuildContext context,
+    WidgetRef ref,
+    bool hasCompletedOnboarding,
+  ) {
+    return hasCompletedOnboarding
+        ? HydraRefreshIndicator(
+            onRefresh: () => ref.read(profileProvider.notifier).refreshPrimaryPet(),
+            child: _ProfileScreenContent.buildProfileContent(context, ref),
+          )
+        : OnboardingEmptyStates.profile(
+            onGetStarted: () => context.go('/onboarding/welcome'),
+          );
   }
 
-  /// Builds the full profile content for users who have completed onboarding
-  Widget _buildProfileContent(BuildContext context, WidgetRef ref) {
+  /// Builds the navigation drawer for the profile screen.
+  /// This static method can be used by AppShell to get the drawer widget.
+  static Widget? buildDrawer(BuildContext context, WidgetRef ref) {
+    return _ProfileScreenContent._buildDrawer(context, ref);
+  }
+}
+
+/// Internal helper class for ProfileScreen body content.
+class _ProfileScreenContent {
+  static Widget buildProfileContent(BuildContext context, WidgetRef ref) {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       child: Padding(
@@ -78,12 +93,12 @@ class ProfileScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Pet information section
-            _buildPetInfoCard(context, ref),
+            _ProfileScreenContent._buildPetInfoCard(context, ref),
 
             const SizedBox(height: AppSpacing.xl),
 
             // Profile sections
-            _buildProfileSections(context, ref),
+            _ProfileScreenContent._buildProfileSections(context, ref),
           ],
         ),
       ),
@@ -91,7 +106,7 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   /// Builds the pet information card
-  Widget _buildPetInfoCard(BuildContext context, WidgetRef ref) {
+  static Widget _buildPetInfoCard(BuildContext context, WidgetRef ref) {
     return Consumer(
       builder: (context, ref, _) {
         final primaryPet = ref.watch(primaryPetProvider);
@@ -101,14 +116,14 @@ class ProfileScreen extends ConsumerWidget {
         final lastUpdated = ref.watch(profileLastUpdatedProvider);
 
         if (isLoading && primaryPet == null) {
-          return _buildPetInfoSkeleton(context);
+          return _ProfileScreenContent._buildPetInfoSkeleton(context);
         }
 
         if (primaryPet == null) {
-          return _buildNoPetInfo(context);
+          return _ProfileScreenContent._buildNoPetInfo(context);
         }
 
-        return _buildPetInfoContent(
+        return _ProfileScreenContent._buildPetInfoContent(
           context,
           ref,
           primaryPet,
@@ -121,7 +136,7 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   /// Builds the main pet info content
-  Widget _buildPetInfoContent(
+  static Widget _buildPetInfoContent(
     BuildContext context,
     WidgetRef ref,
     CatProfile pet, {
@@ -138,7 +153,7 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   /// Builds skeleton loading state
-  Widget _buildPetInfoSkeleton(BuildContext context) {
+  static Widget _buildPetInfoSkeleton(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -183,14 +198,14 @@ class ProfileScreen extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: _buildPremiumInfoItemSkeleton(
+                  child: _ProfileScreenContent._buildPremiumInfoItemSkeleton(
                     context,
                     isHighlighted: i == 0,
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
-                  child: _buildPremiumInfoItemSkeleton(
+                  child: _ProfileScreenContent._buildPremiumInfoItemSkeleton(
                     context,
                     isHighlighted: i == 0,
                   ),
@@ -205,7 +220,7 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   /// Builds premium skeleton for individual info items
-  Widget _buildPremiumInfoItemSkeleton(
+  static Widget _buildPremiumInfoItemSkeleton(
     BuildContext context, {
     bool isHighlighted = false,
   }) {
@@ -271,7 +286,7 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   /// Builds state when no pet is available
-  Widget _buildNoPetInfo(BuildContext context) {
+  static Widget _buildNoPetInfo(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -310,7 +325,7 @@ class ProfileScreen extends ConsumerWidget {
 
 
   /// Builds the navigation drawer
-  Widget _buildDrawer(BuildContext context, WidgetRef ref) {
+  static Widget _buildDrawer(BuildContext context, WidgetRef ref) {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -374,7 +389,7 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   /// Builds the profile sections list
-  Widget _buildProfileSections(BuildContext context, WidgetRef ref) {
+  static Widget _buildProfileSections(BuildContext context, WidgetRef ref) {
     final profileState = ref.watch(profileProvider);
     final primaryPet = ref.watch(primaryPetProvider);
 
@@ -386,7 +401,7 @@ class ProfileScreen extends ConsumerWidget {
           title: 'CKD Profile',
           icon: Icons.medical_information,
           metadata: primaryPet?.medicalInfo.irisStage?.displayName,
-          onTap: () => context.go('/profile/ckd'),
+          onTap: () => context.push('/profile/ckd'),
           margin: EdgeInsets.zero,
         ),
 
@@ -406,7 +421,7 @@ class ProfileScreen extends ConsumerWidget {
                 title: 'Fluid Schedule',
                 icon: Icons.water_drop,
                 metadata: metadata,
-                onTap: () => context.go('/profile/fluid'),
+                onTap: () => context.push('/profile/fluid'),
                 margin: EdgeInsets.zero,
               );
             },
@@ -436,7 +451,7 @@ class ProfileScreen extends ConsumerWidget {
                 title: 'Medication Schedule',
                 icon: Icons.medication,
                 metadata: metadata,
-                onTap: () => context.go('/profile/medication'),
+                onTap: () => context.push('/profile/medication'),
                 margin: EdgeInsets.zero,
               );
             },

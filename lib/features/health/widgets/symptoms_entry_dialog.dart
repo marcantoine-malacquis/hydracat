@@ -15,7 +15,6 @@ import 'package:hydracat/features/health/models/symptom_type.dart';
 import 'package:hydracat/features/health/services/symptom_severity_converter.dart';
 import 'package:hydracat/features/health/services/symptoms_service.dart';
 import 'package:hydracat/features/health/widgets/symptom_slider.dart';
-import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/logging/widgets/logging_popup_wrapper.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
@@ -285,7 +284,9 @@ class _SymptomsEntryDialogState extends ConsumerState<SymptomsEntryDialog> {
         ref.invalidate(currentMonthSymptomsSummaryProvider);
 
         // Dismiss popup
-        OverlayService.hide();
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
 
         // Show success snackbar
         HydraSnackBar.showSuccess(context, 'Symptoms saved successfully');

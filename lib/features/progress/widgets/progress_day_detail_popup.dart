@@ -6,8 +6,8 @@ import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
-import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/logging/widgets/injection_site_selector.dart';
+import 'package:hydracat/features/logging/widgets/logging_popup_wrapper.dart';
 import 'package:hydracat/features/logging/widgets/stress_level_selector.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
@@ -35,13 +35,13 @@ enum _PopupMode {
   editFluid,
 }
 
-/// Full-screen popup showing treatment details for a specific day.
+/// Bottom sheet popup showing treatment details for a specific day.
 ///
 /// Displays either:
 /// - Logged sessions (past/today): actual treatment data from Firestore
 /// - Planned schedules (future): expected treatments based on schedules
 ///
-/// Uses [OverlayService.showFullScreenPopup] with slideUp animation.
+/// Uses [showHydraBottomSheet] with standard bottom sheet animation.
 class ProgressDayDetailPopup extends ConsumerStatefulWidget {
   /// Creates a progress day detail popup.
   const ProgressDayDetailPopup({
@@ -57,138 +57,14 @@ class ProgressDayDetailPopup extends ConsumerStatefulWidget {
       _ProgressDayDetailPopupState();
 }
 
-/// State for [ProgressDayDetailPopup] with lazy content loading.
-class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
-    with SingleTickerProviderStateMixin {
-  /// Whether to show the popup content.
-  /// Starts false and becomes true after animation completes.
-  bool _showContent = false;
-
-  // Drag tracking state
-  double _dragOffset = 0; // Current drag distance in pixels
-  late AnimationController _dragAnimationController;
-  late Animation<double> _dragAnimation;
-
+/// State for [ProgressDayDetailPopup].
+class _ProgressDayDetailPopupState
+    extends ConsumerState<ProgressDayDetailPopup> {
   // Popup mode state
   _PopupMode _mode = _PopupMode.dayView;
   MedicationSession? _editingMedicationSession;
   Schedule? _editingSchedule;
   FluidSession? _editingFluidSession;
-
-  // Constants
-  static const double _dismissThreshold = 150; // Minimum drag to dismiss
-  static const double _velocityThreshold = 300; // Minimum velocity to dismiss
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Setup drag animation controller for spring-back
-    _dragAnimationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-    );
-
-    _dragAnimation =
-        Tween<double>(
-            begin: 0,
-            end: 0,
-          ).animate(
-            CurvedAnimation(
-              parent: _dragAnimationController,
-              curve: Curves.easeOutCubic,
-            ),
-          )
-          ..addListener(() {
-            setState(() {
-              _dragOffset = _dragAnimation.value;
-            });
-          });
-
-    // Wait for animation to complete (200ms slideUp + 50ms buffer)
-    Future.delayed(const Duration(milliseconds: 250), () {
-      if (mounted) {
-        setState(() {
-          _showContent = true;
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _dragAnimationController.dispose();
-    super.dispose();
-  }
-
-  void _handleVerticalDragUpdate(DragUpdateDetails details) {
-    setState(() {
-      // Only allow downward drag (positive delta)
-      final newOffset = _dragOffset + details.delta.dy;
-      _dragOffset = newOffset.clamp(0, double.infinity);
-    });
-  }
-
-  void _handleVerticalDragEnd(DragEndDetails details) {
-    final velocity = details.primaryVelocity ?? 0.0;
-
-    // Dismiss if: dragged past threshold OR high velocity downward
-    if (_dragOffset > _dismissThreshold || velocity > _velocityThreshold) {
-      _animateDismiss();
-    } else {
-      // Spring back to original position
-      _animateSpringBack();
-    }
-  }
-
-  Future<void> _animateDismiss() async {
-    // Animate remaining distance to full screen height
-    final screenHeight = MediaQuery.of(context).size.height;
-    _dragAnimation =
-        Tween<double>(
-            begin: _dragOffset,
-            end: screenHeight,
-          ).animate(
-            CurvedAnimation(
-              parent: _dragAnimationController,
-              curve: Curves.easeInCubic,
-            ),
-          )
-          ..addListener(() {
-            setState(() {
-              _dragOffset = _dragAnimation.value;
-            });
-          });
-
-    _dragAnimationController.reset();
-    await _dragAnimationController.forward();
-
-    if (mounted) {
-      OverlayService.hide();
-    }
-  }
-
-  void _animateSpringBack() {
-    _dragAnimation =
-        Tween<double>(
-            begin: _dragOffset,
-            end: 0,
-          ).animate(
-            CurvedAnimation(
-              parent: _dragAnimationController,
-              curve: Curves.easeOutCubic,
-            ),
-          )
-          ..addListener(() {
-            setState(() {
-              _dragOffset = _dragAnimation.value;
-            });
-          });
-
-    _dragAnimationController
-      ..reset()
-      ..forward();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -196,128 +72,61 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
     final day = AppDateUtils.startOfDay(widget.date);
     final today = AppDateUtils.startOfDay(DateTime.now());
     final isFuture = day.isAfter(today);
-    final mediaQuery = MediaQuery.of(context);
 
-    // Check reduce motion preference
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    final effectiveDragOffset = reduceMotion ? 0.0 : _dragOffset;
-
-    return GestureDetector(
-      onVerticalDragUpdate: _handleVerticalDragUpdate,
-      onVerticalDragEnd: _handleVerticalDragEnd,
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Transform.translate(
-          offset: Offset(0, effectiveDragOffset), // Apply drag offset
-          child: Material(
-            type: MaterialType.transparency,
-            child: Semantics(
-              liveRegion: true,
-              label: _buildSemanticLabel(),
-              child: Container(
-                margin: EdgeInsets.only(
-                  left: AppSpacing.md,
-                  right: AppSpacing.md,
-                  bottom: mediaQuery.padding.bottom + AppSpacing.sm,
-                ),
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                constraints: BoxConstraints(
-                  maxHeight: mediaQuery.size.height * 0.8,
-                  minHeight: mediaQuery.size.height * 0.65,
-                ),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, -4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Industry-standard drag handle indicator at very top
-                    _buildDragHandle(context),
-                    const SizedBox(height: 2),
-                    Expanded(
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 250),
-                        switchInCurve: Curves.easeInOut,
-                        switchOutCurve: Curves.easeInOut,
-                        transitionBuilder: (child, animation) {
-                          return FadeTransition(
-                            opacity: animation,
-                            child: SlideTransition(
-                              position: Tween<Offset>(
-                                begin: const Offset(0.05, 0),
-                                end: Offset.zero,
-                              ).animate(animation),
-                              child: child,
-                            ),
-                          );
-                        },
-                        child: _buildCurrentContent(context, ref, isFuture),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Builds the industry-standard drag handle indicator.
-  Widget _buildDragHandle(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 40,
-        height: 4,
-        margin: const EdgeInsets.only(top: 2),
-        decoration: BoxDecoration(
-          color: Theme.of(
-            context,
-          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-    );
-  }
-
-  /// Builds the header with date and close button.
-  Widget _buildHeader(BuildContext context) {
     final formattedDate = DateFormat('EEEE, MMMM d').format(widget.date);
     final isEditMode = _mode != _PopupMode.dayView;
 
-    return Row(
-      children: [
-        if (isEditMode)
-          HydraBackButton(
-            onPressed: _handleEditCancel,
-          ),
-        Expanded(
-          child: Text(
-            isEditMode ? 'Edit Treatment' : formattedDate,
-            style: AppTextStyles.h2,
-          ),
+    return Semantics(
+      liveRegion: true,
+      label: _buildSemanticLabel(),
+      child: LoggingPopupWrapper(
+        title: isEditMode ? 'Edit Treatment' : formattedDate,
+        headerContent: isEditMode
+            ? null
+            : _buildCenteredDateHeader(context, formattedDate),
+        leading: isEditMode
+            ? HydraBackButton(
+                onPressed: _handleEditCancel,
+              )
+            : null,
+        showCloseButton: !isEditMode,
+        onDismiss: () {
+          // No special cleanup needed
+        },
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          switchInCurve: Curves.easeInOut,
+          switchOutCurve: Curves.easeInOut,
+          transitionBuilder: (child, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0.05, 0),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: _buildCurrentContent(context, ref, isFuture),
         ),
-        SizedBox(
-          width: AppSpacing.minTouchTarget,
-          height: AppSpacing.minTouchTarget,
-          child: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: isEditMode ? _handleEditCancel : OverlayService.hide,
-            tooltip: isEditMode ? 'Cancel' : 'Close',
-            iconSize: 24,
-            padding: EdgeInsets.zero,
-          ),
+      ),
+    );
+  }
+
+  /// Builds a centered date header that accounts for the close button.
+  Widget _buildCenteredDateHeader(BuildContext context, String formattedDate) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Text(
+        formattedDate,
+        textAlign: TextAlign.center,
+        style: theme.textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: theme.colorScheme.onSurface,
         ),
-      ],
+      ),
     );
   }
 
@@ -354,55 +163,26 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
     WidgetRef ref,
     bool isFuture,
   ) {
-    if (!_showContent) {
-      return const Center(
-        key: ValueKey('loading'),
-        child: Padding(
-          padding: EdgeInsets.all(AppSpacing.xl),
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
     return switch (_mode) {
-      _PopupMode.dayView => Align(
-          alignment: Alignment.topCenter,
-          child: SingleChildScrollView(
-            key: const ValueKey('dayView'),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context),
-                const SizedBox(height: AppSpacing.md),
-                Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .outlineVariant
-                      .withValues(alpha: 0.3),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                _buildContent(context, ref, isFuture),
-              ],
-            ),
+      _PopupMode.dayView => Column(
+        key: const ValueKey('dayView'),
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: AppSpacing.sm),
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: Theme.of(
+              context,
+            ).colorScheme.outlineVariant.withValues(alpha: 0.3),
           ),
-        ),
-      _PopupMode.editMedication => Align(
-          alignment: Alignment.topCenter,
-          child: SingleChildScrollView(
-            key: const ValueKey('editMedication'),
-            child: _buildMedicationEditContent(context),
-          ),
-        ),
-      _PopupMode.editFluid => Align(
-          alignment: Alignment.topCenter,
-          child: SingleChildScrollView(
-            key: const ValueKey('editFluid'),
-            child: _buildFluidEditContent(context),
-          ),
-        ),
+          const SizedBox(height: AppSpacing.md),
+          _buildContent(context, ref, isFuture),
+        ],
+      ),
+      _PopupMode.editMedication => _buildMedicationEditContent(context),
+      _PopupMode.editFluid => _buildFluidEditContent(context),
     };
   }
 
@@ -798,7 +578,8 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
     return weekSessionsAsync.when(
       data: (weekSessions) {
         final normalizedDate = AppDateUtils.startOfDay(widget.date);
-        final (medSessions, fluidSessions) = weekSessions[normalizedDate] ??
+        final (medSessions, fluidSessions) =
+            weekSessions[normalizedDate] ??
             (<MedicationSession>[], <FluidSession>[]);
 
         // Match sessions to historical reminders
@@ -1038,9 +819,9 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
         children: [
           if (completed)
             const Icon(
-                Icons.check_circle,
-                color: AppColors.primary,
-                size: 28,
+              Icons.check_circle,
+              color: AppColors.primary,
+              size: 28,
             )
           else if (!isFuture)
             const Icon(
@@ -1393,14 +1174,16 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
     // Detect if new session by checking weekSessions
     final weekStart = AppDateUtils.startOfWeekMonday(widget.date);
     final weekSessionsAsync = ref.read(weekSessionsProvider(weekStart));
-    final isNewSession = weekSessionsAsync.whenOrNull(
-      data: (weekSessions) {
-        final normalizedDate = AppDateUtils.startOfDay(widget.date);
-        final (medSessions, _) = weekSessions[normalizedDate] ??
-            (<MedicationSession>[], <FluidSession>[]);
-        return !medSessions.any((s) => s.id == session.id);
-      },
-    ) ??
+    final isNewSession =
+        weekSessionsAsync.whenOrNull(
+          data: (weekSessions) {
+            final normalizedDate = AppDateUtils.startOfDay(widget.date);
+            final (medSessions, _) =
+                weekSessions[normalizedDate] ??
+                (<MedicationSession>[], <FluidSession>[]);
+            return !medSessions.any((s) => s.id == session.id);
+          },
+        ) ??
         true;
 
     final success = isNewSession
@@ -1444,19 +1227,21 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
     final sessionDate = session.dateTime;
 
     // Filter schedules that had reminders on the SESSION DATE
-    final schedulesForDate = profileState.medicationSchedules
+    final schedulesForDate =
+        profileState.medicationSchedules
             ?.where(
               (s) =>
-                  s.isActive &&
-                  s.reminderTimesOnDate(sessionDate).isNotEmpty,
+                  s.isActive && s.reminderTimesOnDate(sessionDate).isNotEmpty,
             )
             .toList() ??
         <Schedule>[];
 
-    return ref.read(loggingProvider.notifier).logMedicationSession(
-      session: session,
-      todaysSchedules: schedulesForDate,
-    );
+    return ref
+        .read(loggingProvider.notifier)
+        .logMedicationSession(
+          session: session,
+          todaysSchedules: schedulesForDate,
+        );
   }
 
   /// Update existing medication session
@@ -1464,10 +1249,12 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
     MedicationSession oldSession,
     MedicationSession newSession,
   ) async {
-    return ref.read(progressEditProvider.notifier).updateMedicationSession(
-      oldSession: oldSession,
-      newSession: newSession,
-    );
+    return ref
+        .read(progressEditProvider.notifier)
+        .updateMedicationSession(
+          oldSession: oldSession,
+          newSession: newSession,
+        );
   }
 
   /// Handle fluid edit (transition to edit mode)
@@ -1487,14 +1274,16 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
 
     final weekStart = AppDateUtils.startOfWeekMonday(widget.date);
     final weekSessionsAsync = ref.read(weekSessionsProvider(weekStart));
-    final isNewSession = weekSessionsAsync.whenOrNull(
-      data: (weekSessions) {
-        final normalizedDate = AppDateUtils.startOfDay(widget.date);
-        final (_, fluidSessions) = weekSessions[normalizedDate] ??
-            (<MedicationSession>[], <FluidSession>[]);
-        return !fluidSessions.any((s) => s.id == session.id);
-      },
-    ) ??
+    final isNewSession =
+        weekSessionsAsync.whenOrNull(
+          data: (weekSessions) {
+            final normalizedDate = AppDateUtils.startOfDay(widget.date);
+            final (_, fluidSessions) =
+                weekSessions[normalizedDate] ??
+                (<MedicationSession>[], <FluidSession>[]);
+            return !fluidSessions.any((s) => s.id == session.id);
+          },
+        ) ??
         true;
 
     final success = isNewSession
@@ -1534,14 +1323,17 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
 
     // Verify schedule had reminders on session date
     final sessionDate = session.dateTime;
-    final scheduleValidForDate = fluidSchedule != null &&
+    final scheduleValidForDate =
+        fluidSchedule != null &&
         fluidSchedule.isActive &&
         fluidSchedule.reminderTimesOnDate(sessionDate).isNotEmpty;
 
-    return ref.read(loggingProvider.notifier).logFluidSession(
-      session: session,
-      fluidSchedule: scheduleValidForDate ? fluidSchedule : null,
-    );
+    return ref
+        .read(loggingProvider.notifier)
+        .logFluidSession(
+          session: session,
+          fluidSchedule: scheduleValidForDate ? fluidSchedule : null,
+        );
   }
 
   /// Update existing fluid session
@@ -1549,10 +1341,12 @@ class _ProgressDayDetailPopupState extends ConsumerState<ProgressDayDetailPopup>
     FluidSession oldSession,
     FluidSession newSession,
   ) async {
-    return ref.read(progressEditProvider.notifier).updateFluidSession(
-      oldSession: oldSession,
-      newSession: newSession,
-    );
+    return ref
+        .read(progressEditProvider.notifier)
+        .updateFluidSession(
+          oldSession: oldSession,
+          newSession: newSession,
+        );
   }
 
   /// Builds the semantic label for accessibility.
@@ -1585,8 +1379,7 @@ class _MedicationEditInlineForm extends StatefulWidget {
       _MedicationEditInlineFormState();
 }
 
-class _MedicationEditInlineFormState
-    extends State<_MedicationEditInlineForm> {
+class _MedicationEditInlineFormState extends State<_MedicationEditInlineForm> {
   late bool _completed;
   late double _dosageGiven;
   double? _previousDosage; // Store dosage when switching to missed
@@ -1600,10 +1393,10 @@ class _MedicationEditInlineFormState
     _completed = widget.session.completed;
     _dosageGiven = widget.session.dosageGiven;
     _notesController = TextEditingController(text: widget.session.notes ?? '');
-    
+
     // Expand notes if already has content
     _notesExpanded = widget.session.notes?.isNotEmpty ?? false;
-    
+
     // Expand on focus, collapse on unfocus if empty
     _notesFocusNode.addListener(() {
       if (_notesFocusNode.hasFocus && !_notesExpanded) {
@@ -1699,8 +1492,9 @@ class _MedicationEditInlineFormState
     final medicationName = widget.schedule.medicationName ?? 'Medication';
     final strengthAmount = widget.schedule.medicationStrengthAmount;
     final strengthUnit = widget.schedule.medicationStrengthUnit ?? '';
-    final strengthText =
-        strengthAmount != null ? ' $strengthAmount$strengthUnit' : '';
+    final strengthText = strengthAmount != null
+        ? ' $strengthAmount$strengthUnit'
+        : '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1823,8 +1617,9 @@ class _MedicationEditInlineFormState
               child: Text(
                 label,
                 style: AppTextStyles.body.copyWith(
-                  color:
-                      isSelected ? AppColors.primary : AppColors.textSecondary,
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.textSecondary,
                   fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
                 ),
                 overflow: TextOverflow.ellipsis,
@@ -1987,7 +1782,6 @@ class _MedicationEditInlineFormState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         HydraButton(
-          variant: HydraButtonVariant.primary,
           isFullWidth: true,
           onPressed: _handleSave,
           child: const Text('Save'),
@@ -2226,7 +2020,6 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         HydraButton(
-          variant: HydraButtonVariant.primary,
           isFullWidth: true,
           onPressed: _handleSave,
           child: const Text('Save'),
@@ -2243,19 +2036,26 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
   }
 }
 
-/// Shows the progress day detail popup with blur background.
+/// Shows the progress day detail popup as a bottom sheet.
 ///
 /// Displays treatment details for the specified [date].
-/// Uses slideUp animation and is dismissible by tapping background or close
-/// button.
+/// Uses standard bottom sheet animation and is dismissible by dragging or
+/// tapping the close button.
 ///
 /// Example:
 /// ```dart
 /// showProgressDayDetailPopup(context, DateTime(2025, 10, 15));
 /// ```
 void showProgressDayDetailPopup(BuildContext context, DateTime date) {
-  OverlayService.showFullScreenPopup(
+  showHydraBottomSheet<void>(
     context: context,
-    child: ProgressDayDetailPopup(date: date),
+    isScrollControlled: true,
+    useRootNavigator: true,
+    backgroundColor: AppColors.background,
+    builder: (sheetContext) => HydraBottomSheet(
+      heightFraction: 0.85,
+      backgroundColor: AppColors.background,
+      child: ProgressDayDetailPopup(date: date),
+    ),
   );
 }

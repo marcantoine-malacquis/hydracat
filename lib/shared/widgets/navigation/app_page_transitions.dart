@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/constants/app_animations.dart';
 import 'package:hydracat/shared/widgets/navigation/slide_transition_page.dart';
 
 /// Centralized page transition definitions for the HydraCat app
@@ -9,8 +10,9 @@ import 'package:hydracat/shared/widgets/navigation/slide_transition_page.dart';
 class AppPageTransitions {
   AppPageTransitions._();
 
-  /// Default transition duration for most page transitions
-  static const Duration defaultDuration = Duration(milliseconds: 300);
+  /// Default transition duration for most page transitions.
+  /// Uses centralized constant from AppAnimations for consistency.
+  static const Duration defaultDuration = AppAnimations.pageSlideDuration;
 
   /// Fast transition duration for quick actions
   static const Duration fastDuration = Duration(milliseconds: 200);
@@ -63,13 +65,16 @@ class AppPageTransitions {
   /// (left-to-right) navigation with appropriate slide directions.
   /// This is the recommended approach for most navigation flows as it
   /// provides consistent UX.
+  ///
+  /// Uses centralized animation constants from AppAnimations.
+  /// Reduce motion is handled automatically by SlideTransitionPage.
   static SlideTransitionPage<T> bidirectionalSlide<T>({
     required Widget child,
     LocalKey? key,
     String? name,
     Object? arguments,
     String? restorationId,
-    Duration duration = defaultDuration,
+    Duration? duration,
   }) {
     return SlideTransitionPage<T>(
       key: key,
@@ -178,6 +183,115 @@ class AppPageTransitions {
           ),
         );
       },
+    );
+  }
+}
+
+/// A widget that provides smooth cross-fade transitions for tab navigation.
+///
+/// Uses [AnimatedSwitcher] to fade between tab content when the key changes.
+/// Respects reduced motion preferences and provides a subtle, modern transition
+/// that masks data loading on heavy screens.
+///
+/// The transition combines:
+/// - Primary: [FadeTransition] for smooth opacity changes
+/// - Optional: Very subtle scale (0.98 → 1.0) for depth without motion sickness
+///
+/// Example usage:
+/// ```dart
+/// TabFadeSwitcher(
+///   key: ValueKey(currentTabRoute),
+///   child: currentTabContent,
+/// )
+/// ```
+class TabFadeSwitcher extends StatelessWidget {
+  /// Creates a [TabFadeSwitcher] with the specified child.
+  ///
+  /// The [child] should have a [Key] that changes when switching tabs.
+  /// The [duration] and [curve] can be customized, but default to app-wide
+  /// constants for consistency.
+  const TabFadeSwitcher({
+    required this.child,
+    super.key,
+    this.duration,
+    this.curve,
+  });
+
+  /// The child widget to display.
+  ///
+  /// Should have a [Key] that uniquely identifies the current tab.
+  final Widget child;
+
+  /// The duration of the fade transition.
+  ///
+  /// Defaults to [AppAnimations.tabFadeDuration] if not specified.
+  final Duration? duration;
+
+  /// The animation curve for the transition.
+  ///
+  /// Defaults to [AppAnimations.tabFadeCurve] if not specified.
+  final Curve? curve;
+
+  @override
+  Widget build(BuildContext context) {
+    // Check for reduced motion preference
+    final shouldReduceMotion = AppAnimations.shouldReduceMotion(context);
+    final effectiveDuration = shouldReduceMotion
+        ? Duration.zero
+        : (duration ?? AppAnimations.tabFadeDuration);
+    final effectiveCurve = curve ?? AppAnimations.tabFadeCurve;
+
+    // If animations are disabled, return child directly
+    if (shouldReduceMotion) {
+      // Debug: Help identify if animations are being disabled
+      assert(
+        () {
+          debugPrint(
+            '[TabFadeSwitcher] Animations disabled due to Reduce Motion setting',
+          );
+          return true;
+        }(),
+      );
+      return child;
+    }
+
+    // Ensure child has a key for AnimatedSwitcher to detect changes
+    assert(
+      child.key != null,
+      'TabFadeSwitcher child must have a Key for animations to work. '
+      'Wrap the child in KeyedSubtree with a ValueKey.',
+    );
+
+    return AnimatedSwitcher(
+      duration: effectiveDuration,
+      switchInCurve: effectiveCurve,
+      switchOutCurve: effectiveCurve,
+      layoutBuilder: (currentChild, previousChildren) {
+        // Stack with incoming child strictly on top to prevent background flash
+        // Previous children (exiting) stay underneath, new child (entering) fades in on top
+        return Stack(
+          alignment: Alignment.topLeft,
+          fit: StackFit.expand,
+          children: <Widget>[
+            // Exiting children stay underneath
+            ...previousChildren,
+            // Incoming child fades in on top
+            if (currentChild != null) currentChild,
+          ],
+        );
+      },
+      transitionBuilder: (child, animation) {
+        // Subtle soft fade - pure opacity cross-dissolve without scale
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: effectiveCurve,
+          ),
+          child: child,
+        );
+      },
+      // Use child directly - it should already have a key from the parent
+      child: child,
     );
   }
 }

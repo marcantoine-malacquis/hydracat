@@ -374,35 +374,56 @@ List<SymptomBucket> buildWeeklySymptomBuckets({
       // Build daysWithSymptom map using severity scores (0-3)
       // For week/month views, we use maxScore instead of binary presence
       final daysWithSymptom = <String, int>{};
+      final rawValues = <String, dynamic>{};
 
       final vomitingSeverity = summary.vomitingMaxScore ?? 0;
       if (vomitingSeverity > 0) {
         daysWithSymptom[SymptomType.vomiting] = vomitingSeverity;
+        if (summary.vomitingRawValue != null) {
+          rawValues[SymptomType.vomiting] = summary.vomitingRawValue;
+        }
       }
 
       final diarrheaSeverity = summary.diarrheaMaxScore ?? 0;
       if (diarrheaSeverity > 0) {
         daysWithSymptom[SymptomType.diarrhea] = diarrheaSeverity;
+        if (summary.diarrheaRawValue != null) {
+          rawValues[SymptomType.diarrhea] = summary.diarrheaRawValue;
+        }
       }
 
       final constipationSeverity = summary.constipationMaxScore ?? 0;
       if (constipationSeverity > 0) {
         daysWithSymptom[SymptomType.constipation] = constipationSeverity;
+        if (summary.constipationRawValue != null) {
+          rawValues[SymptomType.constipation] = summary.constipationRawValue;
+        }
       }
 
       final energySeverity = summary.energyMaxScore ?? 0;
       if (energySeverity > 0) {
         daysWithSymptom[SymptomType.energy] = energySeverity;
+        if (summary.energyRawValue != null) {
+          rawValues[SymptomType.energy] = summary.energyRawValue;
+        }
       }
 
       final appetiteSeverity = summary.suppressedAppetiteMaxScore ?? 0;
       if (appetiteSeverity > 0) {
         daysWithSymptom[SymptomType.suppressedAppetite] = appetiteSeverity;
+        if (summary.suppressedAppetiteRawValue != null) {
+          rawValues[SymptomType.suppressedAppetite] =
+              summary.suppressedAppetiteRawValue;
+        }
       }
 
       final injectionSeverity = summary.injectionSiteReactionMaxScore ?? 0;
       if (injectionSeverity > 0) {
         daysWithSymptom[SymptomType.injectionSiteReaction] = injectionSeverity;
+        if (summary.injectionSiteReactionRawValue != null) {
+          rawValues[SymptomType.injectionSiteReaction] =
+              summary.injectionSiteReactionRawValue;
+        }
       }
 
       // Set daysWithAnySymptoms based on hasSymptoms flag
@@ -412,6 +433,7 @@ List<SymptomBucket> buildWeeklySymptomBuckets({
       bucket = bucket.copyWith(
         daysWithSymptom: daysWithSymptom,
         daysWithAnySymptoms: daysWithAnySymptoms,
+        rawValues: rawValues.isNotEmpty ? rawValues : null,
       );
     }
     // If summary is null, bucket remains empty (already initialized)
@@ -530,36 +552,57 @@ List<SymptomBucket> buildMonthlySymptomBuckets({
         // Build daysWithSymptom map using severity scores (0-3)
         // For week/month views, we use maxScore instead of binary presence
         final daysWithSymptom = <String, int>{};
+        final rawValues = <String, dynamic>{};
 
         final vomitingSeverity = summary.vomitingMaxScore ?? 0;
         if (vomitingSeverity > 0) {
           daysWithSymptom[SymptomType.vomiting] = vomitingSeverity;
+          if (summary.vomitingRawValue != null) {
+            rawValues[SymptomType.vomiting] = summary.vomitingRawValue;
+          }
         }
 
         final diarrheaSeverity = summary.diarrheaMaxScore ?? 0;
         if (diarrheaSeverity > 0) {
           daysWithSymptom[SymptomType.diarrhea] = diarrheaSeverity;
+          if (summary.diarrheaRawValue != null) {
+            rawValues[SymptomType.diarrhea] = summary.diarrheaRawValue;
+          }
         }
 
         final constipationSeverity = summary.constipationMaxScore ?? 0;
         if (constipationSeverity > 0) {
           daysWithSymptom[SymptomType.constipation] = constipationSeverity;
+          if (summary.constipationRawValue != null) {
+            rawValues[SymptomType.constipation] = summary.constipationRawValue;
+          }
         }
 
         final energySeverity = summary.energyMaxScore ?? 0;
         if (energySeverity > 0) {
           daysWithSymptom[SymptomType.energy] = energySeverity;
+          if (summary.energyRawValue != null) {
+            rawValues[SymptomType.energy] = summary.energyRawValue;
+          }
         }
 
         final appetiteSeverity = summary.suppressedAppetiteMaxScore ?? 0;
         if (appetiteSeverity > 0) {
           daysWithSymptom[SymptomType.suppressedAppetite] = appetiteSeverity;
+          if (summary.suppressedAppetiteRawValue != null) {
+            rawValues[SymptomType.suppressedAppetite] =
+                summary.suppressedAppetiteRawValue;
+          }
         }
 
         final injectionSeverity = summary.injectionSiteReactionMaxScore ?? 0;
         if (injectionSeverity > 0) {
           daysWithSymptom[SymptomType.injectionSiteReaction] =
               injectionSeverity;
+          if (summary.injectionSiteReactionRawValue != null) {
+            rawValues[SymptomType.injectionSiteReaction] =
+                summary.injectionSiteReactionRawValue;
+          }
         }
 
         // Set daysWithAnySymptoms based on hasSymptoms flag
@@ -569,6 +612,7 @@ List<SymptomBucket> buildMonthlySymptomBuckets({
         bucket = bucket.copyWith(
           daysWithSymptom: daysWithSymptom,
           daysWithAnySymptoms: daysWithAnySymptoms,
+          rawValues: rawValues.isNotEmpty ? rawValues : null,
         );
       }
       // If summary is null, bucket remains empty (already initialized)

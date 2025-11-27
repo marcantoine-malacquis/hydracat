@@ -78,9 +78,15 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
   }
 
   Future<void> _showAddWeightDialog() async {
-    final result = await showDialog<Map<String, dynamic>>(
+    final result = await showHydraBottomSheet<Map<String, dynamic>>(
       context: context,
-      builder: (_) => const WeightEntryDialog(),
+      isScrollControlled: true,
+      useRootNavigator: true,
+      backgroundColor: AppColors.background,
+      builder: (sheetContext) => const HydraBottomSheet(
+        backgroundColor: AppColors.background,
+        child: WeightEntryDialog(),
+      ),
     );
 
     if (result != null && mounted) {
@@ -121,30 +127,49 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
         ),
         actions: isIOS
             ? [
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () {
-                    HapticFeedback.selectionClick();
-                    _showAddWeightDialog();
-                  },
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        CupertinoIcons.add,
-                        size: 18,
-                        color: AppColors.primaryDark, // Darker teal
-                        // for visibility
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      _showAddWeightDialog();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
                       ),
-                      SizedBox(width: 4),
-                      Text(
-                        'Add',
-                        style: TextStyle(
-                          color: AppColors.primaryDark, // Darker teal
-                          // for visibility
-                        ),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(999),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ],
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            CupertinoIcons.add,
+                            size: 18,
+                            color: AppColors.primaryDark,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Add',
+                            style: TextStyle(
+                              color: AppColors.primaryDark,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ]
@@ -559,9 +584,15 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
 
   /// Shows dialog to edit an existing weight entry
   Future<void> _showEditWeightDialog(HealthParameter entry) async {
-    final result = await showDialog<Map<String, dynamic>>(
+    final result = await showHydraBottomSheet<Map<String, dynamic>>(
       context: context,
-      builder: (_) => WeightEntryDialog(existingEntry: entry),
+      isScrollControlled: true,
+      useRootNavigator: true,
+      backgroundColor: AppColors.background,
+      builder: (sheetContext) => HydraBottomSheet(
+        backgroundColor: AppColors.background,
+        child: WeightEntryDialog(existingEntry: entry),
+      ),
     );
 
     if (result != null && mounted) {

@@ -11,7 +11,8 @@ import 'package:hydracat/shared/widgets/accessibility/touch_target_icon_button.d
 /// - Scrollable content area
 /// - Back-button dismissal support
 ///
-/// Designed to be used inside a modal bottom sheet (via `showHydraBottomSheet`).
+/// Designed to be used inside a modal bottom sheet
+/// (via `showHydraBottomSheet`).
 /// The sheet itself handles animations, drag-to-dismiss, and backdrop.
 ///
 /// Usage:
@@ -87,7 +88,7 @@ class LoggingPopupWrapper extends StatelessWidget {
       },
       child: Semantics(
         label: l10n.loggingPopupSemantic(title),
-        child: Container(
+        child: ColoredBox(
           color: AppColors.background,
           child: ConstrainedBox(
             constraints: BoxConstraints(
@@ -154,7 +155,8 @@ class LoggingPopupWrapper extends StatelessWidget {
             children: [
               if (leading != null) leading!,
               Expanded(
-                child: headerContent ??
+                child:
+                    headerContent ??
                     Text(
                       title,
                       textAlign: TextAlign.center,

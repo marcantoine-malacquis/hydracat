@@ -31,7 +31,10 @@ class SymptomBucket {
     required this.end,
     required Map<String, int> daysWithSymptom,
     required this.daysWithAnySymptoms,
-  }) : _daysWithSymptom = Map.unmodifiable(daysWithSymptom);
+    Map<String, dynamic>? rawValues,
+  })  : _daysWithSymptom = Map.unmodifiable(daysWithSymptom),
+        _rawValues =
+            rawValues != null ? Map.unmodifiable(rawValues) : null;
 
   /// Factory constructor to create an empty multi-day bucket
   ///
@@ -102,6 +105,18 @@ class SymptomBucket {
   /// date range.
   final int daysWithAnySymptoms;
 
+  /// Raw values for symptoms in this bucket (single-day buckets only)
+  ///
+  /// For week/month views where start == end (single-day buckets), this map
+  /// contains the raw symptom values for tooltip display.
+  /// - Vomiting: int (episode count)
+  /// - Others: String (enum name)
+  ///
+  /// For year view (multi-day buckets), this field is null.
+  /// Keys match symptom type constants (e.g., SymptomType.vomiting).
+  Map<String, dynamic>? get rawValues => _rawValues;
+  final Map<String, dynamic>? _rawValues;
+
   /// Total symptom days across all symptoms in this bucket
   ///
   /// Computed as the sum of all values in `daysWithSymptom`. This represents
@@ -118,12 +133,14 @@ class SymptomBucket {
     DateTime? end,
     Map<String, int>? daysWithSymptom,
     int? daysWithAnySymptoms,
+    Map<String, dynamic>? rawValues,
   }) {
     return SymptomBucket(
       start: start ?? this.start,
       end: end ?? this.end,
       daysWithSymptom: daysWithSymptom ?? _daysWithSymptom,
       daysWithAnySymptoms: daysWithAnySymptoms ?? this.daysWithAnySymptoms,
+      rawValues: rawValues ?? _rawValues,
     );
   }
 
@@ -133,7 +150,8 @@ class SymptomBucket {
         'start: $start, '
         'end: $end, '
         'daysWithSymptom: $_daysWithSymptom, '
-        'daysWithAnySymptoms: $daysWithAnySymptoms'
+        'daysWithAnySymptoms: $daysWithAnySymptoms, '
+        'rawValues: $_rawValues'
         ')';
   }
 
@@ -145,7 +163,8 @@ class SymptomBucket {
         other.start == start &&
         other.end == end &&
         _mapEquals(other._daysWithSymptom, _daysWithSymptom) &&
-        other.daysWithAnySymptoms == daysWithAnySymptoms;
+        other.daysWithAnySymptoms == daysWithAnySymptoms &&
+        _rawValuesEquals(other._rawValues, _rawValues);
   }
 
   @override
@@ -155,6 +174,7 @@ class SymptomBucket {
       end,
       _mapHashCode(_daysWithSymptom),
       daysWithAnySymptoms,
+      _rawValuesHashCode(_rawValues),
     );
   }
 
@@ -169,6 +189,30 @@ class SymptomBucket {
 
   /// Helper to compare maps by value
   static bool _mapEquals(Map<String, int> a, Map<String, int> b) {
+    if (a.length != b.length) return false;
+    for (final key in a.keys) {
+      if (a[key] != b[key]) return false;
+    }
+    return true;
+  }
+
+  /// Helper to compute hash code for rawValues map by value
+  static int _rawValuesHashCode(Map<String, dynamic>? map) {
+    if (map == null) return 0;
+    var hash = 0;
+    for (final entry in map.entries) {
+      hash ^= Object.hash(entry.key, entry.value);
+    }
+    return hash;
+  }
+
+  /// Helper to compare rawValues maps by value
+  static bool _rawValuesEquals(
+    Map<String, dynamic>? a,
+    Map<String, dynamic>? b,
+  ) {
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
     if (a.length != b.length) return false;
     for (final key in a.keys) {
       if (a[key] != b[key]) return false;

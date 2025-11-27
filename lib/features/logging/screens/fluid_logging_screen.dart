@@ -571,7 +571,6 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
           hint: l10n.fluidLogButtonHint,
           button: true,
           child: HydraButton(
-            variant: HydraButtonVariant.primary,
             isFullWidth: true,
             isLoading: _loadingState == LoadingOverlayState.loading,
             onPressed: _isFormValid && _loadingState == LoadingOverlayState.none

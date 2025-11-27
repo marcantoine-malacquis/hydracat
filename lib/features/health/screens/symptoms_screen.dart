@@ -9,7 +9,6 @@ import 'package:hydracat/features/health/models/symptom_granularity.dart';
 import 'package:hydracat/features/health/models/symptom_type.dart';
 import 'package:hydracat/features/health/widgets/symptoms_entry_dialog.dart';
 import 'package:hydracat/features/health/widgets/symptoms_stacked_bar_chart.dart';
-import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/providers/symptoms_chart_provider.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
@@ -82,12 +81,16 @@ class _SymptomsScreenState extends ConsumerState<SymptomsScreen> {
   }
 
   void _showAddSymptomsDialog() {
-    OverlayService.showFullScreenPopup(
+    showHydraBottomSheet<void>(
       context: context,
-      child: const SymptomsEntryDialog(),
-      onDismiss: () {
-        // No special cleanup needed
-      },
+      isScrollControlled: true,
+      useRootNavigator: true,
+      backgroundColor: AppColors.background,
+      builder: (sheetContext) => const HydraBottomSheet(
+        heightFraction: 0.85,
+        backgroundColor: AppColors.background,
+        child: SymptomsEntryDialog(),
+      ),
     );
   }
 
@@ -107,30 +110,49 @@ class _SymptomsScreenState extends ConsumerState<SymptomsScreen> {
         ),
         actions: isIOS
             ? [
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () {
-                    HapticFeedback.selectionClick();
-                    _showAddSymptomsDialog();
-                  },
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        CupertinoIcons.add,
-                        size: 18,
-                        color:
-                            AppColors.primaryDark, // Darker teal for visibility
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      _showAddSymptomsDialog();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
                       ),
-                      SizedBox(width: 4),
-                      Text(
-                        'Add',
-                        style: TextStyle(
-                          color: AppColors
-                              .primaryDark, // Darker teal for visibility
-                        ),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(999),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ],
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            CupertinoIcons.add,
+                            size: 18,
+                            color: AppColors.primaryDark,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Add',
+                            style: TextStyle(
+                              color: AppColors.primaryDark,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ]

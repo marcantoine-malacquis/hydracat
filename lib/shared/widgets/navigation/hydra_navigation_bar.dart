@@ -28,6 +28,17 @@ const double _materialIconSize = 26;
 // Cupertino: Slightly smaller 24px for iOS feel
 const double _cupertinoIconSize = 24;
 
+/// Helper class to store indicator geometry (position and size).
+class _IndicatorGeometry {
+  const _IndicatorGeometry({
+    required this.left,
+    required this.width,
+  });
+
+  final double left;
+  final double width;
+}
+
 /// Custom bottom navigation bar with accessibility support.
 class HydraNavigationBar extends StatefulWidget {
   /// Creates a HydraNavigationBar with the specified items and current index.
@@ -261,95 +272,88 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
     );
   }
 
+  /// Computes the geometry (left offset and width) for
+  /// the indicator at a given index.
+  ///
+  /// The indicator needs to account for:
+  /// - The center FAB gap (AppSpacing.md * 2 + AppAccessibility.fabTouchTarget)
+  /// - Equal distribution of tabs on left and right sides
+  /// - Horizontal padding for visual spacing
+  _IndicatorGeometry _indicatorGeometryForIndex(
+    int index,
+    BoxConstraints constraints,
+  ) {
+    if (index < 0 || index >= widget.items.length) {
+      return const _IndicatorGeometry(left: 0, width: 0);
+    }
+
+    final totalWidth = constraints.maxWidth;
+    const gapWidth = AppSpacing.md * 2 + AppAccessibility.fabTouchTarget;
+    final availableWidth = totalWidth - gapWidth;
+    final itemWidth = availableWidth / widget.items.length;
+
+    // Calculate left offset based on index
+    // For indices 0-1: left side,
+    // for indices 2-3: right side (accounting for gap)
+    double left;
+    if (index < 2) {
+      // Left side items (0, 1)
+      left = index * itemWidth;
+    } else {
+      // Right side items (2, 3) - need to account for gap
+      left = (index * itemWidth) + gapWidth;
+    }
+
+    // Indicator width is itemWidth minus horizontal padding on both sides
+    final width = itemWidth - (_indicatorHorizontalPadding * 2);
+
+    return _IndicatorGeometry(
+      left: left + _indicatorHorizontalPadding,
+      width: width,
+    );
+  }
+
   Widget _buildTopIndicators(BuildContext context, bool isCupertino) {
-    // iOS: More subtle scale animation (0.95 vs 0.9) for lighter feel
-    // Material: Standard scale (0.9) for more pronounced feedback
-    final scaleWhenUnselected = isCupertino ? 0.95 : 0.9;
     // iOS: Use easeOut for snappier feel, Material: easeInOut for smoother
     final animationCurve = isCupertino ? Curves.easeOut : Curves.easeInOut;
     final indicatorDuration = _indicatorDuration(context, isCupertino);
 
-    return Row(
-      children: [
-        // Left side items indicators
-        Expanded(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: widget.items.take(2).map((item) {
-              final index = widget.items.indexOf(item);
-              final isSelected = index == widget.currentIndex;
-              return Expanded(
-                child: AnimatedOpacity(
-                  duration: indicatorDuration,
-                  opacity: isSelected ? 1.0 : 0.0,
-                  child: AnimatedScale(
-                    duration: indicatorDuration,
-                    scale: isSelected ? 1.0 : scaleWhenUnselected,
-                    curve: animationCurve,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: _indicatorHorizontalPadding,
-                      ),
-                      child: Container(
-                        key: Key('navTopIndicator-$index'),
-                        height: _indicatorHeight,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(
-                            _indicatorRadius,
-                          ),
-                        ),
-                      ),
-                    ),
+    // Hide indicator if no valid selection
+    if (widget.currentIndex < 0 || widget.currentIndex >= widget.items.length) {
+      return const SizedBox.shrink();
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final geometry = _indicatorGeometryForIndex(
+          widget.currentIndex,
+          constraints,
+        );
+
+        return SizedBox(
+          height: _indicatorHeight,
+          child: Stack(
+            children: [
+              AnimatedPositioned(
+                duration: indicatorDuration,
+                curve: animationCurve,
+                left: geometry.left,
+                width: geometry.width,
+                top: 0,
+                height: _indicatorHeight,
+                child: Container(
+                  key: const Key('navTopIndicator'),
+                  height: _indicatorHeight,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(_indicatorRadius),
                   ),
                 ),
-              );
-            }).toList(),
+              ),
+            ],
           ),
-        ),
-
-        // Center FAB space (no indicator)
-        const SizedBox(width: AppSpacing.md),
-        const SizedBox(width: AppAccessibility.fabTouchTarget),
-        const SizedBox(width: AppSpacing.md),
-
-        // Right side items indicators
-        Expanded(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: widget.items.skip(2).map((item) {
-              final index = widget.items.indexOf(item);
-              final isSelected = index == widget.currentIndex;
-              return Expanded(
-                child: AnimatedOpacity(
-                  duration: indicatorDuration,
-                  opacity: isSelected ? 1.0 : 0.0,
-                  child: AnimatedScale(
-                    duration: indicatorDuration,
-                    scale: isSelected ? 1.0 : scaleWhenUnselected,
-                    curve: animationCurve,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: _indicatorHorizontalPadding,
-                      ),
-                      child: Container(
-                        key: Key('navTopIndicator-$index'),
-                        height: _indicatorHeight,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(
-                            _indicatorRadius,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -400,7 +404,7 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
                       fontWeight: isSelected
                           ? selectedFontWeight
                           : FontWeight.w400,
-                      fontSize: 10,
+                      fontSize: 12,
                       height: 1,
                     ),
                     textAlign: TextAlign.center,

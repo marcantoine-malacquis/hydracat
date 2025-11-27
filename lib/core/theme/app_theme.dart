@@ -61,6 +61,7 @@ class AppTheme {
       inputDecorationTheme: _buildInputDecorationTheme(),
       chipTheme: _buildChipTheme(),
       switchTheme: _buildSwitchTheme(),
+      dialogTheme: _buildDialogTheme(),
 
       // Layout
       visualDensity: VisualDensity.standard,
@@ -339,6 +340,15 @@ class AppTheme {
           }
           return Colors.transparent;
         },
+      ),
+    );
+  }
+
+  static DialogThemeData _buildDialogTheme() {
+    return DialogThemeData(
+      backgroundColor: AppColors.background,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
     );
   }

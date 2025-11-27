@@ -9,15 +9,23 @@ class ResourcesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final body = buildBody(context);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: HydraAppBar(
         title: const Text('Learn'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: const Center(
-        child: Text('Learn Screen - Coming Soon'),
-      ),
+      body: body,
+    );
+  }
+
+  /// Builds the body content for the learn screen.
+  /// This static method can be used by AppShell to get body-only content.
+  static Widget buildBody(BuildContext context) {
+    return const Center(
+      child: Text('Learn Screen - Coming Soon'),
     );
   }
 }

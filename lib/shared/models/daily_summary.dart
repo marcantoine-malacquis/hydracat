@@ -45,6 +45,12 @@ class DailySummary extends TreatmentSummaryBase {
     this.energyMaxScore,
     this.suppressedAppetiteMaxScore,
     this.injectionSiteReactionMaxScore,
+    this.vomitingRawValue,
+    this.diarrheaRawValue,
+    this.constipationRawValue,
+    this.energyRawValue,
+    this.suppressedAppetiteRawValue,
+    this.injectionSiteReactionRawValue,
     this.symptomScoreTotal,
     this.symptomScoreAverage,
     this.hasSymptoms = false,
@@ -132,6 +138,13 @@ class DailySummary extends TreatmentSummaryBase {
           ?.toInt(),
       injectionSiteReactionMaxScore:
           (json['injectionSiteReactionMaxScore'] as num?)?.toInt(),
+      vomitingRawValue: (json['vomitingRawValue'] as num?)?.toInt(),
+      diarrheaRawValue: json['diarrheaRawValue'] as String?,
+      constipationRawValue: json['constipationRawValue'] as String?,
+      energyRawValue: json['energyRawValue'] as String?,
+      suppressedAppetiteRawValue: json['suppressedAppetiteRawValue'] as String?,
+      injectionSiteReactionRawValue:
+          json['injectionSiteReactionRawValue'] as String?,
       symptomScoreTotal: (json['symptomScoreTotal'] as num?)?.toInt(),
       symptomScoreAverage: (json['symptomScoreAverage'] as num?)?.toDouble(),
       hasSymptoms: asBool(json['hasSymptoms']),
@@ -195,6 +208,40 @@ class DailySummary extends TreatmentSummaryBase {
   /// Maximum injection site reaction score for the day (0-10)
   final int? injectionSiteReactionMaxScore;
 
+  /// Raw value for vomiting (episode count, 0-10+)
+  ///
+  /// Stores the actual number of vomiting episodes for tooltip display.
+  /// Used to show "2 episodes" instead of "Severity 2" in charts.
+  final int? vomitingRawValue;
+
+  /// Raw value for diarrhea (enum name: "normal", "soft", "loose", "watery")
+  ///
+  /// Stores the enum name for tooltip display.
+  /// Used to show "Soft" instead of "Severity 1" in charts.
+  final String? diarrheaRawValue;
+
+  /// Raw value for constipation (enum name)
+  ///
+  /// Stores the enum name for tooltip display
+  /// (e.g., "mildStraining", "painful").
+  final String? constipationRawValue;
+
+  /// Raw value for energy (enum name)
+  ///
+  /// Stores the enum name for tooltip display (e.g., "slightlyReduced", "low").
+  final String? energyRawValue;
+
+  /// Raw value for suppressed appetite (enum name)
+  ///
+  /// Stores the enum name for tooltip display (e.g., "half", "quarter").
+  final String? suppressedAppetiteRawValue;
+
+  /// Raw value for injection site reaction (enum name)
+  ///
+  /// Stores the enum name for tooltip display
+  /// (e.g., "mildSwelling", "redPainful").
+  final String? injectionSiteReactionRawValue;
+
   /// Sum of all present symptom scores (0-60)
   final int? symptomScoreTotal;
 
@@ -244,6 +291,15 @@ class DailySummary extends TreatmentSummaryBase {
         'suppressedAppetiteMaxScore': suppressedAppetiteMaxScore,
       if (injectionSiteReactionMaxScore != null)
         'injectionSiteReactionMaxScore': injectionSiteReactionMaxScore,
+      if (vomitingRawValue != null) 'vomitingRawValue': vomitingRawValue,
+      if (diarrheaRawValue != null) 'diarrheaRawValue': diarrheaRawValue,
+      if (constipationRawValue != null)
+        'constipationRawValue': constipationRawValue,
+      if (energyRawValue != null) 'energyRawValue': energyRawValue,
+      if (suppressedAppetiteRawValue != null)
+        'suppressedAppetiteRawValue': suppressedAppetiteRawValue,
+      if (injectionSiteReactionRawValue != null)
+        'injectionSiteReactionRawValue': injectionSiteReactionRawValue,
       if (symptomScoreTotal != null) 'symptomScoreTotal': symptomScoreTotal,
       if (symptomScoreAverage != null)
         'symptomScoreAverage': symptomScoreAverage,
@@ -302,6 +358,12 @@ class DailySummary extends TreatmentSummaryBase {
     Object? energyMaxScore = _undefined,
     Object? suppressedAppetiteMaxScore = _undefined,
     Object? injectionSiteReactionMaxScore = _undefined,
+    Object? vomitingRawValue = _undefined,
+    Object? diarrheaRawValue = _undefined,
+    Object? constipationRawValue = _undefined,
+    Object? energyRawValue = _undefined,
+    Object? suppressedAppetiteRawValue = _undefined,
+    Object? injectionSiteReactionRawValue = _undefined,
     Object? symptomScoreTotal = _undefined,
     Object? symptomScoreAverage = _undefined,
     bool? hasSymptoms,
@@ -353,6 +415,24 @@ class DailySummary extends TreatmentSummaryBase {
       injectionSiteReactionMaxScore: injectionSiteReactionMaxScore == _undefined
           ? this.injectionSiteReactionMaxScore
           : injectionSiteReactionMaxScore as int?,
+      vomitingRawValue: vomitingRawValue == _undefined
+          ? this.vomitingRawValue
+          : vomitingRawValue as int?,
+      diarrheaRawValue: diarrheaRawValue == _undefined
+          ? this.diarrheaRawValue
+          : diarrheaRawValue as String?,
+      constipationRawValue: constipationRawValue == _undefined
+          ? this.constipationRawValue
+          : constipationRawValue as String?,
+      energyRawValue: energyRawValue == _undefined
+          ? this.energyRawValue
+          : energyRawValue as String?,
+      suppressedAppetiteRawValue: suppressedAppetiteRawValue == _undefined
+          ? this.suppressedAppetiteRawValue
+          : suppressedAppetiteRawValue as String?,
+      injectionSiteReactionRawValue: injectionSiteReactionRawValue == _undefined
+          ? this.injectionSiteReactionRawValue
+          : injectionSiteReactionRawValue as String?,
       symptomScoreTotal: symptomScoreTotal == _undefined
           ? this.symptomScoreTotal
           : symptomScoreTotal as int?,
@@ -383,6 +463,12 @@ class DailySummary extends TreatmentSummaryBase {
         other.energyMaxScore == energyMaxScore &&
         other.suppressedAppetiteMaxScore == suppressedAppetiteMaxScore &&
         other.injectionSiteReactionMaxScore == injectionSiteReactionMaxScore &&
+        other.vomitingRawValue == vomitingRawValue &&
+        other.diarrheaRawValue == diarrheaRawValue &&
+        other.constipationRawValue == constipationRawValue &&
+        other.energyRawValue == energyRawValue &&
+        other.suppressedAppetiteRawValue == suppressedAppetiteRawValue &&
+        other.injectionSiteReactionRawValue == injectionSiteReactionRawValue &&
         other.symptomScoreTotal == symptomScoreTotal &&
         other.symptomScoreAverage == symptomScoreAverage &&
         other.hasSymptoms == hasSymptoms &&
@@ -391,7 +477,7 @@ class DailySummary extends TreatmentSummaryBase {
 
   @override
   int get hashCode {
-    return Object.hash(
+    return Object.hashAll([
       super.hashCode,
       date,
       overallStreak,
@@ -408,10 +494,16 @@ class DailySummary extends TreatmentSummaryBase {
       energyMaxScore,
       suppressedAppetiteMaxScore,
       injectionSiteReactionMaxScore,
+      vomitingRawValue,
+      diarrheaRawValue,
+      constipationRawValue,
+      energyRawValue,
+      suppressedAppetiteRawValue,
+      injectionSiteReactionRawValue,
       symptomScoreTotal,
       symptomScoreAverage,
       hasSymptoms,
-    );
+    ]);
   }
 
   @override
@@ -441,6 +533,12 @@ class DailySummary extends TreatmentSummaryBase {
         'energyMaxScore: $energyMaxScore, '
         'suppressedAppetiteMaxScore: $suppressedAppetiteMaxScore, '
         'injectionSiteReactionMaxScore: $injectionSiteReactionMaxScore, '
+        'vomitingRawValue: $vomitingRawValue, '
+        'diarrheaRawValue: $diarrheaRawValue, '
+        'constipationRawValue: $constipationRawValue, '
+        'energyRawValue: $energyRawValue, '
+        'suppressedAppetiteRawValue: $suppressedAppetiteRawValue, '
+        'injectionSiteReactionRawValue: $injectionSiteReactionRawValue, '
         'symptomScoreTotal: $symptomScoreTotal, '
         'symptomScoreAverage: $symptomScoreAverage, '
         'hasSymptoms: $hasSymptoms'

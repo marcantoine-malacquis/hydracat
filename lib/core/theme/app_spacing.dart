@@ -51,4 +51,11 @@ class AppSpacing {
 
   /// Button spacing - 16px (prevents accidental taps)
   static const double buttonSpacing = md;
+
+  /// Bottom sheet breathing room - 16px
+  ///
+  /// Minimum spacing added below bottom sheet content to ensure
+  /// comfortable clearance from the system home indicator on all platforms.
+  /// This provides visual breathing room for primary actions and content.
+  static const double bottomSheetInset = md;
 }

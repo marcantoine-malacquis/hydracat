@@ -18,9 +18,11 @@ Please let me know if this makes sense or contradict itself, the prd (.cursor/re
 I want an implementation plan in phases divided into steps that I can tackle easily with the help of Cursor/Claude Code in a work session.
 
 
+
 Please update and add only the important informations to remember about what we implemented in this step for future reference in 
 
 Please follow Firebase and Flutter best practices and use built-in solutions whenever possible instead of more complex custom solutions.
+Please let me know if what we have just achieved is the industry standard and most appropriate way to implement this. Let me know in case it is a hacky workaround that will cause issue in the future while scaling the app while another solution would have been more align with best practices and future-proof.
 
 Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself.
 

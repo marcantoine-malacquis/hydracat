@@ -9,6 +9,7 @@ import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/core/utils/chart_utils.dart';
 import 'package:hydracat/features/health/models/symptom_bucket.dart';
 import 'package:hydracat/features/health/models/symptom_granularity.dart';
+import 'package:hydracat/features/health/models/symptom_raw_value.dart';
 import 'package:hydracat/features/health/models/symptom_type.dart';
 import 'package:hydracat/providers/symptoms_chart_provider.dart';
 import 'package:intl/intl.dart';
@@ -654,7 +655,8 @@ class _SymptomsStackedBarChartState
               label: label,
               count: count,
               color: SymptomColors.colorForSymptom(symptomKey),
-              formattedLabel: _getSymptomRowLabel(label, count),
+              formattedLabel:
+                  _getSymptomRowLabel(symptomKey, label, count, bucket),
             ),
           );
         }
@@ -673,7 +675,8 @@ class _SymptomsStackedBarChartState
               label: 'Other',
               count: otherCount,
               color: SymptomColors.colorForOther(),
-              formattedLabel: _getSymptomRowLabel('Other', otherCount),
+              formattedLabel:
+                  _getSymptomRowLabel('other', 'Other', otherCount, bucket),
             ),
           );
         }
@@ -688,7 +691,12 @@ class _SymptomsStackedBarChartState
             label: label,
             count: count,
             color: SymptomColors.colorForSymptom(widget.selectedSymptomKey!),
-            formattedLabel: _getSymptomRowLabel(label, count),
+            formattedLabel: _getSymptomRowLabel(
+              widget.selectedSymptomKey!,
+              label,
+              count,
+              bucket,
+            ),
           ),
         );
       }
@@ -719,6 +727,61 @@ class _SymptomsStackedBarChartState
     }
   }
 
+  /// Formats a raw symptom value into a human-readable descriptor
+  ///
+  /// Returns the formatted descriptor (e.g., "2 episodes", "Soft") or null
+  /// if the raw value is not available or invalid.
+  String? _formatRawValueDescriptor(String symptomKey, dynamic rawValue) {
+    if (rawValue == null) return null;
+
+    switch (symptomKey) {
+      case SymptomType.vomiting:
+        if (rawValue is int) {
+          final episodeLabel = rawValue == 1 ? 'episode' : 'episodes';
+          return '$rawValue $episodeLabel';
+        }
+        return null;
+
+      case SymptomType.diarrhea:
+        if (rawValue is String) {
+          final quality = DiarrheaQuality.fromString(rawValue);
+          return quality.label;
+        }
+        return null;
+
+      case SymptomType.constipation:
+        if (rawValue is String) {
+          final level = ConstipationLevel.fromString(rawValue);
+          return level.label;
+        }
+        return null;
+
+      case SymptomType.suppressedAppetite:
+        if (rawValue is String) {
+          final fraction = AppetiteFraction.fromString(rawValue);
+          return fraction.label;
+        }
+        return null;
+
+      case SymptomType.injectionSiteReaction:
+        if (rawValue is String) {
+          final reaction = InjectionSiteReaction.fromString(rawValue);
+          return reaction.label;
+        }
+        return null;
+
+      case SymptomType.energy:
+        if (rawValue is String) {
+          final level = EnergyLevel.fromString(rawValue);
+          return level.label;
+        }
+        return null;
+
+      default:
+        return null;
+    }
+  }
+
   /// Get granularity-aware total label for tooltip
   ///
   /// Returns severity-based label for week/month views and
@@ -734,12 +797,28 @@ class _SymptomsStackedBarChartState
 
   /// Get granularity-aware symptom row label for tooltip
   ///
-  /// Returns severity format for week/month views and
-  /// day count format for year view.
-  String _getSymptomRowLabel(String symptomLabel, int count) {
+  /// Returns raw value descriptor for week/month views (e.g., "2 episodes", "Soft")
+  /// and day count format for year view.
+  String _getSymptomRowLabel(
+    String symptomKey,
+    String symptomLabel,
+    int count,
+    SymptomBucket bucket,
+  ) {
     return switch (widget.granularity) {
-      SymptomGranularity.week || SymptomGranularity.month =>
-        '$symptomLabel: Severity $count',
+      SymptomGranularity.week || SymptomGranularity.month => () {
+        // Try to get raw value descriptor for single-day buckets
+        if (bucket.rawValues != null &&
+            bucket.rawValues!.containsKey(symptomKey)) {
+          final rawValue = bucket.rawValues![symptomKey];
+          final descriptor = _formatRawValueDescriptor(symptomKey, rawValue);
+          if (descriptor != null) {
+            return '$symptomLabel: $descriptor';
+          }
+        }
+        // Fallback to severity format if raw value not available
+        return '$symptomLabel: Severity $count';
+      }(),
       SymptomGranularity.year => () {
         final dayLabel = count == 1 ? 'day' : 'days';
         return '$symptomLabel: $count $dayLabel';

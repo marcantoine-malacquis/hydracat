@@ -19,11 +19,26 @@ import 'package:hydracat/shared/widgets/widgets.dart';
 /// A screen that displays the main home interface for the HydraCat app.
 class HomeScreen extends ConsumerWidget {
   /// Creates a home screen.
-  const HomeScreen({super.key});
+  ///
+  /// If [bodyOnly] is true, returns only the body content without Scaffold.
+  /// This is used by AppShell to separate AppBar from body for animations.
+  const HomeScreen({super.key, this.bodyOnly = false});
+
+  /// If true, returns only the body content without Scaffold.
+  final bool bodyOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasCompletedOnboarding = ref.watch(hasCompletedOnboardingProvider);
+    final body = hasCompletedOnboarding
+        ? _HomeScreenContent.buildMainContent(context, ref)
+        : OnboardingEmptyStates.home(
+            onGetStarted: () => context.go('/onboarding/welcome'),
+          );
+
+    if (bodyOnly) {
+      return body;
+    }
 
     return DevBanner(
       child: Scaffold(
@@ -35,17 +50,30 @@ class HomeScreen extends ConsumerWidget {
             NotificationStatusWidget(),
           ],
         ),
-        body: hasCompletedOnboarding
-            ? _buildMainContent(context)
-            : OnboardingEmptyStates.home(
-                onGetStarted: () => context.go('/onboarding/welcome'),
-              ),
+        body: body,
       ),
     );
   }
 
+  /// Builds the body content for the home screen.
+  /// This static method can be used by AppShell to get body-only content.
+  static Widget buildBody(
+    BuildContext context,
+    WidgetRef ref,
+    bool hasCompletedOnboarding,
+  ) {
+    return hasCompletedOnboarding
+        ? _HomeScreenContent.buildMainContent(context, ref)
+        : OnboardingEmptyStates.home(
+            onGetStarted: () => context.go('/onboarding/welcome'),
+          );
+  }
+}
+
+/// Internal helper class for HomeScreen body content.
+class _HomeScreenContent {
   /// Builds the main home content for users who have completed onboarding
-  Widget _buildMainContent(BuildContext context) {
+  static Widget buildMainContent(BuildContext context, WidgetRef ref) {
     return Consumer(
       builder: (context, ref, child) {
         final profileState = ref.watch(profileProvider);
@@ -66,13 +94,13 @@ class HomeScreen extends ConsumerWidget {
         }
 
         // Show main dashboard with progressive disclosure
-        return _buildDashboard(context, hasFluid, hasMedication);
+        return _buildDashboard(context, ref, hasFluid, hasMedication);
       },
     );
   }
 
   /// Builds empty state when no schedules are set up
-  Widget _buildEmptyState(BuildContext context) {
+  static Widget _buildEmptyState(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Center(
@@ -133,8 +161,9 @@ class HomeScreen extends ConsumerWidget {
   }
 
   /// Builds dashboard with treatment widgets and progressive disclosure
-  Widget _buildDashboard(
+  static Widget _buildDashboard(
     BuildContext context,
+    WidgetRef ref,
     bool hasFluid,
     bool hasMedication,
   ) {
@@ -238,7 +267,7 @@ class HomeScreen extends ConsumerWidget {
               ]
               // Success empty state (all completed for today)
               else if (hasFluid || hasMedication) ...[
-                _buildSuccessEmptyState(profileState),
+                _HomeScreenContent._buildSuccessEmptyState(profileState),
                 const SizedBox(height: AppSpacing.xl),
               ],
 
@@ -288,7 +317,7 @@ class HomeScreen extends ConsumerWidget {
   }
 
   /// Builds loading skeleton layout with shimmer effects
-  Widget _buildLoadingSkeleton(BuildContext context) {
+  static Widget _buildLoadingSkeleton(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
@@ -324,7 +353,7 @@ class HomeScreen extends ConsumerWidget {
   }
 
   /// Build success empty state widget with completion count
-  Widget _buildSuccessEmptyState(ProfileState profileState) {
+  static Widget _buildSuccessEmptyState(ProfileState profileState) {
     final now = DateTime.now();
     var count = 0;
 
@@ -352,7 +381,7 @@ class HomeScreen extends ConsumerWidget {
   }
 
   /// Show treatment confirmation popup
-  void _showTreatmentConfirmation(
+  static void _showTreatmentConfirmation(
     BuildContext context, {
     PendingTreatment? medication,
     PendingFluidTreatment? fluid,

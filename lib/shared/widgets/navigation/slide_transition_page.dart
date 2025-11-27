@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/constants/app_animations.dart';
 
 /// Enum to define slide directions for page transitions
 enum SlideDirection {
@@ -26,21 +27,31 @@ class SlideTransitionPage<T> extends CustomTransitionPage<T> {
   ///
   /// [child] is the widget to be displayed on this page
   /// [slideDirection] determines the direction of the slide animation
-  /// [duration] is the animation duration (defaults to 300ms)
+  /// [duration] is the animation duration (defaults to AppAnimations.pageSlideDuration)
   /// [reverseDuration] is the reverse animation duration (defaults to duration)
   SlideTransitionPage({
     required super.child,
     SlideDirection slideDirection = SlideDirection.rightToLeft,
-    Duration duration = const Duration(milliseconds: 300),
+    Duration? duration,
     Duration? reverseDuration,
     super.key,
     super.name,
     super.arguments,
     super.restorationId,
-  }) : super(
-         transitionDuration: duration,
-         reverseTransitionDuration: reverseDuration ?? duration,
+  }      ) : super(
+         transitionDuration: duration ?? AppAnimations.pageSlideDuration,
+         reverseTransitionDuration: reverseDuration ?? (duration ?? AppAnimations.pageSlideDuration),
          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+           // Respect reduce motion settings
+           final shouldReduceMotion = AppAnimations.shouldReduceMotion(context);
+           if (shouldReduceMotion) {
+             // For reduced motion, use a simple fade instead of slide
+             return FadeTransition(
+               opacity: animation,
+               child: child,
+             );
+           }
+           
            return _buildSlideTransition(
              animation: animation,
              secondaryAnimation: secondaryAnimation,
@@ -73,7 +84,7 @@ class SlideTransitionPage<T> extends CustomTransitionPage<T> {
     ).animate(
       CurvedAnimation(
         parent: animation,
-        curve: Curves.easeInOut,
+        curve: AppAnimations.pageSlideCurve,
       ),
     );
 
@@ -84,18 +95,18 @@ class SlideTransitionPage<T> extends CustomTransitionPage<T> {
     ).animate(
       CurvedAnimation(
         parent: secondaryAnimation,
-        curve: Curves.easeInOut,
+        curve: AppAnimations.pageSlideCurve,
       ),
     );
 
-    // Create fade animations
+    // Create subtle fade animations to complement the slide
     final fadeInAnimation = Tween<double>(
       begin: 0,
       end: 1,
     ).animate(
       CurvedAnimation(
         parent: animation,
-        curve: const Interval(0, 0.3),
+        curve: const Interval(0.0, 0.25),
       ),
     );
 
@@ -105,7 +116,7 @@ class SlideTransitionPage<T> extends CustomTransitionPage<T> {
     ).animate(
       CurvedAnimation(
         parent: secondaryAnimation,
-        curve: const Interval(0.7, 1),
+        curve: const Interval(0.75, 1.0),
       ),
     );
 

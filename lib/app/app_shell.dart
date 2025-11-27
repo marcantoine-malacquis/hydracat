@@ -27,8 +27,10 @@ import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/logging_queue_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
-import 'package:hydracat/shared/widgets/bottom_sheets/hydra_bottom_sheet.dart';
+import 'package:hydracat/app/tab_page_registry.dart';
 import 'package:hydracat/shared/widgets/dialogs/no_schedules_dialog.dart';
+import 'package:hydracat/shared/widgets/layout/dev_banner.dart';
+import 'package:hydracat/shared/widgets/navigation/app_page_transitions.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -123,6 +125,49 @@ class _AppShellState extends ConsumerState<AppShell>
     // Default fallback
     return 0;
   }
+
+
+  /// Gets the top-level tab key for fade transition.
+  ///
+  /// Returns a string key that uniquely identifies the current top-level tab.
+  /// For non-tab routes (logging, onboarding, settings), returns a constant
+  /// key so they don't trigger fade animations.
+  String get _currentTabKey {
+    final currentLocation = GoRouterState.of(context).uri.path;
+
+    // Check for special routes that should not animate
+    if (currentLocation == '/logging' ||
+        currentLocation.startsWith('/onboarding')) {
+      return 'non-tab-route';
+    }
+
+    // Check for routes that hide the nav bar (non-tab routes like detail screens)
+    final shouldHideNavBar = TabPageRegistry.isNonTabRoute(currentLocation);
+
+    if (shouldHideNavBar) {
+      return 'non-tab-route';
+    }
+
+    // Map routes to tab keys (same logic as _currentIndex)
+    if (currentLocation.startsWith('/progress')) {
+      return 'tab-progress';
+    }
+    if (currentLocation.startsWith('/profile')) {
+      return 'tab-profile';
+    }
+    if (currentLocation.startsWith('/learn')) {
+      return 'tab-learn';
+    }
+
+    // Home route (exact match or default)
+    if (currentLocation == '/' || currentLocation.isEmpty) {
+      return 'tab-home';
+    }
+
+    // Default fallback to home
+    return 'tab-home';
+  }
+
 
   @override
   void initState() {
@@ -257,7 +302,6 @@ class _AppShellState extends ConsumerState<AppShell>
     showHydraBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      enableDrag: true,
       backgroundColor: AppColors.background,
       builder: (sheetContext) => HydraBottomSheet(
         backgroundColor: AppColors.background,
@@ -572,7 +616,6 @@ class _AppShellState extends ConsumerState<AppShell>
           showHydraBottomSheet<void>(
             context: context,
             isScrollControlled: true,
-            enableDrag: true,
             backgroundColor: AppColors.background,
             builder: (sheetContext) => HydraBottomSheet(
               heightFraction: 0.85,
@@ -590,7 +633,6 @@ class _AppShellState extends ConsumerState<AppShell>
           showHydraBottomSheet<void>(
             context: context,
             isScrollControlled: true,
-            enableDrag: true,
             backgroundColor: AppColors.background,
             builder: (sheetContext) => HydraBottomSheet(
               heightFraction: 0.85,
@@ -1175,15 +1217,9 @@ class _AppShellState extends ConsumerState<AppShell>
     final currentLocation = GoRouterState.of(context).uri.path;
     final isInOnboardingFlow = currentLocation.startsWith('/onboarding');
     final isOverlayVisible = OverlayService.isShowingNotifier.value;
-    final shouldHideNavBar = [
-      '/profile/settings',
-      '/profile/settings/notifications',
-      '/profile/ckd',
-      '/profile/fluid',
-      '/profile/fluid/create',
-      '/profile/medication',
-      '/profile/weight',
-    ].contains(currentLocation);
+    // Determine if the current route should hide the nav bar
+    // Non-tab routes (detail screens, auth, onboarding) hide the nav bar
+    final shouldHideNavBar = TabPageRegistry.isNonTabRoute(currentLocation);
 
     // Load pet profile if authenticated and onboarding completed
     final hasCompletedOnboarding = ref.watch(hasCompletedOnboardingProvider);
@@ -1319,17 +1355,75 @@ class _AppShellState extends ConsumerState<AppShell>
       }
     });
 
+    // Use the tab page registry to determine what to render
+    final tabPage = TabPageRegistry.buildTabPageForLocation(
+      context,
+      ref,
+      currentLocation,
+      widget.child,
+    );
+
+    // For tab routes, build Scaffold with stable AppBar and fade transition
+    if (tabPage != null && tabPage.isTabRoute) {
+      return DevBanner(
+        child: Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: tabPage.appBar,
+          drawer: tabPage.drawer,
+          body: Column(
+            children: [
+              // Show verification banner for verified users only
+              if (currentUser != null &&
+                  !currentUser.emailVerified &&
+                  !isInOnboardingFlow)
+                _buildVerificationBanner(context, currentUser.email),
+              Expanded(
+                child: isLoading
+                    ? _buildLoadingContent(context)
+                    : TabFadeSwitcher(
+                        child: KeyedSubtree(
+                          key: ValueKey(_currentTabKey),
+                          child: tabPage.body,
+                        ),
+                      ),
+              ),
+            ],
+          ),
+          // Hide bottom navigation during onboarding flow, on full-screen
+          // profile/settings screens, and when overlay is visible
+          bottomNavigationBar:
+              (isInOnboardingFlow || shouldHideNavBar || isOverlayVisible)
+                  ? null
+                  : HydraNavigationBar(
+                      items: _navigationItems,
+                      currentIndex: isLoading ? -1 : _currentIndex,
+                      onTap: isLoading ? (_) {} : _onNavigationTap,
+                      onFabPressed: (isLoading || isLoggingInProgress)
+                          ? null
+                          : _onFabPressed,
+                      onFabLongPress: (isLoading || isLoggingInProgress)
+                          ? null
+                          : _onFabLongPress,
+                      showVerificationBadge: !isLoading && !isVerified,
+                      isFabLoading: isLoggingInProgress,
+                    ),
+        ),
+      );
+    }
+
+    // For non-tab routes, use existing structure (they handle their own Scaffold)
     return Scaffold(
       body: Column(
         children: [
           // Show verification banner for verified users only
-          // (not during loading or onboarding)
           if (currentUser != null &&
               !currentUser.emailVerified &&
               !isInOnboardingFlow)
             _buildVerificationBanner(context, currentUser.email),
           Expanded(
-            child: isLoading ? _buildLoadingContent(context) : widget.child,
+            child: isLoading
+                ? _buildLoadingContent(context)
+                : widget.child, // Non-tab routes handle their own Scaffold
           ),
         ],
       ),
