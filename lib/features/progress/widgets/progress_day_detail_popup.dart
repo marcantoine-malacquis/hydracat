@@ -58,6 +58,28 @@ class ProgressDayDetailPopup extends ConsumerStatefulWidget {
       _ProgressDayDetailPopupState();
 }
 
+/// Result of matching medication sessions to reminders.
+///
+/// Contains both matched sessions (paired to schedule reminders) and
+/// unmatched sessions (extra logs like vet visits, corrections, etc.).
+class _MedicationMatchResult {
+  /// Creates a medication match result.
+  const _MedicationMatchResult({
+    required this.reminderToSession,
+    required this.completedReminders,
+    required this.unmatchedSessions,
+  });
+
+  /// Map of reminder DateTime to the MedicationSession that matched it.
+  final Map<DateTime, MedicationSession> reminderToSession;
+
+  /// Set of reminder DateTime values that were completed.
+  final Set<DateTime> completedReminders;
+
+  /// List of MedicationSession objects that didn't match any reminder.
+  final List<MedicationSession> unmatchedSessions;
+}
+
 /// State for [ProgressDayDetailPopup].
 class _ProgressDayDetailPopupState
     extends ConsumerState<ProgressDayDetailPopup> {
@@ -299,7 +321,33 @@ class _ProgressDayDetailPopupState
           return _buildWithCurrentSchedules(context, ref);
         }
 
-        return _buildWithHistoricalData(context, ref, historicalMap);
+        // Check if we have medication history vs fluid-only history
+        final hasHistoricalMedication = historicalMap.values.any(
+          (e) => e.treatmentType == TreatmentType.medication,
+        );
+        final hasHistoricalFluid = historicalMap.values.any(
+          (e) => e.treatmentType == TreatmentType.fluid,
+        );
+
+        // If we have medication history (with or without fluid),
+        // use full historical path
+        if (hasHistoricalMedication) {
+          return _buildWithHistoricalData(context, ref, historicalMap);
+        }
+
+        // If we only have fluid history, use hybrid: fluid from history,
+        // meds from current
+        if (hasHistoricalFluid) {
+          return _buildWithHybridHistoricalFluidCurrentMeds(
+            context,
+            ref,
+            historicalMap,
+          );
+        }
+
+        // Fallback to current schedules if history exists but
+        // is neither medication nor fluid
+        return _buildWithCurrentSchedules(context, ref);
       },
       loading: () => const Center(
         child: Padding(
@@ -335,13 +383,6 @@ class _ProgressDayDetailPopupState
         ? fluidSchedule.reminderTimesOnDate(widget.date).toList()
         : <DateTime>[];
 
-    if (medReminders.isEmpty && fluidReminders.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(AppSpacing.md),
-        child: Text('No treatments scheduled for this day'),
-      );
-    }
-
     // Fetch from week cache
     final weekStart = AppDateUtils.startOfWeekMonday(widget.date);
     final weekSessionsAsync = ref.watch(weekSessionsProvider(weekStart));
@@ -354,17 +395,23 @@ class _ProgressDayDetailPopupState
             weekSessions[normalizedDate] ??
             (<MedicationSession>[], <FluidSession>[]);
 
-        // Greedy match: scheduleId-first, then name-based within the day.
-        final completedReminderTimes = _matchMedicationRemindersToSessions(
+        // Match sessions to reminders and get unmatched sessions
+        final matchResult = _matchMedicationSessionsToReminders(
           reminders: medReminders,
           sessions: medSessions,
         );
 
-        // Build map of reminder times to actual sessions
-        final reminderToSession = _mapRemindersToSessions(
-          reminders: medReminders,
-          sessions: medSessions,
-        );
+        // Check if we have any treatments (scheduled or logged)
+        final hasAnyScheduled =
+            medReminders.isNotEmpty || fluidReminders.isNotEmpty;
+        final hasAnyLogged = medSessions.isNotEmpty || fluidSessions.isNotEmpty;
+
+        if (!hasAnyScheduled && !hasAnyLogged) {
+          return const Padding(
+            padding: EdgeInsets.all(AppSpacing.md),
+            child: Text('No treatments scheduled for this day'),
+          );
+        }
 
         final hasAnyFluid = fluidSessions.isNotEmpty;
 
@@ -375,7 +422,7 @@ class _ProgressDayDetailPopupState
         // Count as 1 if any fluid given
         final actualFluidCount = hasAnyFluid ? 1 : 0;
         final scheduledMedCount = medReminders.length;
-        final actualMedCount = completedReminderTimes.length;
+        final actualMedCount = matchResult.completedReminders.length;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -398,22 +445,41 @@ class _ProgressDayDetailPopupState
               const SizedBox(height: AppSpacing.md),
             ],
 
-            if (medReminders.isNotEmpty) ...[
+            // Show medications section if there are reminders or
+            // unmatched sessions
+            if (medReminders.isNotEmpty ||
+                matchResult.unmatchedSessions.isNotEmpty) ...[
               _buildSectionHeader(
                 'Medications',
-                '$actualMedCount of $scheduledMedCount doses',
+                medReminders.isNotEmpty
+                    ? '$actualMedCount of $scheduledMedCount doses'
+                    : '${matchResult.unmatchedSessions.length} logged',
               ),
               const SizedBox(height: AppSpacing.xs),
-              _maybeMedicationSummaryCard(context, ref),
-              const SizedBox(height: AppSpacing.sm),
+              // Only show summary card if there are scheduled doses
+              if (medReminders.isNotEmpty)
+                _maybeMedicationSummaryCard(context, ref),
+              if (medReminders.isNotEmpty)
+                const SizedBox(height: AppSpacing.sm),
+              // Show scheduled medication tiles
               ...medReminders.map(
                 (r) => _buildPlannedMedicationTile(
                   r.$1,
                   r.$2,
-                  completed: completedReminderTimes.contains(r.$2),
-                  session: reminderToSession[r.$2],
+                  completed: matchResult.completedReminders.contains(r.$2),
+                  session: matchResult.reminderToSession[r.$2],
                 ),
               ),
+              // Show additional logged medications (unmatched sessions)
+              if (matchResult.unmatchedSessions.isNotEmpty) ...[
+                if (medReminders.isNotEmpty)
+                  const SizedBox(height: AppSpacing.md),
+                _buildAdditionalMedicationSessions(
+                  matchResult.unmatchedSessions,
+                  medicationSchedules,
+                  isUnscheduledOnly: medReminders.isEmpty,
+                ),
+              ],
             ],
           ],
         );
@@ -449,34 +515,62 @@ class _ProgressDayDetailPopupState
     );
   }
 
-  // Legacy schedule key helper removed with new greedy matcher.
-
-  /// Greedy matcher to determine which medication reminder times are completed
-  /// by sessions for the selected day. Prefers scheduleId matches and consumes
-  /// sessions so each can satisfy at most one reminder.
-  Set<DateTime> _matchMedicationRemindersToSessions({
+  /// Greedy matcher to match medication sessions to schedule reminders.
+  ///
+  /// Returns both matched sessions (paired to reminders) and unmatched sessions
+  /// (extra logs like vet visits, corrections, etc.). Prefers scheduleId
+  /// matches and consumes sessions so each can satisfy at most one reminder.
+  _MedicationMatchResult _matchMedicationSessionsToReminders({
     required List<(Schedule, DateTime)> reminders,
     required List<MedicationSession> sessions,
   }) {
-    if (reminders.isEmpty || sessions.isEmpty) return <DateTime>{};
+    final reminderToSession = <DateTime, MedicationSession>{};
+    final completedReminders = <DateTime>{};
+    final unmatchedSessions = <MedicationSession>[];
+
+    if (reminders.isEmpty) {
+      // No reminders, all sessions are unmatched
+      return _MedicationMatchResult(
+        reminderToSession: {},
+        completedReminders: {},
+        unmatchedSessions: sessions,
+      );
+    }
+
+    if (sessions.isEmpty) {
+      return const _MedicationMatchResult(
+        reminderToSession: {},
+        completedReminders: {},
+        unmatchedSessions: [],
+      );
+    }
 
     final day = AppDateUtils.startOfDay(widget.date);
-    final nextDay = AppDateUtils.endOfDay(widget.date);
+    final nextDayStart = day.add(const Duration(days: 1));
+
+    // Filter sessions to only those on the target day
+    // Use isBefore(nextDayStart) to include all times up to 23:59:59.999
+    final daySessions = sessions.where((s) {
+      return !s.dateTime.isBefore(day) && s.dateTime.isBefore(nextDayStart);
+    }).toList();
 
     // Split sessions by having scheduleId (preferred) vs not
     final byScheduleId = <String, List<MedicationSession>>{};
     final unnamedByMed = <String, List<MedicationSession>>{};
 
-    for (final s in sessions.where((s) => s.completed)) {
+    for (final s in daySessions) {
       if (s.scheduleId != null) {
         byScheduleId.putIfAbsent(s.scheduleId!, () => []).add(s);
       } else {
-        final key = s.medicationName.trim().toLowerCase();
+        // Guard against empty medicationName for legacy data
+        final medName = s.medicationName.trim();
+        if (medName.isEmpty) continue;
+        final key = medName.toLowerCase();
         unnamedByMed.putIfAbsent(key, () => []).add(s);
       }
     }
 
-    // Sort each list by proximity to planned time to improve greedy match
+    // Sort each list by dateTime to improve greedy match
     for (final list in byScheduleId.values) {
       list.sort((a, b) => a.dateTime.compareTo(b.dateTime));
     }
@@ -484,18 +578,21 @@ class _ProgressDayDetailPopupState
       list.sort((a, b) => a.dateTime.compareTo(b.dateTime));
     }
 
-    final completed = <DateTime>{};
+    // Track which sessions have been consumed
+    final consumedSessionIds = <String>{};
 
     // 1) scheduleId-first greedy match
     for (final (schedule, plannedTime) in reminders) {
       final list = byScheduleId[schedule.id];
       if (list == null || list.isEmpty) continue;
 
-      // pick nearest unused session on the same day
+      // Pick nearest unused COMPLETED session on the same day
       MedicationSession? best;
       var bestDelta = 1 << 30;
       for (final s in list) {
-        if (s.dateTime.isBefore(day) || s.dateTime.isAfter(nextDay)) continue;
+        if (consumedSessionIds.contains(s.id)) continue;
+        // Only consider completed sessions for matching
+        if (!s.completed) continue;
         final delta = s.dateTime.difference(plannedTime).inSeconds.abs();
         if (delta < bestDelta) {
           best = s;
@@ -503,22 +600,26 @@ class _ProgressDayDetailPopupState
         }
       }
       if (best != null) {
-        completed.add(plannedTime);
-        list.remove(best); // consume session
+        completedReminders.add(plannedTime);
+        reminderToSession[plannedTime] = best;
+        consumedSessionIds.add(best.id);
       }
     }
 
-    // 2) Fallback: name-based match for remaining
+    // 2) Fallback: name-based match for remaining reminders
     for (final (schedule, plannedTime) in reminders) {
-      if (completed.contains(plannedTime)) continue;
+      if (completedReminders.contains(plannedTime)) continue;
       final key = (schedule.medicationName ?? '').trim().toLowerCase();
       final list = unnamedByMed[key];
       if (list == null || list.isEmpty) continue;
 
+      // Pick nearest unused COMPLETED session on the same day
       MedicationSession? best;
       var bestDelta = 1 << 30;
       for (final s in list) {
-        if (s.dateTime.isBefore(day) || s.dateTime.isAfter(nextDay)) continue;
+        if (consumedSessionIds.contains(s.id)) continue;
+        // Only consider completed sessions for matching
+        if (!s.completed) continue;
         final delta = s.dateTime.difference(plannedTime).inSeconds.abs();
         if (delta < bestDelta) {
           best = s;
@@ -526,12 +627,27 @@ class _ProgressDayDetailPopupState
         }
       }
       if (best != null) {
-        completed.add(plannedTime);
-        list.remove(best);
+        completedReminders.add(plannedTime);
+        reminderToSession[plannedTime] = best;
+        consumedSessionIds.add(best.id);
       }
     }
 
-    return completed;
+    // Collect all unmatched sessions (not consumed and on the target day)
+    for (final s in daySessions) {
+      if (!consumedSessionIds.contains(s.id)) {
+        unmatchedSessions.add(s);
+      }
+    }
+
+    // Sort unmatched sessions by dateTime
+    unmatchedSessions.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+
+    return _MedicationMatchResult(
+      reminderToSession: reminderToSession,
+      completedReminders: completedReminders,
+      unmatchedSessions: unmatchedSessions,
+    );
   }
 
   /// Build day view with historical schedules (for past dates)
@@ -567,13 +683,6 @@ class _ProgressDayDetailPopupState
         ? fluidHistoricalSchedule.getReminderTimesForDate(widget.date)
         : <DateTime>[];
 
-    if (medReminders.isEmpty && fluidReminders.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(AppSpacing.md),
-        child: Text('No treatments scheduled for this day'),
-      );
-    }
-
     // Fetch sessions for completion status
     final weekStart = AppDateUtils.startOfWeekMonday(widget.date);
     final weekSessionsAsync = ref.watch(weekSessionsProvider(weekStart));
@@ -585,11 +694,23 @@ class _ProgressDayDetailPopupState
             weekSessions[normalizedDate] ??
             (<MedicationSession>[], <FluidSession>[]);
 
-        // Match sessions to historical reminders
-        final completedReminderTimes = _matchHistoricalMedicationReminders(
+        // Match sessions to historical reminders and get unmatched sessions
+        final matchResult = _matchHistoricalMedicationSessionsToReminders(
           reminders: medReminders,
           sessions: medSessions,
         );
+
+        // Check if we have any treatments (scheduled or logged)
+        final hasAnyScheduled =
+            medReminders.isNotEmpty || fluidReminders.isNotEmpty;
+        final hasAnyLogged = medSessions.isNotEmpty || fluidSessions.isNotEmpty;
+
+        if (!hasAnyScheduled && !hasAnyLogged) {
+          return const Padding(
+            padding: EdgeInsets.all(AppSpacing.md),
+            child: Text('No treatments scheduled for this day'),
+          );
+        }
 
         final hasAnyFluid = fluidSessions.isNotEmpty;
         final showFluidSection = hasAnyFluid || fluidReminders.isNotEmpty;
@@ -597,7 +718,13 @@ class _ProgressDayDetailPopupState
         final scheduledFluidCount = fluidReminders.length;
         final actualFluidCount = hasAnyFluid ? 1 : 0;
         final scheduledMedCount = medReminders.length;
-        final actualMedCount = completedReminderTimes.length;
+        final actualMedCount = matchResult.completedReminders.length;
+
+        // Get current medication schedules for edit functionality
+        final medSchedules = ref.watch(medicationSchedulesProvider) ?? [];
+        final medicationSchedules = medSchedules
+            .where((s) => s.treatmentType == TreatmentType.medication)
+            .toList();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -622,21 +749,40 @@ class _ProgressDayDetailPopupState
               ],
               const SizedBox(height: AppSpacing.md),
             ],
-            if (medReminders.isNotEmpty) ...[
+            // Show medications section if there are reminders or
+            // unmatched sessions
+            if (medReminders.isNotEmpty ||
+                matchResult.unmatchedSessions.isNotEmpty) ...[
               _buildSectionHeader(
                 'Medications',
-                '$actualMedCount of $scheduledMedCount doses',
+                medReminders.isNotEmpty
+                    ? '$actualMedCount of $scheduledMedCount doses'
+                    : '${matchResult.unmatchedSessions.length} logged',
               ),
               const SizedBox(height: AppSpacing.xs),
-              _maybeMedicationSummaryCard(context, ref),
-              const SizedBox(height: AppSpacing.sm),
+              // Only show summary card if there are scheduled doses
+              if (medReminders.isNotEmpty)
+                _maybeMedicationSummaryCard(context, ref),
+              if (medReminders.isNotEmpty)
+                const SizedBox(height: AppSpacing.sm),
+              // Show scheduled medication tiles
               ...medReminders.map(
                 (r) => _buildHistoricalMedicationTile(
                   r.$1,
                   r.$2,
-                  completed: completedReminderTimes.contains(r.$2),
+                  completed: matchResult.completedReminders.contains(r.$2),
                 ),
               ),
+              // Show additional logged medications (unmatched sessions)
+              if (matchResult.unmatchedSessions.isNotEmpty) ...[
+                if (medReminders.isNotEmpty)
+                  const SizedBox(height: AppSpacing.md),
+                _buildAdditionalMedicationSessions(
+                  matchResult.unmatchedSessions,
+                  medicationSchedules,
+                  isUnscheduledOnly: medReminders.isEmpty,
+                ),
+              ],
             ],
           ],
         );
@@ -657,56 +803,168 @@ class _ProgressDayDetailPopupState
     );
   }
 
-  /// Matcher for historical medication reminders
-  Set<DateTime> _matchHistoricalMedicationReminders({
-    required List<(ScheduleHistoryEntry, DateTime)> reminders,
-    required List<MedicationSession> sessions,
-  }) {
-    if (reminders.isEmpty || sessions.isEmpty) return <DateTime>{};
+  /// Build day view with hybrid data: fluid from history, medication
+  /// from current schedules
+  ///
+  /// Used when historical data exists but only contains fluid entries
+  /// (no medication history).
+  /// This ensures backward compatibility: existing medication sessions
+  /// still display correctly
+  /// even when schedule history was only tracked for fluid therapy.
+  Widget _buildWithHybridHistoricalFluidCurrentMeds(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, ScheduleHistoryEntry> historicalMap,
+  ) {
+    final user = ref.watch(currentUserProvider);
+    final pet = ref.watch(primaryPetProvider);
 
-    final day = AppDateUtils.startOfDay(widget.date);
-    final nextDay = AppDateUtils.endOfDay(widget.date);
-
-    // Group by medication name
-    final byMedName = <String, List<MedicationSession>>{};
-
-    for (final s in sessions.where((s) => s.completed)) {
-      final key = s.medicationName.trim().toLowerCase();
-      byMedName.putIfAbsent(key, () => []).add(s);
+    if (user == null || pet == null) {
+      return const Text('User or pet not found');
     }
 
-    for (final list in byMedName.values) {
-      list.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    // Build medication reminders from current schedules
+    // (like _buildWithCurrentSchedules)
+    final medSchedules = ref.watch(medicationSchedulesProvider) ?? [];
+    final medicationSchedules = medSchedules
+        .where((s) => s.treatmentType == TreatmentType.medication)
+        .toList();
+
+    final medReminders = <(Schedule, DateTime)>[];
+    for (final schedule in medicationSchedules) {
+      for (final time in schedule.reminderTimesOnDate(widget.date)) {
+        medReminders.add((schedule, time));
+      }
     }
 
-    final completed = <DateTime>{};
+    // Build fluid reminders from historical data
+    //(like _buildWithHistoricalData)
+    ScheduleHistoryEntry? fluidHistoricalSchedule;
+    for (final entry in historicalMap.values) {
+      if (entry.treatmentType == TreatmentType.fluid) {
+        fluidHistoricalSchedule = entry;
+        break;
+      }
+    }
 
-    for (final (entry, plannedTime) in reminders) {
-      final medName = entry.medicationName?.trim().toLowerCase();
-      if (medName == null) continue;
+    final fluidReminders = fluidHistoricalSchedule != null
+        ? fluidHistoricalSchedule.getReminderTimesForDate(widget.date)
+        : <DateTime>[];
 
-      final list = byMedName[medName];
-      if (list == null || list.isEmpty) continue;
+    // Fetch sessions for completion status
+    final weekStart = AppDateUtils.startOfWeekMonday(widget.date);
+    final weekSessionsAsync = ref.watch(weekSessionsProvider(weekStart));
 
-      MedicationSession? best;
-      var bestDelta = 1 << 30;
+    return weekSessionsAsync.when(
+      data: (weekSessions) {
+        final normalizedDate = AppDateUtils.startOfDay(widget.date);
+        final (medSessions, fluidSessions) =
+            weekSessions[normalizedDate] ??
+            (<MedicationSession>[], <FluidSession>[]);
 
-      for (final s in list) {
-        if (s.dateTime.isBefore(day) || s.dateTime.isAfter(nextDay)) continue;
-        final delta = s.dateTime.difference(plannedTime).inSeconds.abs();
-        if (delta < bestDelta) {
-          best = s;
-          bestDelta = delta;
+        // Match medication reminders to sessions using current
+        // schedule matching logic and get unmatched sessions
+        final matchResult = _matchMedicationSessionsToReminders(
+          reminders: medReminders,
+          sessions: medSessions,
+        );
+
+        // Check if we have any treatments (scheduled or logged)
+        final hasAnyScheduled =
+            medReminders.isNotEmpty || fluidReminders.isNotEmpty;
+        final hasAnyLogged = medSessions.isNotEmpty || fluidSessions.isNotEmpty;
+
+        if (!hasAnyScheduled && !hasAnyLogged) {
+          return const Padding(
+            padding: EdgeInsets.all(AppSpacing.md),
+            child: Text('No treatments scheduled for this day'),
+          );
         }
-      }
 
-      if (best != null) {
-        completed.add(plannedTime);
-        list.remove(best);
-      }
-    }
+        final hasAnyFluid = fluidSessions.isNotEmpty;
+        final showFluidSection = hasAnyFluid || fluidReminders.isNotEmpty;
 
-    return completed;
+        final scheduledFluidCount = fluidReminders.length;
+        final actualFluidCount = hasAnyFluid ? 1 : 0;
+        final scheduledMedCount = medReminders.length;
+        final actualMedCount = matchResult.completedReminders.length;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (showFluidSection) ...[
+              _buildSectionHeader(
+                'Fluid therapy',
+                '$actualFluidCount of $scheduledFluidCount sessions',
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              _maybeSummaryCard(context, ref),
+              if (fluidReminders.isNotEmpty &&
+                  fluidHistoricalSchedule != null) ...[
+                const SizedBox(height: AppSpacing.xs),
+                ...fluidReminders.map(
+                  (time) => _buildHistoricalFluidTile(
+                    fluidHistoricalSchedule!,
+                    time,
+                    completed: hasAnyFluid,
+                  ),
+                ),
+              ],
+              const SizedBox(height: AppSpacing.md),
+            ],
+            // Show medications section if there are reminders or
+            // unmatched sessions
+            if (medReminders.isNotEmpty ||
+                matchResult.unmatchedSessions.isNotEmpty) ...[
+              _buildSectionHeader(
+                'Medications',
+                medReminders.isNotEmpty
+                    ? '$actualMedCount of $scheduledMedCount doses'
+                    : '${matchResult.unmatchedSessions.length} logged',
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              // Only show summary card if there are scheduled doses
+              if (medReminders.isNotEmpty)
+                _maybeMedicationSummaryCard(context, ref),
+              if (medReminders.isNotEmpty)
+                const SizedBox(height: AppSpacing.sm),
+              // Show scheduled medication tiles
+              ...medReminders.map(
+                (r) => _buildPlannedMedicationTile(
+                  r.$1,
+                  r.$2,
+                  completed: matchResult.completedReminders.contains(r.$2),
+                  session: matchResult.reminderToSession[r.$2],
+                ),
+              ),
+              // Show additional logged medications (unmatched sessions)
+              if (matchResult.unmatchedSessions.isNotEmpty) ...[
+                if (medReminders.isNotEmpty)
+                  const SizedBox(height: AppSpacing.md),
+                _buildAdditionalMedicationSessions(
+                  matchResult.unmatchedSessions,
+                  medicationSchedules,
+                  isUnscheduledOnly: medReminders.isEmpty,
+                ),
+              ],
+            ],
+          ],
+        );
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.lg),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (error, _) => Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Text(
+          'Error loading sessions: $error',
+          style: const TextStyle(color: AppColors.error),
+        ),
+      ),
+    );
   }
 
   /// Builds a tile for historical medication data
@@ -977,6 +1235,132 @@ class _ProgressDayDetailPopupState
     );
   }
 
+  /// Builds a section for additional logged medications (unmatched sessions).
+  ///
+  /// Shows sessions that weren't matched to any schedule reminder, such as
+  /// vet visits, corrections, or extra doses.
+  Widget _buildAdditionalMedicationSessions(
+    List<MedicationSession> sessions,
+    List<Schedule> medicationSchedules, {
+    bool isUnscheduledOnly = false,
+  }) {
+    if (sessions.isEmpty) return const SizedBox.shrink();
+
+    final day = AppDateUtils.startOfDay(widget.date);
+    final today = AppDateUtils.startOfDay(DateTime.now());
+    final isFuture = day.isAfter(today);
+    final canEdit = !isFuture;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header
+        if (!isUnscheduledOnly) ...[
+          _buildSectionHeader(
+            'Additional logged medications',
+            sessions.length == 1 ? '1 log' : '${sessions.length} logs',
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        // List of unmatched sessions
+        ...sessions.map((session) {
+          final timeStr = DateFormat.jm().format(session.dateTime);
+          final dosageStr = session.dosageGiven == session.dosageGiven.toInt()
+              ? session.dosageGiven.toInt().toString()
+              : session.dosageGiven.toStringAsFixed(1);
+          final subtitle = '$timeStr • $dosageStr ${session.medicationUnit}';
+
+          // Try to find a matching schedule for edit functionality
+          Schedule? matchingSchedule;
+          if (session.scheduleId != null) {
+            matchingSchedule = medicationSchedules
+                .where((s) => s.id == session.scheduleId)
+                .firstOrNull;
+          }
+          matchingSchedule ??= medicationSchedules
+              .where(
+                (s) =>
+                    s.medicationName?.toLowerCase().trim() ==
+                    session.medicationName.toLowerCase().trim(),
+              )
+              .firstOrNull;
+
+          return ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(
+              Icons.medication,
+              color: AppColors.textSecondary,
+              size: 24,
+            ),
+            title: Text(
+              session.medicationName,
+              style: AppTextStyles.body,
+            ),
+            subtitle: Text(subtitle, style: AppTextStyles.caption),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (session.completed)
+                  const Icon(
+                    Icons.check_circle,
+                    color: AppColors.primary,
+                    size: 28,
+                  )
+                else if (!isFuture)
+                  const Icon(
+                    Icons.cancel,
+                    color: AppColors.textSecondary,
+                    size: 28,
+                  ),
+                if (canEdit) ...[
+                  const SizedBox(width: AppSpacing.xs),
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 20),
+                    onPressed: () => _handleEditMedication(
+                      session,
+                      matchingSchedule ??
+                          _createPseudoScheduleFromSession(session),
+                    ),
+                    tooltip: 'Edit',
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  /// Creates a lightweight pseudo-Schedule from a MedicationSession
+  /// for edit form.
+  ///
+  /// Used when no matching schedule exists, so the edit form can still render
+  /// medication details without needing to write back to a schedule.
+  Schedule _createPseudoScheduleFromSession(MedicationSession session) {
+    return Schedule(
+      id: 'pseudo-${session.id}',
+      treatmentType: TreatmentType.medication,
+      frequency: TreatmentFrequency.onceDaily,
+      reminderTimes: [session.dateTime],
+      isActive: true,
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt ?? session.createdAt,
+      medicationName: session.medicationName,
+      targetDosage: session.dosageScheduled,
+      medicationUnit: session.medicationUnit,
+      medicationStrengthAmount: session.medicationStrengthAmount,
+      medicationStrengthUnit: session.medicationStrengthUnit,
+      customMedicationStrengthUnit: session.customMedicationStrengthUnit,
+    );
+  }
+
   /// Builds the fluid summary card when data is available.
   Widget _maybeSummaryCard(BuildContext context, WidgetRef ref) {
     final view = ref.watch(
@@ -999,89 +1383,105 @@ class _ProgressDayDetailPopupState
     return MedicationDailySummaryCard(summary: view);
   }
 
-  /// Map reminder times to their actual sessions for edit button access.
+  /// Greedy matcher to match medication sessions to historical schedule
+  /// reminders.
   ///
-  /// Uses the same greedy matching logic as
-  /// [_matchMedicationRemindersToSessions] but returns a map of reminder
-  /// DateTime → MedicationSession for passing to the tile builder.
-  Map<DateTime, MedicationSession> _mapRemindersToSessions({
-    required List<(Schedule, DateTime)> reminders,
+  /// Returns both matched sessions (paired to reminders) and unmatched
+  /// sessions.
+  /// Uses name-based matching since historical entries don't have scheduleId.
+  _MedicationMatchResult _matchHistoricalMedicationSessionsToReminders({
+    required List<(ScheduleHistoryEntry, DateTime)> reminders,
     required List<MedicationSession> sessions,
   }) {
-    if (reminders.isEmpty || sessions.isEmpty) return {};
+    final reminderToSession = <DateTime, MedicationSession>{};
+    final completedReminders = <DateTime>{};
+    final unmatchedSessions = <MedicationSession>[];
+
+    if (reminders.isEmpty) {
+      // No reminders, all sessions are unmatched
+      return _MedicationMatchResult(
+        reminderToSession: {},
+        completedReminders: {},
+        unmatchedSessions: sessions,
+      );
+    }
+
+    if (sessions.isEmpty) {
+      return const _MedicationMatchResult(
+        reminderToSession: {},
+        completedReminders: {},
+        unmatchedSessions: [],
+      );
+    }
 
     final day = AppDateUtils.startOfDay(widget.date);
-    final nextDay = AppDateUtils.endOfDay(widget.date);
+    final nextDayStart = day.add(const Duration(days: 1));
 
-    // Split sessions by having scheduleId (preferred) vs not
-    final byScheduleId = <String, List<MedicationSession>>{};
-    final unnamedByMed = <String, List<MedicationSession>>{};
+    // Filter sessions to only those on the target day
+    // Use isBefore(nextDayStart) to include all times up to 23:59:59.999
+    final daySessions = sessions.where((s) {
+      return !s.dateTime.isBefore(day) && s.dateTime.isBefore(nextDayStart);
+    }).toList();
 
-    for (final s in sessions.where((s) => s.completed)) {
-      if (s.scheduleId != null) {
-        byScheduleId.putIfAbsent(s.scheduleId!, () => []).add(s);
-      } else {
-        final key = s.medicationName.trim().toLowerCase();
-        unnamedByMed.putIfAbsent(key, () => []).add(s);
-      }
+    // Group by medication name
+    final byMedName = <String, List<MedicationSession>>{};
+
+    for (final s in daySessions) {
+      // Guard against empty medicationName for legacy data
+      final medName = s.medicationName.trim();
+      if (medName.isEmpty) continue;
+      final key = medName.toLowerCase();
+      byMedName.putIfAbsent(key, () => []).add(s);
     }
 
-    // Sort each list by proximity to planned time to improve greedy match
-    for (final list in byScheduleId.values) {
+    for (final list in byMedName.values) {
       list.sort((a, b) => a.dateTime.compareTo(b.dateTime));
     }
-    for (final list in unnamedByMed.values) {
-      list.sort((a, b) => a.dateTime.compareTo(b.dateTime));
-    }
 
-    final map = <DateTime, MedicationSession>{};
+    // Track which sessions have been consumed
+    final consumedSessionIds = <String>{};
 
-    // 1) scheduleId-first greedy match
-    for (final (schedule, plannedTime) in reminders) {
-      final list = byScheduleId[schedule.id];
+    for (final (entry, plannedTime) in reminders) {
+      final medName = entry.medicationName?.trim().toLowerCase();
+      if (medName == null) continue;
+
+      final list = byMedName[medName];
       if (list == null || list.isEmpty) continue;
 
-      // pick nearest unused session on the same day
       MedicationSession? best;
       var bestDelta = 1 << 30;
+
       for (final s in list) {
-        if (s.dateTime.isBefore(day) || s.dateTime.isAfter(nextDay)) continue;
+        if (consumedSessionIds.contains(s.id)) continue;
         final delta = s.dateTime.difference(plannedTime).inSeconds.abs();
         if (delta < bestDelta) {
           best = s;
           bestDelta = delta;
         }
       }
-      if (best != null) {
-        map[plannedTime] = best;
-        list.remove(best); // consume session
+
+      if (best != null && best.completed) {
+        completedReminders.add(plannedTime);
+        reminderToSession[plannedTime] = best;
+        consumedSessionIds.add(best.id);
       }
     }
 
-    // 2) Fallback: name-based match for remaining
-    for (final (schedule, plannedTime) in reminders) {
-      if (map.containsKey(plannedTime)) continue;
-      final key = (schedule.medicationName ?? '').trim().toLowerCase();
-      final list = unnamedByMed[key];
-      if (list == null || list.isEmpty) continue;
-
-      MedicationSession? best;
-      var bestDelta = 1 << 30;
-      for (final s in list) {
-        if (s.dateTime.isBefore(day) || s.dateTime.isAfter(nextDay)) continue;
-        final delta = s.dateTime.difference(plannedTime).inSeconds.abs();
-        if (delta < bestDelta) {
-          best = s;
-          bestDelta = delta;
-        }
-      }
-      if (best != null) {
-        map[plannedTime] = best;
-        list.remove(best);
+    // Collect all unmatched sessions (not consumed and on the target day)
+    for (final s in daySessions) {
+      if (!consumedSessionIds.contains(s.id)) {
+        unmatchedSessions.add(s);
       }
     }
 
-    return map;
+    // Sort unmatched sessions by dateTime
+    unmatchedSessions.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+
+    return _MedicationMatchResult(
+      reminderToSession: reminderToSession,
+      completedReminders: completedReminders,
+      unmatchedSessions: unmatchedSessions,
+    );
   }
 
   /// Build medication edit content (inline version)

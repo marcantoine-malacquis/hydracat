@@ -8,7 +8,6 @@ import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/cache_management_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/theme_provider.dart';
-import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A screen that displays app settings and preferences.
@@ -185,7 +184,7 @@ class SettingsScreen extends ConsumerWidget {
 
                     return HydraSlidingSegmentedControl<ThemeMode>(
                       value: currentTheme,
-                      segments: {
+                      segments: const {
                         ThemeMode.light: HydraIcon(
                           icon: AppIcons.lightMode,
                           size: 18,
@@ -198,7 +197,6 @@ class SettingsScreen extends ConsumerWidget {
                       onChanged: (ThemeMode newTheme) {
                         ref.read(themeProvider.notifier).setThemeMode(newTheme);
                       },
-                      height: 36,
                       segmentPadding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.md,
                         vertical: AppSpacing.xs,

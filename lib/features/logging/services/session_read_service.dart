@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
@@ -91,7 +92,9 @@ class SessionReadService {
     int limit = 50,
   }) async {
     final startOfDay = AppDateUtils.startOfDay(date);
-    final endOfDay = AppDateUtils.endOfDay(date);
+    // Use start of next day for more reliable boundary
+    // (includes all of current day)
+    final nextDayStart = startOfDay.add(const Duration(days: 1));
 
     final query = _firestore
         .collection('users')
@@ -103,7 +106,7 @@ class SessionReadService {
           'dateTime',
           isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
         )
-        .where('dateTime', isLessThan: Timestamp.fromDate(endOfDay))
+        .where('dateTime', isLessThan: Timestamp.fromDate(nextDayStart))
         .orderBy('dateTime', descending: true)
         .limit(limit);
 
@@ -156,7 +159,9 @@ class SessionReadService {
     int limit = 50,
   }) async {
     final startOfDay = AppDateUtils.startOfDay(date);
-    final endOfDay = AppDateUtils.endOfDay(date);
+    // Use start of next day for more reliable boundary
+    // (includes all of current day)
+    final nextDayStart = startOfDay.add(const Duration(days: 1));
 
     final query = _firestore
         .collection('users')
@@ -168,7 +173,7 @@ class SessionReadService {
           'dateTime',
           isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
         )
-        .where('dateTime', isLessThan: Timestamp.fromDate(endOfDay))
+        .where('dateTime', isLessThan: Timestamp.fromDate(nextDayStart))
         .orderBy('dateTime', descending: true)
         .limit(limit);
 
@@ -225,6 +230,20 @@ class SessionReadService {
     required DateTime date,
     int limit = 50,
   }) async {
+    // Skip Firestore queries for future dates - they cannot have data
+    final today = AppDateUtils.startOfDay(DateTime.now());
+    final normalizedDate = AppDateUtils.startOfDay(date);
+
+    if (normalizedDate.isAfter(today)) {
+      if (kDebugMode) {
+        debugPrint(
+          '[SessionReadService] Skipping query for future date: '
+          '${AppDateUtils.formatDateForSummary(normalizedDate)}',
+        );
+      }
+      return (const <MedicationSession>[], const <FluidSession>[]);
+    }
+
     final results = await Future.wait([
       getMedicationSessionsForDate(
         userId: userId,

@@ -110,21 +110,6 @@ weekSummariesProvider = FutureProvider.autoDispose
           );
         }
 
-        // Override today's entry with fresh Firestore data to ensure
-        // real-time accuracy. This ensures immediate dot updates after logging.
-        final today = AppDateUtils.startOfDay(DateTime.now());
-        if (map.containsKey(today)) {
-          final todaySummary = await summaryService.getTodaySummary(
-            userId: user.id,
-            petId: pet.id,
-            // Note: lightweight parameter removed as getTodaySummary now always
-            // fetches fresh data for today
-          );
-          if (todaySummary != null) {
-            map[today] = todaySummary;
-          }
-        }
-
         return map;
       },
     );
@@ -466,6 +451,24 @@ medicationDailySummaryViewProvider = Provider.autoDispose
               normalized,
             );
           }
+
+          // Check if we have medication history specifically
+          // If only fluid history exists, fallback to
+          // current medication schedules
+          final hasHistoricalMedication = historicalMap.values.any(
+            (e) => e.treatmentType == TreatmentType.medication,
+          );
+
+          if (!hasHistoricalMedication) {
+            // No medication history, use current schedules
+            //(backward compatibility)
+            return _buildMedicationSummaryFromCurrentSchedules(
+              ref,
+              normalized,
+            );
+          }
+
+          // We have medication history, use it
           return _buildMedicationSummaryFromHistoricalSchedules(
             ref,
             normalized,

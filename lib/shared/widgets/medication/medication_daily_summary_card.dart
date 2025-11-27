@@ -48,8 +48,15 @@ class MedicationDailySummaryCard extends StatelessWidget {
       missed,
     );
 
+    final extraDoses = summary.extraDoses;
+    final semanticsLabel = extraDoses > 0
+        ? 'Medication summary: $completedStr of $scheduledStr doses, '
+              'including $extraDoses extra '
+              '${extraDoses == 1 ? 'dose' : 'doses'}'
+        : 'Medication summary: $completedStr of $scheduledStr doses';
+
     return Semantics(
-      label: 'Medication summary: $completedStr of $scheduledStr doses',
+      label: semanticsLabel,
       child: Container(
         padding: padding ?? const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -79,6 +86,18 @@ class MedicationDailySummaryCard extends StatelessWidget {
                     ),
               color: statusColor,
             ),
+            // Show extra doses caption if applicable
+            if (extraDoses > 0) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Includes $extraDoses extra '
+                '${extraDoses == 1 ? 'logged dose' : 'logged doses'}',
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                ),
+              ),
+            ],
           ],
         ),
       ),

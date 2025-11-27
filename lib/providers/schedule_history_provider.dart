@@ -30,19 +30,23 @@ scheduleHistoryForDateProvider = FutureProvider.autoDispose
       final service = ref.watch(scheduleHistoryServiceProvider);
       final allSchedules = ref.watch(allSchedulesProvider);
 
+      // Fetch all historical schedules in parallel for better performance
+      final results = await Future.wait(
+        allSchedules.map((schedule) =>
+          service.getScheduleAtDate(
+            userId: user.id,
+            petId: pet.id,
+            scheduleId: schedule.id,
+            date: date,
+          ),
+        ),
+      );
+
+      // Build map from results, filtering out nulls
       final historicalSchedules = <String, ScheduleHistoryEntry>{};
-
-      // For each current schedule, get its historical state at the date
-      for (final schedule in allSchedules) {
-        final historicalEntry = await service.getScheduleAtDate(
-          userId: user.id,
-          petId: pet.id,
-          scheduleId: schedule.id,
-          date: date,
-        );
-
-        if (historicalEntry != null) {
-          historicalSchedules[schedule.id] = historicalEntry;
+      for (var i = 0; i < allSchedules.length; i++) {
+        if (results[i] != null) {
+          historicalSchedules[allSchedules[i].id] = results[i]!;
         }
       }
 

@@ -10,10 +10,10 @@ import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/progress_provider.dart';
 import 'package:hydracat/shared/models/daily_summary.dart';
 
-/// Verifies weekSummariesProvider reflects today's cache immediately.
+/// Verifies weekSummariesProvider fetches today's summary correctly.
 void main() {
   test(
-    'weekSummariesProvider overrides today using cache/lightweight summary',
+    'weekSummariesProvider fetches today summary using getDailySummary',
     () async {
       final container = ProviderContainer(
         overrides: [
@@ -31,7 +31,7 @@ void main() {
               updatedAt: DateTime(2025),
             ),
           ),
-          // Stub SummaryService: return null for history, lightweight for today
+          // Stub SummaryService: return summary for today, null for other dates
           summaryServiceProvider.overrideWithValue(_FakeSummaryService()),
         ],
       );
@@ -53,7 +53,27 @@ class _FakeSummaryService implements SummaryService {
     required String petId,
     required DateTime date,
   }) async {
-    // Simulate no Firestore data for history
+    final today = AppDateUtils.startOfDay(DateTime.now());
+    final normalizedDate = AppDateUtils.startOfDay(date);
+
+    // Return summary only for today, null for other dates
+    if (normalizedDate.isAtSameMomentAs(today)) {
+      return DailySummary(
+        date: today,
+        overallStreak: 0,
+        medicationTotalDoses: 1,
+        medicationScheduledDoses: 1,
+        medicationMissedCount: 0,
+        fluidTotalVolume: 0,
+        fluidTreatmentDone: false,
+        fluidScheduledSessions: 0,
+        fluidSessionCount: 0,
+        overallTreatmentDone: true,
+        createdAt: today,
+      );
+    }
+
+    // Return null for historical dates (simulate no Firestore data)
     return null;
   }
 
@@ -63,19 +83,12 @@ class _FakeSummaryService implements SummaryService {
     required String petId,
     bool lightweight = false,
   }) async {
-    final today = AppDateUtils.startOfDay(DateTime.now());
-    return DailySummary(
-      date: today,
-      overallStreak: 0,
-      medicationTotalDoses: 1,
-      medicationScheduledDoses: 1,
-      medicationMissedCount: 0,
-      fluidTotalVolume: 0,
-      fluidTreatmentDone: false,
-      fluidScheduledSessions: 0,
-      fluidSessionCount: 0,
-      overallTreatmentDone: true,
-      createdAt: today,
+    // This method is no longer called by weekSummariesProvider
+    // but kept for backwards compatibility
+    return getDailySummary(
+      userId: userId,
+      petId: petId,
+      date: DateTime.now(),
     );
   }
 

@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 
 /// Lightweight view model for a day's medication summary
@@ -29,4 +30,8 @@ class MedicationDailySummaryView {
   /// Number of doses missed (for past days only)
   int get missedDoses =>
       scheduledDoses > 0 && !isToday && !hasReachedGoal ? remainingDoses : 0;
+
+  /// Number of extra doses logged beyond scheduled
+  /// (for vet visits, corrections, etc.)
+  int get extraDoses => math.max(0, completedDoses - scheduledDoses);
 }

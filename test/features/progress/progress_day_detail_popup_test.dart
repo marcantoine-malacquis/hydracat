@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/logging/models/daily_summary_cache.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
@@ -499,6 +500,444 @@ void main() {
       );
     });
   });
+
+  group('ProgressDayDetailPopup - Backward Compatibility', () {
+    testWidgets(
+      'displays medication section when only fluid history exists '
+      '(hybrid mode)',
+      (tester) async {
+        // Create a past date
+        final testDate = DateTime(2025, 10, 10);
+
+        // Create a medication schedule (current, not historical)
+        final medSchedule = createTestMedicationSchedule(
+          medicationName: 'Benazepril',
+          id: 'current-med-schedule-id',
+        );
+
+        // Create a completed medication session for that date
+        final medSession = MedicationSession.create(
+          petId: 'test-pet-id',
+          userId: 'test-user-id',
+          dateTime: testDate.add(const Duration(hours: 9)),
+          medicationName: 'Benazepril',
+          dosageGiven: 1,
+          dosageScheduled: 1,
+          medicationUnit: 'Pills',
+          completed: true,
+        );
+
+        // Create a fluid schedule history entry (only fluid history exists)
+        final fluidSchedule = createTestFluidSchedule(id: 'fluid-schedule-id');
+        final fluidHistoryEntry = ScheduleHistoryEntry.fromSchedule(
+          fluidSchedule,
+          effectiveFrom: testDate.subtract(const Duration(days: 30)),
+        );
+
+        // Create a fluid session
+        final fluidSession = FluidSession.create(
+          petId: 'test-pet-id',
+          userId: 'test-user-id',
+          dateTime: testDate.add(const Duration(hours: 10)),
+          volumeGiven: 200,
+          injectionSite: FluidLocation.shoulderBladeLeft,
+        );
+
+        // Create summaries
+        final summary = DailySummary.empty(testDate).copyWith(
+          medicationTotalDoses: 1,
+          fluidSessionCount: 1,
+          fluidTotalVolume: 200,
+        );
+
+        await tester.pumpWidget(
+          createTestPopup(
+            date: testDate,
+            medicationSchedules: [medSchedule],
+            medicationSessions: [medSession],
+            fluidSessions: [fluidSession],
+            summaries: {testDate: summary},
+            scheduleHistory: {
+              'fluid-schedule-id': fluidHistoryEntry,
+              // No medication history entry - this is the regression case
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Verify both sections are present (regression fix)
+        expect(find.text('Medications'), findsOneWidget);
+        expect(find.text('Fluid therapy'), findsOneWidget);
+
+        // Verify medication details are shown
+        expect(find.text('Benazepril'), findsOneWidget);
+        expect(find.byIcon(Icons.check_circle), findsWidgets);
+
+        // Verify medication summary card is present
+        expect(find.text('1'), findsWidgets);
+        expect(find.text('/ 1 doses'), findsOneWidget);
+
+        // Verify fluid section uses historical data
+        expect(find.textContaining('ml'), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      'displays medication section with full history '
+      '(both medication and fluid)',
+      (tester) async {
+        // Create a past date
+        final testDate = DateTime(2025, 10, 10);
+
+        // Create medication schedule and history entry
+        final medSchedule = createTestMedicationSchedule(
+          id: 'med-schedule-id',
+        );
+        final medHistoryEntry = ScheduleHistoryEntry.fromSchedule(
+          medSchedule,
+          effectiveFrom: testDate.subtract(const Duration(days: 30)),
+        );
+
+        // Create a completed medication session
+        final medSession = MedicationSession.create(
+          petId: 'test-pet-id',
+          userId: 'test-user-id',
+          dateTime: testDate.add(const Duration(hours: 8)),
+          medicationName: 'Amlodipine',
+          dosageGiven: 1,
+          dosageScheduled: 1,
+          medicationUnit: 'pills',
+          completed: true,
+        );
+
+        // Create fluid schedule and history entry
+        final fluidSchedule = createTestFluidSchedule(id: 'fluid-schedule-id');
+        final fluidHistoryEntry = ScheduleHistoryEntry.fromSchedule(
+          fluidSchedule,
+          effectiveFrom: testDate.subtract(const Duration(days: 30)),
+        );
+
+        // Create summaries
+        final summary = DailySummary.empty(testDate).copyWith(
+          medicationTotalDoses: 1,
+        );
+
+        await tester.pumpWidget(
+          createTestPopup(
+            date: testDate,
+            medicationSessions: [medSession],
+            summaries: {testDate: summary},
+            scheduleHistory: {
+              'med-schedule-id': medHistoryEntry,
+              'fluid-schedule-id': fluidHistoryEntry,
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Verify medication section is present (using historical data)
+        expect(find.text('Medications'), findsOneWidget);
+        expect(find.text('Amlodipine'), findsOneWidget);
+        expect(find.byIcon(Icons.check_circle), findsWidgets);
+
+        // Verify medication summary card
+        expect(find.text('1'), findsWidgets);
+        expect(find.text('/ 1 doses'), findsOneWidget);
+      },
+    );
+  });
+
+  group('ProgressDayDetailPopup - Extra Medication Logs', () {
+    testWidgets(
+      'displays extra medication logs when more doses logged than scheduled',
+      (tester) async {
+        final testDate = DateTime(2025, 10, 10);
+
+        // Create a medication schedule with 2 reminders (9 AM and 9 PM)
+        final medSchedule = createTestMedicationSchedule(
+          medicationName: 'Benazepril',
+          id: 'med-schedule-id',
+        );
+
+        // Create 3 medication sessions: ALL with the same scheduleId
+        // This tests the exact scenario from the user's bug report
+        final scheduledSession1 = MedicationSession.create(
+          petId: 'test-pet-id',
+          userId: 'test-user-id',
+          dateTime: testDate.add(const Duration(hours: 9)),
+          medicationName: 'Benazepril',
+          dosageGiven: 1,
+          dosageScheduled: 1,
+          medicationUnit: 'Pills',
+          completed: true,
+          scheduleId: 'med-schedule-id',
+          scheduledTime: testDate.add(const Duration(hours: 9)),
+        );
+
+        final scheduledSession2 = MedicationSession.create(
+          petId: 'test-pet-id',
+          userId: 'test-user-id',
+          dateTime: testDate.add(const Duration(hours: 21)),
+          medicationName: 'Benazepril',
+          dosageGiven: 1,
+          dosageScheduled: 1,
+          medicationUnit: 'Pills',
+          completed: true,
+          scheduleId: 'med-schedule-id',
+          scheduledTime: testDate.add(const Duration(hours: 21)),
+        );
+
+        // Extra session with SAME scheduleId (this is the critical test case)
+        final extraSession = MedicationSession.create(
+          petId: 'test-pet-id',
+          userId: 'test-user-id',
+          dateTime: testDate.add(const Duration(hours: 14)),
+          medicationName: 'Benazepril',
+          dosageGiven: 1,
+          dosageScheduled: 1,
+          medicationUnit: 'Pills',
+          completed: true,
+          scheduleId:
+              'med-schedule-id', // Same scheduleId - should be unmatched
+          scheduledTime: testDate.add(const Duration(hours: 14)),
+        );
+
+        final summary = DailySummary.empty(testDate).copyWith(
+          medicationTotalDoses: 3, // 3 completed doses
+        );
+
+        await tester.pumpWidget(
+          createTestPopup(
+            date: testDate,
+            medicationSchedules: [medSchedule],
+            medicationSessions: [
+              scheduledSession1,
+              scheduledSession2,
+              extraSession,
+            ],
+            summaries: {testDate: summary},
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Verify summary card shows "3" and "/ 2 doses"
+        expect(find.text('3'), findsWidgets);
+        expect(find.text('/ 2 doses'), findsOneWidget);
+        // Verify extra dose caption appears
+        expect(find.text('Includes 1 extra logged dose'), findsOneWidget);
+
+        // Verify all 3 medication entries are shown
+        expect(find.text('Benazepril'), findsNWidgets(3));
+
+        // Verify "Additional logged medications" section appears
+        expect(
+          find.text('Additional logged medications'),
+          findsOneWidget,
+        );
+        expect(find.text('1 log'), findsOneWidget);
+
+        // Verify all 3 entries have edit buttons (for past dates)
+        expect(find.byIcon(Icons.edit_outlined), findsNWidgets(3));
+      },
+    );
+
+    testWidgets(
+      'displays unscheduled-only medication logs without summary card',
+      (tester) async {
+        final testDate = DateTime(2025, 10, 10);
+
+        // Create medication sessions but no schedules
+        final unscheduledSession1 = MedicationSession.create(
+          petId: 'test-pet-id',
+          userId: 'test-user-id',
+          dateTime: testDate.add(const Duration(hours: 9)),
+          medicationName: 'Amlodipine',
+          dosageGiven: 1,
+          dosageScheduled: 1,
+          medicationUnit: 'Pills',
+          completed: true,
+          // No scheduleId
+        );
+
+        final unscheduledSession2 = MedicationSession.create(
+          petId: 'test-pet-id',
+          userId: 'test-user-id',
+          dateTime: testDate.add(const Duration(hours: 15)),
+          medicationName: 'Benazepril',
+          dosageGiven: 0.5,
+          dosageScheduled: 0.5,
+          medicationUnit: 'Pills',
+          completed: true,
+          // No scheduleId
+        );
+
+        await tester.pumpWidget(
+          createTestPopup(
+            date: testDate,
+            medicationSessions: [unscheduledSession1, unscheduledSession2],
+            medicationSchedules: [], // No schedules
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Should not show "No treatments scheduled" message
+        expect(
+          find.text('No treatments scheduled for this day'),
+          findsNothing,
+        );
+
+        // Should show medications section with "2 logged"
+        expect(find.text('Medications'), findsOneWidget);
+        expect(find.text('2 logged'), findsOneWidget);
+
+        // Should show both medication entries
+        expect(find.text('Amlodipine'), findsOneWidget);
+        expect(find.text('Benazepril'), findsOneWidget);
+
+        // Should not show summary card (no scheduled doses)
+        expect(find.text('/'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'displays extra medication logs in historical view',
+      (tester) async {
+        final testDate = DateTime(2025, 10, 10);
+
+        // Create medication schedule and history entry
+        final medSchedule = createTestMedicationSchedule(
+          id: 'med-schedule-id',
+        );
+        final medHistoryEntry = ScheduleHistoryEntry.fromSchedule(
+          medSchedule,
+          effectiveFrom: testDate.subtract(const Duration(days: 30)),
+        );
+
+        // Create scheduled session
+        final scheduledSession = MedicationSession.create(
+          petId: 'test-pet-id',
+          userId: 'test-user-id',
+          dateTime: testDate.add(const Duration(hours: 9)),
+          medicationName: 'Amlodipine',
+          dosageGiven: 1,
+          dosageScheduled: 1,
+          medicationUnit: 'pills',
+          completed: true,
+        );
+
+        // Create extra session (no scheduleId)
+        final extraSession = MedicationSession.create(
+          petId: 'test-pet-id',
+          userId: 'test-user-id',
+          dateTime: testDate.add(const Duration(hours: 14)),
+          medicationName: 'Amlodipine',
+          dosageGiven: 1,
+          dosageScheduled: 1,
+          medicationUnit: 'pills',
+          completed: true,
+          // No scheduleId
+        );
+
+        final summary = DailySummary.empty(testDate).copyWith(
+          medicationTotalDoses: 2,
+        );
+
+        await tester.pumpWidget(
+          createTestPopup(
+            date: testDate,
+            medicationSessions: [scheduledSession, extraSession],
+            summaries: {testDate: summary},
+            scheduleHistory: {
+              'med-schedule-id': medHistoryEntry,
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Verify both sessions are shown
+        expect(find.text('Amlodipine'), findsNWidgets(2));
+
+        // Verify "Additional logged medications" section appears
+        expect(
+          find.text('Additional logged medications'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'displays extra medication logs in hybrid view',
+      (tester) async {
+        final testDate = DateTime(2025, 10, 10);
+
+        // Create medication schedule (current, not historical)
+        final medSchedule = createTestMedicationSchedule(
+          medicationName: 'Benazepril',
+          id: 'current-med-schedule-id',
+        );
+
+        // Create fluid schedule history entry (hybrid mode)
+        final fluidSchedule = createTestFluidSchedule(id: 'fluid-schedule-id');
+        final fluidHistoryEntry = ScheduleHistoryEntry.fromSchedule(
+          fluidSchedule,
+          effectiveFrom: testDate.subtract(const Duration(days: 30)),
+        );
+
+        // Create scheduled medication session
+        final scheduledSession = MedicationSession.create(
+          petId: 'test-pet-id',
+          userId: 'test-user-id',
+          dateTime: testDate.add(const Duration(hours: 9)),
+          medicationName: 'Benazepril',
+          dosageGiven: 1,
+          dosageScheduled: 1,
+          medicationUnit: 'Pills',
+          completed: true,
+          scheduleId: 'current-med-schedule-id',
+        );
+
+        // Create extra medication session
+        final extraSession = MedicationSession.create(
+          petId: 'test-pet-id',
+          userId: 'test-user-id',
+          dateTime: testDate.add(const Duration(hours: 16)),
+          medicationName: 'Benazepril',
+          dosageGiven: 1,
+          dosageScheduled: 1,
+          medicationUnit: 'Pills',
+          completed: true,
+          // No scheduleId
+        );
+
+        final summary = DailySummary.empty(testDate).copyWith(
+          medicationTotalDoses: 2,
+        );
+
+        await tester.pumpWidget(
+          createTestPopup(
+            date: testDate,
+            medicationSchedules: [medSchedule],
+            medicationSessions: [scheduledSession, extraSession],
+            summaries: {testDate: summary},
+            scheduleHistory: {
+              'fluid-schedule-id': fluidHistoryEntry,
+              // No medication history - this triggers hybrid mode
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Verify both medication sessions are shown
+        expect(find.text('Benazepril'), findsNWidgets(2));
+
+        // Verify "Additional logged medications" section appears
+        expect(
+          find.text('Additional logged medications'),
+          findsOneWidget,
+        );
+      },
+    );
+  });
 }
 
 /// Helper to create ProgressDayDetailPopup with mocked providers.
@@ -509,6 +948,7 @@ Widget createTestPopup({
   List<Schedule>? medicationSchedules,
   Schedule? fluidSchedule,
   Map<DateTime, DailySummary?>? summaries,
+  Map<String, ScheduleHistoryEntry>? scheduleHistory,
 }) {
   return ProviderScope(
     overrides: [
@@ -521,6 +961,22 @@ Widget createTestPopup({
       weekSummariesProvider.overrideWith(
         (ref, weekStart) async => summaries ?? {},
       ),
+      weekSessionsProvider.overrideWith((ref, weekStart) async {
+        // Build week sessions map from provided sessions
+        final normalizedDate = AppDateUtils.startOfDay(date);
+        final weekStartNormalized = AppDateUtils.startOfWeekMonday(date);
+
+        // Only include sessions for the requested date
+        if (AppDateUtils.startOfDay(weekStart) == weekStartNormalized) {
+          return {
+            normalizedDate: (
+              medicationSessions ?? <MedicationSession>[],
+              fluidSessions ?? <FluidSession>[],
+            ),
+          };
+        }
+        return {};
+      }),
       sessionReadServiceProvider.overrideWith((ref) {
         return MockSessionReadService(
           medicationSessions: medicationSessions ?? [],
@@ -531,7 +987,8 @@ Widget createTestPopup({
         (ref) => DailySummaryCache.empty('2025-10-15'),
       ),
       scheduleHistoryForDateProvider.overrideWith(
-        (ref, date) async => <String, ScheduleHistoryEntry>{},
+        (ref, queryDate) async =>
+            scheduleHistory ?? <String, ScheduleHistoryEntry>{},
       ),
     ],
     child: MaterialApp(

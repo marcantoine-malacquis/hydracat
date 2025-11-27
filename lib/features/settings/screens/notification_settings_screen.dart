@@ -11,7 +11,6 @@ import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
-import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -90,8 +89,8 @@ class _NotificationSettingsScreenState
             data: (permissionStatus) =>
                 _buildPermissionStatusCard(context, l10n, permissionStatus),
             loading: () => const Center(
-                  child: HydraProgressIndicator(),
-                ),
+              child: HydraProgressIndicator(),
+            ),
             error: (error, stack) => _buildPermissionStatusCard(
               context,
               l10n,
@@ -394,7 +393,6 @@ class _NotificationSettingsScreenState
               color: isEnabled
                   ? Theme.of(context).colorScheme.primary
                   : AppColors.textSecondary,
-              size: 24,
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(

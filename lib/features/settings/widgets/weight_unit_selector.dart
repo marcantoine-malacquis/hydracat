@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/providers/weight_unit_provider.dart';
-import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A widget that displays and allows selection of weight unit preference.
@@ -46,7 +45,6 @@ class WeightUnitSelector extends ConsumerWidget {
             onChanged: (String newUnit) {
               ref.read(weightUnitProvider.notifier).setWeightUnit(newUnit);
             },
-            height: 36,
             segmentPadding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.md,
               vertical: AppSpacing.xs,
