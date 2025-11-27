@@ -27,7 +27,8 @@ class SlideTransitionPage<T> extends CustomTransitionPage<T> {
   ///
   /// [child] is the widget to be displayed on this page
   /// [slideDirection] determines the direction of the slide animation
-  /// [duration] is the animation duration (defaults to AppAnimations.pageSlideDuration)
+  /// [duration] is the animation duration
+  /// (defaults to AppAnimations.pageSlideDuration)
   /// [reverseDuration] is the reverse animation duration (defaults to duration)
   SlideTransitionPage({
     required super.child,
@@ -38,9 +39,10 @@ class SlideTransitionPage<T> extends CustomTransitionPage<T> {
     super.name,
     super.arguments,
     super.restorationId,
-  }      ) : super(
+  }) : super(
          transitionDuration: duration ?? AppAnimations.pageSlideDuration,
-         reverseTransitionDuration: reverseDuration ?? (duration ?? AppAnimations.pageSlideDuration),
+         reverseTransitionDuration:
+             reverseDuration ?? (duration ?? AppAnimations.pageSlideDuration),
          transitionsBuilder: (context, animation, secondaryAnimation, child) {
            // Respect reduce motion settings
            final shouldReduceMotion = AppAnimations.shouldReduceMotion(context);
@@ -51,7 +53,7 @@ class SlideTransitionPage<T> extends CustomTransitionPage<T> {
                child: child,
              );
            }
-           
+
            return _buildSlideTransition(
              animation: animation,
              secondaryAnimation: secondaryAnimation,
@@ -74,51 +76,56 @@ class SlideTransitionPage<T> extends CustomTransitionPage<T> {
     // secondaryAnimation are swapped by GoRouter
 
     final forwardBeginOffset = _getBeginOffset(slideDirection);
-    final reverseBeginOffset =
-        _getBeginOffset(_getReverseDirection(slideDirection));
+    final reverseBeginOffset = _getBeginOffset(
+      _getReverseDirection(slideDirection),
+    );
 
     // Create the main slide animation (incoming page)
-    final slideAnimation = Tween<Offset>(
-      begin: forwardBeginOffset,
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: animation,
-        curve: AppAnimations.pageSlideCurve,
-      ),
-    );
+    final slideAnimation =
+        Tween<Offset>(
+          begin: forwardBeginOffset,
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: animation,
+            curve: AppAnimations.pageSlideCurve,
+          ),
+        );
 
     // Create the reverse slide animation (for when this page is being popped)
-    final reverseSlideAnimation = Tween<Offset>(
-      begin: Offset.zero,
-      end: reverseBeginOffset,
-    ).animate(
-      CurvedAnimation(
-        parent: secondaryAnimation,
-        curve: AppAnimations.pageSlideCurve,
-      ),
-    );
+    final reverseSlideAnimation =
+        Tween<Offset>(
+          begin: Offset.zero,
+          end: reverseBeginOffset,
+        ).animate(
+          CurvedAnimation(
+            parent: secondaryAnimation,
+            curve: AppAnimations.pageSlideCurve,
+          ),
+        );
 
     // Create subtle fade animations to complement the slide
-    final fadeInAnimation = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(
-      CurvedAnimation(
-        parent: animation,
-        curve: const Interval(0.0, 0.25),
-      ),
-    );
+    final fadeInAnimation =
+        Tween<double>(
+          begin: 0,
+          end: 1,
+        ).animate(
+          CurvedAnimation(
+            parent: animation,
+            curve: const Interval(0, 0.25),
+          ),
+        );
 
-    final fadeOutAnimation = Tween<double>(
-      begin: 1,
-      end: 0,
-    ).animate(
-      CurvedAnimation(
-        parent: secondaryAnimation,
-        curve: const Interval(0.75, 1.0),
-      ),
-    );
+    final fadeOutAnimation =
+        Tween<double>(
+          begin: 1,
+          end: 0,
+        ).animate(
+          CurvedAnimation(
+            parent: secondaryAnimation,
+            curve: const Interval(0.75, 1),
+          ),
+        );
 
     return SlideTransition(
       position: slideAnimation,

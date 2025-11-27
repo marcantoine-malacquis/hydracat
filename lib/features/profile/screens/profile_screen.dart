@@ -35,7 +35,11 @@ class ProfileScreen extends ConsumerWidget {
       });
     }
 
-    final body = buildBody(context, ref, hasCompletedOnboarding);
+    final body = buildBody(
+      context,
+      ref,
+      hasCompletedOnboarding: hasCompletedOnboarding,
+    );
 
     return DevBanner(
       child: Scaffold(
@@ -61,12 +65,13 @@ class ProfileScreen extends ConsumerWidget {
   /// This static method can be used by AppShell to get body-only content.
   static Widget buildBody(
     BuildContext context,
-    WidgetRef ref,
-    bool hasCompletedOnboarding,
-  ) {
+    WidgetRef ref, {
+    required bool hasCompletedOnboarding,
+  }) {
     return hasCompletedOnboarding
         ? HydraRefreshIndicator(
-            onRefresh: () => ref.read(profileProvider.notifier).refreshPrimaryPet(),
+            onRefresh: () =>
+                ref.read(profileProvider.notifier).refreshPrimaryPet(),
             child: _ProfileScreenContent.buildProfileContent(context, ref),
           )
         : OnboardingEmptyStates.profile(
@@ -323,7 +328,6 @@ class _ProfileScreenContent {
     );
   }
 
-
   /// Builds the navigation drawer
   static Widget _buildDrawer(BuildContext context, WidgetRef ref) {
     return Drawer(
@@ -474,8 +478,10 @@ class _ProfileScreenContent {
         Consumer(
           builder: (context, ref, _) {
             final weightUnit = ref.watch(weightUnitProvider);
-            final metadata =
-                WeightUtils.formatWeight(primaryPet?.weightKg, weightUnit);
+            final metadata = WeightUtils.formatWeight(
+              primaryPet?.weightKg,
+              weightUnit,
+            );
             return NavigationCard(
               title: 'Weight',
               icon: Icons.scale,

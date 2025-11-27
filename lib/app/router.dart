@@ -179,12 +179,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       // ShellRoute wraps all tab navigation routes
-      // Uses builder (not pageBuilder) so nested routes can have their own transitions
+      // Uses builder (not pageBuilder) so nested routes
+      // can have their own transitions
       // Tab switching is handled by TabFadeSwitcher in AppShell
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
         routes: [
-          // Tab root routes: Use NoTransitionPage (tab fade handled by AppShell)
+          // Tab root routes: Use NoTransitionPage
+          // (tab fade handled by AppShell)
           GoRoute(
             path: '/',
             name: 'home',
@@ -234,11 +236,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile/settings',
         name: 'profile-settings',
-        pageBuilder: (context, state) =>
-            AppPageTransitions.bidirectionalSlide(
-              child: const SettingsScreen(),
-              key: state.pageKey,
-            ),
+        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
+          child: const SettingsScreen(),
+          key: state.pageKey,
+        ),
         routes: [
           GoRoute(
             path: 'notifications',
@@ -254,20 +255,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile/ckd',
         name: 'profile-ckd',
-        pageBuilder: (context, state) =>
-            AppPageTransitions.bidirectionalSlide(
-              child: const CkdProfileScreen(),
-              key: state.pageKey,
-            ),
+        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
+          child: const CkdProfileScreen(),
+          key: state.pageKey,
+        ),
       ),
       GoRoute(
         path: '/profile/fluid',
         name: 'profile-fluid',
-        pageBuilder: (context, state) =>
-            AppPageTransitions.bidirectionalSlide(
-              child: const FluidScheduleScreen(),
-              key: state.pageKey,
-            ),
+        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
+          child: const FluidScheduleScreen(),
+          key: state.pageKey,
+        ),
         routes: [
           GoRoute(
             path: 'create',
@@ -283,48 +282,43 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile/medication',
         name: 'profile-medication',
-        pageBuilder: (context, state) =>
-            AppPageTransitions.bidirectionalSlide(
-              child: const MedicationScheduleScreen(),
-              key: state.pageKey,
-            ),
+        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
+          child: const MedicationScheduleScreen(),
+          key: state.pageKey,
+        ),
       ),
       GoRoute(
         path: '/profile/weight',
         name: 'profile-weight',
-        pageBuilder: (context, state) =>
-            AppPageTransitions.bidirectionalSlide(
-              child: const WeightScreen(),
-              key: state.pageKey,
-            ),
+        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
+          child: const WeightScreen(),
+          key: state.pageKey,
+        ),
       ),
       // Progress detail routes (outside the ShellRoute)
       GoRoute(
         path: '/progress/injection-sites',
         name: 'progress-injection-sites',
-        pageBuilder: (context, state) =>
-            AppPageTransitions.bidirectionalSlide(
-              child: const InjectionSitesAnalyticsScreen(),
-              key: state.pageKey,
-            ),
+        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
+          child: const InjectionSitesAnalyticsScreen(),
+          key: state.pageKey,
+        ),
       ),
       GoRoute(
         path: '/progress/weight',
         name: 'progress-weight',
-        pageBuilder: (context, state) =>
-            AppPageTransitions.bidirectionalSlide(
-              child: const WeightScreen(),
-              key: state.pageKey,
-            ),
+        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
+          child: const WeightScreen(),
+          key: state.pageKey,
+        ),
       ),
       GoRoute(
         path: '/progress/symptoms',
         name: 'progress-symptoms',
-        pageBuilder: (context, state) =>
-            AppPageTransitions.bidirectionalSlide(
-              child: const SymptomsScreen(),
-              key: state.pageKey,
-            ),
+        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
+          child: const SymptomsScreen(),
+          key: state.pageKey,
+        ),
       ),
       GoRoute(
         path: '/login',

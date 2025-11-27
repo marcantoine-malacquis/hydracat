@@ -13,6 +13,9 @@
 .swiftpm/
 migrate_working_dir/
 
+# Flutter generated localization files
+lib/l10n/app_localizations*.dart
+
 # Firebase Configuration Files
 **/google-services*.json
 **/GoogleService-Info*.plist

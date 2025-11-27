@@ -247,10 +247,12 @@ class TabFadeSwitcher extends StatelessWidget {
       assert(
         () {
           debugPrint(
-            '[TabFadeSwitcher] Animations disabled due to Reduce Motion setting',
+            '[TabFadeSwitcher] Animations disabled due to '
+            'Reduce Motion setting',
           );
           return true;
         }(),
+        'Animations disabled due to Reduce Motion setting',
       );
       return child;
     }
@@ -268,7 +270,8 @@ class TabFadeSwitcher extends StatelessWidget {
       switchOutCurve: effectiveCurve,
       layoutBuilder: (currentChild, previousChildren) {
         // Stack with incoming child strictly on top to prevent background flash
-        // Previous children (exiting) stay underneath, new child (entering) fades in on top
+        // Previous children (exiting) stay underneath, new child (entering)
+        // fades in on top
         return Stack(
           alignment: Alignment.topLeft,
           fit: StackFit.expand,

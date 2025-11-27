@@ -59,9 +59,9 @@ class HomeScreen extends ConsumerWidget {
   /// This static method can be used by AppShell to get body-only content.
   static Widget buildBody(
     BuildContext context,
-    WidgetRef ref,
-    bool hasCompletedOnboarding,
-  ) {
+    WidgetRef ref, {
+    required bool hasCompletedOnboarding,
+  }) {
     return hasCompletedOnboarding
         ? _HomeScreenContent.buildMainContent(context, ref)
         : OnboardingEmptyStates.home(

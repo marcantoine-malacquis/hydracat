@@ -1,0 +1,224 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
+
+/// Platform-aware icon provider that resolves icons based on platform and type.
+///
+/// Supports:
+/// - Material Icons (Android/Web/Desktop)
+/// - Cupertino Icons (iOS/macOS)
+/// - Custom SVG icons (brand elements)
+/// - Custom IconData (for special cases)
+class IconProvider {
+  IconProvider._();
+
+  /// Resolves an icon for the given icon name and platform.
+  ///
+  /// Returns IconData for Material/Cupertino icons, or null for custom icons
+  /// that need special handling (SVG, etc.).
+  static IconData? resolveIconData(
+    String iconName, {
+    required bool isCupertino,
+  }) {
+    // Custom icons that use SVG or special handling
+    if (_isCustomIcon(iconName)) {
+      return null; // Signal to use custom rendering
+    }
+
+    // Platform-specific icon resolution
+    if (isCupertino) {
+      return _resolveCupertinoIcon(iconName);
+    } else {
+      return _resolveMaterialIcon(iconName);
+    }
+  }
+
+  /// Checks if an icon requires custom rendering (SVG, etc.)
+  static bool _isCustomIcon(String iconName) {
+    return iconName == AppIcons.profile;
+    // logSession stays Material for now, will be custom later
+  }
+
+  /// Resolves Material Design icons
+  static IconData _resolveMaterialIcon(String iconName) {
+    switch (iconName) {
+      // Navigation Icons
+      case AppIcons.home:
+        return Icons.home;
+      case AppIcons.progress:
+        return Icons.show_chart;
+      case AppIcons.learn:
+        return Icons.menu_book;
+      case AppIcons.profile:
+        return Icons.person; // Fallback for profile
+      case AppIcons.logSession:
+      // ignore: unreachable_switch_case
+      // Both logSession and fluidTherapy have the same value ('water_drop'),
+      // but we include both cases for code clarity and maintainability.
+      case AppIcons.fluidTherapy:
+        return Icons.water_drop;
+
+      // Session Logging Icons
+      case AppIcons.medication:
+        return Icons.medication;
+      case AppIcons.completed:
+        return Icons.check_circle;
+      case AppIcons.notCompleted:
+        return Icons.radio_button_unchecked;
+      case AppIcons.inProgress:
+        return Icons.pending;
+
+      // Stress Level Icons
+      case AppIcons.stressLow:
+        return Icons.sentiment_satisfied;
+      case AppIcons.stressMedium:
+        return Icons.sentiment_neutral;
+      case AppIcons.stressHigh:
+        return Icons.sentiment_dissatisfied;
+
+      // Notification Icons
+      case AppIcons.reminder:
+        return Icons.notifications;
+      case AppIcons.missedSession:
+        return Icons.schedule;
+      case AppIcons.streak:
+        return Icons.emoji_events;
+      case AppIcons.weeklySummary:
+        return Icons.summarize;
+
+      // Profile & Settings Icons
+      case AppIcons.petProfile:
+        return Icons.pets;
+      case AppIcons.settings:
+        return Icons.settings;
+      case AppIcons.export:
+        return Icons.picture_as_pdf;
+      case AppIcons.inventory:
+        return Icons.inventory;
+
+      // Utility Icons
+      case AppIcons.add:
+        return Icons.add;
+      case AppIcons.edit:
+        return Icons.edit;
+      case AppIcons.delete:
+        return Icons.delete;
+      case AppIcons.close:
+        return Icons.close;
+      case AppIcons.back:
+        return Icons.arrow_back;
+      case AppIcons.forward:
+        return Icons.arrow_forward;
+
+      default:
+        return Icons.help_outline;
+    }
+  }
+
+  /// Resolves Cupertino icons for iOS/macOS
+  static IconData _resolveCupertinoIcon(String iconName) {
+    switch (iconName) {
+      // Navigation Icons
+      case AppIcons.home:
+        return CupertinoIcons.house_fill;
+      case AppIcons.progress:
+        return CupertinoIcons.chart_bar_fill;
+      case AppIcons.learn:
+        return CupertinoIcons.book_fill;
+      case AppIcons.profile:
+        return CupertinoIcons.person_fill; // Fallback for profile
+      case AppIcons.logSession:
+      // ignore: unreachable_switch_case
+      // Both logSession and fluidTherapy have the same value ('water_drop'),
+      // but we include both cases for code clarity and maintainability.
+      case AppIcons.fluidTherapy:
+        return CupertinoIcons.drop_fill;
+
+      // Session Logging Icons
+      case AppIcons.medication:
+        // No pill icon in Cupertino, using square
+        return CupertinoIcons.square_fill;
+      case AppIcons.completed:
+        return CupertinoIcons.check_mark_circled_solid;
+      case AppIcons.notCompleted:
+        return CupertinoIcons.circle;
+      case AppIcons.inProgress:
+        return CupertinoIcons.clock_fill;
+
+      // Stress Level Icons
+      case AppIcons.stressLow:
+        return CupertinoIcons.smiley_fill;
+      case AppIcons.stressMedium:
+        return CupertinoIcons.smiley;
+      case AppIcons.stressHigh:
+        // Using same as low, can be customized
+        return CupertinoIcons.smiley_fill;
+
+      // Notification Icons
+      case AppIcons.reminder:
+        return CupertinoIcons.bell_fill;
+      case AppIcons.missedSession:
+        return CupertinoIcons.clock_fill;
+      case AppIcons.streak:
+        return CupertinoIcons.star_fill;
+      case AppIcons.weeklySummary:
+        return CupertinoIcons.doc_text_fill;
+
+      // Profile & Settings Icons
+      case AppIcons.petProfile:
+        return CupertinoIcons.person_2_fill;
+      case AppIcons.settings:
+        return CupertinoIcons.settings;
+      case AppIcons.export:
+        return CupertinoIcons.doc_fill;
+      case AppIcons.inventory:
+        return CupertinoIcons.archivebox_fill;
+
+      // Utility Icons
+      case AppIcons.add:
+        return CupertinoIcons.add;
+      case AppIcons.edit:
+        return CupertinoIcons.pencil;
+      case AppIcons.delete:
+        return CupertinoIcons.delete;
+      case AppIcons.close:
+        return CupertinoIcons.xmark;
+      case AppIcons.back:
+        return CupertinoIcons.arrow_left;
+      case AppIcons.forward:
+        return CupertinoIcons.arrow_right;
+
+      default:
+        return CupertinoIcons.question;
+    }
+  }
+
+  /// Gets the asset path for custom SVG icons
+  static String? getCustomIconAsset(String iconName) {
+    switch (iconName) {
+      case AppIcons.profile:
+        return 'assets/fonts/icons/cat_profile_icon_nav.svg';
+      // Add more custom SVG icons here
+      default:
+        return null;
+    }
+  }
+
+  /// Gets fallback IconData for custom icons if SVG fails
+  static IconData getCustomIconFallback(
+    String iconName,
+    bool isCupertino,
+  ) {
+    switch (iconName) {
+      case AppIcons.profile:
+        return isCupertino
+            ? CupertinoIcons.person_fill
+            : Icons.person;
+      default:
+        return isCupertino
+            ? CupertinoIcons.question
+            : Icons.help_outline;
+    }
+  }
+}
+

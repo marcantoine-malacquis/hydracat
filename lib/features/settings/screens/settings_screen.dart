@@ -100,7 +100,14 @@ class SettingsScreen extends ConsumerWidget {
         title: const Text('Settings'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         leading: HydraBackButton(
-          onPressed: () => context.pop(),
+          onPressed: () {
+            // Check if we can pop, otherwise navigate back to profile
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/profile');
+            }
+          },
         ),
       ),
       body: ListView(

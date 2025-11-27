@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/app/tab_page_registry.dart';
 import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/constants/app_icons.dart';
@@ -27,9 +28,7 @@ import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/logging_queue_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
-import 'package:hydracat/app/tab_page_registry.dart';
 import 'package:hydracat/shared/widgets/dialogs/no_schedules_dialog.dart';
-import 'package:hydracat/shared/widgets/layout/dev_banner.dart';
 import 'package:hydracat/shared/widgets/navigation/app_page_transitions.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -126,7 +125,6 @@ class _AppShellState extends ConsumerState<AppShell>
     return 0;
   }
 
-
   /// Gets the top-level tab key for fade transition.
   ///
   /// Returns a string key that uniquely identifies the current top-level tab.
@@ -141,7 +139,8 @@ class _AppShellState extends ConsumerState<AppShell>
       return 'non-tab-route';
     }
 
-    // Check for routes that hide the nav bar (non-tab routes like detail screens)
+    // Check for routes that hide the nav bar
+    // (non-tab routes like detail screens)
     final shouldHideNavBar = TabPageRegistry.isNonTabRoute(currentLocation);
 
     if (shouldHideNavBar) {
@@ -167,7 +166,6 @@ class _AppShellState extends ConsumerState<AppShell>
     // Default fallback to home
     return 'tab-home';
   }
-
 
   @override
   void initState() {
@@ -1393,25 +1391,26 @@ class _AppShellState extends ConsumerState<AppShell>
           // profile/settings screens, and when overlay is visible
           bottomNavigationBar:
               (isInOnboardingFlow || shouldHideNavBar || isOverlayVisible)
-                  ? null
-                  : HydraNavigationBar(
-                      items: _navigationItems,
-                      currentIndex: isLoading ? -1 : _currentIndex,
-                      onTap: isLoading ? (_) {} : _onNavigationTap,
-                      onFabPressed: (isLoading || isLoggingInProgress)
-                          ? null
-                          : _onFabPressed,
-                      onFabLongPress: (isLoading || isLoggingInProgress)
-                          ? null
-                          : _onFabLongPress,
-                      showVerificationBadge: !isLoading && !isVerified,
-                      isFabLoading: isLoggingInProgress,
-                    ),
+              ? null
+              : HydraNavigationBar(
+                  items: _navigationItems,
+                  currentIndex: isLoading ? -1 : _currentIndex,
+                  onTap: isLoading ? (_) {} : _onNavigationTap,
+                  onFabPressed: (isLoading || isLoggingInProgress)
+                      ? null
+                      : _onFabPressed,
+                  onFabLongPress: (isLoading || isLoggingInProgress)
+                      ? null
+                      : _onFabLongPress,
+                  showVerificationBadge: !isLoading && !isVerified,
+                  isFabLoading: isLoggingInProgress,
+                ),
         ),
       );
     }
 
-    // For non-tab routes, use existing structure (they handle their own Scaffold)
+    // For non-tab routes, use existing structure
+    // (they handle their own Scaffold)
     return Scaffold(
       body: Column(
         children: [

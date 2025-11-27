@@ -33,10 +33,14 @@ class ProgressScreen extends ConsumerStatefulWidget {
   /// This static method can be used by AppShell to get body-only content.
   static Widget buildBody(
     BuildContext context,
-    WidgetRef ref,
-    bool hasCompletedOnboarding,
-  ) {
-    return _ProgressScreenContent.buildBody(context, ref, hasCompletedOnboarding);
+    WidgetRef ref, {
+    required bool hasCompletedOnboarding,
+  }) {
+    return _ProgressScreenContent.buildBody(
+      context,
+      ref,
+      hasCompletedOnboarding: hasCompletedOnboarding,
+    );
   }
 }
 
@@ -52,7 +56,11 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   Widget build(BuildContext context) {
     final hasCompletedOnboarding = ref.watch(hasCompletedOnboardingProvider);
 
-    final body = ProgressScreen.buildBody(context, ref, hasCompletedOnboarding);
+    final body = ProgressScreen.buildBody(
+      context,
+      ref,
+      hasCompletedOnboarding: hasCompletedOnboarding,
+    );
 
     if (widget.bodyOnly) {
       return body;
@@ -111,106 +119,106 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 class _ProgressScreenContent {
   static Widget buildBody(
     BuildContext context,
-    WidgetRef ref,
-    bool hasCompletedOnboarding,
-  ) {
+    WidgetRef ref, {
+    required bool hasCompletedOnboarding,
+  }) {
     return hasCompletedOnboarding
-          ? HydraRefreshIndicator(
-              onRefresh: () async {
-                // Clear monthly cache for current month to force fresh read
-                final user = ref.read(currentUserProvider);
-                final pet = ref.read(primaryPetProvider);
-                if (user != null && pet != null) {
-                  ref
-                      .read(summaryServiceProvider)
-                      .clearMonthlyCacheForMonth(
-                        userId: user.id,
-                        petId: pet.id,
-                        date: DateTime.now(),
-                      );
-                }
-
-                // Invalidate schedule data
-                // (may have changed in Profile screen)
+        ? HydraRefreshIndicator(
+            onRefresh: () async {
+              // Clear monthly cache for current month to force fresh read
+              final user = ref.read(currentUserProvider);
+              final pet = ref.read(primaryPetProvider);
+              if (user != null && pet != null) {
                 ref
-                  ..invalidate(medicationSchedulesProvider)
-                  ..invalidate(fluidScheduleProvider)
-                  // Invalidate calendar data
-                  ..invalidate(weekSummariesProvider)
-                  ..invalidate(weekStatusProvider)
-                  // Invalidate injection sites data
-                  ..invalidate(injectionSitesStatsProvider)
-                  // Invalidate symptoms summary
-                  ..invalidate(currentMonthSymptomsSummaryProvider);
+                    .read(summaryServiceProvider)
+                    .clearMonthlyCacheForMonth(
+                      userId: user.id,
+                      petId: pet.id,
+                      date: DateTime.now(),
+                    );
+              }
 
-                // Brief delay to allow providers to rebuild
-                await Future<void>.delayed(
-                  const Duration(milliseconds: 500),
-                );
-              },
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Calendar
-                    ProgressWeekCalendar(
-                      onDaySelected: (day) {
-                        showProgressDayDetailPopup(context, day);
-                      },
+              // Invalidate schedule data
+              // (may have changed in Profile screen)
+              ref
+                ..invalidate(medicationSchedulesProvider)
+                ..invalidate(fluidScheduleProvider)
+                // Invalidate calendar data
+                ..invalidate(weekSummariesProvider)
+                ..invalidate(weekStatusProvider)
+                // Invalidate injection sites data
+                ..invalidate(injectionSitesStatsProvider)
+                // Invalidate symptoms summary
+                ..invalidate(currentMonthSymptomsSummaryProvider);
+
+              // Brief delay to allow providers to rebuild
+              await Future<void>.delayed(
+                const Duration(milliseconds: 500),
+              );
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Calendar
+                  ProgressWeekCalendar(
+                    onDaySelected: (day) {
+                      showProgressDayDetailPopup(context, day);
+                    },
+                  ),
+
+                  // Insights section
+                  const SizedBox(height: 28),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
                     ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Insights',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        const SizedBox(height: 12),
 
-                    // Insights section
-                    const SizedBox(height: 28),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Insights',
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                          const SizedBox(height: 12),
+                        // Injection sites card
+                        NavigationCard(
+                          title: 'Injection Sites',
+                          metadata: 'Track rotation patterns',
+                          icon: Icons.location_on,
+                          onTap: () =>
+                              context.push('/progress/injection-sites'),
+                          margin: EdgeInsets.zero,
+                        ),
 
-                          // Injection sites card
-                          NavigationCard(
-                            title: 'Injection Sites',
-                            metadata: 'Track rotation patterns',
-                            icon: Icons.location_on,
-                            onTap: () =>
-                                context.push('/progress/injection-sites'),
-                            margin: EdgeInsets.zero,
-                          ),
+                        const SizedBox(height: 12),
 
-                          const SizedBox(height: 12),
+                        // Weight tracking card
+                        const _WeightCard(),
 
-                          // Weight tracking card
-                          _WeightCard(),
+                        const SizedBox(height: 12),
 
-                          const SizedBox(height: 12),
+                        // Symptoms tracking card
+                        const _SymptomsCard(),
 
-                          // Symptoms tracking card
-                          const _SymptomsCard(),
-
-                          // Future insights cards will be added here
-                        ],
-                      ),
+                        // Future insights cards will be added here
+                      ],
                     ),
+                  ),
 
-                    const SizedBox(height: 32),
-                  ],
-                ),
+                  const SizedBox(height: 32),
+                ],
               ),
-            )
-          : OnboardingEmptyStates.progress(
-              onGetStarted: () => context.go('/onboarding/welcome'),
-            );
+            ),
+          )
+        : OnboardingEmptyStates.progress(
+            onGetStarted: () => context.go('/onboarding/welcome'),
+          );
   }
 }
 

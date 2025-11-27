@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/app/app_shell.dart';
 import 'package:hydracat/features/home/screens/home_screen.dart';
 import 'package:hydracat/features/learn/screens/learn_screen.dart';
 import 'package:hydracat/features/notifications/widgets/notification_status_widget.dart';
@@ -12,14 +13,18 @@ import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/shared/navigation/tab_page_descriptor.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 
-/// Central registry that maps route locations to [TabPageDescriptor] configurations.
+/// Central registry that maps route locations
+/// to [TabPageDescriptor] configurations.
 ///
-/// This registry eliminates hard-coded path prefix checks in [AppShell] and provides
-/// a single source of truth for what to render (AppBar, body, drawer) for each route.
+/// This registry eliminates hard-coded path prefix checks
+/// in [AppShell] and provides
+/// a single source of truth for what to render (AppBar, body, drawer)
+/// for each route.
 ///
 /// **Route Classification:**
 /// - **Tab routes** (`/`, `/progress`, `/profile`, `/learn`): Use tab fade transitions
-///   when switching between tabs. These routes are managed by the tab shell with
+///   when switching between tabs. These routes are managed
+///   by the tab shell with a stable AppBar and bottom navigation bar.
 ///   a stable AppBar and bottom navigation bar.
 /// - **Detail routes** (e.g., `/profile/settings`, `/progress/weight`): Use horizontal
 ///   slide transitions (push/pop). These routes are full-screen pages with their own
@@ -27,7 +32,12 @@ import 'package:hydracat/shared/widgets/widgets.dart';
 ///
 /// Usage:
 /// ```dart
-/// final tabPage = buildTabPageForLocation(context, ref, currentLocation, widget.child);
+/// final tabPage = buildTabPageForLocation(
+///   context,
+///   ref,
+///   currentLocation,
+///   widget.child,
+/// );
 /// if (tabPage != null && tabPage.isTabRoute) {
 ///   // Render with tab shell
 /// }
@@ -40,7 +50,8 @@ class TabPageRegistry {
   /// - [context]: Build context for accessing theme, router, etc.
   /// - [ref]: Riverpod widget ref for accessing providers.
   /// - [location]: The current route path (e.g. '/', '/progress', '/progress/weight').
-  /// - [child]: The widget child from GoRouter (used as fallback for non-tab routes).
+  /// - [child]: The widget child from GoRouter
+  ///  (used as fallback for non-tab routes).
   ///
   /// Returns a [TabPageDescriptor] for tab routes, or null for non-tab routes
   /// (onboarding, logging, settings overlays, etc.).
@@ -81,7 +92,8 @@ class TabPageRegistry {
 
   // Route classification helpers
 
-  /// Checks if a route is a non-tab route (detail screen, auth, onboarding, etc.).
+  /// Checks if a route is a non-tab route
+  /// (detail screen, auth, onboarding, etc.).
   ///
   /// Non-tab routes are full-screen pages that:
   /// - Use horizontal slide transitions (not tab fade)
@@ -107,7 +119,8 @@ class TabPageRegistry {
         location == '/forgot-password' ||
         location == '/email-verification' ||
         location == '/demo' ||
-        // Profile detail routes that should be full-screen with slide transitions
+        // Profile detail routes that should
+        // be full-screen with slide transitions
         [
           '/profile/settings',
           '/profile/settings/notifications',
@@ -117,7 +130,8 @@ class TabPageRegistry {
           '/profile/medication',
           '/profile/weight',
         ].contains(location) ||
-        // Progress detail routes that should be full-screen with slide transitions
+        // Progress detail routes that should be
+        // full-screen with slide transitions
         [
           '/progress/injection-sites',
           '/progress/weight',
@@ -153,8 +167,11 @@ class TabPageRegistry {
 
     return TabPageDescriptor(
       appBar: _buildHomeAppBar(context),
-      body: HomeScreen.buildBody(context, ref, hasCompletedOnboarding),
-      isTabRoute: true,
+      body: HomeScreen.buildBody(
+        context,
+        ref,
+        hasCompletedOnboarding: hasCompletedOnboarding,
+      ),
     );
   }
 
@@ -169,8 +186,11 @@ class TabPageRegistry {
     // Progress root route only
     return TabPageDescriptor(
       appBar: _buildProgressAppBar(context, ref),
-      body: ProgressScreen.buildBody(context, ref, hasCompletedOnboarding),
-      isTabRoute: true,
+      body: ProgressScreen.buildBody(
+        context,
+        ref,
+        hasCompletedOnboarding: hasCompletedOnboarding,
+      ),
     );
   }
 
@@ -183,10 +203,13 @@ class TabPageRegistry {
 
     return TabPageDescriptor(
       appBar: _buildProfileAppBar(context),
-      body: ProfileScreen.buildBody(context, ref, hasCompletedOnboarding),
+      body: ProfileScreen.buildBody(
+        context,
+        ref,
+        hasCompletedOnboarding: hasCompletedOnboarding,
+      ),
       // Only build drawer in debug mode (when DebugPanel is available)
       drawer: kDebugMode ? ProfileScreen.buildDrawer(context, ref) : null,
-      isTabRoute: true,
     );
   }
 
@@ -194,7 +217,6 @@ class TabPageRegistry {
     return TabPageDescriptor(
       appBar: _buildLearnAppBar(context),
       body: ResourcesScreen.buildBody(context),
-      isTabRoute: true,
     );
   }
 
