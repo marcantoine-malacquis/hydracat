@@ -198,6 +198,9 @@ enum FluidLocation {
   /// Shoulder blade area - left side
   shoulderBladeLeft,
 
+  /// Shoulder blade area - middle
+  shoulderBladeMiddle,
+
   /// Shoulder blade area - right side
   shoulderBladeRight,
 
@@ -210,6 +213,7 @@ enum FluidLocation {
   /// User-friendly display name for the location
   String get displayName => switch (this) {
     FluidLocation.shoulderBladeLeft => 'Shoulder blade - left',
+    FluidLocation.shoulderBladeMiddle => 'Shoulder blade - middle',
     FluidLocation.shoulderBladeRight => 'Shoulder blade - right',
     FluidLocation.hipBonesLeft => 'Hip bones - left',
     FluidLocation.hipBonesRight => 'Hip bones - right',
@@ -220,6 +224,8 @@ enum FluidLocation {
     final l10n = AppLocalizations.of(context)!;
     return switch (this) {
       FluidLocation.shoulderBladeLeft => l10n.injectionSiteShoulderBladeLeft,
+      FluidLocation.shoulderBladeMiddle =>
+          l10n.injectionSiteShoulderBladeMiddle,
       FluidLocation.shoulderBladeRight => l10n.injectionSiteShoulderBladeRight,
       FluidLocation.hipBonesLeft => l10n.injectionSiteHipBonesLeft,
       FluidLocation.hipBonesRight => l10n.injectionSiteHipBonesRight,
@@ -469,7 +475,7 @@ class FluidTherapyData {
           .toDouble(),
       preferredLocation:
           FluidLocation.fromString(json['preferredLocation'] as String) ??
-          FluidLocation.shoulderBladeLeft,
+          FluidLocation.shoulderBladeMiddle,
       needleGauge: json['needleGauge'] as String,
     );
   }

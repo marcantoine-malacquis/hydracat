@@ -97,7 +97,7 @@ class FluidSession {
     const uuid = Uuid();
     final injectionSite = actualInjectionSite ??
         schedule.preferredLocation ??
-        FluidLocation.shoulderBladeLeft;
+        FluidLocation.shoulderBladeMiddle;
 
     return FluidSession(
       id: uuid.v4(),
@@ -121,7 +121,7 @@ class FluidSession {
   /// Creates a [FluidSession] from JSON data
   ///
   /// Handles Firestore Timestamp conversion for all DateTime fields and
-  /// FluidLocation enum conversion from string. Defaults to shoulderBladeLeft
+  /// FluidLocation enum conversion from string. Defaults to shoulderBladeMiddle
   /// for backward compatibility with old data.
   factory FluidSession.fromJson(Map<String, dynamic> json) {
     final injectionSite = json['injectionSite'] != null
@@ -134,7 +134,7 @@ class FluidSession {
       userId: json['userId'] as String,
       dateTime: _parseDateTime(json['dateTime']),
       volumeGiven: (json['volumeGiven'] as num).toDouble(),
-      injectionSite: injectionSite ?? FluidLocation.shoulderBladeLeft,
+      injectionSite: injectionSite ?? FluidLocation.shoulderBladeMiddle,
       stressLevel: json['stressLevel'] as String?,
       notes: json['notes'] as String?,
       scheduleId: json['scheduleId'] as String?,

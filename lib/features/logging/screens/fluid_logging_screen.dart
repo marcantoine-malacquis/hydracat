@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/constants/app_animations.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/features/logging/exceptions/logging_error_handler.dart';
+import 'package:hydracat/features/logging/models/dashboard_logging_context.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/services/weight_calculator_service.dart';
 import 'package:hydracat/features/logging/widgets/injection_site_selector.dart';
@@ -35,6 +36,7 @@ import 'package:hydracat/shared/widgets/widgets.dart';
 /// - Success animation with haptic feedback
 /// - No duplicate detection (partial sessions are valid)
 /// - Schedule validation from notification (via initialScheduleId)
+/// - Dashboard context support (pre-fill remaining volume)
 class FluidLoggingScreen extends ConsumerStatefulWidget {
   /// Creates a [FluidLoggingScreen].
   ///
@@ -42,8 +44,12 @@ class FluidLoggingScreen extends ConsumerStatefulWidget {
   /// against the current fluid schedule. This is used for notification
   /// deep-linking. Validation is silent - no user-facing error is shown
   /// if the schedule doesn't match.
+  ///
+  /// If [dashboardContext] is provided, the volume input will be pre-filled
+  /// with the remaining volume for today instead of the per-session target.
   const FluidLoggingScreen({
     this.initialScheduleId,
+    this.dashboardContext,
     super.key,
   });
 
@@ -54,6 +60,10 @@ class FluidLoggingScreen extends ConsumerStatefulWidget {
   /// current fluid schedule, a warning is logged but the screen opens
   /// normally.
   final String? initialScheduleId;
+
+  /// Optional dashboard context for pre-filling remaining volume from home
+  /// screen.
+  final DashboardFluidContext? dashboardContext;
 
   @override
   ConsumerState<FluidLoggingScreen> createState() => _FluidLoggingScreenState();
@@ -76,8 +86,8 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
   double _volumeValue = 100;
 
   // Selection state
-  FluidLocation _selectedInjectionSite = FluidLocation.shoulderBladeLeft;
-  String _selectedStressLevel = 'medium';
+  FluidLocation _selectedInjectionSite = FluidLocation.shoulderBladeMiddle;
+  String _selectedStressLevel = 'low';
 
   // UI state
   LoadingOverlayState _loadingState = LoadingOverlayState.none;
@@ -218,14 +228,33 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
   Future<void> _prefillFromSchedule() async {
     final fluidSchedule = ref.read(fluidScheduleProvider);
 
+    // If dashboard context is provided, use remaining volume instead of
+    // per-session target volume
+    if (widget.dashboardContext != null) {
+      setState(() {
+        _volumeValue = widget.dashboardContext!.remainingVolume;
+        _selectedInjectionSite = fluidSchedule?.preferredLocation ??
+            FluidLocation.shoulderBladeMiddle;
+      });
+
+      if (kDebugMode) {
+        debugPrint(
+          '[FluidLoggingScreen] Pre-filled from dashboard context: '
+          'volume=${widget.dashboardContext!.remainingVolume}ml (remaining), '
+          'site=${_selectedInjectionSite.displayName}',
+        );
+      }
+      return;
+    }
+
     if (fluidSchedule != null) {
       // Pre-fill from schedule - always use the latest data
       final newVolume = fluidSchedule.targetVolume ?? 100;
 
       setState(() {
         _volumeValue = newVolume;
-        _selectedInjectionSite =
-            fluidSchedule.preferredLocation ?? FluidLocation.shoulderBladeLeft;
+        _selectedInjectionSite = fluidSchedule.preferredLocation ??
+            FluidLocation.shoulderBladeMiddle;
       });
 
       if (kDebugMode) {
@@ -243,7 +272,7 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
       setState(() {
         _volumeValue = 100;
         _selectedInjectionSite =
-            lastUsedSite ?? FluidLocation.shoulderBladeLeft;
+            lastUsedSite ?? FluidLocation.shoulderBladeMiddle;
       });
 
       if (kDebugMode) {
@@ -490,16 +519,29 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
         const SizedBox(height: AppSpacing.md),
 
         // Injection site selector
-        InjectionSiteSelector(
-          value: _selectedInjectionSite,
-          onChanged: (FluidLocation newValue) {
-            if (_loadingState == LoadingOverlayState.none) {
-              setState(() {
-                _selectedInjectionSite = newValue;
-              });
-            }
-          },
-          enabled: _loadingState == LoadingOverlayState.none,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.injectionSiteLabel,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            InjectionSiteSelector(
+              value: _selectedInjectionSite,
+              onChanged: (FluidLocation newValue) {
+                if (_loadingState == LoadingOverlayState.none) {
+                  setState(() {
+                    _selectedInjectionSite = newValue;
+                  });
+                }
+              },
+              enabled: _loadingState == LoadingOverlayState.none,
+            ),
+          ],
         ),
         const SizedBox(height: AppSpacing.lg),
 

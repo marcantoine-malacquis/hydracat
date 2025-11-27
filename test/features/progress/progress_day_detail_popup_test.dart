@@ -7,12 +7,15 @@ import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/session_read_service.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
+import 'package:hydracat/features/profile/models/schedule_history_entry.dart';
 import 'package:hydracat/features/progress/widgets/progress_day_detail_popup.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/progress_provider.dart';
+import 'package:hydracat/providers/schedule_history_provider.dart';
 import 'package:hydracat/shared/models/daily_summary.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 import '../../helpers/widget_test_helpers.dart';
 
@@ -213,8 +216,8 @@ void main() {
     });
   });
 
-  group('ProgressDayDetailPopup - Summary Pills', () {
-    testWidgets('displays medication summary pill with correct counts', (
+  group('ProgressDayDetailPopup - Summary Cards', () {
+    testWidgets('displays medication summary card with correct counts', (
       tester,
     ) async {
       final medSchedule = createTestMedicationSchedule();
@@ -243,11 +246,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify summary pill shows "1 of 1"
-      expect(find.textContaining('Medication: 1 of 1 doses'), findsOneWidget);
+      // Verify summary card shows "1" and "/ 1 doses" (new layout matches fluid card)
+      expect(find.text('1'), findsWidgets); // Appears in h3 style
+      expect(find.text('/ 1 doses'), findsOneWidget);
+      // Verify goal reached chip appears
+      expect(find.text('Goal reached'), findsOneWidget);
+      // Verify progress bar is present
+      expect(find.byType(HydraProgressIndicator), findsWidgets);
     });
 
-    testWidgets('displays fluid summary pill with correct counts', (
+    testWidgets('displays fluid summary card with correct counts', (
       tester,
     ) async {
       final fluidSchedule = createTestFluidSchedule();
@@ -274,11 +282,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify summary pill shows "1 of 1"
-      expect(find.textContaining('Fluid: 1 of 1 sessions'), findsOneWidget);
+      // Verify summary card shows volume
+      expect(find.textContaining('100 mL'), findsOneWidget);
+      expect(find.textContaining('/ 100 mL'), findsOneWidget);
     });
 
-    testWidgets('shows incomplete status in pills', (tester) async {
+    testWidgets('shows incomplete status in medication card', (tester) async {
       final medSchedule = createTestMedicationSchedule();
       final summary = DailySummary.empty(pastDate); // All counts at 0
 
@@ -291,9 +300,65 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify summary shows 0 of 1
-      expect(find.textContaining('Medication: 0 of 1 doses'), findsOneWidget);
+      // Verify summary shows "0" and "/ 1 doses" (new layout matches fluid card)
+      expect(find.text('0'), findsWidgets); // Appears in h3 style
+      expect(find.text('/ 1 doses'), findsOneWidget);
+      // Verify missed chip appears for past incomplete days
+      expect(find.text('Missed'), findsOneWidget);
+      // Verify progress bar is present
+      expect(find.byType(HydraProgressIndicator), findsWidgets);
     });
+
+    testWidgets(
+      'displays both medication and fluid summary cards together',
+      (tester) async {
+        final medSchedule = createTestMedicationSchedule();
+        final fluidSchedule = createTestFluidSchedule();
+        final medSession = MedicationSession.create(
+          petId: 'test-pet-id',
+          userId: 'test-user-id',
+          dateTime: pastDate.add(const Duration(hours: 8)),
+          medicationName: 'Test Med',
+          dosageGiven: 1,
+          dosageScheduled: 1,
+          medicationUnit: 'pills',
+          completed: true,
+        );
+        final fluidSession = FluidSession.create(
+          petId: 'test-pet-id',
+          userId: 'test-user-id',
+          dateTime: pastDate.add(const Duration(hours: 9)),
+          volumeGiven: 100,
+          injectionSite: FluidLocation.shoulderBladeLeft,
+        );
+
+        final summary = DailySummary.empty(pastDate).copyWith(
+          medicationTotalDoses: 1,
+          fluidSessionCount: 1,
+          fluidTotalVolume: 100,
+        );
+
+        await tester.pumpWidget(
+          createTestPopup(
+            date: pastDate,
+            medicationSchedules: [medSchedule],
+            medicationSessions: [medSession],
+            fluidSchedule: fluidSchedule,
+            fluidSessions: [fluidSession],
+            summaries: {pastDate: summary},
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Verify both summary cards appear
+        expect(find.text('1'), findsWidgets); // Medication card h3
+        expect(find.text('/ 1 doses'), findsOneWidget);
+        expect(find.textContaining('100 mL'), findsOneWidget);
+        expect(find.textContaining('/ 100 mL'), findsOneWidget);
+        // Verify progress bars are present for both cards
+        expect(find.byType(HydraProgressIndicator), findsNWidgets(2));
+      },
+    );
   });
 
   group('ProgressDayDetailPopup - Empty States', () {
@@ -332,7 +397,7 @@ void main() {
       );
     });
 
-    testWidgets('hides summary pills when no schedules exist', (tester) async {
+    testWidgets('hides summary cards when no schedules exist', (tester) async {
       await tester.pumpWidget(
         createTestPopup(
           date: pastDate,
@@ -340,9 +405,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Should not show any summary pills
+      // Should not show any summary cards
       expect(find.textContaining('Medication:'), findsNothing);
-      expect(find.textContaining('Fluid:'), findsNothing);
+      expect(find.textContaining('mL'), findsNothing);
     });
   });
 
@@ -464,6 +529,9 @@ Widget createTestPopup({
       }),
       dailyCacheProvider.overrideWith(
         (ref) => DailySummaryCache.empty('2025-10-15'),
+      ),
+      scheduleHistoryForDateProvider.overrideWith(
+        (ref, date) async => <String, ScheduleHistoryEntry>{},
       ),
     ],
     child: MaterialApp(

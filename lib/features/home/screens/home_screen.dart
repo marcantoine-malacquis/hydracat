@@ -5,9 +5,14 @@ import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/home/models/pending_fluid_treatment.dart';
 import 'package:hydracat/features/home/models/pending_treatment.dart';
 import 'package:hydracat/features/home/widgets/widgets.dart';
+import 'package:hydracat/features/logging/models/dashboard_logging_context.dart';
+import 'package:hydracat/features/logging/screens/fluid_logging_screen.dart';
+import 'package:hydracat/features/logging/screens/medication_logging_screen.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
+import 'package:hydracat/features/logging/widgets/logging_bottom_sheet_helper.dart';
 import 'package:hydracat/features/notifications/widgets/notification_status_widget.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
+import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/dashboard_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
@@ -246,9 +251,10 @@ class _HomeScreenContent {
                 ...dashboardState.pendingMedications.map(
                   (treatment) => PendingTreatmentCard(
                     treatment: treatment,
-                    onTap: () => _showTreatmentConfirmation(
+                    onTap: () => _openMedicationLoggingFromDashboard(
                       context,
-                      medication: treatment,
+                      ref,
+                      treatment,
                     ),
                   ),
                 ),
@@ -257,9 +263,10 @@ class _HomeScreenContent {
                 if (dashboardState.pendingFluid != null)
                   PendingFluidCard(
                     fluidTreatment: dashboardState.pendingFluid!,
-                    onTap: () => _showTreatmentConfirmation(
+                    onTap: () => _openFluidLoggingFromDashboard(
                       context,
-                      fluid: dashboardState.pendingFluid,
+                      ref,
+                      dashboardState.pendingFluid!,
                     ),
                   ),
 
@@ -380,17 +387,84 @@ class _HomeScreenContent {
     return DashboardEmptyState(completedCount: count);
   }
 
-  /// Show treatment confirmation popup
-  static void _showTreatmentConfirmation(
-    BuildContext context, {
-    PendingTreatment? medication,
-    PendingFluidTreatment? fluid,
-  }) {
-    OverlayService.showFullScreenPopup(
-      context: context,
-      child: TreatmentConfirmationPopup(
-        medication: medication,
-        fluid: fluid,
+  /// Open medication logging screen from dashboard with pre-selected medication
+  static void _openMedicationLoggingFromDashboard(
+    BuildContext context,
+    WidgetRef ref,
+    PendingTreatment treatment,
+  ) {
+    // Track analytics for opening from dashboard
+    ref.read(analyticsServiceDirectProvider).trackLoggingPopupOpened(
+          popupType: 'dashboard_medication',
+        );
+
+    // Create dashboard context
+    final dashboardContext = DashboardMedicationContext(
+      scheduleId: treatment.schedule.id,
+      scheduledTime: treatment.scheduledTime,
+    );
+
+    // Skip callback that handles dashboard state and shows success feedback
+    Future<void> onSkip() async {
+      try {
+        // Capture host context before closing popup
+        final hostContext = OverlayService.hostContext ?? context;
+
+        // Perform skip action
+        await ref
+            .read(dashboardProvider.notifier)
+            .skipMedicationTreatment(treatment);
+
+        // Show success feedback using host context
+        if (hostContext.mounted) {
+          OverlayService.showFullScreenPopup(
+            context: hostContext,
+            child: const DashboardSuccessPopup(
+              message: 'Treatment skipped',
+              isSkipped: true,
+            ),
+            animationType: OverlayAnimationType.scaleIn,
+          );
+        }
+      } catch (e) {
+        debugPrint('Error skipping treatment: $e');
+        // Error handling - could show error popup here
+        rethrow;
+      }
+    }
+
+    // Show logging screen with dashboard context
+    showLoggingBottomSheet(
+      context,
+      MedicationLoggingScreen(
+        dashboardContext: dashboardContext,
+        onSkipFromDashboard: onSkip,
+      ),
+    );
+  }
+
+  /// Open fluid logging screen from dashboard with pre-filled remaining volume
+  static void _openFluidLoggingFromDashboard(
+    BuildContext context,
+    WidgetRef ref,
+    PendingFluidTreatment pendingFluid,
+  ) {
+    // Track analytics for opening from dashboard
+    ref.read(analyticsServiceDirectProvider).trackLoggingPopupOpened(
+          popupType: 'dashboard_fluid',
+        );
+
+    // Create dashboard context
+    final dashboardContext = DashboardFluidContext(
+      scheduleId: pendingFluid.schedule.id,
+      remainingVolume: pendingFluid.remainingVolume,
+    );
+
+    // Show logging screen with dashboard context
+    showLoggingBottomSheet(
+      context,
+      FluidLoggingScreen(
+        dashboardContext: dashboardContext,
       ),
     );
   }

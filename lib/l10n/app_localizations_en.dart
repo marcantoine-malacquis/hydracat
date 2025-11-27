@@ -518,7 +518,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get fluidStressLevelLabel => 'Stress Level (optional):';
+  String get fluidStressLevelLabel => 'Session stress';
 
   @override
   String get fluidLogButtonLabel => 'Log fluid session button';
@@ -714,7 +714,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickLogSuccessHint => 'Success. Tap anywhere to dismiss.';
 
   @override
-  String get injectionSiteLabel => 'Injection Site';
+  String get injectionSiteLabel => 'Injection site';
 
   @override
   String get injectionSiteSelectorSemantic => 'Injection site selector';
@@ -736,6 +736,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get injectionSiteShoulderBladeRight => 'Shoulder blade - right';
+
+  @override
+  String get injectionSiteShoulderBladeMiddle => 'Shoulder blade - middle';
 
   @override
   String get injectionSiteHipBonesLeft => 'Hip bones - left';
@@ -1084,8 +1087,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationSettingsWeeklySummaryLabel => 'Weekly Summary';
 
   @override
-  String get notificationSettingsWeeklySummaryDescription =>
-      'Get a summary of your treatment adherence every Monday morning';
+  String get notificationSettingsWeeklySummaryDescription => 'Monday morning';
 
   @override
   String get notificationSettingsWeeklySummarySuccess =>

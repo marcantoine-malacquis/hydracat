@@ -336,7 +336,7 @@
       }
     }
   },
-  "fluidStressLevelLabel": "Stress Level (optional):",
+  "fluidStressLevelLabel": "Session stress",
   "fluidLogButtonLabel": "Log fluid session button",
   "fluidLogButtonHint": "Logs fluid therapy session and updates treatment records",
 
@@ -483,7 +483,7 @@
   "quickLogSuccessHint": "Success. Tap anywhere to dismiss.",
 
   "@_LOGGING_INJECTION_SITE": {},
-  "injectionSiteLabel": "Injection Site",
+  "injectionSiteLabel": "Injection site",
   "injectionSiteSelectorSemantic": "Injection site selector",
   "injectionSiteCurrentSelection": "Current selection: {site}",
   "@injectionSiteCurrentSelection": {
@@ -505,6 +505,10 @@
   "injectionSiteShoulderBladeRight": "Shoulder blade - right",
   "@injectionSiteShoulderBladeRight": {
     "description": "Display name for right shoulder blade injection site"
+  },
+  "injectionSiteShoulderBladeMiddle": "Shoulder blade - middle",
+  "@injectionSiteShoulderBladeMiddle": {
+    "description": "Display name for middle shoulder blade injection site"
   },
   "injectionSiteHipBonesLeft": "Hip bones - left",
   "@injectionSiteHipBonesLeft": {
@@ -906,7 +910,7 @@
   "@notificationSettingsWeeklySummaryLabel": {
     "description": "Label for weekly summary notification toggle"
   },
-  "notificationSettingsWeeklySummaryDescription": "Get a summary of your treatment adherence every Monday morning",
+  "notificationSettingsWeeklySummaryDescription": "Monday morning",
   "@notificationSettingsWeeklySummaryDescription": {
     "description": "Description text explaining weekly summary notifications"
   },

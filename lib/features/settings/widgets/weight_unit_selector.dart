@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/providers/weight_unit_provider.dart';
+import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A widget that displays and allows selection of weight unit preference.
 class WeightUnitSelector extends ConsumerWidget {
@@ -23,8 +26,8 @@ class WeightUnitSelector extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.monitor_weight,
+          HydraIcon(
+            icon: AppIcons.weightUnit,
             color: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -34,81 +37,22 @@ class WeightUnitSelector extends ConsumerWidget {
               style: AppTextStyles.body,
             ),
           ),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _UnitButton(
-                  label: 'kg',
-                  isSelected: currentUnit == 'kg',
-                  onTap: () => ref
-                      .read(weightUnitProvider.notifier)
-                      .setWeightUnit('kg'),
-                  isFirst: true,
-                ),
-                _UnitButton(
-                  label: 'lbs',
-                  isSelected: currentUnit == 'lbs',
-                  onTap: () => ref
-                      .read(weightUnitProvider.notifier)
-                      .setWeightUnit('lbs'),
-                  isLast: true,
-                ),
-              ],
+          HydraSlidingSegmentedControl<String>(
+            value: currentUnit,
+            segments: const {
+              'kg': Text('kg'),
+              'lbs': Text('lbs'),
+            },
+            onChanged: (String newUnit) {
+              ref.read(weightUnitProvider.notifier).setWeightUnit(newUnit);
+            },
+            height: 36,
+            segmentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.xs,
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Internal unit button widget for weight unit selection.
-class _UnitButton extends StatelessWidget {
-  const _UnitButton({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    this.isFirst = false,
-    this.isLast = false,
-  });
-
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final bool isFirst;
-  final bool isLast;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.xs,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.horizontal(
-            left: isFirst ? const Radius.circular(7) : Radius.zero,
-            right: isLast ? const Radius.circular(7) : Radius.zero,
-          ),
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: AppTextStyles.caption.copyWith(
-            color: isSelected ? Colors.white : AppColors.textSecondary,
-            fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
-          ),
-        ),
       ),
     );
   }

@@ -24,6 +24,7 @@ class HydraAlertDialog extends StatelessWidget {
     this.shape,
     this.backgroundColor,
     this.insetPadding,
+    this.constraints,
     this.semanticLabel,
     super.key,
   });
@@ -77,6 +78,11 @@ class HydraAlertDialog extends StatelessWidget {
   /// This property is ignored on Cupertino platforms.
   final EdgeInsets? insetPadding;
 
+  /// The constraints for the dialog's size.
+  ///
+  /// This property is ignored on Cupertino platforms.
+  final BoxConstraints? constraints;
+
   /// The semantic label of the dialog used by accessibility frameworks.
   final String? semanticLabel;
 
@@ -104,6 +110,7 @@ class HydraAlertDialog extends StatelessWidget {
       shape: shape,
       backgroundColor: backgroundColor,
       insetPadding: insetPadding,
+      constraints: constraints,
       semanticLabel: semanticLabel,
     );
   }

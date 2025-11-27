@@ -36,7 +36,7 @@ class _CreateFluidScheduleScreenState
   // Form data
   TreatmentFrequency _selectedFrequency = TreatmentFrequency.onceDaily;
   double _volumePerAdministration = 0;
-  FluidLocation _preferredLocation = FluidLocation.shoulderBladeLeft;
+  FluidLocation _preferredLocation = FluidLocation.shoulderBladeMiddle;
   String _needleGauge = '';
 
   bool _isLoading = false;

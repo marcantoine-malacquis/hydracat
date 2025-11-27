@@ -72,6 +72,21 @@ class AppIcons {
   /// Inventory tracking
   static const String inventory = 'inventory';
 
+  /// Weight unit selector
+  static const String weightUnit = 'monitor_weight';
+
+  /// App theme selector
+  static const String theme = 'palette';
+
+  /// Clear cache
+  static const String clearCache = 'cleaning_services';
+
+  /// Light mode
+  static const String lightMode = 'light_mode';
+
+  /// Dark mode
+  static const String darkMode = 'dark_mode';
+
   // Utility Icons
   /// Add/Plus
   static const String add = 'add';
@@ -90,4 +105,16 @@ class AppIcons {
 
   /// Forward/Next
   static const String forward = 'arrow_forward';
+
+  /// Chevron right
+  static const String chevronRight = 'chevron_right';
+
+  /// Privacy tip
+  static const String privacyTip = 'privacy_tip';
+
+  /// Info
+  static const String info = 'info';
+
+  /// Warning
+  static const String warning = 'warning';
 }

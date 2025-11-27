@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/features/logging/models/treatment_choice.dart';
@@ -258,7 +259,7 @@ class _CancelButton extends StatelessWidget {
             child: Text(
               l10n.cancel,
               style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+                color: AppColors.error,
                 fontWeight: FontWeight.w500,
               ),
             ),

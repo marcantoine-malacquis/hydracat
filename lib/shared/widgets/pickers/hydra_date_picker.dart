@@ -213,7 +213,7 @@ class _HydraCupertinoDatePickerContentState
                     child: const Text(
                       'Cancel',
                       style: TextStyle(
-                        color: AppColors.primary,
+                        color: AppColors.error,
                         fontSize: 16,
                       ),
                     ),

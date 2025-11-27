@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/settings/widgets/weight_unit_selector.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/cache_management_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/theme_provider.dart';
+import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A screen that displays app settings and preferences.
@@ -132,8 +134,8 @@ class SettingsScreen extends ConsumerWidget {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.notifications,
+                  HydraIcon(
+                    icon: AppIcons.reminder,
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -143,8 +145,8 @@ class SettingsScreen extends ConsumerWidget {
                       style: AppTextStyles.body,
                     ),
                   ),
-                  const Icon(
-                    Icons.chevron_right,
+                  const HydraIcon(
+                    icon: AppIcons.chevronRight,
                     color: AppColors.textSecondary,
                   ),
                 ],
@@ -166,8 +168,8 @@ class SettingsScreen extends ConsumerWidget {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.palette,
+                HydraIcon(
+                  icon: AppIcons.theme,
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: AppSpacing.sm),
@@ -180,47 +182,26 @@ class SettingsScreen extends ConsumerWidget {
                 Consumer(
                   builder: (context, ref, _) {
                     final currentTheme = ref.watch(themeProvider);
-                    final isDark = currentTheme == ThemeMode.dark;
 
-                    return GestureDetector(
-                      onTap: () =>
-                          ref.read(themeProvider.notifier).toggleTheme(),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm,
-                          vertical: AppSpacing.xs,
+                    return HydraSlidingSegmentedControl<ThemeMode>(
+                      value: currentTheme,
+                      segments: {
+                        ThemeMode.light: HydraIcon(
+                          icon: AppIcons.lightMode,
+                          size: 18,
                         ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Theme.of(context).colorScheme.primaryContainer
-                              : Theme.of(context).colorScheme.secondary,
-                          borderRadius: BorderRadius.circular(16),
+                        ThemeMode.dark: HydraIcon(
+                          icon: AppIcons.darkMode,
+                          size: 18,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isDark ? Icons.dark_mode : Icons.light_mode,
-                              size: 16,
-                              color: isDark
-                                  ? Theme.of(
-                                      context,
-                                    ).colorScheme.onPrimaryContainer
-                                  : Theme.of(context).colorScheme.onSecondary,
-                            ),
-                            const SizedBox(width: AppSpacing.xs),
-                            Text(
-                              isDark ? 'Dark' : 'Light',
-                              style: AppTextStyles.caption.copyWith(
-                                color: isDark
-                                    ? Theme.of(
-                                        context,
-                                      ).colorScheme.onPrimaryContainer
-                                    : Theme.of(context).colorScheme.onSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
+                      },
+                      onChanged: (ThemeMode newTheme) {
+                        ref.read(themeProvider.notifier).setThemeMode(newTheme);
+                      },
+                      height: 36,
+                      segmentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.xs,
                       ),
                     );
                   },
@@ -231,56 +212,44 @@ class SettingsScreen extends ConsumerWidget {
 
           const SizedBox(height: AppSpacing.xl),
 
-          // Data Management section
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline,
+          // Clear Cache section
+          InkWell(
+            onTap: () => _clearCache(context, ref),
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
               ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Data Management', style: AppTextStyles.h3),
-                const SizedBox(height: AppSpacing.sm),
-                InkWell(
-                  onTap: () => _clearCache(context, ref),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.xs,
-                    ),
-                    child: Row(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
-                          Icons.cleaning_services,
-                          color: AppColors.warning,
+                        const Text(
+                          'Clear Cache',
+                          style: AppTextStyles.body,
                         ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Clear Cache',
-                                style: AppTextStyles.body,
-                              ),
-                              Text(
-                                'Clear local cached summary data',
-                                style: AppTextStyles.caption.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
+                        Text(
+                          'Clear local cached summary data',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: AppSpacing.sm),
+                  const HydraIcon(
+                    icon: AppIcons.clearCache,
+                    color: AppColors.warning,
+                  ),
+                ],
+              ),
             ),
           ),
 

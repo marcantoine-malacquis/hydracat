@@ -5,13 +5,16 @@ import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/session_read_service.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
+import 'package:hydracat/features/profile/models/schedule_history_entry.dart';
 import 'package:hydracat/features/progress/models/day_dot_status.dart';
 import 'package:hydracat/features/progress/utils/memoization.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
+import 'package:hydracat/providers/schedule_history_provider.dart';
 import 'package:hydracat/shared/models/daily_summary.dart';
 import 'package:hydracat/shared/models/fluid_daily_summary_view.dart';
+import 'package:hydracat/shared/models/medication_daily_summary_view.dart';
 import 'package:hydracat/shared/models/monthly_summary.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -427,6 +430,128 @@ currentMonthSymptomsSummaryProvider =
         return null;
       }
     });
+
+/// Medication daily summary for a specific day using
+/// cached weekly summaries and
+/// the cached medication schedules to compute scheduled doses.
+/// Reads at most the
+/// weekly summaries already loaded by [weekSummariesProvider], avoiding any
+/// direct session queries per firebase_CRUDrules.
+final AutoDisposeProviderFamily<MedicationDailySummaryView?, DateTime>
+medicationDailySummaryViewProvider = Provider.autoDispose
+    .family<MedicationDailySummaryView?, DateTime>((ref, day) {
+      final normalized = AppDateUtils.startOfDay(day);
+      final today = AppDateUtils.startOfDay(DateTime.now());
+      final isFuture = normalized.isAfter(today);
+
+      // For future dates, use current schedules
+      if (isFuture || normalized.isAtSameMomentAs(today)) {
+        return _buildMedicationSummaryFromCurrentSchedules(
+          ref,
+          normalized,
+        );
+      }
+
+      // For past dates, use historical schedules
+      final historicalSchedulesAsync = ref.watch(
+        scheduleHistoryForDateProvider(normalized),
+      );
+
+      return historicalSchedulesAsync.maybeWhen(
+        data: (historicalMap) {
+          if (historicalMap.isEmpty) {
+            // Fall back to current schedules if no history
+            return _buildMedicationSummaryFromCurrentSchedules(
+              ref,
+              normalized,
+            );
+          }
+          return _buildMedicationSummaryFromHistoricalSchedules(
+            ref,
+            normalized,
+            historicalMap,
+          );
+        },
+        orElse: () => _buildMedicationSummaryFromCurrentSchedules(
+          ref,
+          normalized,
+        ),
+      );
+    });
+
+/// Build medication summary from current schedules
+MedicationDailySummaryView? _buildMedicationSummaryFromCurrentSchedules(
+  Ref ref,
+  DateTime normalized,
+) {
+  final medSchedules = ref.watch(medicationSchedulesProvider) ?? [];
+  final medicationSchedules = medSchedules
+      .where((s) => s.treatmentType == TreatmentType.medication)
+      .toList();
+
+  // Count scheduled doses from current schedules
+  var scheduledDoses = 0;
+  for (final schedule in medicationSchedules) {
+    scheduledDoses += schedule.reminderTimesOnDate(normalized).length;
+  }
+
+  // If no scheduled doses, return null (don't show status)
+  if (scheduledDoses == 0) return null;
+
+  // Get completed doses from weekly summaries
+  final weekStart = AppDateUtils.startOfWeekMonday(normalized);
+  final summariesAsync = ref.watch(weekSummariesProvider(weekStart));
+
+  return summariesAsync.maybeWhen(
+    data: (map) {
+      final summary = map[normalized];
+      final completedDoses = summary?.medicationTotalDoses ?? 0;
+
+      return MedicationDailySummaryView(
+        completedDoses: completedDoses,
+        scheduledDoses: scheduledDoses,
+        isToday: AppDateUtils.isToday(normalized),
+      );
+    },
+    orElse: () => null,
+  );
+}
+
+/// Build medication summary from historical schedules
+MedicationDailySummaryView? _buildMedicationSummaryFromHistoricalSchedules(
+  Ref ref,
+  DateTime normalized,
+  Map<String, ScheduleHistoryEntry> historicalMap,
+) {
+  // Count scheduled doses from historical schedules
+  var scheduledDoses = 0;
+  for (final entry in historicalMap.values) {
+    if (entry.treatmentType == TreatmentType.medication) {
+      scheduledDoses += entry.getReminderTimesForDate(normalized).length;
+    }
+  }
+
+  // If no scheduled doses, return null (don't show status)
+  if (scheduledDoses == 0) return null;
+
+  // Get completed doses from weekly summaries
+  final weekStart = AppDateUtils.startOfWeekMonday(normalized);
+  final summariesAsync = ref.watch(weekSummariesProvider(weekStart));
+
+  return summariesAsync.maybeWhen(
+    data: (map) {
+      final summary = map[normalized];
+      final completedDoses = summary?.medicationTotalDoses ?? 0;
+
+      return MedicationDailySummaryView(
+        completedDoses: completedDoses,
+        scheduledDoses: scheduledDoses,
+        isToday: AppDateUtils.isToday(normalized),
+      );
+    },
+    orElse: () => null,
+  );
+}
 
 /// Helper function to calculate the current fluid goal from active schedule
 ///

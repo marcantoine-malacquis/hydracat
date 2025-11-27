@@ -44,7 +44,7 @@ class IconProvider {
     switch (iconName) {
       // Navigation Icons
       case AppIcons.home:
-        return Icons.home;
+        return Icons.pets;
       case AppIcons.progress:
         return Icons.show_chart;
       case AppIcons.learn:
@@ -52,10 +52,6 @@ class IconProvider {
       case AppIcons.profile:
         return Icons.person; // Fallback for profile
       case AppIcons.logSession:
-      // ignore: unreachable_switch_case
-      // Both logSession and fluidTherapy have the same value ('water_drop'),
-      // but we include both cases for code clarity and maintainability.
-      case AppIcons.fluidTherapy:
         return Icons.water_drop;
 
       // Session Logging Icons
@@ -95,6 +91,16 @@ class IconProvider {
         return Icons.picture_as_pdf;
       case AppIcons.inventory:
         return Icons.inventory;
+      case AppIcons.weightUnit:
+        return Icons.monitor_weight;
+      case AppIcons.theme:
+        return Icons.palette;
+      case AppIcons.clearCache:
+        return Icons.cleaning_services;
+      case AppIcons.lightMode:
+        return Icons.light_mode_outlined;
+      case AppIcons.darkMode:
+        return Icons.dark_mode_outlined;
 
       // Utility Icons
       case AppIcons.add:
@@ -102,13 +108,21 @@ class IconProvider {
       case AppIcons.edit:
         return Icons.edit;
       case AppIcons.delete:
-        return Icons.delete;
+        return Icons.delete_outline;
       case AppIcons.close:
         return Icons.close;
       case AppIcons.back:
         return Icons.arrow_back;
       case AppIcons.forward:
         return Icons.arrow_forward;
+      case AppIcons.chevronRight:
+        return Icons.chevron_right;
+      case AppIcons.privacyTip:
+        return Icons.privacy_tip_outlined;
+      case AppIcons.info:
+        return Icons.info_outline;
+      case AppIcons.warning:
+        return Icons.warning;
 
       default:
         return Icons.help_outline;
@@ -120,7 +134,7 @@ class IconProvider {
     switch (iconName) {
       // Navigation Icons
       case AppIcons.home:
-        return CupertinoIcons.house_fill;
+        return CupertinoIcons.paw;
       case AppIcons.progress:
         return CupertinoIcons.chart_bar_fill;
       case AppIcons.learn:
@@ -128,10 +142,6 @@ class IconProvider {
       case AppIcons.profile:
         return CupertinoIcons.person_fill; // Fallback for profile
       case AppIcons.logSession:
-      // ignore: unreachable_switch_case
-      // Both logSession and fluidTherapy have the same value ('water_drop'),
-      // but we include both cases for code clarity and maintainability.
-      case AppIcons.fluidTherapy:
         return CupertinoIcons.drop_fill;
 
       // Session Logging Icons
@@ -173,6 +183,16 @@ class IconProvider {
         return CupertinoIcons.doc_fill;
       case AppIcons.inventory:
         return CupertinoIcons.archivebox_fill;
+      case AppIcons.weightUnit:
+        return CupertinoIcons.square_grid_2x2;
+      case AppIcons.theme:
+        return CupertinoIcons.paintbrush_fill;
+      case AppIcons.clearCache:
+        return CupertinoIcons.trash_fill;
+      case AppIcons.lightMode:
+        return CupertinoIcons.sun_max;
+      case AppIcons.darkMode:
+        return CupertinoIcons.moon;
 
       // Utility Icons
       case AppIcons.add:
@@ -187,6 +207,14 @@ class IconProvider {
         return CupertinoIcons.arrow_left;
       case AppIcons.forward:
         return CupertinoIcons.arrow_right;
+      case AppIcons.chevronRight:
+        return CupertinoIcons.chevron_right;
+      case AppIcons.privacyTip:
+        return CupertinoIcons.shield_fill;
+      case AppIcons.info:
+        return CupertinoIcons.info;
+      case AppIcons.warning:
+        return CupertinoIcons.exclamationmark_triangle;
 
       default:
         return CupertinoIcons.question;
@@ -206,19 +234,14 @@ class IconProvider {
 
   /// Gets fallback IconData for custom icons if SVG fails
   static IconData getCustomIconFallback(
-    String iconName,
-    bool isCupertino,
-  ) {
+    String iconName, {
+    required bool isCupertino,
+  }) {
     switch (iconName) {
       case AppIcons.profile:
-        return isCupertino
-            ? CupertinoIcons.person_fill
-            : Icons.person;
+        return isCupertino ? CupertinoIcons.person_fill : Icons.person;
       default:
-        return isCupertino
-            ? CupertinoIcons.question
-            : Icons.help_outline;
+        return isCupertino ? CupertinoIcons.question : Icons.help_outline;
     }
   }
 }
-

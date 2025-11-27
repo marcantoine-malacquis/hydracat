@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:hydracat/core/constants/app_colors.dart';
+import 'package:hydracat/core/theme/app_shadows.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
+import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
@@ -60,11 +63,27 @@ class SessionUpdateDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+    final maxDialogWidth = screenWidth * 0.9; // 90% of screen width
 
     return HydraAlertDialog(
-      title: Text(l10n.duplicateDialogTitle),
+      title: Text(
+        l10n.duplicateDialogTitle,
+        style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary),
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      backgroundColor: AppColors.surface,
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xs,
+        vertical: AppSpacing.lg,
+      ),
+      constraints: BoxConstraints(
+        maxWidth: maxDialogWidth,
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -76,7 +95,7 @@ class SessionUpdateDialog extends StatelessWidget {
                 existingSession.medicationName,
                 _formatTime(existingSession.dateTime),
               ),
-              style: theme.textTheme.bodyMedium,
+              style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
             ),
             const SizedBox(height: AppSpacing.lg),
 
@@ -106,27 +125,26 @@ class SessionUpdateDialog extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withValues(
-                    alpha: 0.3,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.primaryLight.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                    color: AppColors.primary.withValues(alpha: 0.3),
                   ),
+                  boxShadow: const [AppShadows.card],
                 ),
                 child: Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.info_outline,
                       size: 20,
-                      color: theme.colorScheme.primary,
+                      color: AppColors.primary,
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
                         l10n.duplicateDialogSummaryWarning,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface,
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
@@ -141,6 +159,9 @@ class SessionUpdateDialog extends StatelessWidget {
         // Cancel button
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.error,
+          ),
           child: Text(l10n.cancel),
         ),
 
@@ -176,18 +197,15 @@ class SessionUpdateDialog extends StatelessWidget {
     required MedicationSession session,
     required bool isExisting,
   }) {
-    final theme = Theme.of(context);
-
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(
-          alpha: 0.3,
-        ),
-        borderRadius: BorderRadius.circular(8),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant,
+          color: AppColors.border,
         ),
+        boxShadow: const [AppShadows.card],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,17 +213,17 @@ class SessionUpdateDialog extends StatelessWidget {
           // Card title
           Text(
             title,
-            style: theme.textTheme.titleSmall?.copyWith(
+            style: AppTextStyles.h3.copyWith(
+              color: AppColors.primary,
               fontWeight: FontWeight.w600,
-              color: theme.colorScheme.primary,
             ),
           ),
           if (isExisting) ...[
-            const SizedBox(height: 2),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               l10n.duplicateDialogLoggedAt(_formatTime(session.dateTime)),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textSecondary,
               ),
             ),
           ],
@@ -251,8 +269,6 @@ class SessionUpdateDialog extends StatelessWidget {
     required String value,
     required bool hasChanged,
   }) {
-    final theme = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xs),
       child: Row(
@@ -263,9 +279,9 @@ class SessionUpdateDialog extends StatelessWidget {
             width: 80,
             child: Text(
               '$label:',
-              style: theme.textTheme.bodySmall?.copyWith(
+              style: AppTextStyles.caption.copyWith(
                 fontWeight: FontWeight.w500,
-                color: theme.colorScheme.onSurfaceVariant,
+                color: AppColors.textSecondary,
               ),
             ),
           ),
@@ -277,22 +293,22 @@ class SessionUpdateDialog extends StatelessWidget {
                 Flexible(
                   child: Text(
                     value,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: hasChanged
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.onSurface,
-                      fontWeight: hasChanged
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                    ),
+                    style: hasChanged
+                        ? AppTextStyles.clinicalData.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          )
+                        : AppTextStyles.body.copyWith(
+                            color: AppColors.textPrimary,
+                          ),
                   ),
                 ),
                 if (hasChanged) ...[
                   const SizedBox(width: AppSpacing.xs),
-                  Icon(
+                  const Icon(
                     Icons.edit,
                     size: 14,
-                    color: theme.colorScheme.primary,
+                    color: AppColors.primary,
                   ),
                 ],
               ],

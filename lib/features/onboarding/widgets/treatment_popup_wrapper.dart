@@ -398,6 +398,9 @@ class TreatmentConfirmationDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: onCancel ?? () => Navigator.of(context).pop(false),
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.error,
+          ),
           child: Text(cancelText),
         ),
         ElevatedButton(

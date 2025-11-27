@@ -126,7 +126,7 @@ This avoids multiple `Theme.of(context)` lookups during the same build cycle, wh
     - `add_medication_screen.dart` (medication unit and strength unit selectors)
   - **API Differences**: 
     - Material: Uses `CustomDropdown` with overlay positioning, scrollable menu, checkmarks for selected items
-    - Cupertino: Uses `CupertinoButton` styled as form field, opens `showCupertinoModalPopup` with `HydraBottomSheet` containing scrollable list of `CupertinoListTile` options with trailing checkmarks
+    - Cupertino: Uses `CupertinoButton` styled as form field, opens `showHydraBottomSheet` with `HydraBottomSheet` containing scrollable list of `CupertinoListTile` options with trailing checkmarks
 
 - **`HydraTimePicker`** (`lib/shared/widgets/pickers/hydra_time_picker.dart`) - ✅ Done
   - Wraps `showTimePicker()` (Material) / `CupertinoDatePicker` with custom bottom sheet (iOS/macOS)

@@ -13,6 +13,7 @@ import 'package:hydracat/features/logging/exceptions/logging_error_handler.dart'
 import 'package:hydracat/features/logging/screens/fluid_logging_screen.dart';
 import 'package:hydracat/features/logging/screens/medication_logging_screen.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
+import 'package:hydracat/features/logging/widgets/logging_bottom_sheet_helper.dart';
 import 'package:hydracat/features/logging/widgets/quick_log_success_popup.dart';
 import 'package:hydracat/features/logging/widgets/treatment_choice_popup.dart';
 import 'package:hydracat/features/notifications/providers/notification_provider.dart';
@@ -297,15 +298,7 @@ class _AppShellState extends ConsumerState<AppShell>
     BuildContext context,
     Widget child,
   ) {
-    showHydraBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.background,
-      builder: (sheetContext) => HydraBottomSheet(
-        backgroundColor: AppColors.background,
-        child: child,
-      ),
-    );
+    showLoggingBottomSheet(context, child);
   }
 
   Future<void> _onFabLongPress() async {
@@ -611,16 +604,10 @@ class _AppShellState extends ConsumerState<AppShell>
             '  Opening MedicationLoggingScreen with '
             'initialScheduleId: ${scheduleExists ? scheduleId : "null"}',
           );
-          showHydraBottomSheet<void>(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: AppColors.background,
-            builder: (sheetContext) => HydraBottomSheet(
-              heightFraction: 0.85,
-              backgroundColor: AppColors.background,
-              child: MedicationLoggingScreen(
-                initialScheduleId: scheduleExists ? scheduleId : null,
-              ),
+          showLoggingBottomSheet(
+            context,
+            MedicationLoggingScreen(
+              initialScheduleId: scheduleExists ? scheduleId : null,
             ),
           );
         } else {
@@ -628,16 +615,10 @@ class _AppShellState extends ConsumerState<AppShell>
             '  Opening FluidLoggingScreen with '
             'initialScheduleId: ${scheduleExists ? scheduleId : "null"}',
           );
-          showHydraBottomSheet<void>(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: AppColors.background,
-            builder: (sheetContext) => HydraBottomSheet(
-              heightFraction: 0.85,
-              backgroundColor: AppColors.background,
-              child: FluidLoggingScreen(
-                initialScheduleId: scheduleExists ? scheduleId : null,
-              ),
+          showLoggingBottomSheet(
+            context,
+            FluidLoggingScreen(
+              initialScheduleId: scheduleExists ? scheduleId : null,
             ),
           );
         }

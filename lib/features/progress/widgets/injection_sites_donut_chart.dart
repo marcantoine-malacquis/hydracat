@@ -29,6 +29,7 @@ class InjectionSitesDonutChart extends StatelessWidget {
   /// Color mapping for injection sites (consistent and pastel)
   static const Map<FluidLocation, Color> _siteColors = {
     FluidLocation.shoulderBladeLeft: Color(0xFF9DCBBF), // Pastel Teal
+    FluidLocation.shoulderBladeMiddle: Color(0xFFA8DADC), // Pastel Blue
     FluidLocation.shoulderBladeRight: Color(0xFFC4B5FD), // Pastel Lavender
     FluidLocation.hipBonesLeft: Color(0xFFF0C980), // Pastel Amber
     FluidLocation.hipBonesRight: Color(0xFFEDA08F), // Pastel Coral

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/notifications/providers/notification_provider.dart';
 import 'package:hydracat/features/notifications/services/notification_cleanup_service.dart';
@@ -10,6 +11,7 @@ import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
+import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -70,12 +72,8 @@ class _NotificationSettingsScreenState
       appBar: HydraAppBar(
         title: Text(l10n.notificationSettingsTitle),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        leading: IconButton(
+        leading: HydraBackButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back_ios),
-          iconSize: 20,
-          color: AppColors.textSecondary,
-          tooltip: 'Back',
         ),
       ),
       body: ListView(
@@ -120,8 +118,8 @@ class _NotificationSettingsScreenState
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.notifications,
+                  HydraIcon(
+                    icon: AppIcons.reminder,
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -163,8 +161,8 @@ class _NotificationSettingsScreenState
               ),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.info_outline,
+                  const HydraIcon(
+                    icon: AppIcons.info,
                     size: 16,
                     color: AppColors.warning,
                   ),
@@ -204,7 +202,7 @@ class _NotificationSettingsScreenState
           // Weekly Summary toggle section
           _buildToggleSection(
             context: context,
-            icon: Icons.summarize,
+            icon: AppIcons.weeklySummary,
             label: l10n.notificationSettingsWeeklySummaryLabel,
             description: l10n.notificationSettingsWeeklySummaryDescription,
             value: settings.weeklySummaryEnabled,
@@ -242,8 +240,8 @@ class _NotificationSettingsScreenState
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.privacy_tip_outlined,
+                  HydraIcon(
+                    icon: AppIcons.privacyTip,
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -264,8 +262,8 @@ class _NotificationSettingsScreenState
                       ],
                     ),
                   ),
-                  const Icon(
-                    Icons.chevron_right,
+                  const HydraIcon(
+                    icon: AppIcons.chevronRight,
                     color: AppColors.textSecondary,
                   ),
                 ],
@@ -275,75 +273,57 @@ class _NotificationSettingsScreenState
 
           const SizedBox(height: AppSpacing.xl),
 
-          // Data Management section
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Semantics(
-                  header: true,
-                  child: Text(
-                    l10n.notificationSettingsDataManagementTitle,
-                    style: AppTextStyles.h3,
+          // Clear Notification Data section
+          InkWell(
+            onTap: noPetProfile
+                ? null
+                : () => _handleClearData(
+                    context,
+                    ref,
+                    currentUser.id,
+                    petId,
                   ),
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                InkWell(
-                  onTap: noPetProfile
-                      ? null
-                      : () => _handleClearData(
-                          context,
-                          ref,
-                          currentUser.id,
-                          petId,
-                        ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.xs,
-                    ),
-                    child: Row(
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.delete_outline,
-                          color: noPetProfile
-                              ? AppColors.textSecondary
-                              : AppColors.warning,
+                        Text(
+                          l10n.notificationSettingsClearDataButton,
+                          style: AppTextStyles.body.copyWith(
+                            color: noPetProfile
+                                ? AppColors.textSecondary
+                                : AppColors.textPrimary,
+                          ),
                         ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                l10n.notificationSettingsClearDataButton,
-                                style: AppTextStyles.body.copyWith(
-                                  color: noPetProfile
-                                      ? AppColors.textSecondary
-                                      : AppColors.textPrimary,
-                                ),
-                              ),
-                              Text(
-                                l10n.notificationSettingsClearDataDescription,
-                                style: AppTextStyles.caption.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
+                        Text(
+                          l10n.notificationSettingsClearDataDescription,
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: AppSpacing.sm),
+                  HydraIcon(
+                    icon: AppIcons.delete,
+                    color: noPetProfile
+                        ? AppColors.textSecondary
+                        : AppColors.warning,
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -354,7 +334,7 @@ class _NotificationSettingsScreenState
   /// Builds a toggle section with icon, label, description, and switch
   Widget _buildToggleSection({
     required BuildContext context,
-    required IconData icon,
+    required String icon,
     required String label,
     required String description,
     required bool value,
@@ -407,21 +387,21 @@ class _NotificationSettingsScreenState
                 : Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              children: [
-                Icon(
-                  icon,
-                  color: isEnabled
-                      ? Theme.of(context).colorScheme.primary
-                      : AppColors.textSecondary,
-                  size: 24,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
+            HydraIcon(
+              icon: icon,
+              color: isEnabled
+                  ? Theme.of(context).colorScheme.primary
+                  : AppColors.textSecondary,
+              size: 24,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
                     label,
                     style: AppTextStyles.body.copyWith(
                       color: isEnabled
@@ -429,38 +409,34 @@ class _NotificationSettingsScreenState
                           : AppColors.textSecondary,
                     ),
                   ),
-                ),
-                if (isLoading)
-                  const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: HydraProgressIndicator(strokeWidth: 2),
-                  )
-                else
-                  IgnorePointer(
-                    ignoring: !isEnabled,
-                    child: HydraSwitch(
-                      key: label.contains('Weekly')
-                          ? const Key('notif_weekly_toggle')
-                          : label.contains('Snooze')
-                          ? const Key('notif_snooze_toggle')
-                          : null,
-                      value: value,
-                      onChanged: onChanged,
+                  Text(
+                    description,
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textSecondary,
                     ),
                   ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Padding(
-              padding: const EdgeInsets.only(left: 32),
-              child: Text(
-                description,
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+                ],
               ),
             ),
+            if (isLoading)
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: HydraProgressIndicator(strokeWidth: 2),
+              )
+            else
+              IgnorePointer(
+                ignoring: !isEnabled,
+                child: HydraSwitch(
+                  key: label.contains('Weekly')
+                      ? const Key('notif_weekly_toggle')
+                      : label.contains('Snooze')
+                      ? const Key('notif_snooze_toggle')
+                      : null,
+                  value: value,
+                  onChanged: onChanged,
+                ),
+              ),
           ],
         ),
       ),
@@ -481,11 +457,11 @@ class _NotificationSettingsScreenState
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: isGranted
-            ? AppColors.success.withValues(alpha: 0.1)
+            ? AppColors.primary.withValues(alpha: 0.1)
             : AppColors.warning.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isGranted ? AppColors.success : AppColors.warning,
+          color: isGranted ? AppColors.primary : AppColors.warning,
         ),
       ),
       child: Column(
@@ -493,9 +469,9 @@ class _NotificationSettingsScreenState
         children: [
           Row(
             children: [
-              Icon(
-                isGranted ? Icons.check_circle : Icons.warning,
-                color: isGranted ? AppColors.success : AppColors.warning,
+              HydraIcon(
+                icon: isGranted ? AppIcons.completed : AppIcons.warning,
+                color: isGranted ? AppColors.primary : AppColors.warning,
                 size: 20,
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -507,7 +483,7 @@ class _NotificationSettingsScreenState
                   style: AppTextStyles.body.copyWith(
                     fontWeight: FontWeight.w600,
                     color: isGranted
-                        ? AppColors.success
+                        ? AppColors.primary
                         : AppColors.textPrimary,
                   ),
                 ),

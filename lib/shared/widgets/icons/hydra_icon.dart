@@ -32,8 +32,8 @@ class HydraIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     // Cache platform detection (performance optimization)
     final platform = Theme.of(context).platform;
-    final isCupertino = platform == TargetPlatform.iOS ||
-        platform == TargetPlatform.macOS;
+    final isCupertino =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
 
     final iconColor =
         color ?? Theme.of(context).iconTheme.color ?? Colors.black;
@@ -51,10 +51,16 @@ class HydraIcon extends StatelessWidget {
     }
 
     // Platform-specific icon resolution
-    final iconData = IconProvider.resolveIconData(icon, isCupertino: isCupertino);
+    final iconData = IconProvider.resolveIconData(
+      icon,
+      isCupertino: isCupertino,
+    );
     if (iconData == null) {
       // Fallback if resolution fails
-      final fallback = IconProvider.getCustomIconFallback(icon, isCupertino);
+      final fallback = IconProvider.getCustomIconFallback(
+        icon,
+        isCupertino: isCupertino,
+      );
       return Icon(
         fallback,
         size: size,
@@ -78,7 +84,10 @@ class HydraIcon extends StatelessWidget {
     Color iconColor,
     bool isCupertino,
   ) {
-    final fallback = IconProvider.getCustomIconFallback(iconName, isCupertino);
+    final fallback = IconProvider.getCustomIconFallback(
+      iconName,
+      isCupertino: isCupertino,
+    );
 
     return Semantics(
       label: semanticLabel,

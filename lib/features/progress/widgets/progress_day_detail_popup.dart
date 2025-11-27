@@ -20,6 +20,7 @@ import 'package:hydracat/providers/progress_provider.dart';
 import 'package:hydracat/providers/schedule_history_provider.dart';
 import 'package:hydracat/shared/widgets/fluid/fluid_daily_summary_card.dart';
 import 'package:hydracat/shared/widgets/inputs/volume_input_adjuster.dart';
+import 'package:hydracat/shared/widgets/medication/medication_daily_summary_card.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 
@@ -403,6 +404,8 @@ class _ProgressDayDetailPopupState
                 '$actualMedCount of $scheduledMedCount doses',
               ),
               const SizedBox(height: AppSpacing.xs),
+              _maybeMedicationSummaryCard(context, ref),
+              const SizedBox(height: AppSpacing.sm),
               ...medReminders.map(
                 (r) => _buildPlannedMedicationTile(
                   r.$1,
@@ -625,6 +628,8 @@ class _ProgressDayDetailPopupState
                 '$actualMedCount of $scheduledMedCount doses',
               ),
               const SizedBox(height: AppSpacing.xs),
+              _maybeMedicationSummaryCard(context, ref),
+              const SizedBox(height: AppSpacing.sm),
               ...medReminders.map(
                 (r) => _buildHistoricalMedicationTile(
                   r.$1,
@@ -983,6 +988,17 @@ class _ProgressDayDetailPopupState
     return FluidDailySummaryCard(summary: view);
   }
 
+  /// Builds the medication summary card when data is available.
+  Widget _maybeMedicationSummaryCard(BuildContext context, WidgetRef ref) {
+    final view = ref.watch(
+      medicationDailySummaryViewProvider(AppDateUtils.startOfDay(widget.date)),
+    );
+
+    if (view == null) return const SizedBox.shrink();
+
+    return MedicationDailySummaryCard(summary: view);
+  }
+
   /// Map reminder times to their actual sessions for edit button access.
   ///
   /// Uses the same greedy matching logic as
@@ -1134,7 +1150,7 @@ class _ProgressDayDetailPopupState
       dateTime: scheduledTime,
       volumeGiven: 0,
       injectionSite:
-          schedule.preferredLocation ?? FluidLocation.shoulderBladeLeft,
+          schedule.preferredLocation ?? FluidLocation.shoulderBladeMiddle,
       scheduleId: schedule.id,
       scheduledTime: scheduledTime,
       dailyGoalMl: schedule.targetVolume,
@@ -1791,7 +1807,10 @@ class _MedicationEditInlineFormState extends State<_MedicationEditInlineForm> {
           variant: HydraButtonVariant.secondary,
           isFullWidth: true,
           onPressed: widget.onCancel,
-          child: const Text('Cancel'),
+          child: const DefaultTextStyle(
+            style: TextStyle(color: AppColors.error),
+            child: Text('Cancel'),
+          ),
         ),
       ],
     );
@@ -1827,7 +1846,7 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
     super.initState();
     _volumeGiven = widget.session.volumeGiven;
     _injectionSite = widget.session.injectionSite;
-    _stressLevel = widget.session.stressLevel ?? 'medium';
+    _stressLevel = widget.session.stressLevel ?? 'low';
 
     _notesController = TextEditingController(text: widget.session.notes ?? '');
 
@@ -1860,7 +1879,7 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
   bool get _hasChanges =>
       _volumeGiven != widget.session.volumeGiven ||
       _injectionSite != widget.session.injectionSite ||
-      _stressLevel != (widget.session.stressLevel ?? 'medium') ||
+      _stressLevel != (widget.session.stressLevel ?? 'low') ||
       _notesController.text != (widget.session.notes ?? '');
 
   void _handleSave() {
@@ -2029,7 +2048,10 @@ class _FluidEditInlineFormState extends State<_FluidEditInlineForm> {
           variant: HydraButtonVariant.secondary,
           isFullWidth: true,
           onPressed: widget.onCancel,
-          child: const Text('Cancel'),
+          child: const DefaultTextStyle(
+            style: TextStyle(color: AppColors.error),
+            child: Text('Cancel'),
+          ),
         ),
       ],
     );

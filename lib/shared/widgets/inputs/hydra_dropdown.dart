@@ -146,8 +146,9 @@ class HydraDropdown<T> extends StatelessWidget {
   }
 
   void _showCupertinoPicker(BuildContext context) {
-    showCupertinoModalPopup<void>(
+    showHydraBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       builder: (context) => _CupertinoDropdownSheet<T>(
         items: items,
         selectedValue: value,

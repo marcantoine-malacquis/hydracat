@@ -8,8 +8,8 @@ import 'package:hydracat/core/constants/app_animations.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/features/auth/models/app_user.dart';
 import 'package:hydracat/features/logging/exceptions/logging_error_handler.dart';
+import 'package:hydracat/features/logging/models/dashboard_logging_context.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
-import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/logging/widgets/logging_popup_wrapper.dart';
 import 'package:hydracat/features/logging/widgets/medication_selection_card.dart';
 import 'package:hydracat/features/logging/widgets/session_update_dialog.dart';
@@ -32,6 +32,7 @@ import 'package:hydracat/shared/widgets/widgets.dart';
 /// - Success animation with haptic feedback
 /// - Duplicate detection with dialog
 /// - Auto-selection from notification (via initialScheduleId)
+/// - Dashboard context support (pre-select + skip action)
 class MedicationLoggingScreen extends ConsumerStatefulWidget {
   /// Creates a [MedicationLoggingScreen].
   ///
@@ -39,13 +40,29 @@ class MedicationLoggingScreen extends ConsumerStatefulWidget {
   /// automatically selected when the screen opens (used for notification
   /// deep-linking). If the schedule is not found, the screen opens normally
   /// without any selection.
+  ///
+  /// If [dashboardContext] is provided, the medication will be pre-selected
+  /// and the scheduled time from the context will be used when logging.
+  /// When [dashboardContext] is provided, [onSkipFromDashboard] should also
+  /// be provided to enable the skip action.
   const MedicationLoggingScreen({
     this.initialScheduleId,
+    this.dashboardContext,
+    this.onSkipFromDashboard,
     super.key,
   });
 
   /// Optional schedule ID to pre-select from notification deep-link.
   final String? initialScheduleId;
+
+  /// Optional dashboard context for pre-selecting medication from home screen.
+  final DashboardMedicationContext? dashboardContext;
+
+  /// Optional callback for skip action when opened from dashboard.
+  ///
+  /// Should call DashboardNotifier.skipMedicationTreatment and show success
+  /// feedback. Only used when [dashboardContext] is provided.
+  final Future<void> Function()? onSkipFromDashboard;
 
   @override
   ConsumerState<MedicationLoggingScreen> createState() =>
@@ -72,10 +89,13 @@ class _MedicationLoggingScreenState
       setState(() {}); // Rebuild to update counter visibility
     });
 
-    // Auto-select medication from notification (if provided)
-    if (widget.initialScheduleId != null) {
+    // Auto-select medication from dashboard context (takes precedence)
+    // or notification deep-link
+    final scheduleIdToSelect = widget.dashboardContext?.scheduleId ??
+        widget.initialScheduleId;
+    if (scheduleIdToSelect != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _autoSelectMedication(widget.initialScheduleId!);
+        _autoSelectMedication(scheduleIdToSelect);
       });
     }
   }
@@ -185,15 +205,22 @@ class _MedicationLoggingScreenState
       for (final medicationId in _selectedMedicationIds) {
         final schedule = schedules.firstWhere((s) => s.id == medicationId);
 
-        // Get today's scheduled time for this medication (centralized helper)
-        final now = DateTime.now();
-        final todaysReminderTimes = schedule.todaysReminderTimes(now).toList();
-
-        // Use the first reminder time for today as the scheduled time
-        // If no reminder time for today, use current time as fallback
-        final scheduledTime = todaysReminderTimes.isNotEmpty
-            ? todaysReminderTimes.first
-            : now;
+        // Use dashboard context scheduled time if available, otherwise
+        // get today's scheduled time for this medication (centralized helper)
+        final DateTime scheduledTime;
+        if (widget.dashboardContext != null &&
+            widget.dashboardContext!.scheduleId == medicationId) {
+          // Use the scheduled time from dashboard context
+          scheduledTime = widget.dashboardContext!.scheduledTime;
+        } else {
+          // Fallback to existing logic for notification/FAB flows
+          final now = DateTime.now();
+          final todaysReminderTimes =
+              schedule.todaysReminderTimes(now).toList();
+          scheduledTime = todaysReminderTimes.isNotEmpty
+              ? todaysReminderTimes.first
+              : now;
+        }
 
         // Create medication session with fixed schedule dosage
         final session = MedicationSession.create(
@@ -244,7 +271,9 @@ class _MedicationLoggingScreenState
               final navigator = Navigator.of(context, rootNavigator: true);
 
               // Close the medication logging popup
-              OverlayService.hide();
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              }
 
               // Wait a frame for popup to close
               await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -284,7 +313,9 @@ class _MedicationLoggingScreenState
         if (mounted) {
           // Reset state and close popup
           ref.read(loggingProvider.notifier).reset();
-          OverlayService.hide();
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
         }
       }
     } finally {
@@ -369,6 +400,34 @@ class _MedicationLoggingScreenState
         newSession: newSession,
       ),
     );
+  }
+
+  /// Handle skip action when opened from dashboard
+  Future<void> _handleSkip() async {
+    if (widget.onSkipFromDashboard == null) return;
+
+    try {
+      // Show loading state
+      setState(() {
+        _loadingState = LoadingOverlayState.loading;
+      });
+
+      // Call the skip callback (which handles dashboard state and analytics)
+      await widget.onSkipFromDashboard!();
+
+      // Close the bottom sheet on success
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+    } on Exception catch (e) {
+      // Show error if skip fails
+      if (mounted) {
+        setState(() {
+          _loadingState = LoadingOverlayState.none;
+        });
+        _showError('Failed to skip medication: $e');
+      }
+    }
   }
 
   /// Show error message using centralized error handler
@@ -527,7 +586,36 @@ class _MedicationLoggingScreenState
               maxLines: 5,
             ),
 
-            // Log button
+            // Skip button (only shown when opened from dashboard)
+            if (widget.dashboardContext != null &&
+                widget.onSkipFromDashboard != null) ...[
+              const SizedBox(height: AppSpacing.lg),
+              Semantics(
+                label: 'Skip this dose',
+                hint: 'Skip logging this medication dose',
+                button: true,
+                child: TextButton(
+                  onPressed: _loadingState != LoadingOverlayState.none
+                      ? null
+                      : _handleSkip,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
+                    ),
+                  ),
+                  child: Text(
+                    'Skip this dose',
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+
+            // Log button (at bottom for better thumb reach)
             const SizedBox(height: AppSpacing.lg),
             Semantics(
               label: l10n.medicationLogButton,

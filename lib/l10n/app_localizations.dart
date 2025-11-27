@@ -1045,7 +1045,7 @@ abstract class AppLocalizations {
   /// No description provided for @fluidStressLevelLabel.
   ///
   /// In en, this message translates to:
-  /// **'Stress Level (optional):'**
+  /// **'Session stress'**
   String get fluidStressLevelLabel;
 
   /// No description provided for @fluidLogButtonLabel.
@@ -1387,7 +1387,7 @@ abstract class AppLocalizations {
   /// No description provided for @injectionSiteLabel.
   ///
   /// In en, this message translates to:
-  /// **'Injection Site'**
+  /// **'Injection site'**
   String get injectionSiteLabel;
 
   /// No description provided for @injectionSiteSelectorSemantic.
@@ -1425,6 +1425,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Shoulder blade - right'**
   String get injectionSiteShoulderBladeRight;
+
+  /// Display name for middle shoulder blade injection site
+  ///
+  /// In en, this message translates to:
+  /// **'Shoulder blade - middle'**
+  String get injectionSiteShoulderBladeMiddle;
 
   /// Display name for left hip bones injection site
   ///
@@ -1903,7 +1909,7 @@ abstract class AppLocalizations {
   /// Description text explaining weekly summary notifications
   ///
   /// In en, this message translates to:
-  /// **'Get a summary of your treatment adherence every Monday morning'**
+  /// **'Monday morning'**
   String get notificationSettingsWeeklySummaryDescription;
 
   /// Success message when weekly summary is enabled

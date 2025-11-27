@@ -417,6 +417,10 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
                       }
                     });
                   },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: const BorderSide(color: AppColors.error),
+                  ),
                   child: const Text('Cancel'),
                 ),
               ),
@@ -511,6 +515,10 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
                       }
                     });
                   },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: const BorderSide(color: AppColors.error),
+                  ),
                   child: const Text('Cancel'),
                 ),
               ),
@@ -583,7 +591,7 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
             child: RotatingWheelPicker<FluidLocation>(
               items: FluidLocation.values,
               initialIndex: FluidLocation.values.indexOf(
-                _editingLocation ?? FluidLocation.shoulderBladeLeft,
+                _editingLocation ?? FluidLocation.shoulderBladeMiddle,
               ),
               onSelectedItemChanged: (index) {
                 setState(() {
@@ -608,6 +616,10 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
                       }
                     });
                   },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: const BorderSide(color: AppColors.error),
+                  ),
                   child: const Text('Cancel'),
                 ),
               ),
@@ -701,6 +713,10 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
                       }
                     });
                   },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: const BorderSide(color: AppColors.error),
+                  ),
                   child: const Text('Cancel'),
                 ),
               ),
@@ -823,6 +839,10 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
                       }
                     });
                   },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: const BorderSide(color: AppColors.error),
+                  ),
                   child: const Text('Cancel'),
                 ),
               ),

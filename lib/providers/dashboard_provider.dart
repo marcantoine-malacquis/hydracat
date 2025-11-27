@@ -369,7 +369,7 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
         userId: user.id,
         dateTime: DateTime.now(),
         volumeGiven: fluid.remainingVolume,
-        injectionSite: FluidLocation.shoulderBladeLeft,
+        injectionSite: FluidLocation.shoulderBladeMiddle,
       );
 
       // 3. Log via LoggingProvider
