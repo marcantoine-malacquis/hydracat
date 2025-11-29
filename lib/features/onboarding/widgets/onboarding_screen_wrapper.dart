@@ -207,7 +207,7 @@ class _OnboardingScreenWrapperState
     }
 
     return HydraAppBar(
-      backgroundColor: Colors.transparent,
+      style: HydraAppBarStyle.transparent,
       elevation: 0,
       automaticallyImplyLeading: false,
       leading: (widget.showBackButton && widget.onBackPressed != null)

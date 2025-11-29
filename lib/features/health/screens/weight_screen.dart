@@ -121,7 +121,6 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
       backgroundColor: AppColors.background,
       appBar: HydraAppBar(
         title: const Text('Weight'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         leading: HydraBackButton(
           onPressed: () => context.pop(),
         ),

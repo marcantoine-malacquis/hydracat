@@ -48,10 +48,8 @@ class HomeScreen extends ConsumerWidget {
     return DevBanner(
       child: Scaffold(
         backgroundColor: AppColors.background,
-        appBar: HydraAppBar(
-          title: const Text('HydraCat'),
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          actions: const [
+        appBar: const HydraAppBar(
+          actions: [
             NotificationStatusWidget(),
           ],
         ),
@@ -195,12 +193,6 @@ class _HomeScreenContent {
               ),
               const SizedBox(height: AppSpacing.md),
 
-              // Weekly progress card (only show if has fluid schedule)
-              if (hasFluid) ...[
-                const WaterDropProgressCard(),
-                const SizedBox(height: AppSpacing.lg),
-              ],
-
               // Error state
               if (dashboardState.errorMessage != null) ...[
                 Card(
@@ -276,6 +268,19 @@ class _HomeScreenContent {
               else if (hasFluid || hasMedication) ...[
                 _HomeScreenContent._buildSuccessEmptyState(profileState),
                 const SizedBox(height: AppSpacing.xl),
+              ],
+
+              // Weekly progress card (only show if has fluid schedule)
+              if (hasFluid) ...[
+                Text(
+                  'This Week',
+                  style: AppTextStyles.h2.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                const WaterDropProgressCard(),
+                const SizedBox(height: AppSpacing.lg),
               ],
 
               // Progressive disclosure CTAs
@@ -394,7 +399,9 @@ class _HomeScreenContent {
     PendingTreatment treatment,
   ) {
     // Track analytics for opening from dashboard
-    ref.read(analyticsServiceDirectProvider).trackLoggingPopupOpened(
+    ref
+        .read(analyticsServiceDirectProvider)
+        .trackLoggingPopupOpened(
           popupType: 'dashboard_medication',
         );
 
@@ -450,7 +457,9 @@ class _HomeScreenContent {
     PendingFluidTreatment pendingFluid,
   ) {
     // Track analytics for opening from dashboard
-    ref.read(analyticsServiceDirectProvider).trackLoggingPopupOpened(
+    ref
+        .read(analyticsServiceDirectProvider)
+        .trackLoggingPopupOpened(
           popupType: 'dashboard_fluid',
         );
 

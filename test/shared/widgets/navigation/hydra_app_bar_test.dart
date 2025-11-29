@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hydracat/core/constants/app_colors.dart';
+import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/shared/widgets/navigation/hydra_app_bar.dart';
 
 void main() {
@@ -371,6 +373,175 @@ void main() {
         find.byType(CupertinoNavigationBar),
       );
       expect(navBar.trailing, isNull);
+    });
+  });
+
+  group('HydraAppBar Style Variants', () {
+    testWidgets('applies default style background', (tester) async {
+      final testWidget = MaterialApp(
+        theme: ThemeData(platform: TargetPlatform.android),
+        home: const Scaffold(
+          appBar: HydraAppBar(
+            title: Text('Test'),
+          ),
+          body: SizedBox(),
+        ),
+      );
+
+      await tester.pumpWidget(testWidget);
+
+      final appBar = tester.widget<AppBar>(find.byType(AppBar));
+      final expectedColor = Color.alphaBlend(
+        AppColors.primary.withValues(alpha: 0.06),
+        AppColors.background,
+      );
+      expect(appBar.backgroundColor, equals(expectedColor));
+    });
+
+    testWidgets('applies accent style background', (tester) async {
+      final testWidget = MaterialApp(
+        theme: ThemeData(platform: TargetPlatform.android),
+        home: const Scaffold(
+          appBar: HydraAppBar(
+            title: Text('Test'),
+            style: HydraAppBarStyle.accent,
+          ),
+          body: SizedBox(),
+        ),
+      );
+
+      await tester.pumpWidget(testWidget);
+
+      final appBar = tester.widget<AppBar>(find.byType(AppBar));
+      final expectedColor = Color.alphaBlend(
+        AppColors.primary.withValues(alpha: 0.12),
+        AppColors.background,
+      );
+      expect(appBar.backgroundColor, equals(expectedColor));
+    });
+
+    testWidgets('applies transparent style background', (tester) async {
+      final testWidget = MaterialApp(
+        theme: ThemeData(platform: TargetPlatform.android),
+        home: const Scaffold(
+          appBar: HydraAppBar(
+            title: Text('Test'),
+            style: HydraAppBarStyle.transparent,
+          ),
+          body: SizedBox(),
+        ),
+      );
+
+      await tester.pumpWidget(testWidget);
+
+      final appBar = tester.widget<AppBar>(find.byType(AppBar));
+      expect(appBar.backgroundColor, equals(Colors.transparent));
+    });
+
+    testWidgets('applies toolbarHeight from theme', (tester) async {
+      final testWidget = MaterialApp(
+        theme: ThemeData(platform: TargetPlatform.android),
+        home: const Scaffold(
+          appBar: HydraAppBar(
+            title: Text('Test'),
+          ),
+          body: SizedBox(),
+        ),
+      );
+
+      await tester.pumpWidget(testWidget);
+
+      final appBar = tester.widget<AppBar>(find.byType(AppBar));
+      expect(appBar.toolbarHeight, equals(AppSpacing.appBarHeight));
+    });
+
+    testWidgets('applies horizontal padding to title', (tester) async {
+      final testWidget = MaterialApp(
+        theme: ThemeData(platform: TargetPlatform.android),
+        home: const Scaffold(
+          appBar: HydraAppBar(
+            title: Text('Test Title'),
+          ),
+          body: SizedBox(),
+        ),
+      );
+
+      await tester.pumpWidget(testWidget);
+
+      // Title should be wrapped in Padding
+      final padding = tester.widget<Padding>(
+        find
+            .descendant(
+              of: find.byType(AppBar),
+              matching: find.byType(Padding),
+            )
+            .first,
+      );
+      expect(
+        padding.padding,
+        equals(AppSpacing.appBarContentPadding),
+      );
+    });
+
+    testWidgets('removes border on Cupertino for transparent style', (
+      tester,
+    ) async {
+      final testWidget = MaterialApp(
+        theme: ThemeData(platform: TargetPlatform.iOS),
+        home: const Scaffold(
+          appBar: HydraAppBar(
+            title: Text('Test'),
+            style: HydraAppBarStyle.transparent,
+          ),
+          body: SizedBox(),
+        ),
+      );
+
+      await tester.pumpWidget(testWidget);
+
+      final navBar = tester.widget<CupertinoNavigationBar>(
+        find.byType(CupertinoNavigationBar),
+      );
+      expect(navBar.border, isNull);
+    });
+
+    testWidgets('shows border on Cupertino for default style', (tester) async {
+      final testWidget = MaterialApp(
+        theme: ThemeData(platform: TargetPlatform.iOS),
+        home: const Scaffold(
+          appBar: HydraAppBar(
+            title: Text('Test'),
+          ),
+          body: SizedBox(),
+        ),
+      );
+
+      await tester.pumpWidget(testWidget);
+
+      final navBar = tester.widget<CupertinoNavigationBar>(
+        find.byType(CupertinoNavigationBar),
+      );
+      expect(navBar.border, isNotNull);
+    });
+
+    testWidgets('shows border on Cupertino for accent style', (tester) async {
+      final testWidget = MaterialApp(
+        theme: ThemeData(platform: TargetPlatform.iOS),
+        home: const Scaffold(
+          appBar: HydraAppBar(
+            title: Text('Test'),
+            style: HydraAppBarStyle.accent,
+          ),
+          body: SizedBox(),
+        ),
+      );
+
+      await tester.pumpWidget(testWidget);
+
+      final navBar = tester.widget<CupertinoNavigationBar>(
+        find.byType(CupertinoNavigationBar),
+      );
+      expect(navBar.border, isNotNull);
     });
   });
 }

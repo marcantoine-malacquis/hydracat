@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:hydracat/core/constants/app_accessibility.dart';
 
 /// Spacing constants for consistent layout throughout the HydraCat application.
@@ -58,4 +59,17 @@ class AppSpacing {
   /// comfortable clearance from the system home indicator on all platforms.
   /// This provides visual breathing room for primary actions and content.
   static const double bottomSheetInset = md;
+
+  /// App bar height - 60px
+  ///
+  /// Standard height for app bars throughout the application.
+  static const double appBarHeight = 60;
+
+  /// App bar content horizontal padding - 16px
+  ///
+  /// Horizontal padding applied to app bar title and actions for consistent
+  /// content inset across all app bars.
+  static const EdgeInsets appBarContentPadding = EdgeInsets.symmetric(
+    horizontal: md,
+  );
 }

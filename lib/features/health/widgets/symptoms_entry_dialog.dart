@@ -7,6 +7,7 @@ import 'package:hydracat/core/constants/app_animations.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
+import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/health/exceptions/health_exceptions.dart';
 import 'package:hydracat/features/health/models/health_parameter.dart';
 import 'package:hydracat/features/health/models/symptom_entry.dart';
@@ -20,6 +21,7 @@ import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/progress_provider.dart';
+import 'package:hydracat/providers/symptoms_chart_provider.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 
@@ -277,11 +279,48 @@ class _SymptomsEntryDialogState extends ConsumerState<SymptomsEntryDialog> {
       );
 
       if (mounted) {
-        // Clear SummaryService TTL cache to ensure fresh data
-        ref.read(summaryServiceProvider).clearAllCaches();
+        // Targeted cache invalidation for the logged date
+        final summaryService = ref.read(summaryServiceProvider);
+        final weekStart = AppDateUtils.startOfWeekMonday(_selectedDate);
+        final monthStart = DateTime(_selectedDate.year, _selectedDate.month);
 
-        // Invalidate monthly symptoms provider to refresh progress card
-        ref.invalidate(currentMonthSymptomsSummaryProvider);
+        // Invalidate daily cache for the logged date
+        summaryService
+          ..invalidateCacheForDate(
+            currentUser.id,
+            primaryPet.id,
+            _selectedDate,
+          )
+          // Invalidate weekly cache for the week containing the date
+          ..clearWeeklyCacheForWeek(
+            userId: currentUser.id,
+            petId: primaryPet.id,
+            date: _selectedDate,
+          )
+          // Invalidate monthly cache for the month containing the date
+          ..clearMonthlyCacheForMonth(
+            userId: currentUser.id,
+            petId: primaryPet.id,
+            date: _selectedDate,
+          );
+
+        // Invalidate Riverpod providers
+        // Invalidate week summaries for the logged date's week
+        ref
+          ..invalidate(weekSummariesProvider(weekStart))
+          // Invalidate symptom chart providers
+          // (cascades from weekSummariesProvider, but explicit for clarity)
+          ..invalidate(weeklySymptomBucketsProvider(weekStart))
+          ..invalidate(symptomsChartDataProvider)
+          // Invalidate monthly/year providers if viewing those granularities
+          ..invalidate(monthlySymptomBucketsProvider(monthStart))
+          ..invalidate(
+            yearlySymptomBucketsProvider(DateTime(_selectedDate.year)),
+          )
+          ..invalidate(currentMonthSymptomsSummaryProvider);
+
+        // Increment version provider (triggers automatic refetch)
+        ref.read(symptomLogVersionProvider.notifier).state++;
 
         // Dismiss popup
         if (Navigator.canPop(context)) {

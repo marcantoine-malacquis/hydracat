@@ -206,7 +206,6 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
           backgroundColor: AppColors.background,
           appBar: HydraAppBar(
             title: Text("$petName's Fluid Schedule"),
-            backgroundColor: Theme.of(context).colorScheme.inversePrimary,
             leading: HydraBackButton(
               onPressed: () {
                 if (_hasChanges) {

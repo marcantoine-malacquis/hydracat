@@ -223,10 +223,8 @@ class TabPageRegistry {
   // AppBar builders
 
   static PreferredSizeWidget _buildHomeAppBar(BuildContext context) {
-    return HydraAppBar(
-      title: const Text('HydraCat'),
-      backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      actions: const [
+    return const HydraAppBar(
+      actions: [
         NotificationStatusWidget(),
       ],
     );
@@ -240,7 +238,7 @@ class TabPageRegistry {
 
     return HydraAppBar(
       title: const Text('Progress & Analytics'),
-      backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      style: HydraAppBarStyle.accent,
       actions: hasCompletedOnboarding
           ? [
               IconButton(
@@ -256,7 +254,6 @@ class TabPageRegistry {
   static PreferredSizeWidget _buildProfileAppBar(BuildContext context) {
     return HydraAppBar(
       title: const Text('Profile'),
-      backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       // Only show hamburger icon in debug mode (when drawer exists)
       leading: kDebugMode
           ? Builder(
@@ -278,9 +275,8 @@ class TabPageRegistry {
   }
 
   static PreferredSizeWidget _buildLearnAppBar(BuildContext context) {
-    return HydraAppBar(
-      title: const Text('Learn'),
-      backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+    return const HydraAppBar(
+      title: Text('Learn'),
     );
   }
 }

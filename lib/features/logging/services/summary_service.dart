@@ -259,6 +259,45 @@ class SummaryService {
     }
   }
 
+  /// Clear weekly summary cache for a specific week
+  ///
+  /// Removes the cached weekly summary for the ISO 8601 week containing the
+  /// given date. This is useful when symptoms are logged and we need to force
+  /// a fresh read of the weekly summary on the next provider access.
+  ///
+  /// Benefits:
+  /// - Only clearing the specific week's cache (not all weeks)
+  /// - Forcing at most one additional Firestore read for that week
+  /// - Preserving cached data for other weeks/months
+  ///
+  /// Cost: 0 Firestore reads (only clears in-memory cache)
+  ///
+  /// Usage:
+  /// ```dart
+  /// // After logging symptoms, clear the week's cache
+  /// summaryService.clearWeeklyCacheForWeek(
+  ///   userId: user.id,
+  ///   petId: pet.id,
+  ///   date: DateTime.now(),
+  /// );
+  /// ```
+  void clearWeeklyCacheForWeek({
+    required String userId,
+    required String petId,
+    required DateTime date,
+  }) {
+    final key = _weeklyKey(userId, petId, date);
+    _weeklyMemCache.remove(key);
+
+    if (kDebugMode) {
+      final weekStr = AppDateUtils.formatWeekForSummary(date);
+      debugPrint(
+        '[SummaryService] Cleared weekly cache for user:$userId '
+        'pet:$petId week:$weekStr',
+      );
+    }
+  }
+
   // ============================================
   // PUBLIC API - Weekly Summary Reads
   // ============================================

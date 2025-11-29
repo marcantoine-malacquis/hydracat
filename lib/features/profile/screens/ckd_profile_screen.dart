@@ -186,7 +186,6 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
           backgroundColor: AppColors.background,
           appBar: HydraAppBar(
             title: Text("$petName's CKD Profile"),
-            backgroundColor: Theme.of(context).colorScheme.inversePrimary,
             leading: HydraBackButton(
               onPressed: () {
                 if (_hasChanges) {

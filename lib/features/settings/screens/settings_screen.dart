@@ -99,7 +99,6 @@ class SettingsScreen extends ConsumerWidget {
       backgroundColor: AppColors.background,
       appBar: HydraAppBar(
         title: const Text('Settings'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         leading: HydraBackButton(
           onPressed: () {
             // Check if we can pop, otherwise navigate back to profile

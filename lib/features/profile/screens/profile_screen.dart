@@ -46,7 +46,6 @@ class ProfileScreen extends ConsumerWidget {
         backgroundColor: AppColors.background,
         appBar: HydraAppBar(
           title: const Text('Profile'),
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           actions: [
             IconButton(
               onPressed: () => context.push('/profile/settings'),

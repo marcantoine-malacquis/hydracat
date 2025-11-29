@@ -99,7 +99,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       backgroundColor: AppColors.background,
       appBar: HydraAppBar(
         title: const Text('Progress & Analytics'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        style: HydraAppBarStyle.accent,
         actions: hasCompletedOnboarding
             ? [
                 IconButton(

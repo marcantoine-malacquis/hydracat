@@ -3,6 +3,19 @@ import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 
+/// App bar style variant configuration.
+///
+/// Defines background color for the default app bar style.
+class _AppBarStyleTokens {
+  _AppBarStyleTokens._();
+
+  /// Default variant: subtle tonal surface (6% primary blend)
+  static Color get defaultBackground => Color.alphaBlend(
+    AppColors.primary.withValues(alpha: 0.06),
+    AppColors.background,
+  );
+}
+
 /// Main theme configuration for the HydraCat application.
 /// Implements the water-themed design system from the UI guidelines.
 class AppTheme {
@@ -249,12 +262,24 @@ class AppTheme {
   }
 
   static AppBarTheme _buildAppBarTheme() {
-    return const AppBarTheme(
-      backgroundColor: AppColors.surface,
+    return AppBarTheme(
+      // Default variant: subtle tonal surface (6% primary blend)
+      backgroundColor: _AppBarStyleTokens.defaultBackground,
       foregroundColor: AppColors.textPrimary,
       elevation: 0,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: Colors.transparent,
+      shape: const Border(
+        bottom: BorderSide(
+          color: AppColors.border,
+        ),
+      ),
       centerTitle: true,
-      titleTextStyle: AppTextStyles.h2,
+      toolbarHeight: AppSpacing.appBarHeight,
+      titleTextStyle: AppTextStyles.h2.copyWith(
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.2,
+      ),
     );
   }
 

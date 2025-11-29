@@ -104,7 +104,6 @@ class _SymptomsScreenState extends ConsumerState<SymptomsScreen> {
       backgroundColor: AppColors.background,
       appBar: HydraAppBar(
         title: const Text('Symptoms'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         leading: HydraBackButton(
           onPressed: () => context.pop(),
         ),

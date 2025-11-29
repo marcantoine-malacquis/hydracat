@@ -9,13 +9,12 @@ class ScheduleScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       backgroundColor: AppColors.background,
       appBar: HydraAppBar(
-        title: const Text('Schedule'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Text('Schedule'),
       ),
-      body: const Center(
+      body: Center(
         child: Text('Schedule Screen - Coming Soon'),
       ),
     );

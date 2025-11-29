@@ -36,7 +36,7 @@ class InjectionSitesAnalyticsScreen extends ConsumerWidget {
       backgroundColor: AppColors.background,
       appBar: HydraAppBar(
         title: Text(l10n.injectionSitesAnalyticsTitle),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        style: HydraAppBarStyle.accent,
       ),
       body: statsAsync.when(
         data: (stats) => _buildContent(context, l10n, stats),

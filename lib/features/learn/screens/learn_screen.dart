@@ -13,9 +13,9 @@ class ResourcesScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: HydraAppBar(
-        title: const Text('Learn'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      appBar: const HydraAppBar(
+        title: Text('Learn'),
+        style: HydraAppBarStyle.accent,
       ),
       body: body,
     );

@@ -12,6 +12,7 @@ import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/schedule_history_provider.dart';
+import 'package:hydracat/providers/symptoms_chart_provider.dart';
 import 'package:hydracat/shared/models/daily_summary.dart';
 import 'package:hydracat/shared/models/fluid_daily_summary_view.dart';
 import 'package:hydracat/shared/models/medication_daily_summary_view.dart';
@@ -67,6 +68,8 @@ final AutoDisposeFutureProviderFamily<Map<DateTime, DailySummary?>, DateTime>
 weekSummariesProvider = FutureProvider.autoDispose
     .family<Map<DateTime, DailySummary?>, DateTime>(
       (ref, weekStart) async {
+        // Watch symptom log version to refetch when symptoms are logged
+        ref.watch(symptomLogVersionProvider);
         // Invalidate when today's local cache changes so UI updates instantly
         ref.watch(dailyCacheProvider);
 
@@ -350,6 +353,8 @@ currentMonthSymptomsSummaryProvider =
         );
       }
 
+      // Watch symptom log version to refetch when symptoms are logged
+      ref.watch(symptomLogVersionProvider);
       // Watch for invalidation triggers (refetch after logging)
       ref.watch(dailyCacheProvider);
 

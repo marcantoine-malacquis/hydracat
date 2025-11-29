@@ -11,6 +11,12 @@ import 'package:hydracat/providers/progress_provider.dart';
 import 'package:hydracat/shared/models/daily_summary.dart';
 import 'package:hydracat/shared/models/monthly_summary.dart';
 
+/// Version counter that increments when symptoms are logged
+///
+/// Providers watch this to automatically refetch when symptoms change.
+/// This ensures symptom charts update immediately after logging.
+final symptomLogVersionProvider = StateProvider<int>((ref) => 0);
+
 /// Sentinel value for [SymptomsChartState.copyWith] to distinguish between
 /// "not provided" and "explicitly set to null"
 const _undefined = Object();
@@ -480,6 +486,8 @@ final AutoDisposeProviderFamily<List<SymptomBucket>?, DateTime>
 weeklySymptomBucketsProvider = Provider.autoDispose
     .family<List<SymptomBucket>?, DateTime>(
       (ref, weekStart) {
+        // Watch symptom log version to refetch when symptoms are logged
+        ref.watch(symptomLogVersionProvider);
         // Watch week summaries (already cached, 0 additional reads)
         final summariesAsync = ref.watch(weekSummariesProvider(weekStart));
 
@@ -665,8 +673,11 @@ final AutoDisposeFutureProviderFamily<List<SymptomBucket>?, DateTime>
 monthlySymptomBucketsProvider = FutureProvider.autoDispose
     .family<List<SymptomBucket>?, DateTime>(
       (ref, monthStart) async {
-        // Invalidate when today's local cache changes so UI updates instantly
-        ref.watch(dailyCacheProvider);
+        // Watch symptom log version to refetch when symptoms are logged
+        ref
+          ..watch(symptomLogVersionProvider)
+          // Invalidate when today's local cache changes so UI updates instantly
+          ..watch(dailyCacheProvider);
 
         final user = ref.read(currentUserProvider);
         final pet = ref.read(primaryPetProvider);
@@ -878,8 +889,11 @@ final AutoDisposeFutureProviderFamily<List<SymptomBucket>?, DateTime>
 yearlySymptomBucketsProvider = FutureProvider.autoDispose
     .family<List<SymptomBucket>?, DateTime>(
       (ref, yearStart) async {
-        // Invalidate when today's local cache changes so UI updates instantly
-        ref.watch(dailyCacheProvider);
+        // Watch symptom log version to refetch when symptoms are logged
+        ref
+          ..watch(symptomLogVersionProvider)
+          // Invalidate when today's local cache changes so UI updates instantly
+          ..watch(dailyCacheProvider);
 
         final user = ref.read(currentUserProvider);
         final pet = ref.read(primaryPetProvider);

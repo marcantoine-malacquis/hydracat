@@ -266,7 +266,6 @@ class _MedicationScheduleScreenState
         backgroundColor: AppColors.background,
         appBar: HydraAppBar(
           title: Text("$petName's Medication Schedule"),
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           leading: HydraBackButton(
             onPressed: () => context.pop(),
           ),
