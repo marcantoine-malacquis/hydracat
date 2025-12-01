@@ -312,7 +312,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
               children: [
                 const Text('Already have an account?'),
                 HydraButton(
-                  onPressed: () => context.go('/login'),
+                  onPressed: () => context.pop(),
                   variant: HydraButtonVariant.text,
                   child: const Text('Sign In'),
                 ),

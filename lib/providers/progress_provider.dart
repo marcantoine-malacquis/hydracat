@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
@@ -13,6 +15,8 @@ import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/schedule_history_provider.dart';
 import 'package:hydracat/providers/symptoms_chart_provider.dart';
+import 'package:hydracat/providers/weight_provider.dart'
+    show weightLogVersionProvider, weightServiceProvider;
 import 'package:hydracat/shared/models/daily_summary.dart';
 import 'package:hydracat/shared/models/fluid_daily_summary_view.dart';
 import 'package:hydracat/shared/models/medication_daily_summary_view.dart';
@@ -355,6 +359,8 @@ currentMonthSymptomsSummaryProvider =
 
       // Watch symptom log version to refetch when symptoms are logged
       ref.watch(symptomLogVersionProvider);
+      // Also invalidate when weight logs change so monthly summaries stay fresh
+      ref.watch(weightLogVersionProvider);
       // Watch for invalidation triggers (refetch after logging)
       ref.watch(dailyCacheProvider);
 
@@ -420,6 +426,45 @@ currentMonthSymptomsSummaryProvider =
         return null;
       }
     });
+@immutable
+class DailyWeightEntry {
+  const DailyWeightEntry({
+    required this.weightKg,
+    required this.loggedAt,
+  });
+
+  final double weightKg;
+  final DateTime loggedAt;
+}
+
+final dayWeightEntryProvider =
+    FutureProvider.autoDispose.family<DailyWeightEntry?, DateTime>(
+  (ref, day) async {
+    // Recompute when weight logs change
+    ref.watch(weightLogVersionProvider);
+
+    // Keep result alive briefly to avoid repeat reads for same focused day
+    final link = ref.keepAlive();
+    Timer(const Duration(minutes: 15), link.close);
+
+    final user = ref.read(currentUserProvider);
+    final pet = ref.read(primaryPetProvider);
+    if (user == null || pet == null) return null;
+
+    final weightService = ref.read(weightServiceProvider);
+    final result = await weightService.getLatestWeightBeforeDate(
+      userId: user.id,
+      petId: pet.id,
+      date: day,
+    );
+
+    if (result == null) return null;
+    return DailyWeightEntry(
+      weightKg: result.weight,
+      loggedAt: result.date,
+    );
+  },
+);
 
 /// Medication daily summary for a specific day using
 /// cached weekly summaries and

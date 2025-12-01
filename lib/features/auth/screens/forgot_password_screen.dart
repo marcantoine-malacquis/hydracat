@@ -73,142 +73,162 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const HydraIcon(
-              icon: AppIcons.lockReset,
-              size: 64,
-              color: AppColors.primary,
+    return Column(
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: const EdgeInsets.only(
+              left: AppSpacing.lg,
+              top: AppSpacing.lg,
+              bottom: AppSpacing.lg,
             ),
-            const SizedBox(height: AppSpacing.lg),
-            const Text(
-              'Reset Your Password',
-              style: AppTextStyles.h1,
-              textAlign: TextAlign.center,
+            child: HydraBackButton(
+              onPressed: () => context.pop(),
             ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              _emailSent
-                  ? "We've sent reset instructions to your email. "
-                        'Check your inbox and follow the link to create a '
-                        "new password for your cat's treatment account."
-                  : "Enter your email address and we'll help you regain "
-                        "access to your cat's treatment data.",
-              style: AppTextStyles.body,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            if (!_emailSent) ...[
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
-                    'Email',
-                    style: AppTextStyles.body,
+                  const HydraIcon(
+                    icon: AppIcons.lockReset,
+                    size: 64,
+                    color: AppColors.primary,
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  HydraTextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                        borderSide: const BorderSide(
-                          color: AppColors.border,
+                  const SizedBox(height: AppSpacing.lg),
+                  const Text(
+                    'Reset Your Password',
+                    style: AppTextStyles.h1,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    _emailSent
+                        ? "We've sent reset instructions to your email. "
+                              'Check your inbox and follow the link '
+                              "to create a new password for your cat's "
+                              'treatment account.'
+                        : "Enter your email address and we'll help you "
+                              "regain access to your cat's treatment data.",
+                    style: AppTextStyles.body,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  if (!_emailSent) ...[
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Email',
+                          style: AppTextStyles.body,
                         ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(
-                          color: AppColors.border,
+                        const SizedBox(height: AppSpacing.sm),
+                        HydraTextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderSide: const BorderSide(
+                                color: AppColors.border,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: const BorderSide(
+                                color: AppColors.border,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: const BorderSide(
+                                color: AppColors.primary,
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderSide: const BorderSide(
+                                color: AppColors.error,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderSide: const BorderSide(
+                                color: AppColors.error,
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            filled: true,
+                            fillColor: AppColors.surface,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.md,
+                            ),
+                            helperText:
+                                'Enter the email address associated with '
+                                'your account',
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'We need your email to send reset link';
+                            }
+                            if (!value.contains('@')) {
+                              return 'Please enter a valid email';
+                            }
+                            return null;
+                          },
                         ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(
-                          color: AppColors.primary,
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(
-                          color: AppColors.error,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(
-                          color: AppColors.error,
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      filled: true,
-                      fillColor: AppColors.surface,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.md,
-                      ),
-                      helperText:
-                          'Enter the email address associated with '
-                          'your account',
+                      ],
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'We need your email to send reset link';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Please enter a valid email';
-                      }
-                      return null;
-                    },
+                    const SizedBox(height: AppSpacing.lg),
+                    HydraButton(
+                      onPressed: isLoading ? null : _handlePasswordReset,
+                      isLoading: isLoading,
+                      isFullWidth: true,
+                      child: const Text('Send Reset Email'),
+                    ),
+                  ] else ...[
+                    const HydraIcon(
+                      icon: AppIcons.completed,
+                      size: 48,
+                      color: AppColors.success,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    HydraButton(
+                      onPressed: () => setState(() {
+                        _emailSent = false;
+                        _emailController.clear();
+                      }),
+                      isFullWidth: true,
+                      child: const Text('Send Another Email'),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.lg),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('Remember your password?'),
+                      HydraButton(
+                        onPressed: () => context.pop(),
+                        variant: HydraButtonVariant.text,
+                        child: const Text('Sign In'),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.lg),
-              HydraButton(
-                onPressed: isLoading ? null : _handlePasswordReset,
-                isLoading: isLoading,
-                isFullWidth: true,
-                child: const Text('Send Reset Email'),
-              ),
-            ] else ...[
-              const HydraIcon(
-                icon: AppIcons.completed,
-                size: 48,
-                color: AppColors.success,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              HydraButton(
-                onPressed: () => setState(() {
-                  _emailSent = false;
-                  _emailController.clear();
-                }),
-                isFullWidth: true,
-                child: const Text('Send Another Email'),
-              ),
-            ],
-            const SizedBox(height: AppSpacing.lg),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('Remember your password?'),
-                HydraButton(
-                  onPressed: () => context.go('/login'),
-                  variant: HydraButtonVariant.text,
-                  child: const Text('Sign In'),
-                ),
-              ],
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

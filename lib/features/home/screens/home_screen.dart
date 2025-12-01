@@ -185,12 +185,7 @@ class _HomeScreenContent {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Welcome Back',
-                style: AppTextStyles.h1.copyWith(
-                  color: AppColors.primary,
-                ),
-              ),
+              const HomeHeroHeader(),
               const SizedBox(height: AppSpacing.md),
 
               // Error state
@@ -335,13 +330,7 @@ class _HomeScreenContent {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Real header
-          Text(
-            'Welcome Back',
-            style: AppTextStyles.h1.copyWith(
-              color: AppColors.primary,
-            ),
-          ),
+          const HomeHeroHeader(),
           const SizedBox(height: AppSpacing.md),
 
           // "Today's Treatments" skeleton header

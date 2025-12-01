@@ -44,21 +44,34 @@ class SlideTransitionPage<T> extends CustomTransitionPage<T> {
          reverseTransitionDuration:
              reverseDuration ?? (duration ?? AppAnimations.pageSlideDuration),
          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+           // Keep a solid, clipped background during the slide to prevent
+           // flashes from showing behind rounded corners on iOS.
+           final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
            // Respect reduce motion settings
            final shouldReduceMotion = AppAnimations.shouldReduceMotion(context);
            if (shouldReduceMotion) {
              // For reduced motion, use a simple fade instead of slide
-             return FadeTransition(
-               opacity: animation,
-               child: child,
+             return ClipRect(
+               child: ColoredBox(
+                 color: backgroundColor,
+                 child: FadeTransition(
+                   opacity: animation,
+                   child: child,
+                 ),
+               ),
              );
            }
 
-           return _buildSlideTransition(
-             animation: animation,
-             secondaryAnimation: secondaryAnimation,
-             child: child,
-             slideDirection: slideDirection,
+           return ClipRect(
+             child: ColoredBox(
+               color: backgroundColor,
+               child: _buildSlideTransition(
+                 animation: animation,
+                 secondaryAnimation: secondaryAnimation,
+                 child: child,
+                 slideDirection: slideDirection,
+               ),
+             ),
            );
          },
        );

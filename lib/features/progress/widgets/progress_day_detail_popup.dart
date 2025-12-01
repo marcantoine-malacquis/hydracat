@@ -4,6 +4,7 @@ import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
+import 'package:hydracat/core/utils/weight_utils.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/widgets/injection_site_selector.dart';
@@ -18,6 +19,7 @@ import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/progress_edit_provider.dart';
 import 'package:hydracat/providers/progress_provider.dart';
 import 'package:hydracat/providers/schedule_history_provider.dart';
+import 'package:hydracat/providers/weight_unit_provider.dart';
 import 'package:hydracat/shared/widgets/fluid/fluid_daily_summary_card.dart';
 import 'package:hydracat/shared/widgets/inputs/volume_input_adjuster.dart';
 import 'package:hydracat/shared/widgets/medication/medication_daily_summary_card.dart';
@@ -245,9 +247,18 @@ class _ProgressDayDetailPopupState
         : <DateTime>[];
 
     if (medReminders.isEmpty && fluidReminders.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(AppSpacing.md),
-        child: Text('No treatments scheduled for this day'),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Weight', 'Latest entry'),
+          const SizedBox(height: AppSpacing.xs),
+          _buildWeightSection(context, ref),
+          const SizedBox(height: AppSpacing.md),
+          const Padding(
+            padding: EdgeInsets.all(AppSpacing.md),
+            child: Text('No treatments scheduled for this day'),
+          ),
+        ],
       );
     }
 
@@ -260,6 +271,10 @@ class _ProgressDayDetailPopupState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _buildSectionHeader('Weight', 'Latest entry'),
+        const SizedBox(height: AppSpacing.xs),
+        _buildWeightSection(context, ref),
+        const SizedBox(height: AppSpacing.md),
         if (showFluidSection) ...[
           _buildSectionHeader(
             'Fluid therapy',
@@ -406,13 +421,6 @@ class _ProgressDayDetailPopupState
             medReminders.isNotEmpty || fluidReminders.isNotEmpty;
         final hasAnyLogged = medSessions.isNotEmpty || fluidSessions.isNotEmpty;
 
-        if (!hasAnyScheduled && !hasAnyLogged) {
-          return const Padding(
-            padding: EdgeInsets.all(AppSpacing.md),
-            child: Text('No treatments scheduled for this day'),
-          );
-        }
-
         final hasAnyFluid = fluidSessions.isNotEmpty;
 
         final showFluidSection = hasAnyFluid || fluidReminders.isNotEmpty;
@@ -424,9 +432,29 @@ class _ProgressDayDetailPopupState
         final scheduledMedCount = medReminders.length;
         final actualMedCount = matchResult.completedReminders.length;
 
+        if (!hasAnyScheduled && !hasAnyLogged) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionHeader('Weight', 'Latest entry'),
+              const SizedBox(height: AppSpacing.xs),
+              _buildWeightSection(context, ref),
+              const SizedBox(height: AppSpacing.md),
+              const Padding(
+                padding: EdgeInsets.all(AppSpacing.md),
+                child: Text('No treatments scheduled for this day'),
+              ),
+            ],
+          );
+        }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildSectionHeader('Weight', 'Latest entry'),
+            const SizedBox(height: AppSpacing.xs),
+            _buildWeightSection(context, ref),
+            const SizedBox(height: AppSpacing.md),
             if (showFluidSection) ...[
               _buildSectionHeader(
                 'Fluid therapy',
@@ -705,13 +733,6 @@ class _ProgressDayDetailPopupState
             medReminders.isNotEmpty || fluidReminders.isNotEmpty;
         final hasAnyLogged = medSessions.isNotEmpty || fluidSessions.isNotEmpty;
 
-        if (!hasAnyScheduled && !hasAnyLogged) {
-          return const Padding(
-            padding: EdgeInsets.all(AppSpacing.md),
-            child: Text('No treatments scheduled for this day'),
-          );
-        }
-
         final hasAnyFluid = fluidSessions.isNotEmpty;
         final showFluidSection = hasAnyFluid || fluidReminders.isNotEmpty;
 
@@ -726,9 +747,29 @@ class _ProgressDayDetailPopupState
             .where((s) => s.treatmentType == TreatmentType.medication)
             .toList();
 
+        if (!hasAnyScheduled && !hasAnyLogged) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionHeader('Weight', 'Latest entry'),
+              const SizedBox(height: AppSpacing.xs),
+              _buildWeightSection(context, ref),
+              const SizedBox(height: AppSpacing.md),
+              const Padding(
+                padding: EdgeInsets.all(AppSpacing.md),
+                child: Text('No treatments scheduled for this day'),
+              ),
+            ],
+          );
+        }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildSectionHeader('Weight', 'Latest entry'),
+            const SizedBox(height: AppSpacing.xs),
+            _buildWeightSection(context, ref),
+            const SizedBox(height: AppSpacing.md),
             if (showFluidSection) ...[
               _buildSectionHeader(
                 'Fluid therapy',
@@ -874,13 +915,6 @@ class _ProgressDayDetailPopupState
             medReminders.isNotEmpty || fluidReminders.isNotEmpty;
         final hasAnyLogged = medSessions.isNotEmpty || fluidSessions.isNotEmpty;
 
-        if (!hasAnyScheduled && !hasAnyLogged) {
-          return const Padding(
-            padding: EdgeInsets.all(AppSpacing.md),
-            child: Text('No treatments scheduled for this day'),
-          );
-        }
-
         final hasAnyFluid = fluidSessions.isNotEmpty;
         final showFluidSection = hasAnyFluid || fluidReminders.isNotEmpty;
 
@@ -889,9 +923,29 @@ class _ProgressDayDetailPopupState
         final scheduledMedCount = medReminders.length;
         final actualMedCount = matchResult.completedReminders.length;
 
+        if (!hasAnyScheduled && !hasAnyLogged) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionHeader('Weight', 'Latest entry'),
+              const SizedBox(height: AppSpacing.xs),
+              _buildWeightSection(context, ref),
+              const SizedBox(height: AppSpacing.md),
+              const Padding(
+                padding: EdgeInsets.all(AppSpacing.md),
+                child: Text('No treatments scheduled for this day'),
+              ),
+            ],
+          );
+        }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildSectionHeader('Weight', 'Latest entry'),
+            const SizedBox(height: AppSpacing.xs),
+            _buildWeightSection(context, ref),
+            const SizedBox(height: AppSpacing.md),
             if (showFluidSection) ...[
               _buildSectionHeader(
                 'Fluid therapy',
@@ -1383,6 +1437,35 @@ class _ProgressDayDetailPopupState
     return MedicationDailySummaryCard(summary: view);
   }
 
+  /// Builds the weight summary card when data is available.
+  Widget _buildWeightSection(BuildContext context, WidgetRef ref) {
+    final normalizedDay = AppDateUtils.startOfDay(widget.date);
+    final entryAsync = ref.watch(dayWeightEntryProvider(normalizedDay));
+    final unit = ref.watch(weightUnitProvider);
+
+    return entryAsync.when(
+      data: (entry) {
+        if (entry == null) {
+          final dateLabel = DateFormat('MMM d, yyyy').format(widget.date);
+          return _WeightLatestCard(
+            title: 'No weight data',
+            subtitle: 'No weight was logged before $dateLabel.',
+          );
+        }
+
+        final title = WeightUtils.formatWeight(entry.weightKg, unit);
+        final subtitle =
+            'Logged ${DateFormat('MMM d, yyyy').format(entry.loggedAt)}';
+        return _WeightLatestCard(
+          title: title,
+          subtitle: subtitle,
+        );
+      },
+      loading: () => const _WeightLatestCard.loading(),
+      error: (_, _) => const _WeightLatestCard.error(),
+    );
+  }
+
   /// Greedy matcher to match medication sessions to historical schedule
   /// reminders.
   ///
@@ -1769,6 +1852,59 @@ class _ProgressDayDetailPopupState
   String _buildSemanticLabel() {
     final formattedDate = DateFormat('EEEE, MMMM d').format(widget.date);
     return 'Treatment details for $formattedDate';
+  }
+}
+
+class _WeightLatestCard extends StatelessWidget {
+  const _WeightLatestCard({
+    required this.title,
+    required this.subtitle,
+  });
+
+  const _WeightLatestCard.loading() : title = 'Loading weight…', subtitle = '';
+
+  const _WeightLatestCard.error()
+    : title = 'Unable to load weight',
+      subtitle = 'Please try again later.';
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: AppTextStyles.h3.copyWith(
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ),
+          if (subtitle.isNotEmpty)
+            Text(
+              subtitle,
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.right,
+            ),
+        ],
+      ),
+    );
   }
 }
 

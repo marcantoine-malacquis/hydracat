@@ -22,10 +22,10 @@ class WeightHistoryResult {
   final DocumentSnapshot? lastDocument;
 }
 
-/// Internal helper class for latest weight information
-class _LatestWeightInfo {
-  /// Creates a [_LatestWeightInfo]
-  const _LatestWeightInfo({
+/// Helper class for latest weight information
+class LatestWeightInfo {
+  /// Creates a [LatestWeightInfo]
+  const LatestWeightInfo({
     required this.weight,
     required this.date,
   });
@@ -164,7 +164,7 @@ class WeightService {
   ///
   /// Returns the most recent weight and its date for the given month,
   /// optionally excluding a specific date (useful when updating/deleting).
-  Future<_LatestWeightInfo?> _findLatestWeightInMonth({
+  Future<LatestWeightInfo?> _findLatestWeightInMonth({
     required String userId,
     required String petId,
     required DateTime monthDate,
@@ -199,7 +199,7 @@ class WeightService {
       }
 
       final weight = (data['weight'] as num).toDouble();
-      return _LatestWeightInfo(weight: weight, date: normalizedDate);
+      return LatestWeightInfo(weight: weight, date: normalizedDate);
     }
 
     return null;
@@ -209,7 +209,7 @@ class WeightService {
   ///
   /// Returns the most recent weight value across all health parameters,
   /// optionally excluding a specific date (useful when updating/deleting).
-  Future<_LatestWeightInfo?> _findGlobalLatestWeight({
+  Future<LatestWeightInfo?> _findGlobalLatestWeight({
     required String userId,
     required String petId,
     DateTime? excludeDate,
@@ -238,10 +238,66 @@ class WeightService {
       }
 
       final weight = (data['weight'] as num).toDouble();
-      return _LatestWeightInfo(weight: weight, date: normalizedDate);
+      return LatestWeightInfo(weight: weight, date: normalizedDate);
     }
 
     return null;
+  }
+
+  /// Finds the latest weight entry on or before a given date.
+  ///
+  /// Uses a bounded query with hasWeight flag and date <= target,
+  /// ordered by date descending and limited to 1 document.
+  /// Cost: at most 1 Firestore read per call.
+  Future<LatestWeightInfo?> getLatestWeightBeforeDate({
+    required String userId,
+    required String petId,
+    required DateTime date,
+  }) async {
+    try {
+      final normalized = AppDateUtils.startOfDay(date);
+
+      final query = _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('pets')
+          .doc(petId)
+          .collection('healthParameters')
+          .where('hasWeight', isEqualTo: true)
+          .where(
+            'date',
+            isLessThanOrEqualTo: Timestamp.fromDate(normalized),
+          )
+          .orderBy('date', descending: true)
+          .limit(1);
+
+      final snapshot = await query.get();
+      if (snapshot.docs.isEmpty) return null;
+
+      final doc = snapshot.docs.first.data();
+      final weight = (doc['weight'] as num).toDouble();
+      final loggedAt = (doc['date'] as Timestamp).toDate();
+      return LatestWeightInfo(weight: weight, date: loggedAt);
+    } on FirebaseException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[WeightService] Failed to fetch latest weight before date: '
+          '${e.message}',
+        );
+      }
+      throw WeightServiceException(
+        'Failed to fetch latest weight before date: ${e.message}',
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[WeightService] Unexpected error in getLatestWeightBeforeDate: $e',
+        );
+      }
+      throw WeightServiceException(
+        'Failed to fetch latest weight before date: $e',
+      );
+    }
   }
 
   /// Helper to update monthly summary for new/updated weight entry
@@ -340,12 +396,12 @@ class WeightService {
           currentData?['endDate'] == null) {
         final monthDates = AppDateUtils.getMonthStartEnd(normalizedNewDate);
         if (currentData?['startDate'] == null) {
-          newSummaryUpdates['startDate'] =
-              Timestamp.fromDate(monthDates['start']!);
+          newSummaryUpdates['startDate'] = Timestamp.fromDate(
+            monthDates['start']!,
+          );
         }
         if (currentData?['endDate'] == null) {
-          newSummaryUpdates['endDate'] =
-              Timestamp.fromDate(monthDates['end']!);
+          newSummaryUpdates['endDate'] = Timestamp.fromDate(monthDates['end']!);
         }
       }
     }

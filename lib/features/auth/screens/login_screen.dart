@@ -299,7 +299,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     GestureDetector(
-                      onTap: () => context.go('/forgot-password'),
+                      onTap: () => context.push('/forgot-password'),
                       child: Text(
                         'Forgot your password?',
                         style: AppTextStyles.caption.copyWith(
@@ -326,7 +326,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   children: [
                     const Text("Don't have an account?"),
                     HydraButton(
-                      onPressed: () => context.go('/register'),
+                      onPressed: () => context.push('/register'),
                       variant: HydraButtonVariant.text,
                       child: const Text('Sign Up'),
                     ),

@@ -11,6 +11,7 @@ import 'package:hydracat/features/health/services/weight_cache_service.dart';
 import 'package:hydracat/features/health/services/weight_service.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/weight_unit_provider.dart';
 
@@ -18,6 +19,12 @@ import 'package:hydracat/providers/weight_unit_provider.dart';
 final weightServiceProvider = Provider<WeightService>((ref) {
   return WeightService();
 });
+
+/// Version counter that increments when weight data changes.
+///
+/// Providers can watch this to automatically refetch derived data
+/// (e.g., monthly summaries) after weight logs, updates, or deletes.
+final weightLogVersionProvider = StateProvider<int>((ref) => 0);
 
 /// Sentinel value for [WeightState.copyWith] to distinguish between
 /// "not provided" and "explicitly set to null"
@@ -392,6 +399,10 @@ class WeightNotifier extends StateNotifier<WeightState> {
       // Invalidate cache since data changed
       WeightCacheService.invalidateCache();
 
+      // Invalidate monthly summary cache and bump weight version
+      _ref.read(summaryServiceProvider).clearMemoryCache();
+      _ref.read(weightLogVersionProvider.notifier).state++;
+
       // Force refresh profile with forceRefresh flag
       // (WeightService already updated pet profile with global latest)
       await _ref.read(profileProvider.notifier).refreshPrimaryPet();
@@ -475,6 +486,10 @@ class WeightNotifier extends StateNotifier<WeightState> {
       // Invalidate cache since data changed
       WeightCacheService.invalidateCache();
 
+      // Invalidate monthly summary cache and bump weight version
+      _ref.read(summaryServiceProvider).clearMemoryCache();
+      _ref.read(weightLogVersionProvider.notifier).state++;
+
       // Force refresh profile with forceRefresh flag
       // (WeightService already updated pet profile with global latest)
       await _ref.read(profileProvider.notifier).refreshPrimaryPet();
@@ -547,6 +562,10 @@ class WeightNotifier extends StateNotifier<WeightState> {
 
       // Invalidate cache since data changed
       WeightCacheService.invalidateCache();
+
+      // Invalidate monthly summary cache and bump weight version
+      _ref.read(summaryServiceProvider).clearMemoryCache();
+      _ref.read(weightLogVersionProvider.notifier).state++;
 
       // Force refresh profile with forceRefresh flag
       // (WeightService already updated pet profile with global latest or null)
