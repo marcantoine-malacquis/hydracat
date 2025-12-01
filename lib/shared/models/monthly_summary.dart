@@ -31,6 +31,9 @@ class MonthlySummary extends TreatmentSummaryBase {
     required this.overallMissedDays,
     required this.overallLongestStreak,
     required this.overallCurrentStreak,
+    required this.dailyVolumes,
+    required this.dailyGoals,
+    required this.dailyScheduledSessions,
     required super.medicationTotalDoses,
     required super.medicationScheduledDoses,
     required super.medicationMissedCount,
@@ -78,10 +81,14 @@ class MonthlySummary extends TreatmentSummaryBase {
   factory MonthlySummary.empty(DateTime monthDate) {
     final monthDates = AppDateUtils.getMonthStartEnd(monthDate);
     final now = DateTime.now();
+    final monthLength = monthDates['end']!.day; // Get days in month (28-31)
 
     return MonthlySummary(
       startDate: monthDates['start'],
       endDate: monthDates['end'],
+      dailyVolumes: List.filled(monthLength, 0),
+      dailyGoals: List.filled(monthLength, 0),
+      dailyScheduledSessions: List.filled(monthLength, 0),
       fluidTreatmentDays: 0,
       fluidMissedDays: 0,
       fluidLongestStreak: 0,
@@ -120,7 +127,40 @@ class MonthlySummary extends TreatmentSummaryBase {
       return false;
     }
 
+    // Parse list helper: handles null/missing/wrong-length lists
+    List<int> parseIntList(dynamic value, int expectedLength) {
+      if (value == null || value is! List) {
+        return List.filled(expectedLength, 0);
+      }
+
+      // Convert to List<int>, clamping values to 0-5000
+      final parsed = value.map((e) {
+        final intVal = (e as num?)?.toInt() ?? 0;
+        return intVal.clamp(0, 5000);
+      }).toList();
+
+      // Pad or truncate to expected length
+      if (parsed.length < expectedLength) {
+        // Pad with zeros
+        return [...parsed, ...List.filled(expectedLength - parsed.length, 0)];
+      } else if (parsed.length > expectedLength) {
+        // Truncate to expected length
+        return parsed.sublist(0, expectedLength);
+      }
+      return parsed;
+    }
+
+    // Calculate expected month length from dates
+    final startDate =
+        TreatmentSummaryBase.parseDateTimeNullable(json['startDate']);
+    final endDate = TreatmentSummaryBase.parseDateTimeNullable(json['endDate']);
+    final monthLength = endDate?.day ?? 30; // Default to 30 if dates missing
+
     return MonthlySummary(
+      dailyVolumes: parseIntList(json['dailyVolumes'], monthLength),
+      dailyGoals: parseIntList(json['dailyGoals'], monthLength),
+      dailyScheduledSessions:
+          parseIntList(json['dailyScheduledSessions'], monthLength),
       fluidTreatmentDays: (json['fluidTreatmentDays'] as num?)?.toInt() ?? 0,
       fluidMissedDays: (json['fluidMissedDays'] as num?)?.toInt() ?? 0,
       fluidLongestStreak: (json['fluidLongestStreak'] as num?)?.toInt() ?? 0,
@@ -153,8 +193,8 @@ class MonthlySummary extends TreatmentSummaryBase {
       createdAt:
           TreatmentSummaryBase.parseDateTimeNullable(json['createdAt']) ??
           DateTime.now(),
-      startDate: TreatmentSummaryBase.parseDateTimeNullable(json['startDate']),
-      endDate: TreatmentSummaryBase.parseDateTimeNullable(json['endDate']),
+      startDate: startDate,
+      endDate: endDate,
       updatedAt: TreatmentSummaryBase.parseDateTimeNullable(json['updatedAt']),
       weightEntriesCount: (json['weightEntriesCount'] as num?)?.toInt() ?? 0,
       weightLatest: (json['weightLatest'] as num?)?.toDouble(),
@@ -217,6 +257,39 @@ class MonthlySummary extends TreatmentSummaryBase {
   ///
   /// Reset to 0 when a day without fluid therapy occurs.
   final int fluidCurrentStreak;
+
+  // Per-day fluid data for calendar and chart optimization
+
+  /// Daily fluid volumes (ml) for each day of the month
+  ///
+  /// Fixed-length list matching month length (28-31).
+  /// - Index = day - 1 (day 1 = index 0, day 31 = index 30)
+  /// - Value = total fluid volume in ml for that day (0-5000)
+  /// - Missing/empty days default to 0
+  ///
+  /// Used for month view calendar dots and 31-bar chart without
+  /// requiring 28-31 daily summary reads.
+  final List<int> dailyVolumes;
+
+  /// Daily fluid goals (ml) for each day of the month
+  ///
+  /// Fixed-length list matching month length (28-31).
+  /// - Index = day - 1
+  /// - Value = fluid goal in ml for that day (0-5000)
+  /// - Missing/empty days default to 0
+  ///
+  /// Stores point-in-time goals to handle schedule changes mid-month.
+  final List<int> dailyGoals;
+
+  /// Daily scheduled fluid session counts for each day of the month
+  ///
+  /// Fixed-length list matching month length (28-31).
+  /// - Index = day - 1
+  /// - Value = number of scheduled fluid sessions (0-10)
+  /// - Missing/empty days default to 0
+  ///
+  /// Used to determine "missed" status (scheduled > 0 && volume == 0).
+  final List<int> dailyScheduledSessions;
 
   /// Overall medication adherence for the month (0.0-1.0)
   ///
@@ -356,6 +429,9 @@ class MonthlySummary extends TreatmentSummaryBase {
     return {
       'startDate': startDate?.toIso8601String(),
       'endDate': endDate?.toIso8601String(),
+      'dailyVolumes': dailyVolumes,
+      'dailyGoals': dailyGoals,
+      'dailyScheduledSessions': dailyScheduledSessions,
       'fluidTreatmentDays': fluidTreatmentDays,
       'fluidMissedDays': fluidMissedDays,
       'fluidLongestStreak': fluidLongestStreak,
@@ -445,6 +521,58 @@ class MonthlySummary extends TreatmentSummaryBase {
       errors.add('Overall days (treatment + missed) cannot exceed 31');
     }
 
+    // List length validation
+    final expectedLength = daysInMonth;
+
+    if (dailyVolumes.length != expectedLength) {
+      errors.add(
+        'dailyVolumes length (${dailyVolumes.length}) must match '
+        'month length ($expectedLength)',
+      );
+    }
+
+    if (dailyGoals.length != expectedLength) {
+      errors.add(
+        'dailyGoals length (${dailyGoals.length}) must match '
+        'month length ($expectedLength)',
+      );
+    }
+
+    if (dailyScheduledSessions.length != expectedLength) {
+      errors.add(
+        'dailyScheduledSessions length (${dailyScheduledSessions.length}) '
+        'must match month length ($expectedLength)',
+      );
+    }
+
+    // Bounds validation for list values
+    for (var i = 0; i < dailyVolumes.length; i++) {
+      if (dailyVolumes[i] < 0 || dailyVolumes[i] > 5000) {
+        errors.add(
+          'dailyVolumes[${i + 1}] value (${dailyVolumes[i]}) must be '
+          'between 0 and 5000',
+        );
+      }
+    }
+
+    for (var i = 0; i < dailyGoals.length; i++) {
+      if (dailyGoals[i] < 0 || dailyGoals[i] > 5000) {
+        errors.add(
+          'dailyGoals[${i + 1}] value (${dailyGoals[i]}) must be '
+          'between 0 and 5000',
+        );
+      }
+    }
+
+    for (var i = 0; i < dailyScheduledSessions.length; i++) {
+      if (dailyScheduledSessions[i] < 0 || dailyScheduledSessions[i] > 10) {
+        errors.add(
+          'dailyScheduledSessions[${i + 1}] value '
+          '(${dailyScheduledSessions[i]}) must be between 0 and 10',
+        );
+      }
+    }
+
     // Streak validation
     if (fluidLongestStreak < 0) {
       errors.add('Fluid longest streak cannot be negative');
@@ -501,6 +629,9 @@ class MonthlySummary extends TreatmentSummaryBase {
     int? overallMissedDays,
     int? overallLongestStreak,
     int? overallCurrentStreak,
+    List<int>? dailyVolumes,
+    List<int>? dailyGoals,
+    List<int>? dailyScheduledSessions,
     int? medicationTotalDoses,
     int? medicationScheduledDoses,
     int? medicationMissedCount,
@@ -548,6 +679,10 @@ class MonthlySummary extends TreatmentSummaryBase {
       overallMissedDays: overallMissedDays ?? this.overallMissedDays,
       overallLongestStreak: overallLongestStreak ?? this.overallLongestStreak,
       overallCurrentStreak: overallCurrentStreak ?? this.overallCurrentStreak,
+      dailyVolumes: dailyVolumes ?? this.dailyVolumes,
+      dailyGoals: dailyGoals ?? this.dailyGoals,
+      dailyScheduledSessions:
+          dailyScheduledSessions ?? this.dailyScheduledSessions,
       medicationTotalDoses: medicationTotalDoses ?? this.medicationTotalDoses,
       medicationScheduledDoses:
           medicationScheduledDoses ?? this.medicationScheduledDoses,
@@ -609,6 +744,15 @@ class MonthlySummary extends TreatmentSummaryBase {
     );
   }
 
+  /// Helper for list equality comparison
+  bool _listEquals<T>(List<T> a, List<T> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -627,6 +771,9 @@ class MonthlySummary extends TreatmentSummaryBase {
         other.overallMissedDays == overallMissedDays &&
         other.overallLongestStreak == overallLongestStreak &&
         other.overallCurrentStreak == overallCurrentStreak &&
+        _listEquals(other.dailyVolumes, dailyVolumes) &&
+        _listEquals(other.dailyGoals, dailyGoals) &&
+        _listEquals(other.dailyScheduledSessions, dailyScheduledSessions) &&
         other.weightEntriesCount == weightEntriesCount &&
         other.weightLatest == weightLatest &&
         other.weightLatestDate == weightLatestDate &&
@@ -666,6 +813,9 @@ class MonthlySummary extends TreatmentSummaryBase {
       overallMissedDays,
       overallLongestStreak,
       overallCurrentStreak,
+      Object.hashAll(dailyVolumes),
+      Object.hashAll(dailyGoals),
+      Object.hashAll(dailyScheduledSessions),
       weightEntriesCount,
       weightLatest,
       weightLatestDate,
@@ -704,6 +854,9 @@ class MonthlySummary extends TreatmentSummaryBase {
         'overallMissedDays: $overallMissedDays, '
         'overallLongestStreak: $overallLongestStreak, '
         'overallCurrentStreak: $overallCurrentStreak, '
+        'dailyVolumes: $dailyVolumes, '
+        'dailyGoals: $dailyGoals, '
+        'dailyScheduledSessions: $dailyScheduledSessions, '
         'medicationTotalDoses: $medicationTotalDoses, '
         'medicationScheduledDoses: $medicationScheduledDoses, '
         'medicationMissedCount: $medicationMissedCount, '

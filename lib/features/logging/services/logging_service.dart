@@ -9,6 +9,7 @@ import 'package:hydracat/features/logging/models/daily_summary_cache.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/logging_validation_service.dart';
+import 'package:hydracat/features/logging/services/monthly_array_helper.dart';
 import 'package:hydracat/features/logging/services/summary_cache_service.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
@@ -549,6 +550,32 @@ class LoggingService {
         );
       }
 
+      // STEP 5B: Fetch daily totals for monthly array update
+      final dailyTotals = await _fetchDailyTotalsForMonthly(
+        userId: userId,
+        petId: petId,
+        date: sessionDate,
+        sessionVolumeDelta: session.volumeGiven.toInt(),
+        sessionGoalMl: dailyGoal?.toInt(),
+        sessionScheduledCount: scheduledSessionsCount,
+      );
+
+      // STEP 5C: Fetch current monthly arrays
+      final monthlyArrays = await _fetchMonthlyArrays(
+        userId: userId,
+        petId: petId,
+        date: sessionDate,
+      );
+
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingService] Daily totals for monthly: '
+          'volume=${dailyTotals.volumeTotal}ml, '
+          'goal=${dailyTotals.goalMl}ml, '
+          'scheduled=${dailyTotals.scheduledCount}',
+        );
+      }
+
       // STEP 6: Build 5-write batch (session + 3 summaries + pet doc)
       final batch = _firestore.batch();
 
@@ -560,6 +587,13 @@ class LoggingService {
         petId: petId,
         scheduledSessionsCount: scheduledSessionsCount,
         weeklyGoalMl: weeklyGoal,
+        // Monthly array data
+        dayVolumeTotal: dailyTotals.volumeTotal,
+        dayGoalMl: dailyTotals.goalMl,
+        dayScheduledCount: dailyTotals.scheduledCount,
+        currentDailyVolumes: monthlyArrays.dailyVolumes,
+        currentDailyGoals: monthlyArrays.dailyGoals,
+        currentDailyScheduledSessions: monthlyArrays.dailyScheduledSessions,
       );
 
       // STEP 6A: Update pet document with last injection site
@@ -697,6 +731,36 @@ class LoggingService {
         return;
       }
 
+      // STEP 2A: Fetch daily totals for monthly array update
+      final sessionDate = AppDateUtils.startOfDay(newSession.dateTime);
+      final volumeDelta =
+          (newSession.volumeGiven - oldSession.volumeGiven).toInt();
+
+      final dailyTotals = await _fetchDailyTotalsForMonthly(
+        userId: userId,
+        petId: petId,
+        date: sessionDate,
+        sessionVolumeDelta: volumeDelta,
+        sessionGoalMl: newSession.dailyGoalMl?.toInt(),
+        sessionScheduledCount: 0, // No change in scheduled count on update
+      );
+
+      // STEP 2B: Fetch current monthly arrays
+      final monthlyArrays = await _fetchMonthlyArrays(
+        userId: userId,
+        petId: petId,
+        date: sessionDate,
+      );
+
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingService] Daily totals for monthly (update): '
+          'volume=${dailyTotals.volumeTotal}ml, '
+          'goal=${dailyTotals.goalMl}ml, '
+          'delta=${volumeDelta}ml',
+        );
+      }
+
       // STEP 3: Build 4-write batch with deltas
       final batch = _firestore.batch();
       final sessionRef = _getFluidSessionRef(userId, petId, newSession.id);
@@ -731,7 +795,16 @@ class LoggingService {
       final monthlyRef = _getMonthlySummaryRef(userId, petId, date);
       batch.set(
         monthlyRef,
-        _buildMonthlySummaryWithIncrements(date, dto),
+        _buildMonthlySummaryWithIncrements(
+          date,
+          dto,
+          dayVolumeTotal: dailyTotals.volumeTotal,
+          dayGoalMl: dailyTotals.goalMl,
+          dayScheduledCount: dailyTotals.scheduledCount,
+          currentDailyVolumes: monthlyArrays.dailyVolumes,
+          currentDailyGoals: monthlyArrays.dailyGoals,
+          currentDailyScheduledSessions: monthlyArrays.dailyScheduledSessions,
+        ),
         SetOptions(merge: true),
       );
 
@@ -1668,6 +1741,13 @@ class LoggingService {
     required String petId,
     required int scheduledSessionsCount,
     int? weeklyGoalMl,
+    // Optional monthly array data (for Phase 1: single-day logging)
+    int? dayVolumeTotal,
+    int? dayGoalMl,
+    int? dayScheduledCount,
+    List<int>? currentDailyVolumes,
+    List<int>? currentDailyGoals,
+    List<int>? currentDailyScheduledSessions,
   }) {
     final sessionRef = _getFluidSessionRef(userId, petId, session.id);
     final date = AppDateUtils.startOfDay(session.dateTime);
@@ -1702,7 +1782,16 @@ class LoggingService {
     final monthlyRef = _getMonthlySummaryRef(userId, petId, date);
     batch.set(
       monthlyRef,
-      _buildMonthlySummaryWithIncrements(date, dto),
+      _buildMonthlySummaryWithIncrements(
+        date,
+        dto,
+        dayVolumeTotal: dayVolumeTotal,
+        dayGoalMl: dayGoalMl,
+        dayScheduledCount: dayScheduledCount,
+        currentDailyVolumes: currentDailyVolumes,
+        currentDailyGoals: currentDailyGoals,
+        currentDailyScheduledSessions: currentDailyScheduledSessions,
+      ),
       SetOptions(merge: true),
     );
   }
@@ -1818,8 +1907,15 @@ class LoggingService {
   /// FieldValue.increment() works on non-existent fields (treats as 0).
   Map<String, dynamic> _buildMonthlySummaryWithIncrements(
     DateTime date,
-    SummaryUpdateDto dto,
-  ) {
+    SummaryUpdateDto dto, {
+    // Optional per-day fluid data for monthly arrays
+    int? dayVolumeTotal,
+    int? dayGoalMl,
+    int? dayScheduledCount,
+    List<int>? currentDailyVolumes,
+    List<int>? currentDailyGoals,
+    List<int>? currentDailyScheduledSessions,
+  }) {
     final map =
         <String, dynamic>{
             'monthId': AppDateUtils.formatMonthForSummary(date), // "2025-10"
@@ -1828,6 +1924,37 @@ class LoggingService {
           }
           // Add DTO increments (will create or increment existing fields)
           ..addAll(dto.toFirestoreUpdate());
+
+    // Add per-day arrays if data provided (fluids only)
+    if (dayVolumeTotal != null && currentDailyVolumes != null) {
+      final monthLength = AppDateUtils.getMonthStartEnd(date)['end']!.day;
+      map['dailyVolumes'] = MonthlyArrayHelper.updateDailyArrayValue(
+        currentArray: currentDailyVolumes,
+        dayOfMonth: date.day,
+        monthLength: monthLength,
+        newValue: dayVolumeTotal,
+      );
+    }
+
+    if (dayGoalMl != null && currentDailyGoals != null) {
+      final monthLength = AppDateUtils.getMonthStartEnd(date)['end']!.day;
+      map['dailyGoals'] = MonthlyArrayHelper.updateDailyArrayValue(
+        currentArray: currentDailyGoals,
+        dayOfMonth: date.day,
+        monthLength: monthLength,
+        newValue: dayGoalMl,
+      );
+    }
+
+    if (dayScheduledCount != null && currentDailyScheduledSessions != null) {
+      final monthLength = AppDateUtils.getMonthStartEnd(date)['end']!.day;
+      map['dailyScheduledSessions'] = MonthlyArrayHelper.updateDailyArrayValue(
+        currentArray: currentDailyScheduledSessions,
+        dayOfMonth: date.day,
+        monthLength: monthLength,
+        newValue: dayScheduledCount,
+      );
+    }
 
     return map;
   }
@@ -2096,6 +2223,127 @@ class LoggingService {
         .doc('monthly')
         .collection('summaries')
         .doc(docId);
+  }
+
+  // ============================================
+  // PRIVATE HELPERS - Monthly Array Updates
+  // ============================================
+
+  /// Fetches current daily summary to get accurate daily totals
+  ///
+  /// Returns daily totals after this operation for monthly array update.
+  /// Reads daily summary once to handle multiple sessions per day correctly.
+  ///
+  /// **Purpose**: Ensures monthly arrays reflect the complete daily total,
+  /// not just the current session's volume. Critical for correctness when
+  /// logging multiple sessions on the same day.
+  ///
+  /// **Performance**: +1 Firestore read per operation (accepted tradeoff)
+  ///
+  /// **Returns**:
+  /// - `volumeTotal`: Total fluid volume for the day (after this operation)
+  /// - `goalMl`: Daily goal (from session or existing summary)
+  /// - `scheduledCount`: Number of scheduled sessions for the day
+  Future<({int volumeTotal, int goalMl, int scheduledCount})>
+      _fetchDailyTotalsForMonthly({
+    required String userId,
+    required String petId,
+    required DateTime date,
+    required int sessionVolumeDelta, // +volume for add, delta for update
+    required int? sessionGoalMl,
+    required int sessionScheduledCount,
+  }) async {
+    final dailyRef = _getDailySummaryRef(userId, petId, date);
+    final docSnapshot = await dailyRef.get();
+
+    var currentVolume = 0;
+    var currentGoal = 0;
+    var currentScheduled = 0;
+
+    if (docSnapshot.exists) {
+      final data = docSnapshot.data()! as Map<String, dynamic>;
+      currentVolume = (data['fluidTotalVolume'] as num?)?.toInt() ?? 0;
+      currentGoal = (data['fluidDailyGoalMl'] as num?)?.toInt() ?? 0;
+      currentScheduled =
+          (data['fluidScheduledSessions'] as num?)?.toInt() ?? 0;
+    }
+
+    // Calculate new totals after this operation
+    final newVolume = (currentVolume + sessionVolumeDelta).clamp(0, 50000);
+    final newGoal = sessionGoalMl ?? currentGoal;
+    final newScheduled =
+        (currentScheduled + sessionScheduledCount).clamp(0, 100);
+
+    return (
+      volumeTotal: newVolume,
+      goalMl: newGoal,
+      scheduledCount: newScheduled,
+    );
+  }
+
+  /// Fetches current monthly summary arrays for updating
+  ///
+  /// Returns existing arrays from Firestore to merge with new day's data.
+  /// Returns null arrays if document doesn't exist yet
+  /// (first session of month).
+  ///
+  /// **Purpose**: Retrieves current array state before updating a single day's
+  /// value, maintaining data for other days in the month.
+  ///
+  /// **Performance**: +1 Firestore read per operation (accepted tradeoff)
+  ///
+  /// **Returns**:
+  /// - `dailyVolumes`: Existing volume array or null if doc missing
+  /// - `dailyGoals`: Existing goal array or null if doc missing
+  /// - `dailyScheduledSessions`: Existing scheduled count array or null
+  Future<({
+    List<int>? dailyVolumes,
+    List<int>? dailyGoals,
+    List<int>? dailyScheduledSessions,
+  })> _fetchMonthlyArrays({
+    required String userId,
+    required String petId,
+    required DateTime date,
+  }) async {
+    final monthlyRef = _getMonthlySummaryRef(userId, petId, date);
+    final docSnapshot = await monthlyRef.get();
+
+    if (!docSnapshot.exists) {
+      return (
+        dailyVolumes: null,
+        dailyGoals: null,
+        dailyScheduledSessions: null,
+      );
+    }
+
+    final data = docSnapshot.data()! as Map<String, dynamic>;
+
+    // Parse arrays using same logic as MonthlySummary.fromJson
+    List<int>? parseIntListOrNull(dynamic value, int expectedLength) {
+      if (value == null || value is! List) return null;
+
+      final parsed = value.map((e) {
+        final intVal = (e as num?)?.toInt() ?? 0;
+        return intVal.clamp(0, 5000);
+      }).toList();
+
+      // Pad or truncate to expected length
+      if (parsed.length < expectedLength) {
+        return [...parsed, ...List.filled(expectedLength - parsed.length, 0)];
+      } else if (parsed.length > expectedLength) {
+        return parsed.sublist(0, expectedLength);
+      }
+      return parsed;
+    }
+
+    final monthLength = AppDateUtils.getMonthStartEnd(date)['end']!.day;
+
+    return (
+      dailyVolumes: parseIntListOrNull(data['dailyVolumes'], monthLength),
+      dailyGoals: parseIntListOrNull(data['dailyGoals'], monthLength),
+      dailyScheduledSessions:
+          parseIntListOrNull(data['dailyScheduledSessions'], monthLength),
+    );
   }
 
   // ============================================

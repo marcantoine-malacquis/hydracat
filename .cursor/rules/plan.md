@@ -17,8 +17,6 @@ Please let me know if this makes sense or contradict itself, the prd (.cursor/re
 
 I want an implementation plan in phases divided into steps that I can tackle easily with the help of Cursor/Claude Code in a work session.
 
-
-
 Please update and add only the important informations to remember about what we implemented in this step for future reference in 
 
 Please follow Firebase and Flutter best practices and use built-in solutions whenever possible instead of more complex custom solutions.
@@ -47,4 +45,11 @@ I already did something similar in @onboarding_code_review_report.md . I don't n
 
 Please identify why this is not working as intended and come up with the most robust plan following best practices to fix this issue properly.
 
-marcantoine.veterinaire@gmail.com
+1. a) yes, store dailyVolumes (ml per day) and also dailyGoals and dailyScheduledSessions for richer dots/tooltips
+b) fixed-length List<int> of size monthLength (up to 31) for compact storage; missing days = 0. This also keeps doc small and predictable.
+2. a) yes—extend the existing daily-summary write/update flow to also set dailyVolumes[dayIndex] (and optional goal/scheduled arrays) using the already computed daily totals; never query sessions for aggregation
+3. a) yes—whenever daily summary is recomputed/written, overwrite that day’s entry in the monthly summary from the recomputed daily totals to keep it consistent.
+4. a) Yes, use dailyScheduledSessions and compute status from monthly doc alone
+5. a) yes—keep a short-lived flag for dev, but plan to rely solely on monthly doc for month mode once write path is live.
+6. a) add lightweight pure-Dart tests for monthly summary update logic to guard regressions; manual UI verification for the month chart/dots is fine.
+Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules (.cursor/rules/firebase_CRUDrules.md) or existing code. Coherence and app development/Flutter best practices are extremely important. Please confirm that this follow industry standards, and if not explain why. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them (including the non critical ones). I will test only once we fixed the linting issues.

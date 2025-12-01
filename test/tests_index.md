@@ -39,6 +39,7 @@ This document provides a comprehensive index of all test files in the HydraCat p
 - [Profile Feature Tests](#profile-feature-tests)
 - [Progress Feature Tests](#progress-feature-tests)
 - [Provider Tests](#provider-tests)
+- [Shared Model Tests](#shared-model-tests)
 - [Shared Widget Tests](#shared-widget-tests)
 - [Integration Tests](#integration-tests)
 - [Running Tests](#running-tests)
@@ -288,6 +289,60 @@ This document provides a comprehensive index of all test files in the HydraCat p
 - ✅ SummaryCacheService updateCacheWithMedicationSession creates new cache if none exists
 - ✅ SummaryCacheService updateCacheWithMedicationSession does not duplicate medication names
 - ✅ SummaryCacheService updateCacheWithMedicationSession increments counts when updating existing cache
+
+---
+
+#### `test/features/logging/services/monthly_array_helper_test.dart` ✅
+
+**Type**: Unit Test
+**Purpose**: Tests MonthlyArrayHelper for safe monthly array updates
+**Stats**: 22 tests | ✅ 22 passing | ❌ 0 failing
+
+**Coverage**:
+- Array initialization (null, empty arrays)
+- Array resizing (padding/truncation for 28-31 day months)
+- Value updates (preserving other values, correct indexing)
+- Bounds clamping (day bounds 1-31, value bounds 0-5000)
+- Month length variations (28, 29, 30, 31 days)
+- Edge cases (multiple updates, day preservation)
+
+**Tests by Group**:
+
+**Array Initialization**:
+- ✅ null array creates zero-filled array
+- ✅ empty array creates zero-filled array
+
+**Array Resizing**:
+- ✅ short array (28) pads to 31 with zeros
+- ✅ long array (31) truncates to 28
+- ✅ correct length array not resized
+
+**Value Updates**:
+- ✅ day 1 updates index 0
+- ✅ day 15 updates index 14
+- ✅ day 31 updates index 30
+- ✅ preserves other values in array
+
+**Bounds Clamping**:
+- ✅ dayOfMonth = 0 clamps to 1 (index 0)
+- ✅ dayOfMonth = 32 clamps to monthLength (31)
+- ✅ negative dayOfMonth clamps to 1
+- ✅ newValue = -100 clamps to 0
+- ✅ newValue = 6000 clamps to 5000
+- ✅ newValue at upper bound (5000) not clamped
+- ✅ newValue at lower bound (0) not clamped
+
+**Month Length Variations**:
+- ✅ February leap year (29 days)
+- ✅ February non-leap (28 days)
+- ✅ 30-day month (April, June, September, November)
+- ✅ 31-day month (Jan, Mar, May, Jul, Aug, Oct, Dec)
+
+**Edge Cases**:
+- ✅ updating same day multiple times
+- ✅ updating different days preserves previous values
+
+**Related**: Phase 0 implementation of ProgressMonthView optimization. Used by Phase 1 write path in logging_service.dart to populate daily arrays in monthly summaries.
 
 ---
 
@@ -840,6 +895,38 @@ This document provides a comprehensive index of all test files in the HydraCat p
 - ✅ WeeklyProgressProvider returns null when primary pet is null
 - ✅ WeeklyProgressProvider returns null when user is not authenticated
 - ✅ WeeklyProgressProvider shows "None yet" when no injection site logged
+
+---
+
+## Shared Model Tests
+
+### `test/shared/models/monthly_summary_test.dart` ✅
+
+**Type**: Unit Test
+**Purpose**: Tests MonthlySummary model with daily fluid arrays (Phase 0)
+**Stats**: 20 tests | ✅ 20 passing | ❌ 0 failing
+
+**Tests**:
+- ✅ toJson and fromJson roundtrip preserves lists
+- ✅ fromJson handles missing lists by defaulting to zeros
+- ✅ fromJson handles null lists by defaulting to zeros
+- ✅ pads short lists with zeros
+- ✅ truncates long lists
+- ✅ valid lists pass validation
+- ✅ detects wrong list lengths
+- ✅ detects out-of-bounds values in dailyVolumes
+- ✅ detects out-of-bounds values in dailyScheduledSessions
+- ✅ handles February leap year (29 days)
+- ✅ handles February non-leap year (28 days)
+- ✅ handles 30-day months
+- ✅ handles 31-day months
+- ✅ clamps extreme values during deserialization
+- ✅ replacing lists works correctly
+- ✅ unchanged lists remain the same
+- ✅ lists affect equality comparison
+- ✅ identical lists produce equality
+- ✅ different lists produce inequality
+- ✅ hashCode includes lists
 
 ---
 
