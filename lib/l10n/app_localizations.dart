@@ -982,6 +982,18 @@ abstract class AppLocalizations {
   /// **'User or pet not found. Please try again.'**
   String get loggingUserNotFound;
 
+  /// No description provided for @medicationLogged.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication logged'**
+  String get medicationLogged;
+
+  /// No description provided for @fluidSessionLogged.
+  ///
+  /// In en, this message translates to:
+  /// **'Fluid session logged'**
+  String get fluidSessionLogged;
+
   /// No description provided for @loggingCloseTooltip.
   ///
   /// In en, this message translates to:

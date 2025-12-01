@@ -23,6 +23,7 @@ import 'package:hydracat/providers/weight_unit_provider.dart';
 import 'package:hydracat/shared/widgets/fluid/fluid_daily_summary_card.dart';
 import 'package:hydracat/shared/widgets/inputs/volume_input_adjuster.dart';
 import 'package:hydracat/shared/widgets/medication/medication_daily_summary_card.dart';
+import 'package:hydracat/shared/widgets/symptoms/symptoms_daily_summary_card.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 
@@ -455,6 +456,10 @@ class _ProgressDayDetailPopupState
             const SizedBox(height: AppSpacing.xs),
             _buildWeightSection(context, ref),
             const SizedBox(height: AppSpacing.md),
+            _buildSectionHeader('Symptoms', 'Daily log'),
+            const SizedBox(height: AppSpacing.xs),
+            _maybeSymptomsCard(context, ref),
+            const SizedBox(height: AppSpacing.md),
             if (showFluidSection) ...[
               _buildSectionHeader(
                 'Fluid therapy',
@@ -770,6 +775,10 @@ class _ProgressDayDetailPopupState
             const SizedBox(height: AppSpacing.xs),
             _buildWeightSection(context, ref),
             const SizedBox(height: AppSpacing.md),
+            _buildSectionHeader('Symptoms', 'Daily log'),
+            const SizedBox(height: AppSpacing.xs),
+            _maybeSymptomsCard(context, ref),
+            const SizedBox(height: AppSpacing.md),
             if (showFluidSection) ...[
               _buildSectionHeader(
                 'Fluid therapy',
@@ -945,6 +954,10 @@ class _ProgressDayDetailPopupState
             _buildSectionHeader('Weight', 'Latest entry'),
             const SizedBox(height: AppSpacing.xs),
             _buildWeightSection(context, ref),
+            const SizedBox(height: AppSpacing.md),
+            _buildSectionHeader('Symptoms', 'Daily log'),
+            const SizedBox(height: AppSpacing.xs),
+            _maybeSymptomsCard(context, ref),
             const SizedBox(height: AppSpacing.md),
             if (showFluidSection) ...[
               _buildSectionHeader(
@@ -1435,6 +1448,17 @@ class _ProgressDayDetailPopupState
     if (view == null) return const SizedBox.shrink();
 
     return MedicationDailySummaryCard(summary: view);
+  }
+
+  /// Builds the symptoms summary card when data is available.
+  Widget _maybeSymptomsCard(BuildContext context, WidgetRef ref) {
+    final view = ref.watch(
+      symptomsDailySummaryViewProvider(AppDateUtils.startOfDay(widget.date)),
+    );
+
+    if (view == null) return const SizedBox.shrink();
+
+    return SymptomsDailySummaryCard(summary: view);
   }
 
   /// Builds the weight summary card when data is available.

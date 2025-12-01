@@ -484,6 +484,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loggingUserNotFound => 'User or pet not found. Please try again.';
 
   @override
+  String get medicationLogged => 'Medication logged';
+
+  @override
+  String get fluidSessionLogged => 'Fluid session logged';
+
+  @override
   String get loggingCloseTooltip => 'Close';
 
   @override

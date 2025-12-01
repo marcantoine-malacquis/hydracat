@@ -310,6 +310,8 @@
   "loggingNotesHintSession": "Add any notes about this session...",
   "loggingNotesHintTreatment": "Add any notes about this treatment...",
   "loggingUserNotFound": "User or pet not found. Please try again.",
+  "medicationLogged": "Medication logged",
+  "fluidSessionLogged": "Fluid session logged",
   "loggingCloseTooltip": "Close",
   "loggingClosePopupSemantic": "Close popup",
   "loggingPopupSemantic": "{title} popup",

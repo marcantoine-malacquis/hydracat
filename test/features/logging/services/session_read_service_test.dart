@@ -2,8 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
-import 'package:hydracat/features/logging/models/fluid_session.dart';
-import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/session_read_service.dart';
 
 void main() {
@@ -16,7 +14,8 @@ void main() {
       service = SessionReadService(firestore);
     });
 
-    test('getAllSessionsForDate returns empty lists for future dates without querying Firestore', () async {
+    test('getAllSessionsForDate returns empty lists for future dates without '
+        'querying Firestore', () async {
       // Arrange
       const userId = 'test-user';
       const petId = 'test-pet';
@@ -30,8 +29,16 @@ void main() {
       );
 
       // Assert
-      expect(medSessions, isEmpty, reason: 'Should return empty medication sessions for future date');
-      expect(fluidSessions, isEmpty, reason: 'Should return empty fluid sessions for future date');
+      expect(
+        medSessions,
+        isEmpty,
+        reason: 'Should return empty medication sessions for future date',
+      );
+      expect(
+        fluidSessions,
+        isEmpty,
+        reason: 'Should return empty fluid sessions for future date',
+      );
     });
 
     test('getAllSessionsForDate queries Firestore for today', () async {
@@ -47,7 +54,8 @@ void main() {
         date: today,
       );
 
-      // Assert - Empty because no data in fake Firestore, but should execute query
+      // Assert - Empty because no data in fake Firestore,
+      // but should execute query
       expect(medSessions, isEmpty);
       expect(fluidSessions, isEmpty);
     });
@@ -65,45 +73,64 @@ void main() {
         date: pastDate,
       );
 
-      // Assert - Empty because no data in fake Firestore, but should execute query
+      // Assert - Empty because no data in fake Firestore,
+      // but should execute query
       expect(medSessions, isEmpty);
       expect(fluidSessions, isEmpty);
     });
 
-    test('getAllSessionsForDate handles edge case of exact midnight today', () async {
-      // Arrange
-      const userId = 'test-user';
-      const petId = 'test-pet';
-      final todayMidnight = AppDateUtils.startOfDay(DateTime.now());
+    test(
+      'getAllSessionsForDate handles edge case of exact midnight today',
+      () async {
+        // Arrange
+        const userId = 'test-user';
+        const petId = 'test-pet';
+        final todayMidnight = AppDateUtils.startOfDay(DateTime.now());
 
-      // Act
-      final (medSessions, fluidSessions) = await service.getAllSessionsForDate(
-        userId: userId,
-        petId: petId,
-        date: todayMidnight,
-      );
+        // Act
+        final (medSessions, fluidSessions) = await service
+            .getAllSessionsForDate(
+              userId: userId,
+              petId: petId,
+              date: todayMidnight,
+            );
 
-      // Assert - Should query (not skip as future)
-      expect(medSessions, isEmpty);
-      expect(fluidSessions, isEmpty);
-    });
+        // Assert - Should query (not skip as future)
+        expect(medSessions, isEmpty);
+        expect(fluidSessions, isEmpty);
+      },
+    );
 
-    test('getAllSessionsForDate handles edge case of tomorrow at midnight', () async {
-      // Arrange
-      const userId = 'test-user';
-      const petId = 'test-pet';
-      final tomorrow = AppDateUtils.startOfDay(DateTime.now()).add(const Duration(days: 1));
+    test(
+      'getAllSessionsForDate handles edge case of tomorrow at midnight',
+      () async {
+        // Arrange
+        const userId = 'test-user';
+        const petId = 'test-pet';
+        final tomorrow = AppDateUtils.startOfDay(
+          DateTime.now(),
+        ).add(const Duration(days: 1));
 
-      // Act
-      final (medSessions, fluidSessions) = await service.getAllSessionsForDate(
-        userId: userId,
-        petId: petId,
-        date: tomorrow,
-      );
+        // Act
+        final (medSessions, fluidSessions) = await service
+            .getAllSessionsForDate(
+              userId: userId,
+              petId: petId,
+              date: tomorrow,
+            );
 
-      // Assert - Should skip (future date)
-      expect(medSessions, isEmpty, reason: 'Should return empty for tomorrow');
-      expect(fluidSessions, isEmpty, reason: 'Should return empty for tomorrow');
-    });
+        // Assert - Should skip (future date)
+        expect(
+          medSessions,
+          isEmpty,
+          reason: 'Should return empty for tomorrow',
+        );
+        expect(
+          fluidSessions,
+          isEmpty,
+          reason: 'Should return empty for tomorrow',
+        );
+      },
+    );
   });
 }

@@ -214,6 +214,31 @@ class SymptomsService {
           symptoms[SymptomType.injectionSiteReaction]!.severityScore;
     }
 
+    // Set raw values (needed for symptom card descriptors)
+    if (symptoms != null) {
+      if (symptoms[SymptomType.vomiting] != null) {
+        updates['vomitingRawValue'] = symptoms[SymptomType.vomiting]!.rawValue;
+      }
+      if (symptoms[SymptomType.diarrhea] != null) {
+        updates['diarrheaRawValue'] = symptoms[SymptomType.diarrhea]!.rawValue;
+      }
+      if (symptoms[SymptomType.constipation] != null) {
+        updates['constipationRawValue'] =
+            symptoms[SymptomType.constipation]!.rawValue;
+      }
+      if (symptoms[SymptomType.energy] != null) {
+        updates['energyRawValue'] = symptoms[SymptomType.energy]!.rawValue;
+      }
+      if (symptoms[SymptomType.suppressedAppetite] != null) {
+        updates['suppressedAppetiteRawValue'] =
+            symptoms[SymptomType.suppressedAppetite]!.rawValue;
+      }
+      if (symptoms[SymptomType.injectionSiteReaction] != null) {
+        updates['injectionSiteReactionRawValue'] =
+            symptoms[SymptomType.injectionSiteReaction]!.rawValue;
+      }
+    }
+
     // Set overall scores from newEntry (computed by HealthParameter.create())
     if (newEntry.symptomScoreTotal != null) {
       updates['symptomScoreTotal'] = newEntry.symptomScoreTotal;

@@ -12,13 +12,13 @@ class SnackbarLayoutUtils {
   /// Calculate bottom offset for snackbar positioning.
   ///
   /// Algorithm:
-  /// 1. Start with safe area padding (device notches/home indicators)
-  /// 2. Add keyboard insets (if keyboard is visible)
-  /// 3. Add navigation bar height (84px)
-  /// 4. Add gap between snackbar and nav bar (8px)
-  ///
-  /// Note: The same calculation is used whether the navigation bar is visible
-  /// or hidden to maintain consistent visual positioning from screen bottom.
+  /// 1. If keyboard is visible (keyboardInset > 0), base offset on keyboard
+  ///    inset
+  /// 2. If nav bar is visible (and no keyboard), use nav bar height only
+  ///    (nav bar already occupies safe area zone)
+  /// 3. If nav bar is hidden (and no keyboard), use safe area padding
+  ///    (for home indicator clearance)
+  /// 4. Add gap (4px) at the end for spacing from nav bar or bottom edge
   ///
   /// Returns: Total bottom offset in pixels
   ///
@@ -35,14 +35,22 @@ class SnackbarLayoutUtils {
     required double keyboardInset,
     required bool isNavigationBarVisible,
   }) {
-    // Base: safe area + keyboard
-    var offset = safeAreaBottom + keyboardInset;
+    final keyboardVisible = keyboardInset > 0;
+    double offset;
 
-    // Always add nav bar height + gap (whether visible or not)
-    // This maintains consistent position from screen bottom
-    offset += AppLayout.bottomNavHeight; // 84px
-    offset += AppSpacing.sm; // 8px gap
+    if (keyboardVisible) {
+      // When keyboard is visible, position above keyboard
+      offset = keyboardInset;
+    } else if (isNavigationBarVisible) {
+      // When nav is visible, use nav height only
+      // (nav already occupies safe area)
+      offset = AppLayout.bottomNavHeight;
+    } else {
+      // When nav is hidden, use safe area for home indicator clearance
+      offset = safeAreaBottom;
+    }
 
-    return offset;
+    // Add gap at the end (distance from nav bar or from bottom when nav hidden)
+    return offset + AppSpacing.xs; // 4px gap
   }
 }

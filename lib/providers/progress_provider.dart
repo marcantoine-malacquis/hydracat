@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
+import 'package:hydracat/core/utils/symptom_descriptor_utils.dart';
+import 'package:hydracat/features/health/models/symptom_type.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/logging/services/session_read_service.dart';
@@ -21,6 +23,7 @@ import 'package:hydracat/shared/models/daily_summary.dart';
 import 'package:hydracat/shared/models/fluid_daily_summary_view.dart';
 import 'package:hydracat/shared/models/medication_daily_summary_view.dart';
 import 'package:hydracat/shared/models/monthly_summary.dart';
+import 'package:hydracat/shared/models/symptoms_daily_summary_view.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 /// Provider for the currently focused day in the progress calendar.
@@ -73,9 +76,10 @@ weekSummariesProvider = FutureProvider.autoDispose
     .family<Map<DateTime, DailySummary?>, DateTime>(
       (ref, weekStart) async {
         // Watch symptom log version to refetch when symptoms are logged
-        ref.watch(symptomLogVersionProvider);
-        // Invalidate when today's local cache changes so UI updates instantly
-        ref.watch(dailyCacheProvider);
+        ref
+          ..watch(symptomLogVersionProvider)
+          // Invalidate when today's local cache changes so UI updates instantly
+          ..watch(dailyCacheProvider);
 
         final user = ref.read(currentUserProvider);
         final pet = ref.read(primaryPetProvider);
@@ -334,6 +338,85 @@ fluidDailySummaryViewProvider = Provider.autoDispose
       );
     });
 
+/// Symptoms daily summary for a specific day using cached weekly summaries.
+/// Reads at most the weekly summaries already loaded by
+/// [weekSummariesProvider], avoiding any direct symptom queries per
+/// firebase_CRUDrules.
+///
+/// Returns null if no symptoms were logged for the day.
+final AutoDisposeProviderFamily<SymptomsDailySummaryView?, DateTime>
+    symptomsDailySummaryViewProvider = Provider.autoDispose
+        .family<SymptomsDailySummaryView?, DateTime>((ref, day) {
+  final normalized = AppDateUtils.startOfDay(day);
+  final weekStart = AppDateUtils.startOfWeekMonday(normalized);
+  final summariesAsync = ref.watch(weekSummariesProvider(weekStart));
+
+  return summariesAsync.maybeWhen(
+    data: (map) {
+      final summary = map[normalized];
+
+      // Return null if no summary or no symptoms for this day
+      if (summary == null || summary.hasSymptoms == false) {
+        return null;
+      }
+
+      final symptoms = <SymptomItem>[];
+
+      // Build symptom items in a consistent order matching SymptomType.all
+      final symptomData = [
+        (SymptomType.vomiting, summary.hadVomiting, summary.vomitingRawValue),
+        (SymptomType.diarrhea, summary.hadDiarrhea, summary.diarrheaRawValue),
+        (
+          SymptomType.constipation,
+          summary.hadConstipation,
+          summary.constipationRawValue
+        ),
+        (SymptomType.energy, summary.hadEnergy, summary.energyRawValue),
+        (
+          SymptomType.suppressedAppetite,
+          summary.hadSuppressedAppetite,
+          summary.suppressedAppetiteRawValue
+        ),
+        (
+          SymptomType.injectionSiteReaction,
+          summary.hadInjectionSiteReaction,
+          summary.injectionSiteReactionRawValue
+        ),
+      ];
+
+      for (final (symptomKey, hadSymptom, rawValue) in symptomData) {
+        if (hadSymptom) {
+          final label = SymptomDescriptorUtils.getSymptomLabel(symptomKey);
+          final descriptor = SymptomDescriptorUtils.formatRawValueDescriptor(
+            symptomKey,
+            rawValue,
+          );
+
+          // Only add if we have a valid descriptor
+          if (descriptor != null) {
+            symptoms.add(
+              SymptomItem(
+                symptomKey: symptomKey,
+                label: label,
+                descriptor: descriptor,
+              ),
+            );
+          }
+        }
+      }
+
+      // Return null if no valid symptoms after filtering
+      if (symptoms.isEmpty) return null;
+
+      return SymptomsDailySummaryView(
+        symptoms: symptoms,
+        isToday: AppDateUtils.isToday(normalized),
+      );
+    },
+    orElse: () => null,
+  );
+});
+
 /// Provider for current month's symptoms summary
 ///
 /// Fetches the monthly summary for the current month to display symptom
@@ -347,124 +430,135 @@ fluidDailySummaryViewProvider = Provider.autoDispose
 ///
 /// Cost: 0-1 Firestore reads (with 15-minute in-memory TTL cache)
 final AutoDisposeFutureProvider<MonthlySummary?>
-currentMonthSymptomsSummaryProvider =
-    FutureProvider.autoDispose<MonthlySummary?>((
-      ref,
-    ) async {
-      if (kDebugMode) {
-        debugPrint(
-          '[currentMonthSymptomsSummaryProvider] Provider executing...',
-        );
-      }
+    currentMonthSymptomsSummaryProvider =
+    FutureProvider.autoDispose<MonthlySummary?>(
+  (ref) async {
+    if (kDebugMode) {
+      debugPrint(
+        '[currentMonthSymptomsSummaryProvider] Provider executing...',
+      );
+    }
 
-      // Watch symptom log version to refetch when symptoms are logged
-      ref.watch(symptomLogVersionProvider);
+    // Watch symptom log version to refetch when symptoms are logged
+    ref
+      ..watch(symptomLogVersionProvider)
       // Also invalidate when weight logs change so monthly summaries stay fresh
-      ref.watch(weightLogVersionProvider);
+      ..watch(weightLogVersionProvider)
       // Watch for invalidation triggers (refetch after logging)
-      ref.watch(dailyCacheProvider);
+      ..watch(dailyCacheProvider);
 
-      final user = ref.read(currentUserProvider);
-      final pet = ref.read(primaryPetProvider);
+    final user = ref.read(currentUserProvider);
+    final pet = ref.read(primaryPetProvider);
 
+    if (kDebugMode) {
+      debugPrint(
+        '[currentMonthSymptomsSummaryProvider] '
+        'After reading providers: user=${user?.id ?? 'null'} '
+        'pet=${pet?.id ?? 'null'}',
+      );
+    }
+
+    if (user == null || pet == null) {
       if (kDebugMode) {
         debugPrint(
           '[currentMonthSymptomsSummaryProvider] '
-          'After reading providers: user=${user?.id ?? 'null'} '
-          'pet=${pet?.id ?? 'null'}',
+          'Early return: user=${user == null ? 'null' : user.id} '
+          'pet=${pet == null ? 'null' : pet.id}',
+        );
+      }
+      return null;
+    }
+
+    final summaryService = ref.read(summaryServiceProvider);
+
+    if (kDebugMode) {
+      debugPrint(
+        '[currentMonthSymptomsSummaryProvider] '
+        'About to fetch monthly summary for user=${user.id} '
+        'pet=${pet.id}',
+      );
+    }
+
+    try {
+      final monthlySummary = await summaryService.getMonthlySummary(
+        userId: user.id,
+        petId: pet.id,
+        date: DateTime.now(),
+      );
+
+      if (kDebugMode) {
+        final monthStr = AppDateUtils.formatMonthForSummary(DateTime.now());
+        final summaryStr = monthlySummary == null
+            ? 'null'
+            : 'daysWithAnySymptoms=${monthlySummary.daysWithAnySymptoms}';
+        debugPrint(
+          '[currentMonthSymptomsSummaryProvider] '
+          'user=${user.id} pet=${pet.id} month=$monthStr '
+          'summary=$summaryStr',
         );
       }
 
-      if (user == null || pet == null) {
-        if (kDebugMode) {
-          debugPrint(
-            '[currentMonthSymptomsSummaryProvider] '
-            'Early return: user=${user == null ? 'null' : user.id} '
-            'pet=${pet == null ? 'null' : pet.id}',
-          );
-        }
-        return null;
-      }
-
-      final summaryService = ref.read(summaryServiceProvider);
-
+      return monthlySummary;
+    } on Exception catch (e) {
       if (kDebugMode) {
         debugPrint(
           '[currentMonthSymptomsSummaryProvider] '
-          'About to fetch monthly summary for user=${user.id} '
-          'pet=${pet.id}',
+          'Error fetching monthly summary: $e',
         );
       }
+      return null;
+    }
+  },
+);
 
-      try {
-        final monthlySummary = await summaryService.getMonthlySummary(
-          userId: user.id,
-          petId: pet.id,
-          date: DateTime.now(),
-        );
-
-        if (kDebugMode) {
-          final monthStr = AppDateUtils.formatMonthForSummary(DateTime.now());
-          final summaryStr = monthlySummary == null
-              ? 'null'
-              : 'daysWithAnySymptoms=${monthlySummary.daysWithAnySymptoms}';
-          debugPrint(
-            '[currentMonthSymptomsSummaryProvider] '
-            'user=${user.id} pet=${pet.id} month=$monthStr '
-            'summary=$summaryStr',
-          );
-        }
-
-        return monthlySummary;
-      } on Exception catch (e) {
-        if (kDebugMode) {
-          debugPrint(
-            '[currentMonthSymptomsSummaryProvider] '
-            'Error fetching monthly summary: $e',
-          );
-        }
-        return null;
-      }
-    });
+/// Represents the latest logged weight (in kilograms) and its timestamp
+/// for a given day, used by `dayWeightEntryProvider`.
 @immutable
 class DailyWeightEntry {
+  /// Creates a daily weight entry with the recorded weight and timestamp.
   const DailyWeightEntry({
     required this.weightKg,
     required this.loggedAt,
   });
 
+  /// The pet's weight in kilograms at the time of logging.
   final double weightKg;
+
+  /// The exact date and time when the weight was logged.
   final DateTime loggedAt;
 }
 
-final dayWeightEntryProvider =
-    FutureProvider.autoDispose.family<DailyWeightEntry?, DateTime>(
-  (ref, day) async {
-    // Recompute when weight logs change
-    ref.watch(weightLogVersionProvider);
+/// Provides the latest logged weight entry on or before a given day,
+/// with a short-lived cache to avoid repeated reads for the same date.
+final AutoDisposeFutureProviderFamily<DailyWeightEntry?, DateTime>
+dayWeightEntryProvider = FutureProvider.autoDispose
+    .family<DailyWeightEntry?, DateTime>(
+      (ref, day) async {
+        // Recompute when weight logs change
+        ref.watch(weightLogVersionProvider);
 
-    // Keep result alive briefly to avoid repeat reads for same focused day
-    final link = ref.keepAlive();
-    Timer(const Duration(minutes: 15), link.close);
+        // Keep result alive briefly to avoid repeat reads for same focused day
+        final link = ref.keepAlive();
+        Timer(const Duration(minutes: 15), link.close);
 
-    final user = ref.read(currentUserProvider);
-    final pet = ref.read(primaryPetProvider);
-    if (user == null || pet == null) return null;
+        final user = ref.read(currentUserProvider);
+        final pet = ref.read(primaryPetProvider);
+        if (user == null || pet == null) return null;
 
-    final weightService = ref.read(weightServiceProvider);
-    final result = await weightService.getLatestWeightBeforeDate(
-      userId: user.id,
-      petId: pet.id,
-      date: day,
+        final weightService = ref.read(weightServiceProvider);
+        final result = await weightService.getLatestWeightBeforeDate(
+          userId: user.id,
+          petId: pet.id,
+          date: day,
+        );
+
+        if (result == null) return null;
+        return DailyWeightEntry(
+          weightKg: result.weight,
+          loggedAt: result.date,
+        );
+      },
     );
-
-    if (result == null) return null;
-    return DailyWeightEntry(
-      weightKg: result.weight,
-      loggedAt: result.date,
-    );
-  },
-);
 
 /// Medication daily summary for a specific day using
 /// cached weekly summaries and

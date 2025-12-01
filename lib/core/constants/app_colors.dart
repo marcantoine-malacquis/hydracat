@@ -65,12 +65,12 @@ class AppColors {
   static const Color divider = Color(0xFFE5E5E5);
 
   /// Start color for the home dashboard hero background gradient.
-  static const Color heroGradientStart = primaryLight; // #9DCBBF
+  static const Color heroGradientStart = primary; // #6BB8A8
 
   /// End color for the home dashboard hero background gradient.
-  /// Uses the primary brand teal so the gradient resolves into
-  /// the core brand color.
-  static const Color heroGradientEnd = primary;
+  /// Uses the primary dark variant so the gradient resolves into
+  /// a deeper teal for better saturation.
+  static const Color heroGradientEnd = primaryDark;
 
   /// Disabled color - Disabled backgrounds
   static const Color disabled = Color(0xFFF1F2F3);

@@ -161,9 +161,27 @@ class HydraSnackBar {
       borderRadius: BorderRadius.circular(8),
     );
 
-    // Add margin to ensure 8px gap above nav bar
-    const margin = EdgeInsets.only(
-      bottom: AppSpacing.sm, // 8px gap above navigation bar
+    // Calculate dynamic bottom margin using centralized utility
+    final mediaQuery = MediaQuery.of(context);
+    final safeAreaBottom = mediaQuery.padding.bottom;
+    final keyboardInset = mediaQuery.viewInsets.bottom;
+
+    // Get navigation bar visibility from provider
+    // When keyboard is visible, position above keyboard (nav typically hidden)
+    final isNavBarVisible =
+        keyboardInset == 0 &&
+        _getNavigationBarVisibility(
+          context,
+        ); // Nav hidden when keyboard visible
+
+    final bottomMargin = SnackbarLayoutUtils.calculateBottomOffset(
+      safeAreaBottom: safeAreaBottom,
+      keyboardInset: keyboardInset,
+      isNavigationBarVisible: isNavBarVisible,
+    );
+
+    final margin = EdgeInsets.only(
+      bottom: bottomMargin,
       left: AppSpacing.md, // 16px horizontal padding
       right: AppSpacing.md, // 16px horizontal padding
     );
@@ -189,6 +207,19 @@ class HydraSnackBar {
       );
   }
 
+  /// Helper to get navigation bar visibility for Material snackbar
+  /// Since static methods can't use ref, we read from ProviderScope
+  static bool _getNavigationBarVisibility(BuildContext context) {
+    try {
+      final container = ProviderScope.containerOf(context, listen: false);
+      return container.read(navigationBarVisibilityProvider);
+    } on Exception {
+      // Fallback: assume nav is visible if we can't read provider
+      // This is safe because the worst case is slightly more spacing
+      return true;
+    }
+  }
+
   /// Shows custom toast overlay on iOS/macOS.
   static void _showCupertinoToast(
     BuildContext context, {
@@ -198,8 +229,15 @@ class HydraSnackBar {
     String? actionLabel,
     VoidCallback? onAction,
   }) {
-    final overlay = Overlay.of(context);
-    final navigator = Navigator.of(context);
+    // Try to get overlay from context, fall back to navigator's overlay
+    final navigator = Navigator.of(context, rootNavigator: true);
+    final overlay = Overlay.maybeOf(context) ?? navigator.overlay;
+
+    // Guard against missing overlay
+    if (overlay == null) {
+      debugPrint('[HydraSnackBar] No overlay available for toast - skipping');
+      return;
+    }
 
     // Remove any existing toast
     _removeCurrentToast(navigator);
@@ -338,7 +376,7 @@ class _HydraToastState extends ConsumerState<_HydraToast>
     final isNavBarVisible = ref.watch(navigationBarVisibilityProvider);
 
     // Calculate proper bottom offset using centralized utility
-    // Positions snackbar 8px above the navigation bar (or same distance from
+    // Positions snackbar 4px above the navigation bar (or same distance from
     // bottom when nav bar is hidden)
     final bottomOffset = SnackbarLayoutUtils.calculateBottomOffset(
       safeAreaBottom: bottomPadding,

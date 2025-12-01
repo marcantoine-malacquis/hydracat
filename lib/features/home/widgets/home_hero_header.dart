@@ -63,6 +63,7 @@ class HomeHeroHeader extends StatelessWidget {
                     AppColors.heroGradientStart,
                     AppColors.heroGradientEnd,
                   ],
+                  stops: [0.05, 0.95],
                 ),
               ),
             ),
@@ -98,7 +99,7 @@ class HomeHeroHeader extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
-              color: Colors.black.withValues(alpha: 0.06),
+              color: Colors.black.withValues(alpha: 0.03),
             ),
           ),
 
@@ -158,14 +159,14 @@ class _HeroBlob extends StatelessWidget {
       width: size,
       height: size,
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.white.withValues(alpha: 0.22),
+            color: Colors.white.withValues(alpha: 0.11),
             boxShadow: [
               BoxShadow(
-                color: Colors.white.withValues(alpha: 0.18),
+                color: Colors.white.withValues(alpha: 0.11),
                 blurRadius: 24,
                 spreadRadius: 4,
               ),

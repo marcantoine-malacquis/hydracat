@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/constants/app_animations.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
@@ -233,7 +232,8 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
     if (widget.dashboardContext != null) {
       setState(() {
         _volumeValue = widget.dashboardContext!.remainingVolume;
-        _selectedInjectionSite = fluidSchedule?.preferredLocation ??
+        _selectedInjectionSite =
+            fluidSchedule?.preferredLocation ??
             FluidLocation.shoulderBladeMiddle;
       });
 
@@ -253,7 +253,8 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
 
       setState(() {
         _volumeValue = newVolume;
-        _selectedInjectionSite = fluidSchedule.preferredLocation ??
+        _selectedInjectionSite =
+            fluidSchedule.preferredLocation ??
             FluidLocation.shoulderBladeMiddle;
       });
 
@@ -365,25 +366,29 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
         if (showLoadingTimer.isActive) {
           showLoadingTimer.cancel();
         }
-        // Success! Show indicator and close
-        setState(() {
-          _loadingState = LoadingOverlayState.success;
-        });
 
-        // Haptic feedback
-        unawaited(HapticFeedback.lightImpact());
+        if (!mounted) return;
 
-        // Wait for success animation, then close
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        // Capture stable references before closing the sheet
+        final rootNavigator = Navigator.of(context, rootNavigator: true);
+        final l10n = AppLocalizations.of(context)!;
+        final successMessage = l10n.fluidSessionLogged;
 
-        if (mounted) {
-          // Reset state and close popup
-          // Note: Reset happens after cache is updated to ensure
-          // consistent state
-          ref.read(loggingProvider.notifier).reset();
-          if (Navigator.canPop(context)) {
-            Navigator.pop(context);
-          }
+        // Reset state and close popup
+        // Note: Reset happens after cache is updated to ensure
+        // consistent state
+        ref.read(loggingProvider.notifier).reset();
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+
+        // Show success snackbar after popup has closed
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        if (rootNavigator.mounted) {
+          HydraSnackBar.showSuccess(
+            rootNavigator.context,
+            successMessage,
+          );
         }
       } else {
         // Error occurred - check error provider

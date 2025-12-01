@@ -6,11 +6,12 @@ import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/features/home/models/pending_fluid_treatment.dart';
 import 'package:hydracat/features/home/models/pending_treatment.dart';
-import 'package:hydracat/features/home/widgets/dashboard_success_popup.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/dashboard_provider.dart';
 import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
+import 'package:hydracat/shared/widgets/feedback/hydra_snack_bar.dart';
 import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
 
 /// Full-screen blur popup for confirming or skipping treatments from dashboard.
@@ -302,13 +303,10 @@ class TreatmentConfirmationPopup extends ConsumerWidget {
 
       // Show success feedback using host context
       if (hostContext.mounted) {
-        OverlayService.showFullScreenPopup(
-          context: hostContext,
-          child: const DashboardSuccessPopup(
-            message: 'Treatment skipped',
-            isSkipped: true,
-          ),
-          animationType: OverlayAnimationType.scaleIn,
+        final l10n = AppLocalizations.of(hostContext)!;
+        HydraSnackBar.showSuccess(
+          hostContext,
+          l10n.medicationLogged,
         );
       }
     } on Exception catch (e) {
@@ -339,12 +337,13 @@ class TreatmentConfirmationPopup extends ConsumerWidget {
 
       // Show success feedback using host context
       if (hostContext.mounted) {
-        OverlayService.showFullScreenPopup(
-          context: hostContext,
-          child: const DashboardSuccessPopup(
-            message: 'Treatment logged',
-          ),
-          animationType: OverlayAnimationType.scaleIn,
+        final l10n = AppLocalizations.of(hostContext)!;
+        final message = _isMedication
+            ? l10n.medicationLogged
+            : l10n.fluidSessionLogged;
+        HydraSnackBar.showSuccess(
+          hostContext,
+          message,
         );
       }
     } on Exception catch (e) {

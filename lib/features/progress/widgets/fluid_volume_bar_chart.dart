@@ -8,7 +8,7 @@ import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/logging/screens/fluid_logging_screen.dart';
-import 'package:hydracat/features/logging/services/overlay_service.dart';
+import 'package:hydracat/features/logging/widgets/logging_bottom_sheet_helper.dart';
 import 'package:hydracat/features/progress/models/fluid_chart_data.dart';
 import 'package:hydracat/features/progress/providers/fluid_chart_provider.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
@@ -866,9 +866,9 @@ class FluidVolumeChartEmptyState extends StatelessWidget {
         child: InkWell(
           onTap: () {
             HapticFeedback.selectionClick();
-            OverlayService.showFullScreenPopup(
-              context: context,
-              child: const FluidLoggingScreen(),
+            showLoggingBottomSheet(
+              context,
+              const FluidLoggingScreen(),
             );
           },
           borderRadius: BorderRadius.circular(24),

@@ -12,6 +12,7 @@ import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/logging/widgets/logging_bottom_sheet_helper.dart';
 import 'package:hydracat/features/notifications/widgets/notification_status_widget.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/dashboard_provider.dart';
@@ -413,13 +414,10 @@ class _HomeScreenContent {
 
         // Show success feedback using host context
         if (hostContext.mounted) {
-          OverlayService.showFullScreenPopup(
-            context: hostContext,
-            child: const DashboardSuccessPopup(
-              message: 'Treatment skipped',
-              isSkipped: true,
-            ),
-            animationType: OverlayAnimationType.scaleIn,
+          final l10n = AppLocalizations.of(hostContext)!;
+          HydraSnackBar.showSuccess(
+            hostContext,
+            l10n.medicationLogged,
           );
         }
       } catch (e) {

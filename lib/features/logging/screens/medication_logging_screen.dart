@@ -91,8 +91,8 @@ class _MedicationLoggingScreenState
 
     // Auto-select medication from dashboard context (takes precedence)
     // or notification deep-link
-    final scheduleIdToSelect = widget.dashboardContext?.scheduleId ??
-        widget.initialScheduleId;
+    final scheduleIdToSelect =
+        widget.dashboardContext?.scheduleId ?? widget.initialScheduleId;
     if (scheduleIdToSelect != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _autoSelectMedication(scheduleIdToSelect);
@@ -215,8 +215,9 @@ class _MedicationLoggingScreenState
         } else {
           // Fallback to existing logic for notification/FAB flows
           final now = DateTime.now();
-          final todaysReminderTimes =
-              schedule.todaysReminderTimes(now).toList();
+          final todaysReminderTimes = schedule
+              .todaysReminderTimes(now)
+              .toList();
           scheduledTime = todaysReminderTimes.isNotEmpty
               ? todaysReminderTimes.first
               : now;
@@ -299,23 +300,27 @@ class _MedicationLoggingScreenState
         if (showLoadingTimer.isActive) {
           showLoadingTimer.cancel();
         }
-        // Success! Show indicator and close
-        setState(() {
-          _loadingState = LoadingOverlayState.success;
-        });
 
-        // Haptic feedback
-        unawaited(HapticFeedback.lightImpact());
+        if (!mounted) return;
 
-        // Wait for success animation, then close
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        // Capture stable references before closing the sheet
+        final rootNavigator = Navigator.of(context, rootNavigator: true);
+        final l10n = AppLocalizations.of(context)!;
+        final successMessage = l10n.medicationLogged;
 
-        if (mounted) {
-          // Reset state and close popup
-          ref.read(loggingProvider.notifier).reset();
-          if (Navigator.canPop(context)) {
-            Navigator.pop(context);
-          }
+        // Reset state and close popup
+        ref.read(loggingProvider.notifier).reset();
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+
+        // Show success snackbar after popup has closed
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        if (rootNavigator.mounted) {
+          HydraSnackBar.showSuccess(
+            rootNavigator.context,
+            successMessage,
+          );
         }
       }
     } finally {
