@@ -104,6 +104,8 @@ class HydraAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.centerTitle,
     this.automaticallyImplyLeading = true,
     this.toolbarHeight,
+    this.bottom,
+    this.bottomHeight,
     super.key,
   });
 
@@ -179,10 +181,34 @@ class HydraAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// On Cupertino platforms, this is used to determine the preferred size.
   final double? toolbarHeight;
 
+  /// Optional widget to display below the app bar content.
+  ///
+  /// On Material platforms, this is used as the [AppBar.bottom].
+  /// On Cupertino platforms, this is rendered below the navigation bar
+  /// within a Column layout.
+  final Widget? bottom;
+
+  /// Explicit height for the bottom widget.
+  ///
+  /// If null and [bottom] is provided, the height will be calculated
+  /// from the bottom widget's intrinsic dimensions.
+  final double? bottomHeight;
+
   @override
   Size get preferredSize {
-    final height = toolbarHeight ?? AppSpacing.appBarHeight;
-    return Size.fromHeight(height);
+    final baseHeight = toolbarHeight ?? AppSpacing.appBarHeight;
+    final bottomWidgetHeight =
+        bottomHeight ?? (bottom != null ? _estimateBottomHeight() : 0.0);
+    return Size.fromHeight(baseHeight + bottomWidgetHeight);
+  }
+
+  /// Estimates the height of the bottom widget.
+  ///
+  /// Returns a default height if the widget doesn't have intrinsic dimensions.
+  double _estimateBottomHeight() {
+    // Default to ~44px (36px control + 8px padding) if we can't determine
+    // the actual height. This matches the segmented control height + padding.
+    return 44;
   }
 
   /// Gets the background color for the current style.
@@ -274,12 +300,31 @@ class HydraAppBar extends StatelessWidget implements PreferredSizeWidget {
       foregroundColor: foregroundColor,
       elevation: elevation,
       surfaceTintColor: Colors.transparent,
+      shadowColor: bottom != null ? Colors.transparent : null,
+      scrolledUnderElevation: bottom != null ? 0 : null,
       centerTitle: centerTitle ?? true,
       automaticallyImplyLeading: automaticallyImplyLeading,
       toolbarHeight: toolbarHeight ?? AppSpacing.appBarHeight,
       titleSpacing: 0, // Remove default spacing since we handle padding
       leadingWidth:
           AppSpacing.appBarContentPadding.horizontal + 56, // Icon + padding
+      bottom: bottom != null
+          ? PreferredSize(
+              preferredSize: Size.fromHeight(
+                bottomHeight ?? 44.0,
+              ),
+              child: Container(
+                color: resolvedBackgroundColor,
+                padding: EdgeInsets.only(
+                  left: AppSpacing.appBarContentPadding.horizontal,
+                  right: AppSpacing.appBarContentPadding.horizontal,
+                  top: 8,
+                  bottom: 8,
+                ),
+                child: bottom,
+              ),
+            )
+          : null,
     );
   }
 
@@ -360,7 +405,7 @@ class HydraAppBar extends StatelessWidget implements PreferredSizeWidget {
       }
     }
 
-    return CupertinoNavigationBar(
+    final navigationBar = CupertinoNavigationBar(
       middle: middleWidget,
       leading: leading != null
           ? Padding(
@@ -378,5 +423,44 @@ class HydraAppBar extends StatelessWidget implements PreferredSizeWidget {
             )
           : null,
     );
+
+    if (bottom != null) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Remove border from navigation bar when bottom widget is present
+          CupertinoNavigationBar(
+            middle: middleWidget,
+            leading: leading != null
+                ? Padding(
+                    padding: const EdgeInsets.only(left: AppSpacing.md),
+                    child: leading,
+                  )
+                : null,
+            trailing: trailing,
+            backgroundColor: resolvedBackgroundColor,
+            border: null, // No border when bottom widget is present
+          ),
+          Container(
+            color: resolvedBackgroundColor,
+            padding: EdgeInsets.only(
+              left: AppSpacing.appBarContentPadding.horizontal,
+              right: AppSpacing.appBarContentPadding.horizontal,
+              top: 8,
+              bottom: 8,
+            ),
+            child: bottom,
+          ),
+          // Border only at the very bottom of the entire app bar
+          if (showBorder)
+            Container(
+              height: 1,
+              color: AppColors.border,
+            ),
+        ],
+      );
+    }
+
+    return navigationBar;
   }
 }

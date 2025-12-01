@@ -3,12 +3,17 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hydracat/app/router.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/notifications/providers/notification_provider.dart';
 import 'package:hydracat/features/notifications/services/reminder_plugin.dart';
 import 'package:hydracat/features/notifications/utils/notification_id.dart';
+import 'package:hydracat/features/onboarding/debug_onboarding_replay.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/providers/onboarding_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -80,8 +85,18 @@ class DebugPanel extends ConsumerWidget {
 
                 const SizedBox(height: AppSpacing.sm),
 
+                // Non-destructive replay onboarding button
+                _buildReplayOnboardingAction(context, ref),
+
+                const SizedBox(height: AppSpacing.sm),
+
                 // Reset action
                 _buildResetAction(context, ref),
+
+                const SizedBox(height: AppSpacing.sm),
+
+                // Restart onboarding flow
+                _buildRestartOnboardingAction(context, ref),
 
                 const SizedBox(height: AppSpacing.md),
 
@@ -139,6 +154,73 @@ class DebugPanel extends ConsumerWidget {
     );
   }
 
+  /// Builds the non-destructive replay onboarding button
+  Widget _buildReplayOnboardingAction(BuildContext context, WidgetRef ref) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => _handleReplayOnboarding(context, ref),
+        icon: const Icon(Icons.play_arrow, size: 16),
+        label: const Text('Replay Onboarding (Non-Destructive)'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.green.shade700,
+          side: BorderSide(color: Colors.green.shade300),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.xs,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Handles non-destructive onboarding replay
+  Future<void> _handleReplayOnboarding(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    try {
+      await startOnboardingReplay(ref, context);
+
+      if (context.mounted) {
+        HydraSnackBar.showSuccess(
+          context,
+          '✅ Replay mode activated! Safe to test onboarding UI/UX. '
+          'No Firestore data will be modified.',
+          duration: const Duration(seconds: 3),
+        );
+      }
+    } on Exception catch (e) {
+      if (context.mounted) {
+        HydraSnackBar.showError(
+          context,
+          '❌ Replay failed: $e',
+          duration: const Duration(seconds: 3),
+        );
+      }
+    }
+  }
+
+  /// Builds the restart onboarding button
+  Widget _buildRestartOnboardingAction(BuildContext context, WidgetRef ref) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => _handleRestartOnboarding(context, ref),
+        icon: const Icon(Icons.replay, size: 16),
+        label: const Text('Reset & Open Onboarding'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.blue.shade700,
+          side: BorderSide(color: Colors.blue.shade300),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.xs,
+          ),
+        ),
+      ),
+    );
+  }
+
   /// Builds the reset action button
   Widget _buildResetAction(BuildContext context, WidgetRef ref) {
     return SizedBox(
@@ -170,11 +252,19 @@ class DebugPanel extends ConsumerWidget {
 
     try {
       // Perform the reset operation
-      // Clear profile cache first
-      ref.read(profileProvider.notifier).clearCache();
+      final userId = ref.read(currentUserProvider)?.id;
+      if (userId == null) {
+        if (context.mounted) {
+          HydraSnackBar.showError(
+            context,
+            '❌ No authenticated user found',
+            duration: const Duration(seconds: 3),
+          );
+        }
+        return;
+      }
 
-      // Reset auth state (onboarding + primary pet)
-      await ref.read(authProvider.notifier).debugResetUserState();
+      await _performFreshUserReset(ref, userId);
 
       if (context.mounted) {
         HydraSnackBar.showSuccess(
@@ -193,6 +283,65 @@ class DebugPanel extends ConsumerWidget {
         );
       }
     }
+  }
+
+  /// Handles restarting onboarding from the welcome screen
+  Future<void> _handleRestartOnboarding(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final confirmed = await _showConfirmationDialog(context);
+    if (!confirmed) return;
+
+    final userId = ref.read(currentUserProvider)?.id;
+    if (userId == null) {
+      if (context.mounted) {
+        HydraSnackBar.showError(
+          context,
+          '❌ No authenticated user found',
+          duration: const Duration(seconds: 3),
+        );
+      }
+      return;
+    }
+
+    try {
+      await _performFreshUserReset(ref, userId);
+
+      if (!context.mounted) return;
+
+      HydraSnackBar.showSuccess(
+        context,
+        'User reset — redirecting to onboarding',
+        duration: const Duration(seconds: 2),
+      );
+
+      // Jump straight to the welcome step after reset
+      context.go(OnboardingStepType.welcome.routeName);
+    } on Exception catch (e) {
+      if (context.mounted) {
+        HydraSnackBar.showError(
+          context,
+          '❌ Restart failed: $e',
+          duration: const Duration(seconds: 3),
+        );
+      }
+    }
+  }
+
+  /// Performs a full reset for the current user and clears caches/state.
+  Future<void> _performFreshUserReset(WidgetRef ref, String userId) async {
+    // Clear local caches before wiping backend/local data
+    ref.read(profileProvider.notifier).clearCache();
+
+    // Ensure onboarding checkpoints and in-memory state are clean
+    await ref.read(onboardingProvider.notifier).clearOnboardingData(userId);
+
+    // Reset auth state (clears Firestore + local caches)
+    await ref.read(authProvider.notifier).debugResetUserState();
+
+    // Force router to re-run guards with the fresh onboarding state
+    ref.read(routerRefreshStreamProvider).refresh();
   }
 
   /// Shows confirmation dialog before reset

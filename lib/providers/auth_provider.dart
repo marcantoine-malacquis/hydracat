@@ -275,7 +275,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String email,
     required String password,
   }) async {
-    _hasRecentError = false; // Clear error flag when user attempts new action
+    // Set error flag BEFORE async operation to prevent race condition
+    // where auth state stream emits null before we can set error state
+    _hasRecentError = true;
     state = const AuthStateLoading();
 
     final result = await _authService.signUp(
@@ -284,14 +286,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
     );
 
     if (result is AuthSuccess) {
+      // Clear error flag on success - auth state listener will handle state
+      // update
+      _hasRecentError = false;
       // State will be updated automatically by _listenToAuthChanges
       // when Firebase auth state changes
     } else if (result is AuthFailure) {
-      state = AuthStateError(
+      // Keep error flag set and create error state
+      final errorState = AuthStateError(
         message: result.message,
         code: result.code,
         details: result.exception, // Store the original exception
       );
+
+      // Set error state immediately
+      state = errorState;
     }
   }
 
@@ -779,6 +788,53 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
     } catch (e) {
       throw Exception('Failed to reset user state: $e');
+    }
+  }
+
+  /// Debug-only method to set onboarding flags in-memory only
+  /// (no Firestore writes)
+  ///
+  /// Updates the local auth state with new onboarding flags without persisting
+  /// to Firestore. Used for non-destructive onboarding replay testing.
+  ///
+  /// Only available in debug mode.
+  Future<void> debugSetOnboardingFlagsInMemory({
+    bool? hasCompletedOnboarding,
+    bool? hasSkippedOnboarding,
+  }) async {
+    if (!kDebugMode) {
+      debugPrint(
+        'WARNING: debugSetOnboardingFlagsInMemory called in production',
+      );
+      return;
+    }
+
+    final currentUser = _authService.currentUser;
+    if (currentUser == null) {
+      if (kDebugMode) {
+        debugPrint(
+          'WARNING: debugSetOnboardingFlagsInMemory called with null user',
+        );
+      }
+      return;
+    }
+
+    // Create updated user with new flags (in-memory only, no Firestore write)
+    final updatedUser = currentUser.copyWith(
+      hasCompletedOnboarding: hasCompletedOnboarding,
+      hasSkippedOnboarding: hasSkippedOnboarding,
+    );
+
+    // Update cache and local state only (no Firestore persistence)
+    _updateCache(updatedUser);
+    state = AuthStateAuthenticated(user: updatedUser);
+
+    if (kDebugMode) {
+      debugPrint(
+        '[AuthProvider] Debug: Updated onboarding flags in-memory only '
+        '(hasCompleted: $hasCompletedOnboarding, '
+        'hasSkipped: $hasSkippedOnboarding)',
+      );
     }
   }
 

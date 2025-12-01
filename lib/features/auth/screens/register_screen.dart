@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/auth/mixins/auth_error_handler_mixin.dart';
 import 'package:hydracat/features/auth/mixins/auth_loading_state_mixin.dart';
@@ -57,40 +58,76 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
       }
     });
 
-    return Scaffold(
-      appBar: const HydraAppBar(
-        title: Text('Create Account'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(height: MediaQuery.of(context).size.height * 0.05),
+            const Text(
+              'Join Hydracat',
+              style: AppTextStyles.h1,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            const Text(
+              "Start tracking your cat's kidney treatment with care",
+              style: AppTextStyles.body,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: MediaQuery.of(context).size.height * 0.05),
                 const Text(
-                  'Join Hydracat',
-                  style: AppTextStyles.h1,
-                  textAlign: TextAlign.center,
+                  'Email',
+                  style: AppTextStyles.body,
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                const Text(
-                  "Start tracking your cat's kidney treatment with care",
-                  style: AppTextStyles.body,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                TextFormField(
+                HydraTextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: AppColors.border,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: AppColors.border,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: AppColors.primary,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: AppColors.error,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: AppColors.error,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.md,
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -102,20 +139,65 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                     return null;
                   },
                 ),
-                const SizedBox(height: AppSpacing.md),
-                TextFormField(
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Password',
+                  style: AppTextStyles.body,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                HydraTextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
-                    labelText: 'Password',
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.lock),
+                    border: OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: AppColors.border,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: AppColors.border,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: AppColors.primary,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: AppColors.error,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: AppColors.error,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.md,
+                    ),
                     helperText: 'At least 8 characters to protect your data',
                     suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility
-                            : Icons.visibility_off,
+                      icon: HydraIcon(
+                        icon: _obscurePassword
+                            ? AppIcons.visibility
+                            : AppIcons.visibilityOff,
                       ),
                       onPressed: () {
                         setState(() {
@@ -134,19 +216,64 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                     return null;
                   },
                 ),
-                const SizedBox(height: AppSpacing.md),
-                TextFormField(
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Confirm Password',
+                  style: AppTextStyles.body,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                HydraTextFormField(
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
                   decoration: InputDecoration(
-                    labelText: 'Confirm Password',
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.lock_outline),
+                    border: OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: AppColors.border,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: AppColors.border,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: AppColors.primary,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: AppColors.error,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: AppColors.error,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.md,
+                    ),
                     suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureConfirmPassword
-                            ? Icons.visibility
-                            : Icons.visibility_off,
+                      icon: HydraIcon(
+                        icon: _obscureConfirmPassword
+                            ? AppIcons.visibility
+                            : AppIcons.visibilityOff,
                       ),
                       onPressed: () {
                         setState(() {
@@ -165,36 +292,34 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                     return null;
                   },
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                HydraButton(
-                  onPressed: isLoading ? null : _handleSignUp,
-                  isLoading: isLoading,
-                  isFullWidth: true,
-                  child: const Text('Create Account'),
-                ),
-                const SizedBox(height: AppSpacing.md),
-
-                // Social Sign-In Buttons
-                const SocialSignInButtons(),
-
-                const SizedBox(height: AppSpacing.md),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('Already have an account?'),
-                    TextButton(
-                      onPressed: () => context.go('/login'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                      ),
-                      child: const Text('Sign In'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.xl),
               ],
             ),
-          ),
+            const SizedBox(height: AppSpacing.lg),
+            HydraButton(
+              onPressed: isLoading ? null : _handleSignUp,
+              isLoading: isLoading,
+              isFullWidth: true,
+              child: const Text('Create Account'),
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            // Social Sign-In Buttons
+            const SocialSignInButtons(),
+
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Already have an account?'),
+                HydraButton(
+                  onPressed: () => context.go('/login'),
+                  variant: HydraButtonVariant.text,
+                  child: const Text('Sign In'),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xl),
+          ],
         ),
       ),
     );

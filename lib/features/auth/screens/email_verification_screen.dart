@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/auth/mixins/auth_error_handler_mixin.dart';
 import 'package:hydracat/features/auth/mixins/auth_loading_state_mixin.dart';
@@ -239,147 +240,138 @@ class _EmailVerificationScreenState
       })
       ..watch(authProvider);
 
-    return Scaffold(
-      appBar: const HydraAppBar(
-        title: Text('Verify Your Email'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        automaticallyImplyLeading: false,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Icon(
-              Icons.mark_email_unread_outlined,
-              size: 80,
-              color: AppColors.primary,
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const HydraIcon(
+            icon: AppIcons.markEmailUnread,
+            size: 80,
+            color: AppColors.primary,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          const Text(
+            'Account Verification Required',
+            style: AppTextStyles.h1,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const Text(
+            'Account verification is required to protect your data',
+            style: AppTextStyles.body,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(height: AppSpacing.xl),
-            const Text(
-              'Account Verification Required',
-              style: AppTextStyles.h1,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            const Text(
-              'Account verification is required to protect your data',
-              style: AppTextStyles.body,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                children: [
-                  const Text(
-                    'A verification link will be sent to:',
-                    style: AppTextStyles.body,
+            child: Column(
+              children: [
+                const Text(
+                  'A verification link will be sent to:',
+                  style: AppTextStyles.body,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  widget.email,
+                  style: AppTextStyles.body.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    widget.email,
-                    style: AppTextStyles.body.copyWith(
-                      fontWeight: FontWeight.w600,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          HydraButton(
+            onPressed: isLoading || _isResendCooldown
+                ? null
+                : _sendVerificationEmail,
+            isLoading: isLoading,
+            isFullWidth: true,
+            child: Text(
+              _isResendCooldown
+                  ? 'Resend in ${_cooldownSeconds}s'
+                  : 'Send Verification Email',
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          const Divider(),
+          const SizedBox(height: AppSpacing.sm),
+          const Text(
+            'After clicking the verification link in your email, you will be '
+            'automatically redirected to the app.',
+            style: AppTextStyles.caption,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const Text(
+            "Check your spam folder if you don't see the email.",
+            style: AppTextStyles.caption,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          // Smart polling status display
+          if (_pollingStatus.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: _isPollingActive
+                    ? Theme.of(context).colorScheme.primaryContainer
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_isPollingActive) ...[
+                    SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: HydraProgressIndicator(
+                        strokeWidth: 2,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                  ],
+                  Flexible(
+                    child: Text(
+                      _pollingStatus,
+                      style: AppTextStyles.caption.copyWith(
+                        color: _isPollingActive
+                            ? Theme.of(context).colorScheme.onPrimaryContainer
+                            : Theme.of(context).colorScheme.onSurface,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: AppSpacing.xl),
-            HydraButton(
-              onPressed: isLoading || _isResendCooldown
-                  ? null
-                  : _sendVerificationEmail,
-              isLoading: isLoading,
-              isFullWidth: true,
-              child: Text(
-                _isResendCooldown
-                    ? 'Resend in ${_cooldownSeconds}s'
-                    : 'Send Verification Email',
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            const Divider(),
-            const SizedBox(height: AppSpacing.sm),
-            const Text(
-              'After clicking the verification link in your email, you will be '
-              'automatically redirected to the app.',
-              style: AppTextStyles.caption,
-              textAlign: TextAlign.center,
-            ),
+          if (_pollingStatus.isNotEmpty)
             const SizedBox(height: AppSpacing.md),
-            const Text(
-              "Check your spam folder if you don't see the email.",
-              style: AppTextStyles.caption,
-              textAlign: TextAlign.center,
+          // Manual check button when polling stops
+          if (!_isPollingActive && _pollingStatus.isNotEmpty)
+            HydraButton(
+              onPressed: _checkVerificationStatus,
+              variant: HydraButtonVariant.text,
+              child: const Text('Check Again'),
             ),
-            const SizedBox(height: AppSpacing.lg),
-            // Smart polling status display
-            if (_pollingStatus.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: _isPollingActive
-                      ? Theme.of(context).colorScheme.primaryContainer
-                      : Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_isPollingActive) ...[
-                      SizedBox(
-                        width: 12,
-                        height: 12,
-                        child: HydraProgressIndicator(
-                          strokeWidth: 2,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                    ],
-                    Flexible(
-                      child: Text(
-                        _pollingStatus,
-                        style: AppTextStyles.caption.copyWith(
-                          color: _isPollingActive
-                              ? Theme.of(context).colorScheme.onPrimaryContainer
-                              : Theme.of(context).colorScheme.onSurface,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            if (_pollingStatus.isNotEmpty)
-              const SizedBox(height: AppSpacing.md),
-            // Manual check button when polling stops
-            if (!_isPollingActive && _pollingStatus.isNotEmpty)
-              TextButton(
-                onPressed: _checkVerificationStatus,
-                child: const Text('Check Again'),
-              ),
-            const SizedBox(height: AppSpacing.xl),
-            TextButton(
-              onPressed: () {
-                ref.read(authProvider.notifier).signOut();
-                context.go('/login');
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
-              ),
-              child: const Text('Back to Login'),
-            ),
-          ],
-        ),
+          const SizedBox(height: AppSpacing.xl),
+          HydraButton(
+            onPressed: () {
+              ref.read(authProvider.notifier).signOut();
+              context.go('/login');
+            },
+            variant: HydraButtonVariant.text,
+            child: const Text('Back to Login'),
+          ),
+        ],
       ),
     );
   }

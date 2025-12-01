@@ -14,6 +14,7 @@ export 'inputs/hydra_slider.dart';
 export 'inputs/hydra_sliding_segmented_control.dart';
 export 'inputs/hydra_switch.dart';
 export 'inputs/hydra_text_field.dart';
+export 'inputs/hydra_text_form_field.dart';
 export 'layout/layout.dart';
 export 'loading/loading.dart';
 export 'navigation/navigation.dart';

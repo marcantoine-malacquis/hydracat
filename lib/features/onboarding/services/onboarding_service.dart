@@ -8,10 +8,12 @@ import 'dart:async';
 
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
+import 'package:hydracat/features/onboarding/debug_onboarding_replay.dart';
 import 'package:hydracat/features/onboarding/exceptions/onboarding_exceptions.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_progress.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
+import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/services/pet_service.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
 import 'package:hydracat/shared/services/secure_preferences_service.dart';
@@ -106,33 +108,42 @@ class OnboardingService {
     }
 
     try {
-      // Check if user already completed onboarding by checking for existing
-      // pets
-      if (kDebugMode) {
-        debugPrint('[OnboardingService] Checking for existing pets...');
-      }
-
-      final existingPet = await _petService.getPrimaryPet();
-
-      if (kDebugMode) {
-        final resultMessage = existingPet != null
-            ? 'Found pet ${existingPet.name}'
-            : 'No pets found';
+      // Check if debug replay mode is active - if so, bypass existing pet check
+      final isDebugReplay = isDebugOnboardingReplayActive();
+      if (isDebugReplay && kDebugMode) {
         debugPrint(
-          '[OnboardingService] Existing pet check result: $resultMessage',
+          '[OnboardingService] Debug replay mode active - bypassing existing '
+          'pet check',
         );
-      }
-
-      if (existingPet != null) {
+      } else {
+        // Check if user already completed onboarding by checking for existing
+        // pets
         if (kDebugMode) {
+          debugPrint('[OnboardingService] Checking for existing pets...');
+        }
+
+        final existingPet = await _petService.getPrimaryPet();
+
+        if (kDebugMode) {
+          final resultMessage = existingPet != null
+              ? 'Found pet ${existingPet.name}'
+              : 'No pets found';
           debugPrint(
-            '[OnboardingService] Onboarding blocked - user already has pet: '
-            '${existingPet.name}',
+            '[OnboardingService] Existing pet check result: $resultMessage',
           );
         }
-        return const OnboardingFailure(
-          OnboardingAlreadyCompletedException(),
-        );
+
+        if (existingPet != null) {
+          if (kDebugMode) {
+            debugPrint(
+              '[OnboardingService] Onboarding blocked - user already has pet: '
+              '${existingPet.name}',
+            );
+          }
+          return const OnboardingFailure(
+            OnboardingAlreadyCompletedException(),
+          );
+        }
       }
 
       if (kDebugMode) {
@@ -403,41 +414,83 @@ class OnboardingService {
         );
       }
 
-      // Create pet profile via PetService
-      final petResult = await _petService.createPet(
-        _currentData!.toCatProfile(
-          petId: _generatePetId(),
-        )!,
-      );
+      // Check if debug replay mode is active
+      final isDebugReplay = isDebugOnboardingReplayActive();
+      CatProfile petProfile;
 
-      if (petResult is PetFailure) {
-        return OnboardingFailure(
-          OnboardingProfileCreationException(petResult.message),
-        );
-      }
-
-      final petProfile = (petResult as PetSuccess).pet;
-
-      if (kDebugMode) {
+      if (isDebugReplay && kDebugMode) {
+        // In replay mode: create a mock pet profile without Firestore writes
         debugPrint(
-          '[OnboardingService] Successfully created pet profile '
-          '${petProfile.id}. '
-          'Schedules can be added later from profile screens.',
+          '[OnboardingService] Debug replay mode - creating mock pet profile '
+          '(no Firestore writes)',
         );
+
+        final mockPetId =
+            'debug_replay_dummy_pet_${DateTime.now().millisecondsSinceEpoch}';
+        final mockCatProfile = _currentData!.toCatProfile(petId: mockPetId);
+
+        if (mockCatProfile == null) {
+          return const OnboardingFailure(
+            OnboardingValidationException([
+              'Failed to create mock pet profile',
+            ]),
+          );
+        }
+
+        petProfile = mockCatProfile;
+
+        if (kDebugMode) {
+          debugPrint(
+            '[OnboardingService] Created mock pet profile ${petProfile.id} '
+            '(not persisted to Firestore)',
+          );
+        }
+      } else {
+        // Normal mode: create pet profile via PetService (with Firestore write)
+        final petResult = await _petService.createPet(
+          _currentData!.toCatProfile(
+            petId: _generatePetId(),
+          )!,
+        );
+
+        if (petResult is PetFailure) {
+          return OnboardingFailure(
+            OnboardingProfileCreationException(petResult.message),
+          );
+        }
+
+        petProfile = (petResult as PetSuccess).pet;
+
+        if (kDebugMode) {
+          debugPrint(
+            '[OnboardingService] Successfully created pet profile '
+            '${petProfile.id}. '
+            'Schedules can be added later from profile screens.',
+          );
+        }
       }
 
       // Mark onboarding as completed
       _currentProgress = _currentProgress!.markCompleted();
 
-      // Track completion analytics
-      await _trackAnalyticsEvent('onboarding_completed', {
-        'user_id': _currentData!.userId,
-        'pet_id': petProfile.id,
-        'duration_seconds': _currentProgress!.totalDuration?.inSeconds,
-        'completion_rate': 1.0,
-      });
+      // Track completion analytics (skip in replay mode to avoid
+      // polluting analytics)
+      if (!isDebugReplay) {
+        await _trackAnalyticsEvent('onboarding_completed', {
+          'user_id': _currentData!.userId,
+          'pet_id': petProfile.id,
+          'duration_seconds': _currentProgress!.totalDuration?.inSeconds,
+          'completion_rate': 1.0,
+        });
+      } else if (kDebugMode) {
+        debugPrint(
+          '[OnboardingService] Skipping analytics tracking in debug replay '
+          'mode',
+        );
+      }
 
-      // Clean up temporary data
+      // Clean up temporary data (checkpoint cleanup is safe even in
+      // replay mode)
       await _clearCheckpointData(_currentData!.userId!);
 
       // Notify listeners of completion

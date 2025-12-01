@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
+import 'package:hydracat/features/onboarding/debug_onboarding_replay.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_progress_indicator.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
@@ -175,25 +177,46 @@ class _OnboardingScreenWrapperState
 
   @override
   Widget build(BuildContext context) {
+    // Main content structure - this is what normal users see
+    final mainContent = SafeArea(
+      child: Column(
+        children: [
+          // Header with progress indicator
+          _buildHeader(),
+
+          // Main content area
+          Expanded(
+            child: _buildContent(),
+          ),
+
+          // Navigation buttons
+          _buildNavigation(),
+        ],
+      ),
+    );
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header with progress indicator
-            _buildHeader(),
-
-            // Main content area
-            Expanded(
-              child: _buildContent(),
-            ),
-
-            // Navigation buttons
-            _buildNavigation(),
-          ],
-        ),
-      ),
+      body: kDebugMode && ref.watch(debugOnboardingReplayProvider)
+          ? Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Main content (what normal users see)
+                mainContent,
+                // Debug banner as overlay - positioned absolutely on top
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: SafeArea(
+                    bottom: false,
+                    child: _buildDebugReplayBanner(),
+                  ),
+                ),
+              ],
+            )
+          : mainContent,
     );
   }
 
@@ -280,6 +303,69 @@ class _OnboardingScreenWrapperState
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: widget.child,
+    );
+  }
+
+  Widget _buildDebugReplayBanner() {
+    final isReplayActive = ref.watch(debugOnboardingReplayProvider);
+
+    if (!isReplayActive) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade100,
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.orange.shade300,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.bug_report,
+            size: 16,
+            color: Colors.orange.shade800,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              'DEBUG: Onboarding Replay Mode (No Firestore Writes)',
+              style: AppTextStyles.caption.copyWith(
+                color: Colors.orange.shade900,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          TextButton(
+            onPressed: () => exitOnboardingReplay(ref, context),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xs,
+              ),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              'Return to App',
+              style: AppTextStyles.caption.copyWith(
+                color: Colors.orange.shade900,
+                fontWeight: FontWeight.w600,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

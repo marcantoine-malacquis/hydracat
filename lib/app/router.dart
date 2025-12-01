@@ -1,8 +1,10 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/app/app_shell.dart';
+import 'package:hydracat/features/auth/models/app_user.dart';
 import 'package:hydracat/features/auth/models/auth_state.dart';
 import 'package:hydracat/features/auth/screens/email_verification_screen.dart';
 import 'package:hydracat/features/auth/screens/forgot_password_screen.dart';
@@ -13,6 +15,7 @@ import 'package:hydracat/features/health/screens/weight_screen.dart';
 import 'package:hydracat/features/home/screens/component_demo_screen.dart';
 import 'package:hydracat/features/home/screens/home_screen.dart';
 import 'package:hydracat/features/learn/screens/learn_screen.dart';
+import 'package:hydracat/features/onboarding/debug_onboarding_replay.dart';
 import 'package:hydracat/features/onboarding/screens/ckd_medical_info_screen.dart';
 import 'package:hydracat/features/onboarding/screens/onboarding_completion_screen.dart';
 import 'package:hydracat/features/onboarding/screens/pet_basics_screen.dart';
@@ -27,6 +30,7 @@ import 'package:hydracat/features/progress/screens/progress_screen.dart';
 import 'package:hydracat/features/settings/screens/notification_settings_screen.dart';
 import 'package:hydracat/features/settings/screens/settings_screen.dart';
 import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/shared/widgets/layout/layout.dart';
 import 'package:hydracat/shared/widgets/navigation/app_page_transitions.dart';
 
 /// Listenable that triggers GoRouter refreshes from multiple sources
@@ -56,27 +60,46 @@ class GoRouterRefreshStream extends ChangeNotifier {
 final routerRefreshStreamProvider = Provider<GoRouterRefreshStream>((ref) {
   final authService = ref.read(authServiceProvider);
   final refreshStream = GoRouterRefreshStream(authService.authStateChanges);
-  ref.onDispose(refreshStream.dispose);
+
+  // Listen to Riverpod state changes and trigger refresh
+  // without rebuilding router
+  ref
+    ..listen<AuthState>(authProvider, (previous, next) {
+      refreshStream.refresh();
+    })
+    ..listen<bool>(hasCompletedOnboardingProvider, (previous, next) {
+      refreshStream.refresh();
+    })
+    ..listen<bool>(hasSkippedOnboardingProvider, (previous, next) {
+      refreshStream.refresh();
+    })
+    ..listen<AppUser?>(currentUserProvider, (previous, next) {
+      refreshStream.refresh();
+    })
+    ..listen<bool>(debugOnboardingReplayProvider, (previous, next) {
+      refreshStream.refresh();
+    })
+    ..onDispose(refreshStream.dispose);
   return refreshStream;
 });
 
 /// Provider for the app router with authentication logic
 final appRouterProvider = Provider<GoRouter>((ref) {
-  // Watch auth state and onboarding status to trigger router rebuilds
-  final authState = ref.watch(authProvider);
-  final hasCompletedOnboarding = ref.watch(hasCompletedOnboardingProvider);
-  final hasSkippedOnboarding = ref.watch(hasSkippedOnboardingProvider);
-  final currentUser = ref.watch(currentUserProvider);
-
-  // Get the refresh stream
-  final refreshStream = ref.watch(routerRefreshStreamProvider);
+  // Get the refresh stream (stable instance - don't watch to avoid rebuilds)
+  final refreshStream = ref.read(routerRefreshStreamProvider);
 
   return GoRouter(
     initialLocation: '/',
     // Ensure redirects are re-evaluated when auth state changes
     refreshListenable: refreshStream,
     redirect: (context, state) async {
-      // Use the watched values instead of ref.read() to avoid timing conflicts
+      // Read latest values inside redirect
+      // (not watch in provider to avoid rebuilds)
+      final authState = ref.read(authProvider);
+      final hasCompletedOnboarding = ref.read(hasCompletedOnboardingProvider);
+      final hasSkippedOnboarding = ref.read(hasSkippedOnboardingProvider);
+      final currentUser = ref.read(currentUserProvider);
+      final isDebugReplay = ref.read(debugOnboardingReplayProvider);
 
       // Don't redirect while auth is still loading/initializing
       if (authState is AuthStateLoading) {
@@ -87,6 +110,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       final isAuthenticated = authState is AuthStateAuthenticated;
+      final isError = authState is AuthStateError;
       final currentLocation = state.matchedLocation;
 
       if (kDebugMode) {
@@ -94,6 +118,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           '[Router] Evaluating redirect: '
           'location=$currentLocation, '
           'isAuth=$isAuthenticated, '
+          'isError=$isError, '
           'hasOnboarding=$hasCompletedOnboarding, '
           'hasSkipped=$hasSkippedOnboarding',
         );
@@ -109,6 +134,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         '/email-verification',
       );
       final isOnOnboardingPage = currentLocation.startsWith('/onboarding');
+
+      // Allow staying on auth pages when there's an error
+      // This ensures error messages can be displayed without redirecting away
+      if (isError && isOnAuthPage) {
+        if (kDebugMode) {
+          debugPrint('[Router] Error state on auth page, allowing to stay');
+        }
+        return null;
+      }
 
       // 1. Authentication check - redirect unauthenticated users to login
       if (!isAuthenticated && !isOnAuthPage && !isOnVerificationPage) {
@@ -134,30 +168,43 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
         // Only apply onboarding logic if email is verified
         if (isEmailVerified) {
-          // Users who completed onboarding should not be in onboarding flow
-          if (hasCompletedOnboarding && isOnOnboardingPage) {
+          // Check if debug replay mode is active
+          if (isDebugReplay && kDebugMode) {
+            // In replay mode: allow navigation to onboarding even if completed
             if (kDebugMode) {
               debugPrint(
-                '[Router] Redirecting completed user away from onboarding '
-                'to home',
+                '[Router] Debug replay mode active - allowing onboarding '
+                'navigation',
               );
             }
-            return '/';
-          }
-
-          // Users who haven't completed AND haven't skipped onboarding
-          // should be redirected to onboarding (unless already there)
-          if (!hasCompletedOnboarding &&
-              !hasSkippedOnboarding &&
-              !isOnOnboardingPage &&
-              !isOnAuthPage) {
-            if (kDebugMode) {
-              debugPrint('[Router] Redirecting fresh user to onboarding');
+            // Don't redirect away from onboarding pages in replay mode
+          } else {
+            // Normal mode: apply standard onboarding redirect logic
+            // Users who completed onboarding should not be in onboarding flow
+            if (hasCompletedOnboarding && isOnOnboardingPage) {
+              if (kDebugMode) {
+                debugPrint(
+                  '[Router] Redirecting completed user away from onboarding '
+                  'to home',
+                );
+              }
+              return '/';
             }
-            // Resume onboarding from appropriate step
-            // For now, start from welcome - could be enhanced to resume
-            // from last step
-            return '/onboarding/welcome';
+
+            // Users who haven't completed AND haven't skipped onboarding
+            // should be redirected to onboarding (unless already there)
+            if (!hasCompletedOnboarding &&
+                !hasSkippedOnboarding &&
+                !isOnOnboardingPage &&
+                !isOnAuthPage) {
+              if (kDebugMode) {
+                debugPrint('[Router] Redirecting fresh user to onboarding');
+              }
+              // Resume onboarding from appropriate step
+              // For now, start from welcome - could be enhanced to resume
+              // from last step
+              return '/onboarding/welcome';
+            }
           }
 
           // Users who skipped onboarding can access main app but with
@@ -323,24 +370,48 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         name: 'login',
-        builder: (context, state) => const LoginScreen(),
+        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
+          child: const AppScaffold(
+            showAppBar: false,
+            body: LoginScreen(),
+          ),
+          key: state.pageKey,
+        ),
       ),
       GoRoute(
         path: '/register',
         name: 'register',
-        builder: (context, state) => const RegisterScreen(),
+        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
+          child: const AppScaffold(
+            showAppBar: false,
+            body: RegisterScreen(),
+          ),
+          key: state.pageKey,
+        ),
       ),
       GoRoute(
         path: '/forgot-password',
         name: 'forgot-password',
-        builder: (context, state) => const ForgotPasswordScreen(),
+        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
+          child: const AppScaffold(
+            showAppBar: false,
+            body: ForgotPasswordScreen(),
+          ),
+          key: state.pageKey,
+        ),
       ),
       GoRoute(
         path: '/email-verification',
         name: 'email-verification',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final email = state.uri.queryParameters['email'] ?? '';
-          return EmailVerificationScreen(email: email);
+          return AppPageTransitions.bidirectionalSlide(
+            child: AppScaffold(
+              showAppBar: false,
+              body: EmailVerificationScreen(email: email),
+            ),
+            key: state.pageKey,
+          );
         },
       ),
       // Onboarding flow routes - nested under /onboarding

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hydracat/features/onboarding/debug_onboarding_replay.dart';
 import 'package:hydracat/features/onboarding/exceptions/onboarding_exceptions.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_progress.dart';
@@ -90,8 +91,8 @@ class OnboardingState {
     bool? isActive,
   }) {
     return OnboardingState(
-      progress: progress == _undefined 
-          ? this.progress 
+      progress: progress == _undefined
+          ? this.progress
           : progress as OnboardingProgress?,
       data: data == _undefined ? this.data : data as OnboardingData?,
       isLoading: isLoading ?? this.isLoading,
@@ -348,26 +349,45 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
     switch (result) {
       case OnboardingSuccess(data: final petProfile):
-        // Mark onboarding as complete in auth
-        final authNotifier = _ref.read(authProvider.notifier);
-        final success = await authNotifier.markOnboardingComplete(
-          (petProfile as dynamic).id as String,
-        );
+        // Check if debug replay mode is active
+        final isDebugReplay = _ref.read(debugOnboardingReplayProvider);
 
-        if (success) {
+        if (isDebugReplay && kDebugMode) {
+          // In replay mode: skip Firestore writes, just update local state
+          debugPrint(
+            '[OnboardingNotifier] Debug replay mode - skipping Firestore write '
+            'for onboarding completion',
+          );
+
+          // Update local state to show completion (no Firestore write)
           state = state.copyWith(
             isLoading: false,
             isActive: false,
           );
           return true;
         } else {
-          state = state.copyWith(
-            isLoading: false,
-            error: const OnboardingServiceException(
-              'Failed to update user onboarding status',
-            ),
+          // Normal mode: Mark onboarding as complete in auth
+          // (writes to Firestore)
+          final authNotifier = _ref.read(authProvider.notifier);
+          final success = await authNotifier.markOnboardingComplete(
+            (petProfile as dynamic).id as String,
           );
-          return false;
+
+          if (success) {
+            state = state.copyWith(
+              isLoading: false,
+              isActive: false,
+            );
+            return true;
+          } else {
+            state = state.copyWith(
+              isLoading: false,
+              error: const OnboardingServiceException(
+                'Failed to update user onboarding status',
+              ),
+            );
+            return false;
+          }
         }
 
       case OnboardingFailure(exception: final exception):

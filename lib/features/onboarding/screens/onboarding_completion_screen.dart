@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +7,7 @@ import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/core/validation/models/validation_result.dart';
+import 'package:hydracat/features/onboarding/debug_onboarding_replay.dart';
 import 'package:hydracat/features/onboarding/exceptions/onboarding_exceptions.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/onboarding/services/onboarding_validation_service.dart';
@@ -36,6 +38,7 @@ class _OnboardingCompletionScreenState
     final l10n = context.l10n;
     final onboardingData = ref.watch(onboardingDataProvider);
     final petName = onboardingData?.petName ?? 'your cat';
+    final isReplayMode = ref.watch(debugOnboardingReplayProvider);
 
     return OnboardingScreenWrapper(
       currentStep: OnboardingStepType.completion.index,
@@ -50,8 +53,8 @@ class _OnboardingCompletionScreenState
         children: [
           const SizedBox(height: AppSpacing.xl),
 
-          // Main celebratory content
-          _buildCelebratoryContent(petName),
+          // Main celebratory content (different message in replay mode)
+          _buildCelebratoryContent(petName, isReplayMode),
 
           const SizedBox(height: AppSpacing.xxl),
 
@@ -61,8 +64,8 @@ class _OnboardingCompletionScreenState
             const SizedBox(height: AppSpacing.xl),
           ],
 
-          // Finish button
-          _buildFinishButton(),
+          // Finish button (different behavior in replay mode)
+          _buildFinishButton(isReplayMode),
 
           const SizedBox(height: AppSpacing.lg),
         ],
@@ -70,7 +73,7 @@ class _OnboardingCompletionScreenState
     );
   }
 
-  Widget _buildCelebratoryContent(String petName) {
+  Widget _buildCelebratoryContent(String petName, bool isReplayMode) {
     return Column(
       children: [
         // Success icon placeholder (space for future illustration)
@@ -94,9 +97,13 @@ class _OnboardingCompletionScreenState
 
         const SizedBox(height: AppSpacing.xl),
 
-        // Main message
+        // Main message (different in replay mode)
         Text(
-          "Perfect! You're ready to give $petName the best care possible.",
+          isReplayMode
+              ? 'Replay completed! This was a debug session with no '
+                    'Firestore writes.'
+              : "Perfect! You're ready to give $petName the best care "
+                    'possible.',
           style: AppTextStyles.h2.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,
@@ -106,10 +113,13 @@ class _OnboardingCompletionScreenState
 
         const SizedBox(height: AppSpacing.md),
 
-        // Supporting message
+        // Supporting message (different in replay mode)
         Text(
-          'Start logging treatments, track progress, and stay on top of '
-          "$petName's health journey.",
+          isReplayMode
+              ? 'Click "Exit Replay" to return to the app. Your real data '
+                    'remains untouched.'
+              : 'Start logging treatments, track progress, and stay on top of '
+                    "$petName's health journey.",
           style: AppTextStyles.body.copyWith(
             color: AppColors.textSecondary,
           ),
@@ -190,7 +200,7 @@ class _OnboardingCompletionScreenState
     );
   }
 
-  Widget _buildFinishButton() {
+  Widget _buildFinishButton(bool isReplayMode) {
     final l10n = context.l10n;
 
     return Padding(
@@ -212,7 +222,7 @@ class _OnboardingCompletionScreenState
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
-                  Text(l10n.finishingSetup),
+                  Text(isReplayMode ? 'Exiting...' : l10n.finishingSetup),
                 ],
               )
             : Text(
@@ -220,6 +230,8 @@ class _OnboardingCompletionScreenState
                         (_validationResult != null &&
                             !_validationResult!.isValid)
                     ? l10n.retry
+                    : isReplayMode
+                    ? 'Exit Replay'
                     : 'Finish',
               ),
       ),
@@ -262,20 +274,28 @@ class _OnboardingCompletionScreenState
         return;
       }
 
+      // Check if we're in replay mode
+      final isReplayMode = ref.read(debugOnboardingReplayProvider);
+
       // Validation passed, proceed with completion
       final success = await ref
           .read(onboardingProvider.notifier)
           .completeOnboarding();
 
       if (success) {
-        // Success! Navigation to home screen will happen automatically
-        // through the auth state update in the provider
+        // In replay mode: exit replay and return to app
+        // In normal mode: navigate to home screen
         if (mounted) {
-          // Navigate to home screen
-          await Navigator.of(context).pushNamedAndRemoveUntil(
-            '/',
-            (route) => false,
-          );
+          if (isReplayMode && kDebugMode) {
+            // Exit replay mode and return to app
+            await exitOnboardingReplay(ref, context);
+          } else {
+            // Navigate to home screen
+            await Navigator.of(context).pushNamedAndRemoveUntil(
+              '/',
+              (route) => false,
+            );
+          }
         }
       } else {
         // Handle failure - error should be in provider state

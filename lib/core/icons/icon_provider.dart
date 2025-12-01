@@ -124,6 +124,24 @@ class IconProvider {
       case AppIcons.warning:
         return Icons.warning;
 
+      // Auth Icons
+      case AppIcons.email:
+        return Icons.email;
+      case AppIcons.lock:
+        return Icons.lock;
+      case AppIcons.lockOutline:
+        return Icons.lock_outline;
+      case AppIcons.visibility:
+        return Icons.visibility;
+      case AppIcons.visibilityOff:
+        return Icons.visibility_off;
+      case AppIcons.lockReset:
+        return Icons.lock_reset;
+      case AppIcons.markEmailUnread:
+        return Icons.mark_email_unread_outlined;
+      case AppIcons.apple:
+        return Icons.apple;
+
       default:
         return Icons.help_outline;
     }
@@ -215,6 +233,25 @@ class IconProvider {
         return CupertinoIcons.info;
       case AppIcons.warning:
         return CupertinoIcons.exclamationmark_triangle;
+
+      // Auth Icons
+      case AppIcons.email:
+        return CupertinoIcons.mail;
+      case AppIcons.lock:
+        return CupertinoIcons.lock;
+      case AppIcons.lockOutline:
+        return CupertinoIcons.lock;
+      case AppIcons.visibility:
+        return CupertinoIcons.eye;
+      case AppIcons.visibilityOff:
+        return CupertinoIcons.eye_slash;
+      case AppIcons.lockReset:
+        return CupertinoIcons.lock_rotation;
+      case AppIcons.markEmailUnread:
+        return CupertinoIcons.mail;
+      case AppIcons.apple:
+        // CupertinoIcons doesn't have apple_logo, use a fallback
+        return CupertinoIcons.app_badge;
 
       default:
         return CupertinoIcons.question;

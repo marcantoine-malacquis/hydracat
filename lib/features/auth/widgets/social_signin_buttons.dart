@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
@@ -76,16 +77,10 @@ class _SocialSignInButtonsState extends ConsumerState<SocialSignInButtons> {
         SizedBox(
           width: double.infinity,
           height: 56,
-          child: OutlinedButton(
+          child: HydraButton(
             onPressed: isAuthLoading ? null : _handleGoogleSignIn,
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(
-                color: Theme.of(context).colorScheme.outline,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
+            variant: HydraButtonVariant.secondary,
+            isFullWidth: true,
             child: isAuthLoading
                 ? SizedBox(
                     height: 20,
@@ -127,14 +122,16 @@ class _SocialSignInButtonsState extends ConsumerState<SocialSignInButtons> {
           SizedBox(
             width: double.infinity,
             height: 56,
-            child: OutlinedButton(
+            child: ElevatedButton(
               onPressed: isAuthLoading ? null : _handleAppleSignIn,
-              style: OutlinedButton.styleFrom(
+              style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
                 side: const BorderSide(),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
+                elevation: 0,
               ),
               child: isAuthLoading
                   ? const SizedBox(
@@ -148,8 +145,8 @@ class _SocialSignInButtonsState extends ConsumerState<SocialSignInButtons> {
                   : const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.apple,
+                        HydraIcon(
+                          icon: AppIcons.apple,
                           size: 18,
                           color: Colors.white,
                         ),

@@ -10,7 +10,6 @@ import 'package:hydracat/features/progress/models/day_dot_status.dart';
 import 'package:hydracat/features/progress/widgets/fluid_volume_bar_chart.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/progress_provider.dart';
-import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -41,7 +40,6 @@ class ProgressWeekCalendar extends ConsumerWidget {
 
     return Column(
       children: [
-        _buildFormatBar(context, ref),
         _buildCustomHeader(context, focusedDay, ref),
         TableCalendar<void>(
           firstDay: DateTime.utc(2010),
@@ -100,61 +98,6 @@ class ProgressWeekCalendar extends ConsumerWidget {
     );
   }
 
-  /// Builds the format bar with Week/Month toggle and Jump to date button.
-  Widget _buildFormatBar(BuildContext context, WidgetRef ref) {
-    final format = ref.watch(calendarFormatProvider);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Week/Month segmented control - centered
-          Center(
-            child: HydraSlidingSegmentedControl<CalendarFormat>(
-              value: format,
-              segments: const {
-                CalendarFormat.week: Text('Week'),
-                CalendarFormat.month: Text('Month'),
-              },
-              onChanged: (CalendarFormat newFormat) {
-                HapticFeedback.selectionClick();
-                ref.read(calendarFormatProvider.notifier).state = newFormat;
-              },
-            ),
-          ),
-          // Jump to date button - positioned on right with reduced padding
-          Positioned(
-            right: -8,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              tooltip: 'Jump to date',
-              icon: const Icon(Icons.calendar_month, size: 24),
-              onPressed: () async {
-                final theme = Theme.of(context);
-                final focused = ref.read(focusedDayProvider);
-                final picked = await HydraDatePicker.show(
-                  context: context,
-                  initialDate: focused,
-                  firstDate: DateTime(2010),
-                  lastDate: DateTime.now(),
-                  builder: (context, child) => Theme(
-                    data: theme.copyWith(colorScheme: theme.colorScheme),
-                    child: child!,
-                  ),
-                );
-                if (picked != null) {
-                  ref.read(focusedDayProvider.notifier).state = picked;
-                }
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   /// Builds a custom header with navigation chevrons close together and
   /// a "Today" button on the right (when not viewing current period).
   Widget _buildCustomHeader(
@@ -166,7 +109,7 @@ class ProgressWeekCalendar extends ConsumerWidget {
     final format = ref.watch(calendarFormatProvider);
     final isMonth = format == CalendarFormat.month;
     final monthYearFormat = DateFormat('MMMM yyyy');
-    final monthYearText = monthYearFormat.format(day).toUpperCase();
+    final monthYearText = monthYearFormat.format(day);
 
     // Determine if we're viewing the current period (week or month)
     final now = DateTime.now();
@@ -213,18 +156,23 @@ class ProgressWeekCalendar extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Right chevron - jumps by week or month based on format
+              // Disabled when on current period to prevent future navigation
               IconButton(
                 icon: const Icon(Icons.chevron_right),
                 iconSize: 22,
-                onPressed: () {
-                  final next = isMonth
-                      ? _getNextMonth(focusedDay)
-                      : focusedDay.add(const Duration(days: 7));
-                  ref.read(focusedDayProvider.notifier).state = next;
-                },
+                onPressed: isOnCurrentPeriod
+                    ? null
+                    : () {
+                        final next = isMonth
+                            ? _getNextMonth(focusedDay)
+                            : focusedDay.add(const Duration(days: 7));
+                        ref.read(focusedDayProvider.notifier).state = next;
+                      },
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
-                tooltip: isMonth ? 'Next month' : 'Next week',
+                tooltip: isOnCurrentPeriod
+                    ? 'Cannot view future'
+                    : (isMonth ? 'Next month' : 'Next week'),
               ),
               // "Today" button - only show when not on current period
               if (!isOnCurrentPeriod)

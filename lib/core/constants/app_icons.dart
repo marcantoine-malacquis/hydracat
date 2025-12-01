@@ -117,4 +117,29 @@ class AppIcons {
 
   /// Warning
   static const String warning = 'warning';
+
+  // Auth Icons
+  /// Email icon for email input fields
+  static const String email = 'email';
+
+  /// Lock icon for password fields
+  static const String lock = 'lock';
+
+  /// Lock outline icon for confirm password fields
+  static const String lockOutline = 'lock_outline';
+
+  /// Visibility icon for showing password
+  static const String visibility = 'visibility';
+
+  /// Visibility off icon for hiding password
+  static const String visibilityOff = 'visibility_off';
+
+  /// Lock reset icon for password reset
+  static const String lockReset = 'lock_reset';
+
+  /// Mark email unread icon for email verification
+  static const String markEmailUnread = 'mark_email_unread';
+
+  /// Apple logo icon for Apple Sign-In
+  static const String apple = 'apple';
 }

@@ -28,8 +28,8 @@ flutter_native_splash:
   # General image for all platform (except android 12+):
   # allows you to specify an image used in the splash screen. It must be a
   # png file and should be sized for 4x pixel density.
-  image: assets/branding/HydracatLogo.png
-  image_dark: assets/branding/HydracatLogo.png
+  image: assets/branding/official_logo.png
+  image_dark: assets/branding/official_logo.png
 
   # Image alignment (default center if not specified):
   # android_gravity: center
@@ -52,8 +52,8 @@ flutter_native_splash:
     color_dark: "#1A1A1A"  # AppColors.darkBackground
     
     # Image for Android 12+ splash screen
-    image: assets/branding/HydracatLogo.png
-    image_dark: assets/branding/HydracatLogo.png
+    image: assets/branding/official_logo.png
+    image_dark: assets/branding/official_logo.png
     
     # Image alignment for Android 12+
     # android_12_gravity: center

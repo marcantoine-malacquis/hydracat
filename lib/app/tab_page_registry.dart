@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/app/app_shell.dart';
@@ -10,8 +11,10 @@ import 'package:hydracat/features/profile/screens/profile_screen.dart';
 import 'package:hydracat/features/progress/screens/progress_screen.dart';
 import 'package:hydracat/features/progress/widgets/calendar_help_popup.dart';
 import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/providers/progress_provider.dart';
 import 'package:hydracat/shared/navigation/tab_page_descriptor.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 /// Central registry that maps route locations
 /// to [TabPageDescriptor] configurations.
@@ -236,18 +239,81 @@ class TabPageRegistry {
   ) {
     final hasCompletedOnboarding = ref.watch(hasCompletedOnboardingProvider);
 
+    // Build segmented control for bottom of app bar
+    final formatBar = hasCompletedOnboarding
+        ? _buildProgressFormatBar(context, ref)
+        : null;
+
+    // Help icon goes on the left (leading)
+    final leading = hasCompletedOnboarding
+        ? IconButton(
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => showCalendarHelpPopup(context),
+            tooltip: 'Calendar help',
+          )
+        : null;
+
+    // Calendar icon goes on the right (actions)
+    final actions = hasCompletedOnboarding
+        ? [
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              tooltip: 'Jump to date',
+              icon: const Icon(Icons.calendar_month, size: 24),
+              onPressed: () async {
+                final theme = Theme.of(context);
+                final focused = ref.read(focusedDayProvider);
+                final picked = await HydraDatePicker.show(
+                  context: context,
+                  initialDate: focused,
+                  firstDate: DateTime(2010),
+                  lastDate: DateTime.now(),
+                  builder: (context, child) => Theme(
+                    data: theme.copyWith(colorScheme: theme.colorScheme),
+                    child: child!,
+                  ),
+                );
+                if (picked != null) {
+                  ref.read(focusedDayProvider.notifier).state = picked;
+                }
+              },
+            ),
+          ]
+        : null;
+
     return HydraAppBar(
       title: const Text('Progress & Analytics'),
       style: HydraAppBarStyle.accent,
-      actions: hasCompletedOnboarding
-          ? [
-              IconButton(
-                icon: const Icon(Icons.help_outline),
-                onPressed: () => showCalendarHelpPopup(context),
-                tooltip: 'Calendar help',
-              ),
-            ]
-          : null,
+      leading: leading,
+      actions: actions,
+      bottom: formatBar,
+      bottomHeight: 44,
+      centerTitle: true, // Explicitly center the title
+    );
+  }
+
+  /// Builds the format bar with Week/Month toggle for the progress app bar.
+  ///
+  /// The segmented control is centered, with icons handled in app bar actions.
+  static Widget _buildProgressFormatBar(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    final format = ref.watch(calendarFormatProvider);
+
+    return Center(
+      child: HydraSlidingSegmentedControl<CalendarFormat>(
+        value: format,
+        segments: const {
+          CalendarFormat.week: Text('Week'),
+          CalendarFormat.month: Text('Month'),
+        },
+        onChanged: (CalendarFormat newFormat) {
+          HapticFeedback.selectionClick();
+          ref.read(calendarFormatProvider.notifier).state = newFormat;
+        },
+      ),
     );
   }
 

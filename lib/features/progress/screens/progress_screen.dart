@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
@@ -15,6 +16,7 @@ import 'package:hydracat/providers/progress_provider.dart';
 import 'package:hydracat/shared/models/daily_summary.dart';
 import 'package:hydracat/shared/widgets/empty_states/onboarding_cta_empty_state.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 /// A screen that displays user progress and analytics.
 class ProgressScreen extends ConsumerStatefulWidget {
@@ -95,22 +97,76 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       );
     }
 
+    // Build segmented control for bottom of app bar
+    final formatBar = hasCompletedOnboarding
+        ? _buildFormatBar(context, ref)
+        : null;
+
+    // Build actions with help and calendar icons
+    final actions = hasCompletedOnboarding
+        ? [
+            IconButton(
+              icon: const Icon(Icons.help_outline),
+              onPressed: () => showCalendarHelpPopup(context),
+              tooltip: 'Calendar help',
+            ),
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              tooltip: 'Jump to date',
+              icon: const Icon(Icons.calendar_month, size: 24),
+              onPressed: () async {
+                final theme = Theme.of(context);
+                final focused = ref.read(focusedDayProvider);
+                final picked = await HydraDatePicker.show(
+                  context: context,
+                  initialDate: focused,
+                  firstDate: DateTime(2010),
+                  lastDate: DateTime.now(),
+                  builder: (context, child) => Theme(
+                    data: theme.copyWith(colorScheme: theme.colorScheme),
+                    child: child!,
+                  ),
+                );
+                if (picked != null && mounted) {
+                  ref.read(focusedDayProvider.notifier).state = picked;
+                }
+              },
+            ),
+          ]
+        : null;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: HydraAppBar(
         title: const Text('Progress & Analytics'),
         style: HydraAppBarStyle.accent,
-        actions: hasCompletedOnboarding
-            ? [
-                IconButton(
-                  icon: const Icon(Icons.help_outline),
-                  onPressed: () => showCalendarHelpPopup(context),
-                  tooltip: 'Calendar help',
-                ),
-              ]
-            : null,
+        actions: actions,
+        bottom: formatBar,
+        bottomHeight: 44,
       ),
       body: body,
+    );
+  }
+
+  /// Builds the format bar with Week/Month toggle.
+  ///
+  /// The segmented control is centered, with icons handled in app bar actions.
+  Widget _buildFormatBar(BuildContext context, WidgetRef ref) {
+    final format = ref.watch(calendarFormatProvider);
+
+    return Center(
+      child: HydraSlidingSegmentedControl<CalendarFormat>(
+        value: format,
+        segments: const {
+          CalendarFormat.week: Text('Week'),
+          CalendarFormat.month: Text('Month'),
+        },
+        onChanged: (CalendarFormat newFormat) {
+          HapticFeedback.selectionClick();
+          ref.read(calendarFormatProvider.notifier).state = newFormat;
+        },
+      ),
     );
   }
 }
