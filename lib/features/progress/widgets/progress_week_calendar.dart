@@ -8,10 +8,10 @@ import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/progress/models/day_dot_status.dart';
 import 'package:hydracat/features/progress/widgets/fluid_volume_bar_chart.dart';
+import 'package:hydracat/features/progress/widgets/fluid_volume_month_chart.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/progress_provider.dart';
 import 'package:intl/intl.dart';
-import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 /// A weekly calendar widget for the Progress screen that displays treatment
@@ -49,7 +49,6 @@ class ProgressWeekCalendar extends ConsumerWidget {
           startingDayOfWeek: StartingDayOfWeek.monday,
           headerVisible: false,
           availableGestures: AvailableGestures.horizontalSwipe,
-          sixWeekMonthsEnforced: true,
           rowHeight: format == CalendarFormat.month ? 48 : 68,
           daysOfWeekStyle: DaysOfWeekStyle(
             weekdayStyle: Theme.of(context).textTheme.labelMedium!,
@@ -89,10 +88,13 @@ class ProgressWeekCalendar extends ConsumerWidget {
             },
           ),
         ),
-        // Fluid volume bar chart (week view only)
+        // Fluid volume bar chart (format-conditional)
         if (format == CalendarFormat.week) ...[
           const SizedBox(height: 8),
-          const FluidVolumeBarChart(),
+          const FluidVolumeBarChart(), // 7-bar week chart
+        ] else if (format == CalendarFormat.month) ...[
+          const SizedBox(height: 8),
+          const FluidVolumeMonthChart(), // 28-31 bar month chart
         ],
       ],
     );
@@ -307,11 +309,11 @@ class _WeekDotMarker extends ConsumerWidget {
   }
 }
 
-/// Loading skeleton with shimmer animation for calendar dot status.
+/// Loading skeleton for calendar dot status.
 ///
-/// Uses warm neutral colors from the design system:
-/// - Base: #DDD6CE (border color - warm, soft)
-/// - Highlight: #F6F4F2 (background color - warm off-white)
+/// Returns an invisible placeholder that maintains
+/// the same space as a visible dot
+/// to prevent layout shifts during loading.
 ///
 /// Size adapts based on calendar format: 6px for month, 8px for week.
 class _DotSkeleton extends ConsumerWidget {
@@ -325,18 +327,9 @@ class _DotSkeleton extends ConsumerWidget {
 
     return Semantics(
       label: 'Loading status',
-      child: Shimmer(
-        duration: const Duration(milliseconds: 1500),
-        interval: const Duration(milliseconds: 1500),
-        color: const Color(0xFFF6F4F2), // Highlight: warm background
-        child: Container(
-          width: dotSize,
-          height: dotSize,
-          decoration: const BoxDecoration(
-            color: Color(0xFFDDD6CE), // Base: warm border color
-            shape: BoxShape.circle,
-          ),
-        ),
+      child: SizedBox(
+        width: dotSize,
+        height: dotSize,
       ),
     );
   }

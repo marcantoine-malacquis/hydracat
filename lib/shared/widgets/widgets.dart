@@ -8,6 +8,7 @@ export 'cards/cards.dart';
 export 'dialogs/dialogs.dart';
 export 'feedback/feedback.dart';
 export 'hydra_back_button.dart';
+export 'hydra_gauge.dart';
 export 'icons/icons.dart';
 export 'inputs/hydra_dropdown.dart';
 export 'inputs/hydra_slider.dart';

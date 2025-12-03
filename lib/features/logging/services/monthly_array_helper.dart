@@ -38,6 +38,8 @@ class MonthlyArrayHelper {
     required int dayOfMonth,
     required int monthLength,
     required int newValue,
+    int minValue = 0,
+    int maxValue = 5000,
   }) {
     // Clamp day to valid range (1-based day number)
     final clampedDay = dayOfMonth.clamp(1, monthLength);
@@ -45,8 +47,8 @@ class MonthlyArrayHelper {
     // Convert to 0-based index
     final dayIndex = clampedDay - 1;
 
-    // Clamp value to valid range (0-5000 ml)
-    final clampedValue = newValue.clamp(0, 5000);
+    // Clamp value to valid range (default 0-5000 ml, override for meds)
+    final clampedValue = newValue.clamp(minValue, maxValue);
 
     // Initialize or resize array
     List<int> array;

@@ -190,11 +190,13 @@ class LoggingService {
       );
 
       // STEP 5: Calculate scheduled doses (only if not already counted)
+      final totalScheduledDosesForDay = todaysSchedules
+          .map((s) => s.reminderTimesOnDate(session.dateTime).length)
+          .fold(0, (total, reminderCount) => total + reminderCount);
+
       final scheduledDosesCount = alreadyCounted
           ? 0
-          : todaysSchedules
-                .map((s) => s.reminderTimesOnDate(session.dateTime).length)
-                .fold(0, (total, reminderCount) => total + reminderCount);
+          : totalScheduledDosesForDay;
 
       if (kDebugMode) {
         debugPrint(
@@ -202,6 +204,22 @@ class LoggingService {
           '(alreadyCounted: $alreadyCounted)',
         );
       }
+
+      // STEP 5B: Fetch daily medication totals for monthly array update
+      final dailyMedicationTotals = await _fetchDailyMedicationTotalsForMonthly(
+        userId: userId,
+        petId: petId,
+        date: sessionDate,
+        sessionDosesDelta: session.completed ? 1 : 0,
+        sessionScheduledDoses: totalScheduledDosesForDay,
+      );
+
+      // STEP 5C: Fetch current monthly arrays (fluid + medication)
+      final monthlyArrays = await _fetchMonthlyArrays(
+        userId: userId,
+        petId: petId,
+        date: sessionDate,
+      );
 
       // STEP 6: Build 4-write batch
       final batch = _firestore.batch();
@@ -211,6 +229,11 @@ class LoggingService {
         userId: userId,
         petId: petId,
         scheduledDosesCount: scheduledDosesCount,
+        dayDosesTotal: dailyMedicationTotals.dosesTotal,
+        dayScheduledDoses: dailyMedicationTotals.scheduledDoses,
+        currentDailyMedicationDoses: monthlyArrays.dailyMedicationDoses,
+        currentDailyMedicationScheduledDoses:
+            monthlyArrays.dailyMedicationScheduledDoses,
       );
 
       // STEP 7: Commit batch
@@ -337,6 +360,25 @@ class LoggingService {
         return;
       }
 
+      final date = AppDateUtils.startOfDay(newSession.dateTime);
+
+      // STEP 2A: Fetch daily medication totals for monthly array update
+      final doseDelta = dto.medicationDosesDelta ?? 0;
+      final dailyMedicationTotals = await _fetchDailyMedicationTotalsForMonthly(
+        userId: userId,
+        petId: petId,
+        date: date,
+        sessionDosesDelta: doseDelta,
+        sessionScheduledDoses: 0,
+      );
+
+      // STEP 2B: Fetch current monthly arrays (fluid + medication)
+      final monthlyArrays = await _fetchMonthlyArrays(
+        userId: userId,
+        petId: petId,
+        date: date,
+      );
+
       // STEP 3: Build 4-write batch with deltas
       final batch = _firestore.batch();
       final sessionRef = _getMedicationSessionRef(
@@ -344,7 +386,6 @@ class LoggingService {
         petId,
         newSession.id,
       );
-      final date = AppDateUtils.startOfDay(newSession.dateTime);
 
       // Operation 1: Update session
       batch.update(
@@ -375,7 +416,15 @@ class LoggingService {
       final monthlyRef = _getMonthlySummaryRef(userId, petId, date);
       batch.set(
         monthlyRef,
-        _buildMonthlySummaryWithIncrements(date, dto),
+        _buildMonthlySummaryWithIncrements(
+          date,
+          dto,
+          dayDosesTotal: dailyMedicationTotals.dosesTotal,
+          dayScheduledDoses: dailyMedicationTotals.scheduledDoses,
+          currentDailyMedicationDoses: monthlyArrays.dailyMedicationDoses,
+          currentDailyMedicationScheduledDoses:
+              monthlyArrays.dailyMedicationScheduledDoses,
+        ),
         SetOptions(merge: true),
       );
 
@@ -733,8 +782,8 @@ class LoggingService {
 
       // STEP 2A: Fetch daily totals for monthly array update
       final sessionDate = AppDateUtils.startOfDay(newSession.dateTime);
-      final volumeDelta =
-          (newSession.volumeGiven - oldSession.volumeGiven).toInt();
+      final volumeDelta = (newSession.volumeGiven - oldSession.volumeGiven)
+          .toInt();
 
       final dailyTotals = await _fetchDailyTotalsForMonthly(
         userId: userId,
@@ -1080,6 +1129,42 @@ class LoggingService {
         fluidScheduledAlreadyCounted: fluidScheduledAlreadyCounted,
       );
 
+      final dailyGoal = fluidSessions.isNotEmpty
+          ? fluidSessions.first.dailyGoalMl
+          : null;
+      final totalFluidVolumeForDay = fluidSessions.fold<int>(
+        0,
+        (total, session) => total + session.volumeGiven.toInt(),
+      );
+      final totalMedicationDosesForDay = medicationSessions.length;
+
+      final dailyFluidTotals = await _fetchDailyTotalsForMonthly(
+        userId: userId,
+        petId: petId,
+        date: todayDate,
+        sessionVolumeDelta: totalFluidVolumeForDay,
+        sessionGoalMl: dailyGoal?.toInt(),
+        sessionScheduledCount: fluidScheduledAlreadyCounted
+            ? 0
+            : fluidSessions.length,
+      );
+
+      final dailyMedicationTotals = await _fetchDailyMedicationTotalsForMonthly(
+        userId: userId,
+        petId: petId,
+        date: todayDate,
+        sessionDosesDelta: totalMedicationDosesForDay,
+        sessionScheduledDoses: scheduledDosesAlreadyCounted
+            ? 0
+            : totalMedicationDosesForDay,
+      );
+
+      final monthlyArrays = await _fetchMonthlyArrays(
+        userId: userId,
+        petId: petId,
+        date: todayDate,
+      );
+
       // STEP 6: Guardrail — split into chunks if near Firestore 500 op limit
       // Ops estimate: one write per session + 3 summary writes
       final totalOpsEstimate = totalSessions + 3;
@@ -1099,10 +1184,6 @@ class LoggingService {
 
         // Add exactly 3 summary writes
         final dailyRef = _getDailySummaryRef(userId, petId, todayDate);
-        // Get daily goal from first fluid session if any exist
-        final dailyGoal = fluidSessions.isNotEmpty
-            ? fluidSessions.first.dailyGoalMl
-            : null;
         batch.set(
           dailyRef,
           _buildDailySummaryWithIncrements(
@@ -1123,7 +1204,21 @@ class LoggingService {
         final monthlyRef = _getMonthlySummaryRef(userId, petId, todayDate);
         batch.set(
           monthlyRef,
-          _buildMonthlySummaryWithIncrements(todayDate, aggregatedDto),
+          _buildMonthlySummaryWithIncrements(
+            todayDate,
+            aggregatedDto,
+            dayVolumeTotal: dailyFluidTotals.volumeTotal,
+            dayGoalMl: dailyFluidTotals.goalMl,
+            dayScheduledCount: dailyFluidTotals.scheduledCount,
+            currentDailyVolumes: monthlyArrays.dailyVolumes,
+            currentDailyGoals: monthlyArrays.dailyGoals,
+            currentDailyScheduledSessions: monthlyArrays.dailyScheduledSessions,
+            dayDosesTotal: dailyMedicationTotals.dosesTotal,
+            dayScheduledDoses: dailyMedicationTotals.scheduledDoses,
+            currentDailyMedicationDoses: monthlyArrays.dailyMedicationDoses,
+            currentDailyMedicationScheduledDoses:
+                monthlyArrays.dailyMedicationScheduledDoses,
+          ),
           SetOptions(merge: true),
         );
 
@@ -1140,6 +1235,18 @@ class LoggingService {
           fluidSessions: fluidSessions,
           todayDate: todayDate,
           aggregatedDto: aggregatedDto,
+          dailyGoal: dailyGoal,
+          dayVolumeTotal: dailyFluidTotals.volumeTotal,
+          dayGoalMl: dailyFluidTotals.goalMl,
+          dayScheduledCount: dailyFluidTotals.scheduledCount,
+          dayMedicationTotal: dailyMedicationTotals.dosesTotal,
+          dayMedicationScheduled: dailyMedicationTotals.scheduledDoses,
+          currentDailyVolumes: monthlyArrays.dailyVolumes,
+          currentDailyGoals: monthlyArrays.dailyGoals,
+          currentDailyScheduledSessions: monthlyArrays.dailyScheduledSessions,
+          currentDailyMedicationDoses: monthlyArrays.dailyMedicationDoses,
+          currentDailyMedicationScheduledDoses:
+              monthlyArrays.dailyMedicationScheduledDoses,
         );
       }
 
@@ -1690,6 +1797,10 @@ class LoggingService {
     required String userId,
     required String petId,
     required int scheduledDosesCount,
+    int? dayDosesTotal,
+    int? dayScheduledDoses,
+    List<int>? currentDailyMedicationDoses,
+    List<int>? currentDailyMedicationScheduledDoses,
   }) {
     final sessionRef = _getMedicationSessionRef(userId, petId, session.id);
     final date = AppDateUtils.startOfDay(session.dateTime);
@@ -1720,7 +1831,15 @@ class LoggingService {
     final monthlyRef = _getMonthlySummaryRef(userId, petId, date);
     batch.set(
       monthlyRef,
-      _buildMonthlySummaryWithIncrements(date, dto),
+      _buildMonthlySummaryWithIncrements(
+        date,
+        dto,
+        dayDosesTotal: dayDosesTotal,
+        dayScheduledDoses: dayScheduledDoses,
+        currentDailyMedicationDoses: currentDailyMedicationDoses,
+        currentDailyMedicationScheduledDoses:
+            currentDailyMedicationScheduledDoses,
+      ),
       SetOptions(merge: true),
     );
   }
@@ -1915,6 +2034,11 @@ class LoggingService {
     List<int>? currentDailyVolumes,
     List<int>? currentDailyGoals,
     List<int>? currentDailyScheduledSessions,
+    // Optional per-day medication data for monthly arrays
+    int? dayDosesTotal,
+    int? dayScheduledDoses,
+    List<int>? currentDailyMedicationDoses,
+    List<int>? currentDailyMedicationScheduledDoses,
   }) {
     final map =
         <String, dynamic>{
@@ -1926,7 +2050,8 @@ class LoggingService {
           ..addAll(dto.toFirestoreUpdate());
 
     // Add per-day arrays if data provided (fluids only)
-    if (dayVolumeTotal != null && currentDailyVolumes != null) {
+    // Note: MonthlyArrayHelper handles null currentArray by initializing zeros
+    if (dayVolumeTotal != null) {
       final monthLength = AppDateUtils.getMonthStartEnd(date)['end']!.day;
       map['dailyVolumes'] = MonthlyArrayHelper.updateDailyArrayValue(
         currentArray: currentDailyVolumes,
@@ -1936,7 +2061,7 @@ class LoggingService {
       );
     }
 
-    if (dayGoalMl != null && currentDailyGoals != null) {
+    if (dayGoalMl != null) {
       final monthLength = AppDateUtils.getMonthStartEnd(date)['end']!.day;
       map['dailyGoals'] = MonthlyArrayHelper.updateDailyArrayValue(
         currentArray: currentDailyGoals,
@@ -1946,7 +2071,7 @@ class LoggingService {
       );
     }
 
-    if (dayScheduledCount != null && currentDailyScheduledSessions != null) {
+    if (dayScheduledCount != null) {
       final monthLength = AppDateUtils.getMonthStartEnd(date)['end']!.day;
       map['dailyScheduledSessions'] = MonthlyArrayHelper.updateDailyArrayValue(
         currentArray: currentDailyScheduledSessions,
@@ -1954,6 +2079,29 @@ class LoggingService {
         monthLength: monthLength,
         newValue: dayScheduledCount,
       );
+    }
+
+    if (dayDosesTotal != null) {
+      final monthLength = AppDateUtils.getMonthStartEnd(date)['end']!.day;
+      map['dailyMedicationDoses'] = MonthlyArrayHelper.updateDailyArrayValue(
+        currentArray: currentDailyMedicationDoses,
+        dayOfMonth: date.day,
+        monthLength: monthLength,
+        newValue: dayDosesTotal,
+        maxValue: 10,
+      );
+    }
+
+    if (dayScheduledDoses != null) {
+      final monthLength = AppDateUtils.getMonthStartEnd(date)['end']!.day;
+      map['dailyMedicationScheduledDoses'] =
+          MonthlyArrayHelper.updateDailyArrayValue(
+            currentArray: currentDailyMedicationScheduledDoses,
+            dayOfMonth: date.day,
+            monthLength: monthLength,
+            newValue: dayScheduledDoses,
+            maxValue: 10,
+          );
     }
 
     return map;
@@ -2039,6 +2187,17 @@ class LoggingService {
     required List<FluidSession> fluidSessions,
     required DateTime todayDate,
     required SummaryUpdateDto aggregatedDto,
+    required int dayVolumeTotal,
+    required int dayGoalMl,
+    required int dayScheduledCount,
+    required int dayMedicationTotal,
+    required int dayMedicationScheduled,
+    required List<int>? currentDailyVolumes,
+    required List<int>? currentDailyGoals,
+    required List<int>? currentDailyScheduledSessions,
+    required List<int>? currentDailyMedicationDoses,
+    required List<int>? currentDailyMedicationScheduledDoses,
+    double? dailyGoal,
   }) async {
     const maxOps = 500;
 
@@ -2055,10 +2214,6 @@ class LoggingService {
       // Include summaries only in first batch (3 ops)
       if (isFirstBatch) {
         final dailyRef = _getDailySummaryRef(userId, petId, todayDate);
-        // Get daily goal from first fluid session if any exist
-        final dailyGoal = fluidSessions.isNotEmpty
-            ? fluidSessions.first.dailyGoalMl
-            : null;
         batch.set(
           dailyRef,
           _buildDailySummaryWithIncrements(
@@ -2081,7 +2236,21 @@ class LoggingService {
         final monthlyRef = _getMonthlySummaryRef(userId, petId, todayDate);
         batch.set(
           monthlyRef,
-          _buildMonthlySummaryWithIncrements(todayDate, aggregatedDto),
+          _buildMonthlySummaryWithIncrements(
+            todayDate,
+            aggregatedDto,
+            dayVolumeTotal: dayVolumeTotal,
+            dayGoalMl: dayGoalMl,
+            dayScheduledCount: dayScheduledCount,
+            currentDailyVolumes: currentDailyVolumes,
+            currentDailyGoals: currentDailyGoals,
+            currentDailyScheduledSessions: currentDailyScheduledSessions,
+            dayDosesTotal: dayMedicationTotal,
+            dayScheduledDoses: dayMedicationScheduled,
+            currentDailyMedicationDoses: currentDailyMedicationDoses,
+            currentDailyMedicationScheduledDoses:
+                currentDailyMedicationScheduledDoses,
+          ),
           SetOptions(merge: true),
         );
         ops++;
@@ -2245,7 +2414,7 @@ class LoggingService {
   /// - `goalMl`: Daily goal (from session or existing summary)
   /// - `scheduledCount`: Number of scheduled sessions for the day
   Future<({int volumeTotal, int goalMl, int scheduledCount})>
-      _fetchDailyTotalsForMonthly({
+  _fetchDailyTotalsForMonthly({
     required String userId,
     required String petId,
     required DateTime date,
@@ -2264,20 +2433,58 @@ class LoggingService {
       final data = docSnapshot.data()! as Map<String, dynamic>;
       currentVolume = (data['fluidTotalVolume'] as num?)?.toInt() ?? 0;
       currentGoal = (data['fluidDailyGoalMl'] as num?)?.toInt() ?? 0;
-      currentScheduled =
-          (data['fluidScheduledSessions'] as num?)?.toInt() ?? 0;
+      currentScheduled = (data['fluidScheduledSessions'] as num?)?.toInt() ?? 0;
     }
 
     // Calculate new totals after this operation
     final newVolume = (currentVolume + sessionVolumeDelta).clamp(0, 50000);
     final newGoal = sessionGoalMl ?? currentGoal;
-    final newScheduled =
-        (currentScheduled + sessionScheduledCount).clamp(0, 100);
+    final newScheduled = (currentScheduled + sessionScheduledCount).clamp(
+      0,
+      100,
+    );
 
     return (
       volumeTotal: newVolume,
       goalMl: newGoal,
       scheduledCount: newScheduled,
+    );
+  }
+
+  /// Fetches daily medication totals for monthly array updates
+  ///
+  /// Reads the daily summary document to determine the total completed doses
+  /// and scheduled doses for the day, applies the session delta, and returns
+  /// clamped values ready for monthly array overwrites.
+  Future<({int dosesTotal, int scheduledDoses})>
+  _fetchDailyMedicationTotalsForMonthly({
+    required String userId,
+    required String petId,
+    required DateTime date,
+    required int sessionDosesDelta,
+    required int sessionScheduledDoses,
+  }) async {
+    final dailyRef = _getDailySummaryRef(userId, petId, date);
+    final docSnapshot = await dailyRef.get();
+
+    var currentDoses = 0;
+    var currentScheduled = 0;
+
+    if (docSnapshot.exists) {
+      final data = docSnapshot.data()! as Map<String, dynamic>;
+      currentDoses = (data['medicationTotalDoses'] as num?)?.toInt() ?? 0;
+      currentScheduled =
+          (data['medicationScheduledDoses'] as num?)?.toInt() ?? 0;
+    }
+
+    final newDoses = (currentDoses + sessionDosesDelta).clamp(0, 100);
+    final scheduled = currentScheduled > 0
+        ? currentScheduled
+        : sessionScheduledDoses.clamp(0, 10);
+
+    return (
+      dosesTotal: newDoses,
+      scheduledDoses: scheduled,
     );
   }
 
@@ -2296,11 +2503,16 @@ class LoggingService {
   /// - `dailyVolumes`: Existing volume array or null if doc missing
   /// - `dailyGoals`: Existing goal array or null if doc missing
   /// - `dailyScheduledSessions`: Existing scheduled count array or null
-  Future<({
-    List<int>? dailyVolumes,
-    List<int>? dailyGoals,
-    List<int>? dailyScheduledSessions,
-  })> _fetchMonthlyArrays({
+  Future<
+    ({
+      List<int>? dailyVolumes,
+      List<int>? dailyGoals,
+      List<int>? dailyScheduledSessions,
+      List<int>? dailyMedicationDoses,
+      List<int>? dailyMedicationScheduledDoses,
+    })
+  >
+  _fetchMonthlyArrays({
     required String userId,
     required String petId,
     required DateTime date,
@@ -2313,18 +2525,25 @@ class LoggingService {
         dailyVolumes: null,
         dailyGoals: null,
         dailyScheduledSessions: null,
+        dailyMedicationDoses: null,
+        dailyMedicationScheduledDoses: null,
       );
     }
 
     final data = docSnapshot.data()! as Map<String, dynamic>;
 
     // Parse arrays using same logic as MonthlySummary.fromJson
-    List<int>? parseIntListOrNull(dynamic value, int expectedLength) {
+    List<int>? parseIntListOrNull(
+      dynamic value,
+      int expectedLength, {
+      int minValue = 0,
+      int maxValue = 5000,
+    }) {
       if (value == null || value is! List) return null;
 
       final parsed = value.map((e) {
         final intVal = (e as num?)?.toInt() ?? 0;
-        return intVal.clamp(0, 5000);
+        return intVal.clamp(minValue, maxValue);
       }).toList();
 
       // Pad or truncate to expected length
@@ -2341,8 +2560,21 @@ class LoggingService {
     return (
       dailyVolumes: parseIntListOrNull(data['dailyVolumes'], monthLength),
       dailyGoals: parseIntListOrNull(data['dailyGoals'], monthLength),
-      dailyScheduledSessions:
-          parseIntListOrNull(data['dailyScheduledSessions'], monthLength),
+      dailyScheduledSessions: parseIntListOrNull(
+        data['dailyScheduledSessions'],
+        monthLength,
+        maxValue: 10,
+      ),
+      dailyMedicationDoses: parseIntListOrNull(
+        data['dailyMedicationDoses'],
+        monthLength,
+        maxValue: 10,
+      ),
+      dailyMedicationScheduledDoses: parseIntListOrNull(
+        data['dailyMedicationScheduledDoses'],
+        monthLength,
+        maxValue: 10,
+      ),
     );
   }
 

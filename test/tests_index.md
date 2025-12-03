@@ -764,6 +764,38 @@ This document provides a comprehensive index of all test files in the HydraCat p
 
 ---
 
+### `test/features/progress/models/treatment_day_bucket_test.dart` ✅
+
+**Type**: Unit Test
+**Purpose**: Verifies computed properties for the combined fluid + medication day bucket used by month view
+**Stats**: 8 tests | ✅ 8 passing | ❌ 0 failing
+
+**Coverage**:
+- Constructor/equality
+- Scheduled detection helpers
+- Fluid completion & misses
+- Medication completion & misses
+- Combined completion & pending logic
+- toString formatting
+
+---
+
+### `test/features/progress/monthly_treatment_buckets_test.dart` ✅
+
+**Type**: Unit Test
+**Purpose**: Tests `buildMonthlyTreatmentBuckets` and `_buildMonthStatusesFromBuckets`
+**Stats**: 9 tests | ✅ 9 passing | ❌ 0 failing
+
+**Test Groups**:
+- ✅ buildMonthlyTreatmentBuckets: null summary handling, mismatch guard, array mapping
+- ✅ _buildMonthStatusesFromBuckets: future/today/past cases covering fluid-only, med-only, and combined completion/miss logic
+
+**Coverage**:
+- Ensures bucket builder validates all five arrays before constructing `TreatmentDayBucket`s
+- Validates DayDotStatus parity with week view rules (none/today/complete/missed)
+
+---
+
 ### `test/features/progress/injection_sites_provider_test.dart` ⏳
 
 **Type**: Provider Test

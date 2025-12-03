@@ -1321,9 +1321,18 @@ class _AppShellState extends ConsumerState<AppShell>
         }
       });
 
-    // Update navigation bar visibility provider for snackbar positioning
+    // Use the tab page registry to determine what to render
+    final tabPage = TabPageRegistry.buildTabPageForLocation(
+      context,
+      ref,
+      currentLocation,
+      widget.child,
+    );
+
+    // For tab routes, build Scaffold with stable AppBar and fade transition
     final isNavBarVisible =
-        !(isInOnboardingFlow || shouldHideNavBar || isOverlayVisible);
+        !(isInOnboardingFlow || shouldHideNavBar || isOverlayVisible) &&
+        (tabPage?.showBottomNav ?? true);
 
     // Schedule provider update after build completes to avoid modification
     // during build phase
@@ -1334,46 +1343,43 @@ class _AppShellState extends ConsumerState<AppShell>
       }
     });
 
-    // Use the tab page registry to determine what to render
-    final tabPage = TabPageRegistry.buildTabPageForLocation(
-      context,
-      ref,
-      currentLocation,
-      widget.child,
-    );
-
-    // For tab routes, build Scaffold with stable AppBar and fade transition
     if (tabPage != null && tabPage.isTabRoute) {
+      final verificationBanner =
+          (currentUser != null &&
+              !currentUser.emailVerified &&
+              !isInOnboardingFlow)
+          ? _buildVerificationBanner(context, currentUser.email)
+          : null;
+
+      Widget buildTabScaffoldContent({
+        required Key key,
+        required Widget body,
+      }) {
+        return _TabScaffoldContent(
+          key: key,
+          appBar: tabPage.appBar,
+          verificationBanner: verificationBanner,
+          body: body,
+        );
+      }
+
       return DevBanner(
         child: Scaffold(
           backgroundColor: AppColors.background,
-          appBar: tabPage.appBar,
           drawer: tabPage.drawer,
-          body: Column(
-            children: [
-              // Show verification banner for verified users only
-              if (currentUser != null &&
-                  !currentUser.emailVerified &&
-                  !isInOnboardingFlow)
-                _buildVerificationBanner(context, currentUser.email),
-              Expanded(
-                child: isLoading
-                    ? _buildLoadingContent(context)
-                    : TabFadeSwitcher(
-                        child: KeyedSubtree(
-                          key: ValueKey(_currentTabKey),
-                          child: tabPage.body,
-                        ),
-                      ),
-              ),
-            ],
-          ),
-          // Hide bottom navigation during onboarding flow, on full-screen
-          // profile/settings screens, and when overlay is visible
-          bottomNavigationBar:
-              (isInOnboardingFlow || shouldHideNavBar || isOverlayVisible)
-              ? null
-              : HydraNavigationBar(
+          body: isLoading
+              ? buildTabScaffoldContent(
+                  key: const ValueKey('tab-loading'),
+                  body: _buildLoadingContent(context),
+                )
+              : TabFadeSwitcher(
+                  child: buildTabScaffoldContent(
+                    key: ValueKey(_currentTabKey),
+                    body: tabPage.body,
+                  ),
+                ),
+          bottomNavigationBar: isNavBarVisible
+              ? HydraNavigationBar(
                   items: _navigationItems,
                   currentIndex: isLoading ? -1 : _currentIndex,
                   onTap: isLoading ? (_) {} : _onNavigationTap,
@@ -1385,7 +1391,8 @@ class _AppShellState extends ConsumerState<AppShell>
                       : _onFabLongPress,
                   showVerificationBadge: !isLoading && !isVerified,
                   isFabLoading: isLoggingInProgress,
-                ),
+                )
+              : null,
         ),
       );
     }
@@ -1409,10 +1416,8 @@ class _AppShellState extends ConsumerState<AppShell>
       ),
       // Hide bottom navigation during onboarding flow, on full-screen
       // profile/settings screens, and when overlay is visible
-      bottomNavigationBar:
-          (isInOnboardingFlow || shouldHideNavBar || isOverlayVisible)
-          ? null
-          : HydraNavigationBar(
+      bottomNavigationBar: isNavBarVisible
+          ? HydraNavigationBar(
               items: _navigationItems,
               // No selection during loading
               currentIndex: isLoading ? -1 : _currentIndex,
@@ -1428,7 +1433,8 @@ class _AppShellState extends ConsumerState<AppShell>
               showVerificationBadge: !isLoading && !isVerified,
               // Pass loading state to FAB
               isFabLoading: isLoggingInProgress,
-            ),
+            )
+          : null,
     );
   }
 
@@ -1586,5 +1592,84 @@ class _AppShellState extends ConsumerState<AppShell>
         ],
       ),
     );
+  }
+}
+
+class _TabScaffoldContent extends StatelessWidget {
+  const _TabScaffoldContent({
+    required this.appBar,
+    required this.body,
+    this.verificationBanner,
+    super.key,
+  });
+
+  final PreferredSizeWidget? appBar;
+  final Widget body;
+  final Widget? verificationBanner;
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final topInset = mediaQuery.padding.top;
+    final hydraAppBar = appBar is HydraAppBar ? appBar! as HydraAppBar : null;
+    final backgroundColor = _resolveAppBarBackgroundColor(hydraAppBar);
+    final overlayStyle = _resolveOverlayStyle(backgroundColor);
+
+    return ColoredBox(
+      color: AppColors.background,
+      child: Column(
+        children: [
+          if (topInset > 0)
+            AnnotatedRegion<SystemUiOverlayStyle>(
+              value: overlayStyle,
+              child: ColoredBox(
+                color: backgroundColor,
+                child: SizedBox(
+                  height: topInset,
+                  width: double.infinity,
+                ),
+              ),
+            ),
+          if (appBar != null)
+            MediaQuery.removePadding(
+              context: context,
+              removeTop: true,
+              child: appBar!,
+            ),
+          if (verificationBanner != null) verificationBanner!,
+          Expanded(child: body),
+        ],
+      ),
+    );
+  }
+
+  Color _resolveAppBarBackgroundColor(HydraAppBar? appBar) {
+    if (appBar == null) {
+      return AppColors.background;
+    }
+    if (appBar.backgroundColor != null) {
+      return appBar.backgroundColor!;
+    }
+    switch (appBar.style) {
+      case HydraAppBarStyle.default_:
+        return Color.alphaBlend(
+          AppColors.primary.withValues(alpha: 0.06),
+          AppColors.background,
+        );
+      case HydraAppBarStyle.accent:
+        return Color.alphaBlend(
+          AppColors.primary.withValues(alpha: 0.12),
+          AppColors.background,
+        );
+      case HydraAppBarStyle.transparent:
+        return Colors.transparent;
+    }
+  }
+
+  SystemUiOverlayStyle _resolveOverlayStyle(Color backgroundColor) {
+    final brightness = ThemeData.estimateBrightnessForColor(backgroundColor);
+    return brightness == Brightness.dark
+        ? SystemUiOverlayStyle.light
+        : SystemUiOverlayStyle.dark;
   }
 }

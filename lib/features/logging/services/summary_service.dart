@@ -385,6 +385,16 @@ class SummaryService {
   ///
   /// Returns [MonthlySummary] for the month containing the given date.
   ///
+  /// ### Document schema highlights
+  /// - `dailyVolumes`, `dailyGoals`, `dailyScheduledSessions`: fixed-length
+  ///   (28-31) arrays indexed by `dayOfMonth - 1`; values clamped to
+  ///   0-5000 ml / 0-10 sessions.
+  /// - `dailyMedicationDoses`, `dailyMedicationScheduledDoses`: fixed-length
+  ///   arrays (same indexing) storing completed vs scheduled medication doses
+  ///   for each day (0-10 per day).
+  /// - Consumers should treat all arrays as snapshots for the calendar month
+  ///   and avoid mutating entries outside the logging service helpers.
+  ///
   /// Returns null if:
   /// - No summary document exists for that month
   /// - Firestore read fails

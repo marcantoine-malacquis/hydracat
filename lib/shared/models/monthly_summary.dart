@@ -34,6 +34,8 @@ class MonthlySummary extends TreatmentSummaryBase {
     required this.dailyVolumes,
     required this.dailyGoals,
     required this.dailyScheduledSessions,
+    required this.dailyMedicationDoses,
+    required this.dailyMedicationScheduledDoses,
     required super.medicationTotalDoses,
     required super.medicationScheduledDoses,
     required super.medicationMissedCount,
@@ -86,9 +88,11 @@ class MonthlySummary extends TreatmentSummaryBase {
     return MonthlySummary(
       startDate: monthDates['start'],
       endDate: monthDates['end'],
-      dailyVolumes: List.filled(monthLength, 0),
-      dailyGoals: List.filled(monthLength, 0),
-      dailyScheduledSessions: List.filled(monthLength, 0),
+        dailyVolumes: List.filled(monthLength, 0),
+        dailyGoals: List.filled(monthLength, 0),
+        dailyScheduledSessions: List.filled(monthLength, 0),
+        dailyMedicationDoses: List.filled(monthLength, 0),
+        dailyMedicationScheduledDoses: List.filled(monthLength, 0),
       fluidTreatmentDays: 0,
       fluidMissedDays: 0,
       fluidLongestStreak: 0,
@@ -127,29 +131,6 @@ class MonthlySummary extends TreatmentSummaryBase {
       return false;
     }
 
-    // Parse list helper: handles null/missing/wrong-length lists
-    List<int> parseIntList(dynamic value, int expectedLength) {
-      if (value == null || value is! List) {
-        return List.filled(expectedLength, 0);
-      }
-
-      // Convert to List<int>, clamping values to 0-5000
-      final parsed = value.map((e) {
-        final intVal = (e as num?)?.toInt() ?? 0;
-        return intVal.clamp(0, 5000);
-      }).toList();
-
-      // Pad or truncate to expected length
-      if (parsed.length < expectedLength) {
-        // Pad with zeros
-        return [...parsed, ...List.filled(expectedLength - parsed.length, 0)];
-      } else if (parsed.length > expectedLength) {
-        // Truncate to expected length
-        return parsed.sublist(0, expectedLength);
-      }
-      return parsed;
-    }
-
     // Calculate expected month length from dates
     final startDate =
         TreatmentSummaryBase.parseDateTimeNullable(json['startDate']);
@@ -157,10 +138,23 @@ class MonthlySummary extends TreatmentSummaryBase {
     final monthLength = endDate?.day ?? 30; // Default to 30 if dates missing
 
     return MonthlySummary(
-      dailyVolumes: parseIntList(json['dailyVolumes'], monthLength),
-      dailyGoals: parseIntList(json['dailyGoals'], monthLength),
-      dailyScheduledSessions:
-          parseIntList(json['dailyScheduledSessions'], monthLength),
+      dailyVolumes: _parseIntList(json['dailyVolumes'], monthLength),
+      dailyGoals: _parseIntList(json['dailyGoals'], monthLength),
+      dailyScheduledSessions: _parseIntList(
+        json['dailyScheduledSessions'],
+        monthLength,
+        maxValue: 10,
+      ),
+      dailyMedicationDoses: _parseIntList(
+        json['dailyMedicationDoses'],
+        monthLength,
+        maxValue: 10,
+      ),
+      dailyMedicationScheduledDoses: _parseIntList(
+        json['dailyMedicationScheduledDoses'],
+        monthLength,
+        maxValue: 10,
+      ),
       fluidTreatmentDays: (json['fluidTreatmentDays'] as num?)?.toInt() ?? 0,
       fluidMissedDays: (json['fluidMissedDays'] as num?)?.toInt() ?? 0,
       fluidLongestStreak: (json['fluidLongestStreak'] as num?)?.toInt() ?? 0,
@@ -291,6 +285,18 @@ class MonthlySummary extends TreatmentSummaryBase {
   /// Used to determine "missed" status (scheduled > 0 && volume == 0).
   final List<int> dailyScheduledSessions;
 
+  /// Daily completed medication doses for each day of the month
+  ///
+  /// Length matches the month (28-31). Values represent the number of doses
+  /// actually logged for that day (0-10).
+  final List<int> dailyMedicationDoses;
+
+  /// Daily scheduled medication doses for each day of the month
+  ///
+  /// Length matches the month (28-31). Values represent the number of doses
+  /// expected per the schedules for that day (0-10).
+  final List<int> dailyMedicationScheduledDoses;
+
   /// Overall medication adherence for the month (0.0-1.0)
   ///
   /// Calculated as `medicationTotalDoses / medicationScheduledDoses` for the
@@ -380,14 +386,14 @@ class MonthlySummary extends TreatmentSummaryBase {
   /// Number of days with any symptoms present (hasSymptoms == true)
   final int daysWithAnySymptoms;
 
-  /// Sum of daily symptomScoreTotal over the month (0-1860 for 31 days with
-  /// max 60 each)
+  /// Sum of daily symptomScoreTotal over the month (0-558 for 31 days with
+  /// max 18 each)
   final int? symptomScoreTotal;
 
-  /// Average daily symptom score across days with any symptoms (0-10)
+  /// Average daily symptom score across days with any symptoms (0-3)
   final double? symptomScoreAverage;
 
-  /// Maximum daily symptomScoreTotal in the month (0-60)
+  /// Maximum daily symptomScoreTotal in the month (0-18)
   final int? symptomScoreMax;
 
   @override
@@ -432,6 +438,8 @@ class MonthlySummary extends TreatmentSummaryBase {
       'dailyVolumes': dailyVolumes,
       'dailyGoals': dailyGoals,
       'dailyScheduledSessions': dailyScheduledSessions,
+      'dailyMedicationDoses': dailyMedicationDoses,
+      'dailyMedicationScheduledDoses': dailyMedicationScheduledDoses,
       'fluidTreatmentDays': fluidTreatmentDays,
       'fluidMissedDays': fluidMissedDays,
       'fluidLongestStreak': fluidLongestStreak,
@@ -545,6 +553,21 @@ class MonthlySummary extends TreatmentSummaryBase {
       );
     }
 
+    if (dailyMedicationDoses.length != expectedLength) {
+      errors.add(
+        'dailyMedicationDoses length (${dailyMedicationDoses.length}) '
+        'must match month length ($expectedLength)',
+      );
+    }
+
+    if (dailyMedicationScheduledDoses.length != expectedLength) {
+      errors.add(
+        'dailyMedicationScheduledDoses length '
+        '(${dailyMedicationScheduledDoses.length}) must match month length '
+        '($expectedLength)',
+      );
+    }
+
     // Bounds validation for list values
     for (var i = 0; i < dailyVolumes.length; i++) {
       if (dailyVolumes[i] < 0 || dailyVolumes[i] > 5000) {
@@ -569,6 +592,25 @@ class MonthlySummary extends TreatmentSummaryBase {
         errors.add(
           'dailyScheduledSessions[${i + 1}] value '
           '(${dailyScheduledSessions[i]}) must be between 0 and 10',
+        );
+      }
+    }
+
+    for (var i = 0; i < dailyMedicationDoses.length; i++) {
+      if (dailyMedicationDoses[i] < 0 || dailyMedicationDoses[i] > 10) {
+        errors.add(
+          'dailyMedicationDoses[${i + 1}] value '
+          '(${dailyMedicationDoses[i]}) must be between 0 and 10',
+        );
+      }
+    }
+
+    for (var i = 0; i < dailyMedicationScheduledDoses.length; i++) {
+      if (dailyMedicationScheduledDoses[i] < 0 ||
+          dailyMedicationScheduledDoses[i] > 10) {
+        errors.add(
+          'dailyMedicationScheduledDoses[${i + 1}] value '
+          '(${dailyMedicationScheduledDoses[i]}) must be between 0 and 10',
         );
       }
     }
@@ -629,9 +671,11 @@ class MonthlySummary extends TreatmentSummaryBase {
     int? overallMissedDays,
     int? overallLongestStreak,
     int? overallCurrentStreak,
-    List<int>? dailyVolumes,
-    List<int>? dailyGoals,
-    List<int>? dailyScheduledSessions,
+      List<int>? dailyVolumes,
+      List<int>? dailyGoals,
+      List<int>? dailyScheduledSessions,
+      List<int>? dailyMedicationDoses,
+      List<int>? dailyMedicationScheduledDoses,
     int? medicationTotalDoses,
     int? medicationScheduledDoses,
     int? medicationMissedCount,
@@ -683,6 +727,9 @@ class MonthlySummary extends TreatmentSummaryBase {
       dailyGoals: dailyGoals ?? this.dailyGoals,
       dailyScheduledSessions:
           dailyScheduledSessions ?? this.dailyScheduledSessions,
+      dailyMedicationDoses: dailyMedicationDoses ?? this.dailyMedicationDoses,
+      dailyMedicationScheduledDoses: dailyMedicationScheduledDoses ??
+          this.dailyMedicationScheduledDoses,
       medicationTotalDoses: medicationTotalDoses ?? this.medicationTotalDoses,
       medicationScheduledDoses:
           medicationScheduledDoses ?? this.medicationScheduledDoses,
@@ -753,6 +800,29 @@ class MonthlySummary extends TreatmentSummaryBase {
     return true;
   }
 
+  static List<int> _parseIntList(
+    dynamic value,
+    int expectedLength, {
+    int minValue = 0,
+    int maxValue = 5000,
+  }) {
+    if (value == null || value is! List) {
+      return List.filled(expectedLength, 0);
+    }
+
+    final parsed = value.map((e) {
+      final intVal = (e as num?)?.toInt() ?? 0;
+      return intVal.clamp(minValue, maxValue);
+    }).toList();
+
+    if (parsed.length < expectedLength) {
+      return [...parsed, ...List.filled(expectedLength - parsed.length, 0)];
+    } else if (parsed.length > expectedLength) {
+      return parsed.sublist(0, expectedLength);
+    }
+    return parsed;
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -774,6 +844,11 @@ class MonthlySummary extends TreatmentSummaryBase {
         _listEquals(other.dailyVolumes, dailyVolumes) &&
         _listEquals(other.dailyGoals, dailyGoals) &&
         _listEquals(other.dailyScheduledSessions, dailyScheduledSessions) &&
+        _listEquals(other.dailyMedicationDoses, dailyMedicationDoses) &&
+        _listEquals(
+          other.dailyMedicationScheduledDoses,
+          dailyMedicationScheduledDoses,
+        ) &&
         other.weightEntriesCount == weightEntriesCount &&
         other.weightLatest == weightLatest &&
         other.weightLatestDate == weightLatestDate &&
@@ -816,6 +891,8 @@ class MonthlySummary extends TreatmentSummaryBase {
       Object.hashAll(dailyVolumes),
       Object.hashAll(dailyGoals),
       Object.hashAll(dailyScheduledSessions),
+      Object.hashAll(dailyMedicationDoses),
+      Object.hashAll(dailyMedicationScheduledDoses),
       weightEntriesCount,
       weightLatest,
       weightLatestDate,
@@ -857,6 +934,8 @@ class MonthlySummary extends TreatmentSummaryBase {
         'dailyVolumes: $dailyVolumes, '
         'dailyGoals: $dailyGoals, '
         'dailyScheduledSessions: $dailyScheduledSessions, '
+        'dailyMedicationDoses: $dailyMedicationDoses, '
+        'dailyMedicationScheduledDoses: $dailyMedicationScheduledDoses, '
         'medicationTotalDoses: $medicationTotalDoses, '
         'medicationScheduledDoses: $medicationScheduledDoses, '
         'medicationMissedCount: $medicationMissedCount, '

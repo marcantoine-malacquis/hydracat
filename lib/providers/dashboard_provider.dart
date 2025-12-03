@@ -32,8 +32,10 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
         (_, _) => _rebuildState(),
       );
 
-    // Build initial state
-    _rebuildState();
+    // Build initial state - defer to next microtask to avoid race conditions
+    // This ensures all providers complete initialization
+    // before we try to read them
+    Future.microtask(_rebuildState);
   }
 
   final Ref _ref;

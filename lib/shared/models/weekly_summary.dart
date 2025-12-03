@@ -213,13 +213,13 @@ class WeeklySummary extends TreatmentSummaryBase {
   final int daysWithAnySymptoms;
 
   /// Sum of daily symptomScoreTotal over the week
-  /// (0-420 for 7 days with max 60 each)
+  /// (0-126 for 7 days with max 18 each)
   final int? symptomScoreTotal;
 
-  /// Average daily symptom score across days with any symptoms (0-10)
+  /// Average daily symptom score across days with any symptoms (0-3)
   final double? symptomScoreAverage;
 
-  /// Maximum daily symptomScoreTotal in the week (0-60)
+  /// Maximum daily symptomScoreTotal in the week (0-18)
   final int? symptomScoreMax;
 
   @override

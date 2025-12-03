@@ -40,9 +40,9 @@ This design provides:
 - **Cost optimization**: Maintains the same read cost while improving structure
 
 ### Hybrid Symptom Tracking Model
-Symptoms in `healthParameters` use a hybrid model that stores both raw user inputs and normalized severity scores:
+Symptoms in `healthParameters` use a hybrid model that stores both raw user inputs and severity scores:
 - **Raw Values**: User-entered data (episode counts for vomiting, enum strings for others)
-- **Severity Scores**: All symptoms normalized to 0-3 scale for consistent analytics
+- **Severity Scores**: Symptoms scored 0-3 scale for consistent analytics
   - 0: None/normal
   - 1: Mild
   - 2: Moderate
@@ -52,6 +52,25 @@ This approach provides:
 - **Medically Accurate Inputs**: Tailored inputs per symptom (episodes, stool quality, appetite fraction, etc.)
 - **Unified Analytics**: All symptoms use the same 0-3 severity scale for charts and summaries
 - **Data Preservation**: Raw values stored for future analysis and vet reports
+
+### Monthly Summary Daily Arrays Optimization
+Monthly summaries include per-day arrays for efficient month-view rendering without requiring 28-31 daily summary reads:
+- **dailyVolumes**: Array of daily fluid volumes (ml) for each day [28-31 elements]
+- **dailyGoals**: Array of daily fluid goals (ml) for each day [28-31 elements]
+- **dailyScheduledSessions**: Array of scheduled fluid session counts for each day [28-31 elements]
+- **dailyMedicationDoses**: Array of completed medication doses for each day [28-31 elements]
+- **dailyMedicationScheduledDoses**: Array of scheduled medication doses for each day [28-31 elements]
+
+Array indexing:
+- Index = day of month - 1 (day 1 = index 0, day 31 = index 30)
+- Arrays are fixed-length matching the month length (28, 29, 30, or 31 elements)
+- Missing/empty days default to 0
+
+This design enables:
+- **1-read month view**: Entire month calendar rendered from single monthly summary document
+- **31-bar charts**: Monthly charts displayed without additional queries
+- **Cost optimization**: Reduces reads from 31 daily summaries to 1 monthly summary
+- **Historical accuracy**: Arrays store point-in-time values even when schedules change mid-month
 
 ## Root Collections
 
@@ -130,40 +149,69 @@ users/
       └── pets (subcollection)
             │
             └── {petId} (auto-generated)
-                  ├── petName: string
-                  ├── isPrimary: boolean               # true for primary pet (free users), false otherwise
-                  ├── birthdayOrAge: Timestamp         # optional
-                  ├── photoURL: string                # optional
+                  ├── id: string                      # petId (same as document ID)
+                  ├── userId: string                  # owner's user ID
+                  ├── name: string                    # pet's name
+                  ├── ageYears: number               # pet's age in years
+                  ├── weightKg: number               # optional, weight in kilograms
+                  ├── breed: string                  # optional
+                  ├── gender: string                 # optional: "male", "female"
+                  ├── dateOfBirth: Timestamp         # optional
+                  ├── photoUrl: string               # optional
+                  ├── medicalInfo: map               # CKD medical information
+                  │     ├── ckdDiagnosisDate: Timestamp    # optional
+                  │     ├── ckdStage: number              # optional: 1-4
+                  │     └── vetName: string               # optional
+                  ├── lastFluidInjectionSite: string # optional, enum name for injection site rotation
+                  ├── lastFluidSessionDate: Timestamp # optional, for injection site rotation tracking
                   ├── createdAt: Timestamp
                   └── updatedAt: Timestamp
                   │
                   ├── fluidSessions (subcollection)
                   │     │
                   │     └── {sessionId}
-                  │           ├── dateTime: Timestamp
-                  │           ├── volumeGiven: number (ml)
-                  │           ├── notesOrComments: string    # optional
-                  │           ├── stressLevel: string       # optional: low, medium, high
-                  │           ├── injectionSite: string     # optional: left_flank, right_flank, etc.
-                  │           ├── createdAt: Timestamp
-                  │           └── updatedAt: Timestamp
+                  │           ├── id: string                      # session ID (UUID)
+                  │           ├── petId: string                   # reference to pet
+                  │           ├── userId: string                  # user who logged it
+                  │           ├── dateTime: Timestamp             # when treatment occurred
+                  │           ├── volumeGiven: number             # ml of fluid administered
+                  │           ├── injectionSite: string           # required: enum name (e.g., "shoulderBladeLeft")
+                  │           ├── stressLevel: string             # optional: "low", "medium", "high"
+                  │           ├── notes: string                   # optional
+                  │           ├── scheduleId: string              # optional, linked schedule
+                  │           ├── scheduledTime: Timestamp        # optional, original scheduled time
+                  │           ├── dailyGoalMl: number            # optional, goal at time of session
+                  │           ├── calculatedFromWeight: boolean   # optional, whether volume calculated from weight
+                  │           ├── initialBagWeightG: number      # optional, for weight calculator
+                  │           ├── finalBagWeightG: number        # optional, for weight calculator
+                  │           ├── createdAt: Timestamp           # when user logged it
+                  │           └── updatedAt: Timestamp           # optional, last modification time
                   │
                   ├── medicationSessions (subcollection)
                   │     │
                   │     └── {sessionId}
-                  │           ├── dateTime: Timestamp
+                  │           ├── id: string                      # session ID (UUID)
+                  │           ├── petId: string                   # reference to pet
+                  │           ├── userId: string                  # user who logged it
+                  │           ├── dateTime: Timestamp             # when treatment occurred
                   │           ├── medicationName: string
-                  │           ├── dosageGiven: number        # actual dose given
-                  │           ├── dosageScheduled: number    # prescribed dose
-                  │           ├── administrationMethod: string # oral, liquid, injection, topical
-                  │           ├── completed: boolean         # true if given, false if missed
-                  │           ├── notesOrComments: string    # optional
-                  │           ├── createdAt: Timestamp
-                  │           └── updatedAt: Timestamp
+                  │           ├── dosageGiven: number             # actual dose given
+                  │           ├── dosageScheduled: number         # prescribed dose
+                  │           ├── medicationUnit: string          # "pills", "ml", "mg", "drops", etc.
+                  │           ├── medicationStrengthAmount: string # optional, e.g., "2.5", "10"
+                  │           ├── medicationStrengthUnit: string  # optional, e.g., "mg", "mgPerMl"
+                  │           ├── customMedicationStrengthUnit: string # optional, for "other" strength unit
+                  │           ├── completed: boolean              # true if given, false if missed
+                  │           ├── notes: string                   # optional
+                  │           ├── scheduleId: string              # optional, linked schedule
+                  │           ├── scheduledTime: Timestamp        # optional, original scheduled time
+                  │           ├── createdAt: Timestamp            # when user logged it
+                  │           └── updatedAt: Timestamp            # optional, last modification time
                   │
                   ├── healthParameters (subcollection)
                   │     │
                   │     └── {YYYY-MM-DD} (date-based document ID)
+                  │           ├── date: Timestamp            # date this health parameter is for
                   │           ├── weight: number             # kg, optional
                   │           ├── appetite: string           # all/3-4/half/1-4/nothing, optional
                   │           ├── symptoms: map              # per-symptom entries with rawValue + severityScore, optional
@@ -186,7 +234,7 @@ users/
                   │           │           ├── rawValue: string     # enum: "none", "mildSwelling", "visibleSwelling", "redPainful"
                   │           │           └── severityScore: number # severity 0-3
                   │           ├── hasSymptoms: boolean       # true if any symptom severityScore > 0, optional
-                  │           ├── symptomScoreTotal: number  # sum of all present severity scores (0-18), optional
+                  │           ├── symptomScoreTotal: number  # sum of all present severity scores (0-18 for 6 symptoms × max 3 each), optional
                   │           ├── symptomScoreAverage: number # average of present severity scores (0-3), optional
                   │           ├── notes: string              # optional daily health notes
                   │           ├── createdAt: Timestamp
@@ -219,6 +267,7 @@ users/
                   │     │                 ├── fluidTotalVolume: number  # total fluid given this day
                   │     │                 ├── fluidTreatmentDone: boolean
                   │     │                 ├── fluidSessionCount: number  # number of fluid sessions
+                  │     │                 ├── fluidScheduledSessions: number  # scheduled fluid sessions
                   │     │                 ├── fluidDailyGoalMl: number  # daily goal (optional)
                   │     │                 │
                   │     │                 # Medication Summary
@@ -243,6 +292,12 @@ users/
                   │     │                 ├── energyMaxScore: number            # max energy severity (0-3, optional, renamed from lethargyMaxScore)
                   │     │                 ├── suppressedAppetiteMaxScore: number # max suppressed appetite severity (0-3, optional)
                   │     │                 ├── injectionSiteReactionMaxScore: number # max injection site reaction severity (0-3, optional)
+                  │     │                 ├── vomitingRawValue: number          # episode count (optional)
+                  │     │                 ├── diarrheaRawValue: string          # enum name (optional, e.g., "soft", "loose")
+                  │     │                 ├── constipationRawValue: string      # enum name (optional)
+                  │     │                 ├── energyRawValue: string            # enum name (optional)
+                  │     │                 ├── suppressedAppetiteRawValue: string # enum name (optional)
+                  │     │                 ├── injectionSiteReactionRawValue: string # enum name (optional)
                   │     │                 ├── symptomScoreTotal: number         # sum of all present severity scores (0-18, optional)
                   │     │                 ├── symptomScoreAverage: number       # average of present severity scores (0-3, optional)
                   │     │                 ├── hasSymptoms: boolean              # true if any symptom severityScore > 0
@@ -262,6 +317,10 @@ users/
                   │     │                 ├── fluidTotalVolume: number
                   │     │                 ├── fluidTreatmentDays: number
                   │     │                 ├── fluidMissedDays: number
+                  │     │                 ├── fluidTreatmentDone: boolean
+                  │     │                 ├── fluidSessionCount: number
+                  │     │                 ├── fluidScheduledSessions: number
+                  │     │                 ├── fluidScheduledVolume: number    # optional, weekly scheduled volume
                   │     │                 │
                   │     │                 # Medication Summary
                   │     │                 ├── medicationTotalDoses: number
@@ -282,9 +341,9 @@ users/
                   │     │                 ├── daysWithSuppressedAppetite: number    # days with suppressed appetite (severityScore > 0)
                   │     │                 ├── daysWithInjectionSiteReaction: number # days with injection site reaction (severityScore > 0)
                   │     │                 ├── daysWithAnySymptoms: number           # count of days this week where hasSymptoms == true
-                  │     │                 ├── symptomScoreTotal: number             # sum of daily symptomScoreTotal over week (optional)
+                  │     │                 ├── symptomScoreTotal: number             # sum of daily symptomScoreTotal over week (0-126 for 7 days × max 18 each, optional)
                   │     │                 ├── symptomScoreAverage: number           # average daily severity score across days with symptoms (0-3, optional)
-                  │     │                 ├── symptomScoreMax: number               # max daily symptomScoreTotal in week (optional)
+                  │     │                 ├── symptomScoreMax: number               # max daily symptomScoreTotal in week (0-18, optional)
                   │     │                 │
                   │     │                 ├── createdAt: Timestamp
                   │     │                 └── updatedAt: Timestamp
@@ -294,6 +353,7 @@ users/
                   │           └── summaries (subcollection)
                   │                 │
                   │                 └── {YYYY-MM} (e.g., "2025-10")
+                  │                       ├── monthId: string              # "YYYY-MM" format
                   │                       ├── startDate: Timestamp
                   │                       ├── endDate: Timestamp
                   │                       │
@@ -303,6 +363,14 @@ users/
                   │                       ├── fluidMissedDays: number
                   │                       ├── fluidLongestStreak: number
                   │                       ├── fluidCurrentStreak: number
+                  │                       ├── fluidTreatmentDone: boolean
+                  │                       ├── fluidSessionCount: number
+                  │                       ├── fluidScheduledSessions: number
+                  │                       │
+                  │                       # Fluid Daily Arrays (for month view optimization)
+                  │                       ├── dailyVolumes: array<number>          # per-day volumes [28-31 elements]
+                  │                       ├── dailyGoals: array<number>            # per-day goals [28-31 elements]
+                  │                       ├── dailyScheduledSessions: array<number> # per-day scheduled sessions [28-31 elements]
                   │                       │
                   │                       # Medication Summary
                   │                       ├── medicationTotalDoses: number
@@ -312,12 +380,27 @@ users/
                   │                       ├── medicationLongestStreak: number
                   │                       ├── medicationCurrentStreak: number
                   │                       │
+                  │                       # Medication Daily Arrays
+                  │                       ├── dailyMedicationDoses: array<number>  # per-day completed doses [28-31 elements]
+                  │                       ├── dailyMedicationScheduledDoses: array<number> # per-day scheduled doses [28-31 elements]
+                  │                       │
                   │                       # Overall Treatment Summary
                   │                       ├── overallTreatmentDays: number
                   │                       ├── overallMissedDays: number
                   │                       ├── overallLongestStreak: number
                   │                       ├── overallCurrentStreak: number
                   │                       ├── overallTreatmentDone: boolean
+                  │                       │
+                  │                       # Weight Tracking
+                  │                       ├── weightEntriesCount: number           # optional
+                  │                       ├── weightLatest: number                 # optional, kg
+                  │                       ├── weightLatestDate: Timestamp          # optional
+                  │                       ├── weightFirst: number                  # optional, kg
+                  │                       ├── weightFirstDate: Timestamp           # optional
+                  │                       ├── weightAverage: number                # optional, kg
+                  │                       ├── weightChange: number                 # optional, kg (change from previous month)
+                  │                       ├── weightChangePercent: number          # optional, percentage
+                  │                       ├── weightTrend: string                  # optional: "increasing", "stable", "decreasing"
                   │                       │
                   │                       # Symptom Tracking Summary
                   │                       ├── daysWithVomiting: number              # days with vomiting (severityScore > 0)
@@ -327,9 +410,9 @@ users/
                   │                       ├── daysWithSuppressedAppetite: number    # days with suppressed appetite (severityScore > 0)
                   │                       ├── daysWithInjectionSiteReaction: number # days with injection site reaction (severityScore > 0)
                   │                       ├── daysWithAnySymptoms: number             # count of days this month where hasSymptoms == true
-                  │                       ├── symptomScoreTotal: number             # sum of daily symptomScoreTotal over month (optional)
+                  │                       ├── symptomScoreTotal: number             # sum of daily symptomScoreTotal over month (0-558 for 31 days × max 18 each, optional)
                   │                       ├── symptomScoreAverage: number           # average daily severity score across days with symptoms (0-3, optional)
-                  │                       ├── symptomScoreMax: number               # max daily symptomScoreTotal in month (optional)
+                  │                       ├── symptomScoreMax: number               # max daily symptomScoreTotal in month (0-18, optional)
                   │                       │
                   │                       ├── createdAt: Timestamp
                   │                       └── updatedAt: Timestamp
@@ -337,21 +420,25 @@ users/
                   └── schedules (subcollection)
                         │
                         └── {scheduleId}
+                              ├── id: string                 # schedule ID (same as document ID)
                               ├── treatmentType: string      # "fluid", "medication"
                               │
                               # Fluid Schedule Fields
                               ├── targetVolume: number       # ml, for fluid schedules only
-                              ├── preferredLocation: string  # for fluid schedules only
+                              ├── preferredLocation: string  # for fluid schedules only (enum name)
                               ├── needleGauge: string       # for fluid schedules only
                               │
                               # Medication Schedule Fields
                               ├── medicationName: string     # for medication schedules only
-                              ├── targetDosage: string       # "1", "1/2", "2.5" - preserve original format
+                              ├── targetDosage: number       # for medication schedules only
                               ├── medicationUnit: string     # "pills", "ml", "mg", "drops", "capsules", etc.
+                              ├── medicationStrengthAmount: string  # optional, e.g., "2.5", "10"
+                              ├── medicationStrengthUnit: string    # optional, e.g., "mg", "mgPerMl"
+                              ├── customMedicationStrengthUnit: string # optional, for "other" strength unit
                               │
                               # Common Schedule Fields
                               ├── frequency: string          # "onceDaily", "twiceDaily", "thriceDaily", etc.
-                              ├── reminderTimes: array       # ["08:00", "20:00"] - time strings in HH:MM format
+                              ├── reminderTimes: array       # array of Timestamp objects (DateTime values)
                               ├── isActive: boolean
                               ├── createdAt: Timestamp
                               ├── updatedAt: Timestamp
@@ -514,6 +601,8 @@ When a session is logged:
 2. Update daily summary (`treatmentSummaries/daily/summaries/{YYYY-MM-DD}`)
 3. Update weekly summary (`treatmentSummaries/weekly/summaries/{YYYY-Www}`)
 4. Update monthly summary (`treatmentSummaries/monthly/summaries/{YYYY-MM}`)
+   - Includes updating daily arrays (`dailyVolumes`, `dailyGoals`, `dailyScheduledSessions`, etc.)
+   - Arrays are updated atomically by reading current array, modifying specific index, and writing back
 5. Update cross-pet summaries for premium users (future)
 
 ### Cost-Efficient Batch Operations
@@ -545,6 +634,23 @@ final weeklyRef = pet
 
 batch.set(weeklyRef, {
   'fluidTotalVolume': FieldValue.increment(volumeGiven),
+  'updatedAt': FieldValue.serverTimestamp(),
+}, SetOptions(merge: true));
+
+// Update monthly summary with arrays
+// Note: Monthly array updates require reading current array first,
+// then updating specific index
+final monthlyRef = pet
+  .collection('treatmentSummaries')
+  .doc('monthly')
+  .collection('summaries')
+  .doc(monthString);
+
+// Arrays updated by MonthlyArrayHelper with per-day granularity
+batch.set(monthlyRef, {
+  'fluidTotalVolume': FieldValue.increment(volumeGiven),
+  'dailyVolumes': updatedDailyVolumesArray,  // Modified at index (day-1)
+  'dailyGoals': updatedDailyGoalsArray,      // Modified at index (day-1)
   'updatedAt': FieldValue.serverTimestamp(),
 }, SetOptions(merge: true));
 

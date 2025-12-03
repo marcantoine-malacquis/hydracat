@@ -190,22 +190,22 @@ class DailySummary extends TreatmentSummaryBase {
   /// Whether injection site reaction was present (score > 0)
   final bool hadInjectionSiteReaction;
 
-  /// Maximum vomiting score for the day (0-10)
+  /// Maximum vomiting score for the day (0-3)
   final int? vomitingMaxScore;
 
-  /// Maximum diarrhea score for the day (0-10)
+  /// Maximum diarrhea score for the day (0-3)
   final int? diarrheaMaxScore;
 
-  /// Maximum constipation score for the day (0-10)
+  /// Maximum constipation score for the day (0-3)
   final int? constipationMaxScore;
 
-  /// Maximum energy score for the day (0-10)
+  /// Maximum energy score for the day (0-3)
   final int? energyMaxScore;
 
-  /// Maximum suppressed appetite score for the day (0-10)
+  /// Maximum suppressed appetite score for the day (0-3)
   final int? suppressedAppetiteMaxScore;
 
-  /// Maximum injection site reaction score for the day (0-10)
+  /// Maximum injection site reaction score for the day (0-3)
   final int? injectionSiteReactionMaxScore;
 
   /// Raw value for vomiting (episode count, 0-10+)
@@ -242,10 +242,10 @@ class DailySummary extends TreatmentSummaryBase {
   /// (e.g., "mildSwelling", "redPainful").
   final String? injectionSiteReactionRawValue;
 
-  /// Sum of all present symptom scores (0-60)
+  /// Sum of all present symptom scores (0-18 for 6 symptoms × max 3 each)
   final int? symptomScoreTotal;
 
-  /// Average of present symptom scores (0-10)
+  /// Average of present symptom scores (0-3)
   final double? symptomScoreAverage;
 
   /// Whether any symptom score > 0

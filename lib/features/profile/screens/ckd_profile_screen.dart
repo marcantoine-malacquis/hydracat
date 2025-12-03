@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/constants/lab_reference_ranges.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/onboarding/widgets/iris_stage_selector.dart';
 import 'package:hydracat/features/onboarding/widgets/lab_values_input.dart';
 import 'package:hydracat/features/profile/models/medical_info.dart';
 import 'package:hydracat/features/profile/widgets/editable_medical_field.dart';
+import 'package:hydracat/features/profile/widgets/lab_value_display_with_gauge.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 
@@ -419,11 +421,10 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
           // Display mode
           Column(
             children: [
-              EditableLabValueField(
+              LabValueDisplayWithGauge(
                 label: 'Creatinine',
                 value: _editingLabValues.creatinine,
-                unit: 'mg/dL',
-                icon: Icons.science,
+                referenceRange: creatinineRange,
                 onEdit: () {
                   setState(() {
                     _isEditingLabValues = true;
@@ -431,11 +432,10 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
                 },
               ),
               const SizedBox(height: AppSpacing.sm),
-              EditableLabValueField(
+              LabValueDisplayWithGauge(
                 label: 'BUN',
                 value: _editingLabValues.bun,
-                unit: 'mg/dL',
-                icon: Icons.science,
+                referenceRange: bunRange,
                 onEdit: () {
                   setState(() {
                     _isEditingLabValues = true;
@@ -443,11 +443,10 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
                 },
               ),
               const SizedBox(height: AppSpacing.sm),
-              EditableLabValueField(
+              LabValueDisplayWithGauge(
                 label: 'SDMA',
                 value: _editingLabValues.sdma,
-                unit: 'μg/dL',
-                icon: Icons.science,
+                referenceRange: sdmaRange,
                 onEdit: () {
                   setState(() {
                     _isEditingLabValues = true;

@@ -234,6 +234,20 @@ void main() {
 
         expect(result[9], 0);
       });
+
+      test('supports custom max bounds (medication arrays)', () {
+        final array = List.filled(31, 0);
+
+        final result = MonthlyArrayHelper.updateDailyArrayValue(
+          currentArray: array,
+          dayOfMonth: 5,
+          monthLength: 31,
+          newValue: 25,
+          maxValue: 10,
+        );
+
+        expect(result[4], 10);
+      });
     });
 
     group('Month Length Variations', () {

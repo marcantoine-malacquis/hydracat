@@ -11,6 +11,8 @@ import 'package:hydracat/features/logging/services/session_read_service.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/features/profile/models/schedule_history_entry.dart';
 import 'package:hydracat/features/progress/models/day_dot_status.dart';
+import 'package:hydracat/features/progress/models/fluid_month_chart_data.dart';
+import 'package:hydracat/features/progress/models/treatment_day_bucket.dart';
 import 'package:hydracat/features/progress/utils/memoization.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/logging_provider.dart';
@@ -125,6 +127,87 @@ weekSummariesProvider = FutureProvider.autoDispose
       },
     );
 
+/// Provides combined treatment buckets (fluid + medication) for a month.
+///
+/// Each bucket contains fluid volume/goal/schedule data and medication
+/// doses/schedules for a single calendar day, allowing the month view to render
+/// calendar dots and the 31-bar chart from a single monthly summary read.
+final AutoDisposeFutureProviderFamily<List<TreatmentDayBucket>?, DateTime>
+    monthlyTreatmentBucketsProvider =
+    FutureProvider.autoDispose.family<List<TreatmentDayBucket>?, DateTime>(
+  (ref, monthStart) async {
+    // Watch cache to invalidate when today's data changes
+    ref.watch(dailyCacheProvider);
+
+    final user = ref.read(currentUserProvider);
+    final pet = ref.read(primaryPetProvider);
+    if (user == null || pet == null) return null;
+
+    // Normalize monthStart to first day of month at 00:00
+    final normalizedMonthStart = DateTime(monthStart.year, monthStart.month);
+
+    if (kDebugMode) {
+      debugPrint(
+        '[monthlyTreatmentBucketsProvider] Fetching monthly summary for '
+        '${AppDateUtils.formatMonthForSummary(normalizedMonthStart)}',
+      );
+    }
+
+    final summaryService = ref.read(summaryServiceProvider);
+    final monthlySummary = await summaryService.getMonthlySummary(
+      userId: user.id,
+      petId: pet.id,
+      date: normalizedMonthStart,
+    );
+
+    // Build buckets from monthly summary
+    final buckets = buildMonthlyTreatmentBuckets(
+      monthStart: normalizedMonthStart,
+      summary: monthlySummary,
+    );
+
+    if (kDebugMode) {
+      final count = buckets?.length ?? 0;
+      debugPrint(
+        '[monthlyTreatmentBucketsProvider] Built $count buckets '
+        '(${monthlySummary == null ? 'no summary' : 'summary found'})',
+      );
+    }
+
+    return buckets;
+  },
+);
+
+/// Transforms monthly fluid buckets into chart-ready data for month view.
+///
+/// Watches [monthlyTreatmentBucketsProvider] and converts the bucket list into
+/// a [FluidMonthChartData] object ready for rendering in the 28-31 bar chart.
+///
+/// Returns null if loading or no monthly summary exists.
+///
+/// Cost: 0 additional Firestore reads (reuses monthlyTreatmentBucketsProvider cache)
+///
+/// Example:
+/// ```dart
+/// final chartData = ref.watch(monthlyFluidChartDataProvider(monthStart));
+/// if (chartData != null && chartData.shouldShowChart) {
+///   // Render 28-31 bar chart
+/// }
+/// ```
+final AutoDisposeProviderFamily<FluidMonthChartData?, DateTime>
+    monthlyFluidChartDataProvider =
+    Provider.autoDispose.family<FluidMonthChartData?, DateTime>(
+  (ref, monthStart) {
+    final bucketsAsync = ref.watch(monthlyTreatmentBucketsProvider(monthStart));
+
+    return bucketsAsync.when(
+      data: (buckets) => _transformBucketsToMonthChartData(monthStart, buckets),
+      loading: () => null,
+      error: (_, __) => null,
+    );
+  },
+);
+
 /// Computes the status (dot color) for each day of a given week.
 ///
 /// Returns a map of `date → DayDotStatus` for the 7 days (Mon-Sun) starting
@@ -172,12 +255,11 @@ weekStatusProvider = FutureProvider.autoDispose
 
 /// Computes the status for a date range (week or month).
 ///
-/// In week format: Delegates directly to [weekStatusProvider] for the range.
-/// In month format: Merges status from 5-6 week chunks covering the month,
-/// then filters to only include days within the target month.
+/// Week mode delegates to [weekStatusProvider] for combined adherence.
+/// Month mode uses the optimized monthly treatment buckets to keep dot logic
+/// consistent with week view while still requiring only one monthly read.
 ///
-/// Leverages existing memoized status calculation and Riverpod caching
-/// to avoid redundant Firestore reads.
+/// Cost: Week mode = 7 daily reads (cached). Month mode = 1 monthly read.
 final AutoDisposeFutureProviderFamily<Map<DateTime, DayDotStatus>, DateTime>
 dateRangeStatusProvider = FutureProvider.autoDispose
     .family<Map<DateTime, DayDotStatus>, DateTime>(
@@ -187,39 +269,19 @@ dateRangeStatusProvider = FutureProvider.autoDispose
 
         final format = ref.watch(calendarFormatProvider);
 
-        // Week mode: delegate to existing week provider
+        // Week mode: delegate to existing week provider (medication + fluid)
         if (format == CalendarFormat.week) {
           return ref.watch(weekStatusProvider(rangeStart).future);
         }
 
-        // Month mode: merge week chunks covering the entire month
+        // Month mode: use unified treatment buckets (optimized single read)
         final firstDayOfMonth = DateTime(rangeStart.year, rangeStart.month);
-        final lastDayOfMonth = DateTime(
-          rangeStart.year,
-          rangeStart.month + 1,
-          0,
-        );
 
-        // Start from the Monday of the week containing the first day
-        var cursor = AppDateUtils.startOfWeekMonday(firstDayOfMonth);
-        final merged = <DateTime, DayDotStatus>{};
+        final buckets = await ref
+            .watch(monthlyTreatmentBucketsProvider(firstDayOfMonth).future);
 
-        // Fetch all weeks that overlap with this month
-        while (!cursor.isAfter(lastDayOfMonth)) {
-          final weekStatuses = await ref.watch(
-            weekStatusProvider(cursor).future,
-          );
-          merged.addAll(weekStatuses);
-          cursor = cursor.add(const Duration(days: 7));
-        }
-
-        // Filter to only include days within the target month
-        return {
-          for (final entry in merged.entries)
-            if (entry.key.year == firstDayOfMonth.year &&
-                entry.key.month == firstDayOfMonth.month)
-              entry.key: entry.value,
-        };
+        // Transform buckets to status map
+        return buildMonthStatusesFromBuckets(buckets, DateTime.now());
       },
     );
 
@@ -711,4 +773,198 @@ int _calculateCurrentGoal(Schedule? schedule, DateTime date) {
   final goalPerSession = (schedule.targetVolume ?? 0).round();
   final sessionsCount = schedule.reminderTimesOnDate(date).length;
   return goalPerSession * sessionsCount;
+}
+
+/// Builds combined treatment buckets (fluid + medication) for a month.
+///
+/// Returns null if no summary exists or the array lengths do not match the
+/// expected month length.
+List<TreatmentDayBucket>? buildMonthlyTreatmentBuckets({
+  required DateTime monthStart,
+  required MonthlySummary? summary,
+}) {
+  final normalizedMonthStart = DateTime(monthStart.year, monthStart.month);
+  if (summary == null) {
+    return null;
+  }
+
+  final monthLength = summary.daysInMonth;
+
+  final hasMismatch =
+      summary.dailyVolumes.length != monthLength ||
+          summary.dailyGoals.length != monthLength ||
+          summary.dailyScheduledSessions.length != monthLength ||
+          summary.dailyMedicationDoses.length != monthLength ||
+          summary.dailyMedicationScheduledDoses.length != monthLength;
+
+  if (hasMismatch) {
+    if (kDebugMode) {
+      debugPrint(
+        '[buildMonthlyTreatmentBuckets] Array length mismatch for '
+        '${AppDateUtils.formatMonthForSummary(normalizedMonthStart)}',
+      );
+    }
+    return null;
+  }
+
+  final buckets = <TreatmentDayBucket>[];
+  for (var dayIndex = 0; dayIndex < monthLength; dayIndex++) {
+    final day = dayIndex + 1;
+    final date = DateTime(
+      normalizedMonthStart.year,
+      normalizedMonthStart.month,
+      day,
+    );
+
+    buckets.add(
+      TreatmentDayBucket(
+        date: date,
+        fluidVolumeMl: summary.dailyVolumes[dayIndex],
+        fluidGoalMl: summary.dailyGoals[dayIndex],
+        fluidScheduledSessions: summary.dailyScheduledSessions[dayIndex],
+        medicationDoses: summary.dailyMedicationDoses[dayIndex],
+        medicationScheduledDoses:
+            summary.dailyMedicationScheduledDoses[dayIndex],
+      ),
+    );
+  }
+
+  return buckets;
+}
+
+/// Transforms monthly fluid buckets into calendar dot statuses (fluid-only).
+///
+/// Maps each [TreatmentDayBucket] to a [DayDotStatus] using the same logic
+/// as week view (combined medication + fluid adherence).
+///
+/// Returns empty map if buckets is null or empty.
+///
+/// Example:
+/// ```dart
+/// final buckets = await ref.watch(monthlyTreatmentBucketsProvider(monthStart).future);
+/// final statuses = _buildMonthStatusesFromBuckets(buckets, DateTime.now());
+/// // statuses[Oct 15] == DayDotStatus.complete (if goal met)
+/// ```
+@visibleForTesting
+Map<DateTime, DayDotStatus> buildMonthStatusesFromBuckets(
+  List<TreatmentDayBucket>? buckets,
+  DateTime now,
+) {
+  if (buckets == null || buckets.isEmpty) {
+    return {};
+  }
+
+  final today = DateTime(now.year, now.month, now.day);
+  final statuses = <DateTime, DayDotStatus>{};
+
+  for (final bucket in buckets) {
+    final isBucketToday = bucket.date.year == today.year &&
+        bucket.date.month == today.month &&
+        bucket.date.day == today.day;
+    final isPast = bucket.date.isBefore(today);
+    final hasSchedules = bucket.hasScheduledTreatments;
+    final isMissed = (bucket.hasFluidScheduled && !bucket.isFluidComplete) ||
+        (bucket.hasMedicationScheduled && !bucket.isMedicationComplete);
+
+    // Future days → none
+    if (bucket.date.isAfter(today)) {
+      statuses[bucket.date] = DayDotStatus.none;
+      continue;
+    }
+
+    if (!hasSchedules) {
+      statuses[bucket.date] =
+          isBucketToday ? DayDotStatus.today : DayDotStatus.none;
+      continue;
+    }
+
+    if (isBucketToday) {
+      statuses[bucket.date] =
+          bucket.isComplete ? DayDotStatus.complete : DayDotStatus.today;
+      continue;
+    }
+
+    if (isPast && isMissed) {
+      statuses[bucket.date] = DayDotStatus.missed;
+      continue;
+    }
+
+    statuses[bucket.date] = DayDotStatus.complete;
+  }
+
+  return statuses;
+}
+
+/// Transforms monthly treatment buckets into fluid chart data.
+///
+/// Converts a list of [TreatmentDayBucket] objects into a
+/// [FluidMonthChartData] object by extracting the fluid fields needed for the
+/// 31-bar chart.
+///
+/// Returns null if buckets is null or empty.
+///
+/// Example:
+/// ```dart
+/// final buckets = [bucket1, bucket2, ...bucket31];
+/// final chartData = _transformBucketsToMonthChartData(monthStart, buckets);
+/// // chartData.days.length == 31 (October)
+/// // chartData.maxVolume == 110.0 (if max volume/goal is 100ml)
+/// // chartData.goalLineY == 100.0 (if all days have same goal)
+/// ```
+FluidMonthChartData? _transformBucketsToMonthChartData(
+  DateTime monthStart,
+  List<TreatmentDayBucket>? buckets,
+) {
+  if (buckets == null || buckets.isEmpty) return null;
+
+  final monthLength = buckets.length;
+  final days = <FluidMonthDayData>[];
+
+  // Transform each bucket to chart day data
+  for (int i = 0; i < monthLength; i++) {
+    final bucket = buckets[i];
+    final volumeMl = bucket.fluidVolumeMl.toDouble();
+    final goalMl = bucket.fluidGoalMl.toDouble();
+    final percentage = goalMl > 0 ? (volumeMl / goalMl) * 100 : 0.0;
+
+    days.add(
+      FluidMonthDayData(
+        date: bucket.date,
+        dayOfMonth: bucket.date.day,
+        volumeMl: volumeMl,
+        goalMl: goalMl,
+        wasScheduled: bucket.fluidScheduledSessions > 0,
+        percentage: percentage,
+      ),
+    );
+  }
+
+  // Calculate Y-axis max (max of volumes and goals, with 10% headroom)
+  final volumes = days.map((d) => d.volumeMl).toList();
+  final goals = days.map((d) => d.goalMl).where((g) => g > 0).toList();
+
+  double maxValue = 0;
+  if (volumes.isNotEmpty) {
+    maxValue = volumes.reduce((a, b) => a > b ? a : b);
+  }
+  if (goals.isNotEmpty) {
+    final maxGoal = goals.reduce((a, b) => a > b ? a : b);
+    if (maxGoal > maxValue) maxValue = maxGoal;
+  }
+
+  final maxVolume = maxValue * 1.1; // 10% headroom
+  final minMaxVolume = maxVolume < 100 ? 100.0 : maxVolume; // Min 100ml scale
+
+  // Detect unified goal (all days have same goal AND goal > 0)
+  final uniqueGoals = goals.toSet();
+  final allDaysHaveGoals = goals.length == monthLength;
+  final goalLineY =
+      (uniqueGoals.length == 1 && allDaysHaveGoals) ? uniqueGoals.first : null;
+
+  return FluidMonthChartData(
+    days: days,
+    maxVolume: minMaxVolume,
+    monthLength: monthLength,
+    goalLineY: goalLineY,
+  );
 }
