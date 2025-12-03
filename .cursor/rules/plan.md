@@ -43,26 +43,30 @@ I already did something similar in @onboarding_code_review_report.md . I don't n
 
 ##
 
-Please identify why this is not working as intended and come up with the most robust plan following best practices to fix this issue properly.
 
-1. a) yes, for SDMA normal range is 0-14 μg/dL
-b) allow the gauge to extend 20% beyond
-  the max range to accommodate moderately elevated values. For extreme
-  outliers, cap the indicator at the edge and add a visual cue ">>"
-2. a) Use the app light teal color with subtle vertical lines or markers at the min/max
-   threshold points. This keeps the focus on the indicator while providing
-  context.
-b) yes, subtle vertical lines or markers at the min/max
-   threshold points.
-3. a) dark teal if value is within the reference range. App red if value is outside the reference range (either high OR low). 
-b) stick to the clinical reference ranges
-4. a) Display mode only (when viewing the lab values)
-b) no other places for now
-5. Don't display the gauge at all when the value is null.
-  Keep the existing "No information" italic text. The gauge only adds value
-  when there's data to visualize.
-6. So if this wasn't clear, the gauge UI should have a similar display as veterinary bloodwork reports, meaning on the same line : name, value, reference value and gauge. Use the μ symbol for SDMA.
-7. correct, no need field added to firesotre
-Let's create for the gauge a reusable widget HydraGauge.
-Coherence and app development/Flutter best practices are extremely important. Please confirm that this follow industry standards, and if not explain why. Let me know if you need any more clarifications to feel confident in proceeding with the implementation.
-Please create the detailled step by step implementation plan in /Users/marc-antoinemalacquis/Development/projects/hydracat/~PLANNING/lab_values_gauge.md
+1. Option (a) - use the labResults subcollection system since
+   it's already implemented in PetService, supports history tracking, and
+  aligns with the planning document. The card would display values from
+  latestLabResult when available.
+2. We should not do any conversion. The user input for example "1,2" for creatinine then choose the "mg/dL" toggle corresponding to what they see on their veterinary bloodwork. No need to convert it. Is this possible with the current database schema ? The units are correct. No need for a toggle for SDMA (single unit field)
+3.  We don't ever need to calculate conversion but always used the inputed value + unit selected by the user. We only store the value + unit selected by the user.
+4. Display the latest lab result with bloodwork date at the
+  top, show all three parameters (with placeholder text for unmeasured values). Let's actually not use "+ Add" but rather "Edit" on the card. We will acutally add a "+ Add" button (add a brand new bloodwork) in the app bar so the two behaviours are separate. When pressing the Edit button it opens the popup (same style as logging/weight/symptoms) set on the day of the latest bloodwork with current prefilled values that the user can simply modify. There will be a "Save" button at the top right of this button to actually save and come back to the ckd profile screen where the card and gauge will have been updated to reflect the new values. The appbar "+ Add" button opens the same popup but set to the current date with no values pre-filled.
+5. See previous answer. Different behaviours.
+6. Option (a) - Bloodwork date is mandatory, and at least one
+   lab value must be entered. This matches existing validation in
+  add_lab_result_screen.dart and makes logical sense.
+7. Option (a) - Include vet notes as an optional field at the
+   bottom of the popup, maintaining feature parity with the existing flow and
+  providing a complete data entry experience.
+8. Option (b) - Create a new LabValuesEntryDialog widget
+  similar to WeightEntryDialog pattern, optimized for the bottom sheet
+  experience. Keep the existing full screen for potential future use cases like
+   onboarding or detailed lab entry from other contexts.
+Please let me know if this makes sense or contradict itself, the prd (.cursor/reference/prd.md), the CRUD rules (.cursor/rules/firebase_CRUDrules.md) or existing code. Coherence and app development/Flutter best practices are extremely important. Please confirm that this follow industry standards, and if not explain why. Let me know if you need any more clarifications to feel confident in proceeding with the implementation. Don't try to run the app yourself to test. Just tell me when it's needed and I will run it manually to do the testing myself. After implementation, check for linting issues (flutter analyze) and, if you found any, fix them (including the non critical ones). I will test only once we fixed the linting issues.
+
+
+Yes, "Option (a). Since you're allowing users to enter SI
+   units, the gauge must support SI reference ranges. I'll create a
+  LabReferenceRanges utility that returns ranges based on analyte + unit (e.g.,
+   getReferenceRange('creatinine', 'mg/dL'))."

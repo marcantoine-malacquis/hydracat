@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart';
 /// Chart-ready data for one day of fluid therapy in month view
 ///
 /// Represents a single day's fluid volume data with goal tracking,
-/// schedule status, and computed visual properties for month bar chart rendering.
+/// schedule status, and computed visual properties
+/// for month bar chart rendering.
 ///
 /// Example:
 /// ```dart
@@ -97,7 +98,8 @@ class FluidMonthDayData {
       Object.hash(date, dayOfMonth, volumeMl, goalMl, wasScheduled);
 
   @override
-  String toString() => 'FluidMonthDayData('
+  String toString() =>
+      'FluidMonthDayData('
       'date: $date, '
       'dayOfMonth: $dayOfMonth, '
       'volumeMl: $volumeMl, '
@@ -170,14 +172,15 @@ class FluidMonthChartData {
 
   @override
   int get hashCode => Object.hash(
-        Object.hashAll(days),
-        maxVolume,
-        monthLength,
-        goalLineY,
-      );
+    Object.hashAll(days),
+    maxVolume,
+    monthLength,
+    goalLineY,
+  );
 
   @override
-  String toString() => 'FluidMonthChartData('
+  String toString() =>
+      'FluidMonthChartData('
       'days: ${days.length}, '
       'maxVolume: $maxVolume, '
       'monthLength: $monthLength, '

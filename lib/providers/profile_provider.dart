@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/features/notifications/providers/notification_provider.dart';
 import 'package:hydracat/features/profile/exceptions/profile_exceptions.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
+import 'package:hydracat/features/profile/models/lab_result.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/features/profile/services/pet_service.dart';
 import 'package:hydracat/features/profile/services/schedule_coordinator.dart';
@@ -39,9 +40,11 @@ class ProfileState {
     this.primaryPet,
     this.fluidSchedule,
     this.medicationSchedules,
+    this.labResults,
     this.isLoading = false,
     this.isRefreshing = false,
     this.scheduleIsLoading = false,
+    this.labResultsIsLoading = false,
     this.error,
     this.lastUpdated,
     this.cacheStatus = CacheStatus.fresh,
@@ -54,9 +57,11 @@ class ProfileState {
     : primaryPet = null,
       fluidSchedule = null,
       medicationSchedules = null,
+      labResults = null,
       isLoading = false,
       isRefreshing = false,
       scheduleIsLoading = false,
+      labResultsIsLoading = false,
       error = null,
       lastUpdated = null,
       cacheStatus = CacheStatus.empty,
@@ -68,9 +73,11 @@ class ProfileState {
     : primaryPet = null,
       fluidSchedule = null,
       medicationSchedules = null,
+      labResults = null,
       isLoading = true,
       isRefreshing = false,
       scheduleIsLoading = false,
+      labResultsIsLoading = false,
       error = null,
       lastUpdated = null,
       cacheStatus = CacheStatus.empty,
@@ -86,6 +93,9 @@ class ProfileState {
   /// Current cached medication schedules
   final List<Schedule>? medicationSchedules;
 
+  /// Current cached lab results
+  final List<LabResult>? labResults;
+
   /// Whether a profile operation is in progress
   final bool isLoading;
 
@@ -94,6 +104,9 @@ class ProfileState {
 
   /// Whether a schedule operation is in progress
   final bool scheduleIsLoading;
+
+  /// Whether a lab results operation is in progress
+  final bool labResultsIsLoading;
 
   /// Current error if any
   final ProfileException? error;
@@ -138,6 +151,16 @@ class ProfileState {
   /// Number of medication schedules
   int get medicationScheduleCount => medicationSchedules?.length ?? 0;
 
+  /// Whether user has lab results
+  bool get hasLabResults => labResults != null && labResults!.isNotEmpty;
+
+  /// Number of lab results
+  int get labResultCount => labResults?.length ?? 0;
+
+  /// Latest lab result if available
+  LabResult? get latestLabResult =>
+      hasLabResults ? labResults!.first : null;
+
   /// Whether cached schedules are valid for today
   bool get hasValidSchedulesForToday {
     if (schedulesLoadedDate == null) return false;
@@ -156,9 +179,11 @@ class ProfileState {
     Object? primaryPet = _undefined,
     Object? fluidSchedule = _undefined,
     Object? medicationSchedules = _undefined,
+    Object? labResults = _undefined,
     bool? isLoading,
     bool? isRefreshing,
     bool? scheduleIsLoading,
+    bool? labResultsIsLoading,
     Object? error = _undefined,
     Object? lastUpdated = _undefined,
     CacheStatus? cacheStatus,
@@ -175,9 +200,13 @@ class ProfileState {
       medicationSchedules: medicationSchedules == _undefined
           ? this.medicationSchedules
           : medicationSchedules as List<Schedule>?,
+      labResults: labResults == _undefined
+          ? this.labResults
+          : labResults as List<LabResult>?,
       isLoading: isLoading ?? this.isLoading,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       scheduleIsLoading: scheduleIsLoading ?? this.scheduleIsLoading,
+      labResultsIsLoading: labResultsIsLoading ?? this.labResultsIsLoading,
       error: error == _undefined ? this.error : error as ProfileException?,
       lastUpdated: lastUpdated == _undefined
           ? this.lastUpdated
@@ -210,9 +239,11 @@ class ProfileState {
         other.primaryPet == primaryPet &&
         other.fluidSchedule == fluidSchedule &&
         listEquals(other.medicationSchedules, medicationSchedules) &&
+        listEquals(other.labResults, labResults) &&
         other.isLoading == isLoading &&
         other.isRefreshing == isRefreshing &&
         other.scheduleIsLoading == scheduleIsLoading &&
+        other.labResultsIsLoading == labResultsIsLoading &&
         other.error == error &&
         other.lastUpdated == lastUpdated &&
         other.cacheStatus == cacheStatus &&
@@ -226,9 +257,11 @@ class ProfileState {
       primaryPet,
       fluidSchedule,
       Object.hashAll(medicationSchedules ?? []),
+      Object.hashAll(labResults ?? []),
       isLoading,
       isRefreshing,
       scheduleIsLoading,
+      labResultsIsLoading,
       error,
       lastUpdated,
       cacheStatus,
@@ -243,9 +276,11 @@ class ProfileState {
         'primaryPet: $primaryPet, '
         'fluidSchedule: $fluidSchedule, '
         'medicationSchedules: $medicationSchedules, '
+        'labResults: $labResults, '
         'isLoading: $isLoading, '
         'isRefreshing: $isRefreshing, '
         'scheduleIsLoading: $scheduleIsLoading, '
+        'labResultsIsLoading: $labResultsIsLoading, '
         'error: $error, '
         'lastUpdated: $lastUpdated, '
         'cacheStatus: $cacheStatus, '
@@ -998,6 +1033,123 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
   }
 
   // ==========================================================================
+  // LAB RESULTS MANAGEMENT
+  // ==========================================================================
+
+  /// Load lab results for the primary pet
+  ///
+  /// Loads the most recent lab results from Firestore and caches them.
+  /// Results are ordered by test date (most recent first).
+  Future<bool> loadLabResults({int limit = 20}) async {
+    final primaryPet = state.primaryPet;
+    if (primaryPet == null) {
+      state = state.copyWith(labResultsIsLoading: false);
+      return false;
+    }
+
+    state = state.copyWith(labResultsIsLoading: true);
+
+    try {
+      final results = await _petService.getLabResults(
+        primaryPet.id,
+        limit: limit,
+      );
+
+      state = state.copyWith(
+        labResults: results,
+        labResultsIsLoading: false,
+        lastUpdated: DateTime.now(),
+      );
+
+      return true;
+    } on Exception catch (e) {
+      debugPrint('Error loading lab results: $e');
+      state = state.copyWith(
+        labResultsIsLoading: false,
+        error: PetServiceException('Failed to load lab results: $e'),
+      );
+      return false;
+    }
+  }
+
+  /// Manually refresh lab results from Firestore
+  Future<bool> refreshLabResults({int limit = 20}) async {
+    final primaryPet = state.primaryPet;
+    if (primaryPet == null) return false;
+
+    state = state.copyWith(labResultsIsLoading: true);
+
+    try {
+      final results = await _petService.getLabResults(
+        primaryPet.id,
+        limit: limit,
+      );
+
+      state = state.copyWith(
+        labResults: results,
+        labResultsIsLoading: false,
+        lastUpdated: DateTime.now(),
+      );
+
+      return true;
+    } on Exception catch (e) {
+      debugPrint('Error refreshing lab results: $e');
+      // Don't clear existing results if refresh fails
+      state = state.copyWith(
+        labResultsIsLoading: false,
+        error: PetServiceException('Failed to refresh lab results: $e'),
+      );
+      return false;
+    }
+  }
+
+  /// Gets a specific lab result by ID
+  Future<LabResult?> getLabResult(String labResultId) async {
+    final primaryPet = state.primaryPet;
+    if (primaryPet == null) return null;
+
+    return _petService.getLabResult(primaryPet.id, labResultId);
+  }
+
+  /// Create a new lab result
+  ///
+  /// Creates a new lab result and updates both the denormalized snapshot
+  /// on the pet document and the cached lab results list.
+  Future<bool> createLabResult({
+    required LabResult labResult,
+    String? preferredUnitSystem,
+  }) async {
+    final primaryPet = state.primaryPet;
+    if (primaryPet == null) return false;
+
+    state = state.copyWith(labResultsIsLoading: true);
+
+    final result = await _petService.createLabResult(
+      petId: primaryPet.id,
+      labResult: labResult,
+      preferredUnitSystem: preferredUnitSystem,
+    );
+
+    switch (result) {
+      case PetSuccess():
+        // Reload lab results to get the updated list
+        await loadLabResults();
+
+        // Also reload the pet to get the updated latestLabResult
+        await refreshPrimaryPet();
+
+        return true;
+
+      case PetFailure(exception: final exception):
+        state = state.copyWith(
+          labResultsIsLoading: false,
+          error: exception,
+        );
+        return false;
+    }
+  }
+
+  // ==========================================================================
   // NOTIFICATION INTEGRATION (Step 6.2)
   // ==========================================================================
 
@@ -1155,5 +1307,32 @@ final hasMedicationSchedulesProvider = Provider<bool>((ref) {
 final medicationScheduleCountProvider = Provider<int>((ref) {
   return ref.watch(
     profileProvider.select((state) => state.medicationScheduleCount),
+  );
+});
+
+/// Optimized provider to get the cached lab results
+final labResultsProvider = Provider<List<LabResult>?>((ref) {
+  return ref.watch(profileProvider.select((state) => state.labResults));
+});
+
+/// Optimized provider to check if the pet has lab results
+final hasLabResultsProvider = Provider<bool>((ref) {
+  return ref.watch(profileProvider.select((state) => state.hasLabResults));
+});
+
+/// Optimized provider to get lab result count
+final labResultCountProvider = Provider<int>((ref) {
+  return ref.watch(profileProvider.select((state) => state.labResultCount));
+});
+
+/// Optimized provider to get the latest lab result
+final latestLabResultProvider = Provider<LabResult?>((ref) {
+  return ref.watch(profileProvider.select((state) => state.latestLabResult));
+});
+
+/// Optimized provider to check if lab results are loading
+final labResultsIsLoadingProvider = Provider<bool>((ref) {
+  return ref.watch(
+    profileProvider.select((state) => state.labResultsIsLoading),
   );
 });

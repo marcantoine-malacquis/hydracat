@@ -17,8 +17,10 @@ This schema supports comprehensive CKD management while maintaining strict cost 
 ✅ **Fully Implemented:**
 - `healthParameters` - Weight, appetite, symptoms tracking (hybrid symptom model with rawValue + severityScore)
 
+📋 **Schema Documented, Implementation Pending:**
+- `labResults` - Bloodwork and lab test tracking (schema finalized, awaiting code implementation)
+
 🚧 **Planned/Not Yet Implemented:**
-- `labResults` - Bloodwork and lab test tracking
 - `fluidInventory` - Fluid volume tracking
 - `crossPetSummaries` - Premium multi-pet analytics
 
@@ -161,7 +163,15 @@ users/
                   ├── medicalInfo: map               # CKD medical information
                   │     ├── ckdDiagnosisDate: Timestamp    # optional
                   │     ├── ckdStage: number              # optional: 1-4
-                  │     └── vetName: string               # optional
+                  │     ├── vetName: string               # optional
+                  │     └── latestLabResult: map?         # optional, denormalized snapshot of most recent lab result
+                  │           ├── testDate: Timestamp          # date of most recent bloodwork
+                  │           ├── creatinine: number?          # canonical value in mg/dL
+                  │           ├── bun: number?                 # canonical value in mg/dL
+                  │           ├── sdma: number?                # canonical value in µg/dL
+                  │           ├── phosphorus: number?          # canonical value in mg/dL
+                  │           ├── preferredUnitSystem: string? # "us" or "si" for UI display
+                  │           └── labResultId: string?         # reference to source document in labResults subcollection
                   ├── lastFluidInjectionSite: string # optional, enum name for injection site rotation
                   ├── lastFluidSessionDate: Timestamp # optional, for injection site rotation tracking
                   ├── createdAt: Timestamp
@@ -240,19 +250,67 @@ users/
                   │           ├── createdAt: Timestamp
                   │           └── updatedAt: Timestamp
                   │
-                  ├── labResults (subcollection)
+                  ├── labResults (subcollection) - **APPEND-ONLY**: Historical bloodwork tracking
                   │     │
                   │     └── {labId} (auto-generated)
-                  │           ├── testDate: Timestamp        # date of bloodwork
-                  │           ├── creatinine: number         # mg/dL, optional
-                  │           ├── bun: number               # mg/dL, optional
-                  │           ├── phosphorus: number        # mg/dL, optional
-                  │           ├── bloodPressure: map        # {systolic: number, diastolic: number}, optional
-                  │           ├── urineSpecificGravity: number # optional
-                  │           ├── irisStage: string         # 1, 2, 3, 4, optional
-                  │           ├── vetNotes: string          # optional
-                  │           ├── createdAt: Timestamp
-                  │           └── updatedAt: Timestamp
+                  │           ├── testDate: Timestamp        # date of bloodwork (IMMUTABLE after creation)
+                  │           │
+                  │           ├── values: map                # structured analyte storage with flexible units
+                  │           │     │
+                  │           │     # Canonical Analyzer Keys (standardized across app):
+                  │           │     # - creatinine: Primary kidney function marker
+                  │           │     # - bun: Blood urea nitrogen
+                  │           │     # - sdma: Symmetric dimethylarginine
+                  │           │     # - phosphorus: Phosphate levels
+                  │           │     # - potassium, calcium, etc. (add as needed)
+                  │           │     │
+                  │           │     # Each analyte entry structure:
+                  │           │     ├── creatinine: map?     # optional - only present if user entered
+                  │           │     │     ├── value: number        # REQUIRED if key present - value as entered by user
+                  │           │     │     ├── unit: string         # REQUIRED - unit user entered (e.g., "mg/dL", "µmol/L")
+                  │           │     │     ├── valueSi: number?     # optional - canonical SI conversion (µmol/L for creatinine)
+                  │           │     │     ├── valueUs: number?     # optional - canonical US conversion (mg/dL for creatinine)
+                  │           │     │     └── enteredUnit: string? # optional redundant field if `unit` captures this
+                  │           │     │
+                  │           │     ├── bun: map?           # optional - same structure as creatinine
+                  │           │     │     ├── value: number
+                  │           │     │     ├── unit: string         # e.g., "mg/dL" (US) or "mmol/L" (SI)
+                  │           │     │     ├── valueSi: number?     # mmol/L
+                  │           │     │     └── valueUs: number?     # mg/dL
+                  │           │     │
+                  │           │     ├── sdma: map?          # optional - typically "µg/dL" (same in US/SI)
+                  │           │     │     ├── value: number
+                  │           │     │     └── unit: string
+                  │           │     │
+                  │           │     ├── phosphorus: map?    # optional - same dual-unit structure
+                  │           │     │     ├── value: number
+                  │           │     │     ├── unit: string         # e.g., "mg/dL" (US) or "mmol/L" (SI)
+                  │           │     │     ├── valueSi: number?
+                  │           │     │     └── valueUs: number?
+                  │           │     │
+                  │           │     # Future analytes (potassium, calcium, albumin, etc.) follow same pattern
+                  │           │     ├── customAnalyteKey: map? # extendable without schema changes
+                  │           │     │
+                  │           │     └── unitMetadata: map?  # optional map storing user preferences
+                  │           │           └── preferredUnitSystem: string? # "us" or "si" for display preference
+                  │           │
+                  │           ├── metadata: map?            # optional metadata for context
+                  │           │     ├── panelType: string?  # e.g., "fullPanel", "miniPanel", "seniorPanel"
+                  │           │     ├── enteredBy: string?  # userId/deviceId who entered the data
+                  │           │     ├── source: string?     # "manual", "import", "vetUpload"
+                  │           │     ├── irisStage: string?  # 1-4 if IRIS stage provided with the panel
+                  │           │     └── vetNotes: string?   # free-form vet comments/notes
+                  │           │
+                  │           ├── bloodPressure: map?       # optional blood pressure reading
+                  │           │     ├── systolic: number
+                  │           │     └── diastolic: number
+                  │           │
+                  │           ├── urineSpecificGravity: map? # optional USG measurement
+                  │           │     ├── value: number       # e.g., 1.030
+                  │           │     └── unit: string?       # typically dimensionless or "g/mL"
+                  │           │
+                  │           ├── createdAt: Timestamp      # when record was created (IMMUTABLE)
+                  │           └── updatedAt: Timestamp      # last modification time
                   │
                   ├── treatmentSummaries (subcollection)
                   │     │
@@ -589,9 +647,163 @@ function isRecentData(timestamp) {
 }
 
 // Allow free users only recent data
-allow read: if isOwner(resource) && 
+allow read: if isOwner(resource) &&
                (isPremiumUser() || isRecentData(resource.data.date));
 ```
+
+## Lab Results: Security Rules & Indexes
+
+### Security Rules Requirements
+
+#### Owner-Only Access
+Lab results contain sensitive medical data and must be strictly protected:
+
+```javascript
+// In firestore.rules for labResults subcollection
+match /users/{userId}/pets/{petId}/labResults/{labId} {
+  // Helper function to check ownership
+  function isOwner() {
+    return request.auth != null && request.auth.uid == userId;
+  }
+
+  // Helper function to validate lab result structure
+  function isValidLabResult(data) {
+    return data.keys().hasAll(['testDate', 'values', 'createdAt']) &&
+           data.testDate is timestamp &&
+           data.values is map &&
+           data.createdAt is timestamp &&
+           // Ensure at least one analyte is present
+           data.values.size() > 0 &&
+           // Validate numeric values are positive
+           validateAnalyteValues(data.values);
+  }
+
+  // Helper to validate analyte values
+  function validateAnalyteValues(values) {
+    // For each analyte present, ensure value > 0 and unit is a string
+    return values.keys().all(key =>
+      (!values[key].keys().hasAll(['value']) ||
+       (values[key].value is number && values[key].value >= 0)) &&
+      (!values[key].keys().hasAll(['unit']) || values[key].unit is string)
+    );
+  }
+
+  // Read: Owner only
+  allow read: if isOwner();
+
+  // Create: Owner only, with validation
+  allow create: if isOwner() &&
+                   isValidLabResult(request.resource.data);
+
+  // Update: Owner only, with immutability checks
+  allow update: if isOwner() &&
+                   isValidLabResult(request.resource.data) &&
+                   // Prevent modification of immutable fields
+                   request.resource.data.testDate == resource.data.testDate &&
+                   request.resource.data.createdAt == resource.data.createdAt;
+
+  // Delete: Owner only (consider making append-only by removing this)
+  allow delete: if isOwner();
+}
+```
+
+#### Immutability Enforcement
+Key fields should be immutable after creation:
+- `testDate`: Cannot be changed (prevents backdating/forward-dating historical records)
+- `createdAt`: Cannot be changed (audit trail integrity)
+- Consider making `labResults` **append-only** by removing delete permissions
+
+#### Validation Rules
+- All analyte values must be non-negative numbers
+- `testDate` must be a valid timestamp (cannot be in the future)
+- At least one analyte must be present in the `values` map
+- Unit fields must be non-empty strings
+
+### Required Firestore Indexes
+
+#### Per-Pet Lab History Query
+**Purpose**: Retrieve lab results for a specific pet, sorted by test date (most recent first)
+
+```json
+{
+  "collectionGroup": "labResults",
+  "queryScope": "COLLECTION",
+  "fields": [
+    {
+      "fieldPath": "testDate",
+      "order": "DESCENDING"
+    }
+  ]
+}
+```
+
+**Query Pattern**:
+```dart
+// Get recent lab results for a pet
+Query labHistory = pet
+  .collection('labResults')
+  .orderBy('testDate', descending: true)
+  .limit(20);
+```
+
+#### Optional: Cross-Pet Lab Queries (Premium Feature)
+**Purpose**: Query lab results across all pets for a user (future premium analytics)
+
+```json
+{
+  "collectionGroup": "labResults",
+  "queryScope": "COLLECTION_GROUP",
+  "fields": [
+    {
+      "fieldPath": "metadata.enteredBy",
+      "order": "ASCENDING"
+    },
+    {
+      "fieldPath": "testDate",
+      "order": "DESCENDING"
+    }
+  ]
+}
+```
+
+**Query Pattern**:
+```dart
+// Get all lab results for user's pets (premium feature)
+Query allUserLabs = db.collectionGroup('labResults')
+  .where('metadata.enteredBy', isEqualTo: userId)
+  .orderBy('testDate', descending: true)
+  .limit(50);
+```
+
+### Index Deployment
+Add these indexes to `firestore.indexes.json`:
+
+```json
+{
+  "indexes": [
+    {
+      "collectionGroup": "labResults",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "testDate",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Deploy with:
+```bash
+firebase deploy --only firestore:indexes
+```
+
+### Access Pattern Notes
+- **No 30-day limitation for lab results**: All users (free + premium) have access to complete lab history
+- **Denormalized latest result**: `medicalInfo.latestLabResult` provides instant access without subcollection query
+- **Query cost optimization**: Most UI screens use the denormalized snapshot; full history only loaded on-demand
 
 ## Data Aggregation Strategy
 
@@ -659,3 +871,96 @@ await batch.commit();
 
 
 This schema maintains your excellent cost optimization principles while supporting comprehensive CKD management, premium features, and future expansion capabilities.
+
+---
+
+## Lab Results Implementation Checklist
+
+This checklist tracks the implementation of the `labResults` feature from schema to production. Refer to `~PLANNING/lab_values_implementation.md` for detailed phase breakdowns.
+
+### Phase 1: Schema & Rules (Documentation) ✅
+- [x] Finalize Firestore structure for `labResults` subcollection
+- [x] Define denormalized snapshot field (`medicalInfo.latestLabResult`)
+- [x] Document canonical analyzer keys and unit handling
+- [x] Document security rules requirements
+- [x] Specify required Firestore indexes
+
+### Phase 2: Data Models & Services ✅
+- [x] Create `LabResult` model with analytes and metadata
+- [x] Create `LabMeasurement` model for individual analyte values
+- [x] Add Firestore converters (`fromFirestore`/`toFirestore`)
+- [x] Create `LatestLabSummary` model for denormalized field
+- [x] Extend `PetService` with `createLabResult()` method
+- [x] Extend `PetService` with `watchLabResults()` stream
+- [x] Extend `PetService` with `getLabResults()` paginated method
+- [x] Extend `PetService` with `getLabResult()` single result method
+- [x] Update `MedicalInfo` model to include `latestLabResult` field
+- [x] Add validation methods to all new models
+- [ ] Write unit tests for models and serialization (deferred to Phase 7)
+- [ ] Update existing tests that assumed inline `LabValues` (deferred to Phase 7)
+
+### Phase 3: Onboarding Flow Integration ⏳
+- [ ] Ensure `LabValuesInput` widget captures all required fields
+- [ ] Modify `OnboardingData.toCatProfile` to build `LabResultInput`
+- [ ] Update onboarding submission to write first lab result to subcollection
+- [ ] Update onboarding to set `medicalInfo.latestLabResult` snapshot
+- [ ] Use transaction/batch for atomic profile + lab result creation
+- [ ] Update onboarding validation for new structure
+- [ ] Add test coverage for new metadata fields
+
+### Phase 4: Profile Screen Enhancements ⏳
+- [ ] Add UI section in `CkdProfileScreen` to display lab history list
+- [ ] Reuse `LabValueDisplayWithGauge` for each entry
+- [ ] Implement "Add new lab result" flow
+- [ ] Implement "Edit lab values" functionality (append-only vs edit decision)
+- [ ] Update Riverpod providers with `labResultsProvider`
+- [ ] Add derived `latestLabResult` selector
+- [ ] Display metadata (test date, vet notes, panel type)
+- [ ] Implement empty state UI ("No lab history yet")
+
+### Phase 5: Backend Rules & Index Implementation ⏳
+- [ ] Update `firestore.rules` with `labResults` rules from schema doc
+- [ ] Add `isValidLabResult()` helper function to rules
+- [ ] Enforce immutability for `testDate` and `createdAt`
+- [ ] Update `firestore.indexes.json` with required indexes
+- [ ] Deploy rules: `firebase deploy --only firestore:rules`
+- [ ] Deploy indexes: `firebase deploy --only firestore:indexes`
+- [ ] Test rules with unit tests or manual verification
+
+### Phase 6: Data Migration / Backfill ⏳
+- [ ] Write migration script to convert inline `medicalInfo.labValues` to subcollection
+- [ ] Script should create single `labResults` doc with fallback metadata
+- [ ] Script should update `medicalInfo.latestLabResult` denormalized field
+- [ ] Use batched writes (respect Firestore limits: 500 writes/batch)
+- [ ] Implement throttling to avoid rate limits
+- [ ] Collect before/after counts for verification
+- [ ] Document manual execution steps
+- [ ] Run migration on development environment first
+- [ ] Verify data integrity before production migration
+
+### Phase 7: QA, Docs, & Handoff ⏳
+- [ ] User testing: Onboarding with labs → verify Firestore writes
+- [ ] User testing: Edit labs from profile → verify new history entry
+- [ ] User testing: View lab history → verify sorting and display
+- [ ] User testing: Offline/poor network scenarios
+- [ ] Run `flutter analyze` after all code changes
+- [ ] Update `.cursor/rules/firestore_schema.md` (if needed)
+- [ ] Document provider usage in relevant architecture docs
+- [ ] Add quick-start snippet for querying lab history
+- [ ] Verify analytics events are tracked (if applicable)
+- [ ] Update `.cursor/reference/analytics_list.md` (if applicable)
+
+### Open Questions to Resolve Before Implementation
+- [ ] **Edit/Delete**: Should lab entries be immutable (append-only) or editable?
+- [ ] **Future Analytes**: Any additional analytes to plan for (potassium, calcium, etc.)?
+- [ ] **CSV Import**: Will users import lab results from files? (affects metadata schema)
+- [ ] **Treatment Summaries**: Should lab entries feed into treatment summaries automatically?
+- [ ] **Unit System Default**: Should app default to US or SI units based on user location?
+- [ ] **Validation**: Should app validate analyte values against clinical ranges?
+
+### Implementation Notes
+- **Cost Optimization**: Most reads use denormalized `latestLabResult`; full history loaded on-demand
+- **All Users Access**: No 30-day limitation; free and premium users see complete lab history
+- **Append-Only Pattern**: Consider making `labResults` immutable to preserve audit trail
+- **Unit Flexibility**: Store both entered unit and canonical conversions for future unit toggling
+- **Batched Writes**: Always use transactions/batches when updating pet doc + subcollection together

@@ -116,3 +116,115 @@ const sdmaRange = LabReferenceRange(
   max: 14,
   unit: 'µg/dL',
 );
+
+// =============================================================================
+// SI Unit Reference Ranges
+// =============================================================================
+
+/// Creatinine reference range for cats (SI units).
+///
+/// **Normal Range**: 53 - 141 µmol/L
+///
+/// **Conversion**: 1 mg/dL = 88.4 µmol/L
+/// **Clinical Significance**: Same as US units, but reported in µmol/L
+/// in countries using SI units (Europe, Australia, etc.).
+const creatinineRangeSi = LabReferenceRange(
+  min: 53,
+  max: 141,
+  unit: 'µmol/L',
+);
+
+/// Blood Urea Nitrogen (BUN) reference range for cats (SI units).
+///
+/// **Normal Range**: 5.7 - 11.8 mmol/L
+///
+/// **Conversion**: 1 mg/dL = 0.357 mmol/L
+/// **Clinical Significance**: Same as US units, but reported in mmol/L
+/// in SI regions. In SI contexts, this is often called "Urea" instead of BUN.
+const bunRangeSi = LabReferenceRange(
+  min: 5.7,
+  max: 11.8,
+  unit: 'mmol/L',
+);
+
+// =============================================================================
+// Helper Functions
+// =============================================================================
+
+/// Gets the appropriate reference range for a lab analyte based on unit.
+///
+/// Supports:
+/// - Creatinine: mg/dL (US) or µmol/L (SI)
+/// - BUN: mg/dL (US) or mmol/L (SI)
+/// - SDMA: µg/dL (universal, no unit variants)
+///
+/// Throws [ArgumentError] if analyte or unit is not supported.
+///
+/// Example:
+/// ```dart
+/// final range = getLabReferenceRange('creatinine', 'µmol/L');
+/// print(range.getDisplayRange()); // "53 - 141 µmol/L"
+/// ```
+LabReferenceRange getLabReferenceRange(String analyte, String unit) {
+  switch (analyte.toLowerCase()) {
+    case 'creatinine':
+      switch (unit) {
+        case 'mg/dL':
+          return creatinineRange;
+        case 'µmol/L':
+          return creatinineRangeSi;
+        default:
+          throw ArgumentError(
+            'Unsupported unit "$unit" for creatinine. '
+            'Expected "mg/dL" or "µmol/L".',
+          );
+      }
+    case 'bun':
+      switch (unit) {
+        case 'mg/dL':
+          return bunRange;
+        case 'mmol/L':
+          return bunRangeSi;
+        default:
+          throw ArgumentError(
+            'Unsupported unit "$unit" for BUN. '
+            'Expected "mg/dL" or "mmol/L".',
+          );
+      }
+    case 'sdma':
+      if (unit != 'µg/dL') {
+        throw ArgumentError(
+          'Unsupported unit "$unit" for SDMA. '
+          'Only "µg/dL" is supported.',
+        );
+      }
+      return sdmaRange;
+    default:
+      throw ArgumentError('Unsupported analyte: "$analyte"');
+  }
+}
+
+/// Returns the default unit for an analyte in the specified unit system.
+///
+/// [analyte] should be 'creatinine', 'bun', or 'sdma'.
+/// [unitSystem] should be 'us' or 'si'.
+///
+/// SDMA always returns 'µg/dL' regardless of unit system.
+///
+/// Example:
+/// ```dart
+/// final unit = getDefaultUnit('creatinine', 'si'); // 'µmol/L'
+/// final unit2 = getDefaultUnit('bun', 'us'); // 'mg/dL'
+/// ```
+String getDefaultUnit(String analyte, String unitSystem) {
+  switch (analyte.toLowerCase()) {
+    case 'creatinine':
+      return unitSystem == 'si' ? 'µmol/L' : 'mg/dL';
+    case 'bun':
+      return unitSystem == 'si' ? 'mmol/L' : 'mg/dL';
+    case 'sdma':
+      return 'µg/dL'; // Universal unit
+    default:
+      throw ArgumentError('Unsupported analyte: "$analyte"');
+  }
+}

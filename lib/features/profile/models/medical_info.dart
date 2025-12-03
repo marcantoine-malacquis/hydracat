@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:hydracat/features/profile/models/latest_lab_summary.dart';
 
 /// Sentinel value for copyWith methods to distinguish between
 /// "not provided" and "explicitly set to null"
@@ -213,6 +214,7 @@ class MedicalInfo {
     this.lastCheckupDate,
     this.notes,
     this.labValues,
+    this.latestLabResult,
   });
 
   /// Creates a [MedicalInfo] from JSON data
@@ -230,6 +232,11 @@ class MedicalInfo {
       notes: json['notes'] as String?,
       labValues: json['labValues'] != null
           ? LabValues.fromJson(json['labValues'] as Map<String, dynamic>)
+          : null,
+      latestLabResult: json['latestLabResult'] != null
+          ? LatestLabSummary.fromJson(
+              json['latestLabResult'] as Map<String, dynamic>,
+            )
           : null,
     );
   }
@@ -249,6 +256,13 @@ class MedicalInfo {
   /// Laboratory values from bloodwork
   final LabValues? labValues;
 
+  /// Denormalized snapshot of most recent lab result
+  ///
+  /// Provides instant access to the latest bloodwork values without
+  /// querying the labResults subcollection. Updated automatically when
+  /// new lab results are added.
+  final LatestLabSummary? latestLabResult;
+
   /// Converts [MedicalInfo] to JSON data
   Map<String, dynamic> toJson() {
     return {
@@ -257,6 +271,8 @@ class MedicalInfo {
       'lastCheckupDate': lastCheckupDate?.toIso8601String(),
       'notes': notes,
       'labValues': labValues?.toJson(),
+      if (latestLabResult != null)
+        'latestLabResult': latestLabResult!.toJson(),
     };
   }
 
@@ -267,19 +283,23 @@ class MedicalInfo {
     Object? lastCheckupDate = _undefined,
     Object? notes = _undefined,
     LabValues? labValues,
+    Object? latestLabResult = _undefined,
   }) {
     return MedicalInfo(
-      ckdDiagnosisDate: ckdDiagnosisDate == _undefined 
-          ? this.ckdDiagnosisDate 
+      ckdDiagnosisDate: ckdDiagnosisDate == _undefined
+          ? this.ckdDiagnosisDate
           : ckdDiagnosisDate as DateTime?,
-      irisStage: irisStage == _undefined 
-          ? this.irisStage 
+      irisStage: irisStage == _undefined
+          ? this.irisStage
           : irisStage as IrisStage?,
-      lastCheckupDate: lastCheckupDate == _undefined 
-          ? this.lastCheckupDate 
+      lastCheckupDate: lastCheckupDate == _undefined
+          ? this.lastCheckupDate
           : lastCheckupDate as DateTime?,
       notes: notes == _undefined ? this.notes : notes as String?,
       labValues: labValues ?? this.labValues,
+      latestLabResult: latestLabResult == _undefined
+          ? this.latestLabResult
+          : latestLabResult as LatestLabSummary?,
     );
   }
 
@@ -318,7 +338,8 @@ class MedicalInfo {
       irisStage != null ||
       lastCheckupDate != null ||
       (notes != null && notes!.isNotEmpty) ||
-      (labValues != null && labValues!.hasValues);
+      (labValues != null && labValues!.hasValues) ||
+      (latestLabResult != null && latestLabResult!.hasValues);
 
   @override
   bool operator ==(Object other) {
@@ -329,7 +350,8 @@ class MedicalInfo {
         other.irisStage == irisStage &&
         other.lastCheckupDate == lastCheckupDate &&
         other.notes == notes &&
-        other.labValues == labValues;
+        other.labValues == labValues &&
+        other.latestLabResult == latestLabResult;
   }
 
   @override
@@ -340,6 +362,7 @@ class MedicalInfo {
       lastCheckupDate,
       notes,
       labValues,
+      latestLabResult,
     );
   }
 
@@ -350,7 +373,8 @@ class MedicalInfo {
         'irisStage: $irisStage, '
         'lastCheckupDate: $lastCheckupDate, '
         'notes: $notes, '
-        'labValues: $labValues'
+        'labValues: $labValues, '
+        'latestLabResult: $latestLabResult'
         ')';
   }
 }

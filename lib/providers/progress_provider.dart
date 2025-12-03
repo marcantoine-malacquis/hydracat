@@ -133,50 +133,53 @@ weekSummariesProvider = FutureProvider.autoDispose
 /// doses/schedules for a single calendar day, allowing the month view to render
 /// calendar dots and the 31-bar chart from a single monthly summary read.
 final AutoDisposeFutureProviderFamily<List<TreatmentDayBucket>?, DateTime>
-    monthlyTreatmentBucketsProvider =
-    FutureProvider.autoDispose.family<List<TreatmentDayBucket>?, DateTime>(
-  (ref, monthStart) async {
-    // Watch cache to invalidate when today's data changes
-    ref.watch(dailyCacheProvider);
+monthlyTreatmentBucketsProvider = FutureProvider.autoDispose
+    .family<List<TreatmentDayBucket>?, DateTime>(
+      (ref, monthStart) async {
+        // Watch cache to invalidate when today's data changes
+        ref.watch(dailyCacheProvider);
 
-    final user = ref.read(currentUserProvider);
-    final pet = ref.read(primaryPetProvider);
-    if (user == null || pet == null) return null;
+        final user = ref.read(currentUserProvider);
+        final pet = ref.read(primaryPetProvider);
+        if (user == null || pet == null) return null;
 
-    // Normalize monthStart to first day of month at 00:00
-    final normalizedMonthStart = DateTime(monthStart.year, monthStart.month);
+        // Normalize monthStart to first day of month at 00:00
+        final normalizedMonthStart = DateTime(
+          monthStart.year,
+          monthStart.month,
+        );
 
-    if (kDebugMode) {
-      debugPrint(
-        '[monthlyTreatmentBucketsProvider] Fetching monthly summary for '
-        '${AppDateUtils.formatMonthForSummary(normalizedMonthStart)}',
-      );
-    }
+        if (kDebugMode) {
+          debugPrint(
+            '[monthlyTreatmentBucketsProvider] Fetching monthly summary for '
+            '${AppDateUtils.formatMonthForSummary(normalizedMonthStart)}',
+          );
+        }
 
-    final summaryService = ref.read(summaryServiceProvider);
-    final monthlySummary = await summaryService.getMonthlySummary(
-      userId: user.id,
-      petId: pet.id,
-      date: normalizedMonthStart,
+        final summaryService = ref.read(summaryServiceProvider);
+        final monthlySummary = await summaryService.getMonthlySummary(
+          userId: user.id,
+          petId: pet.id,
+          date: normalizedMonthStart,
+        );
+
+        // Build buckets from monthly summary
+        final buckets = buildMonthlyTreatmentBuckets(
+          monthStart: normalizedMonthStart,
+          summary: monthlySummary,
+        );
+
+        if (kDebugMode) {
+          final count = buckets?.length ?? 0;
+          debugPrint(
+            '[monthlyTreatmentBucketsProvider] Built $count buckets '
+            '(${monthlySummary == null ? 'no summary' : 'summary found'})',
+          );
+        }
+
+        return buckets;
+      },
     );
-
-    // Build buckets from monthly summary
-    final buckets = buildMonthlyTreatmentBuckets(
-      monthStart: normalizedMonthStart,
-      summary: monthlySummary,
-    );
-
-    if (kDebugMode) {
-      final count = buckets?.length ?? 0;
-      debugPrint(
-        '[monthlyTreatmentBucketsProvider] Built $count buckets '
-        '(${monthlySummary == null ? 'no summary' : 'summary found'})',
-      );
-    }
-
-    return buckets;
-  },
-);
 
 /// Transforms monthly fluid buckets into chart-ready data for month view.
 ///
@@ -185,7 +188,8 @@ final AutoDisposeFutureProviderFamily<List<TreatmentDayBucket>?, DateTime>
 ///
 /// Returns null if loading or no monthly summary exists.
 ///
-/// Cost: 0 additional Firestore reads (reuses monthlyTreatmentBucketsProvider cache)
+/// Cost: 0 additional Firestore reads (reuses
+/// [monthlyTreatmentBucketsProvider] cache)
 ///
 /// Example:
 /// ```dart
@@ -195,18 +199,21 @@ final AutoDisposeFutureProviderFamily<List<TreatmentDayBucket>?, DateTime>
 /// }
 /// ```
 final AutoDisposeProviderFamily<FluidMonthChartData?, DateTime>
-    monthlyFluidChartDataProvider =
-    Provider.autoDispose.family<FluidMonthChartData?, DateTime>(
-  (ref, monthStart) {
-    final bucketsAsync = ref.watch(monthlyTreatmentBucketsProvider(monthStart));
+monthlyFluidChartDataProvider = Provider.autoDispose
+    .family<FluidMonthChartData?, DateTime>(
+      (ref, monthStart) {
+        final bucketsAsync = ref.watch(
+          monthlyTreatmentBucketsProvider(monthStart),
+        );
 
-    return bucketsAsync.when(
-      data: (buckets) => _transformBucketsToMonthChartData(monthStart, buckets),
-      loading: () => null,
-      error: (_, __) => null,
+        return bucketsAsync.when(
+          data: (buckets) =>
+              _transformBucketsToMonthChartData(monthStart, buckets),
+          loading: () => null,
+          error: (_, _) => null,
+        );
+      },
     );
-  },
-);
 
 /// Computes the status (dot color) for each day of a given week.
 ///
@@ -277,8 +284,9 @@ dateRangeStatusProvider = FutureProvider.autoDispose
         // Month mode: use unified treatment buckets (optimized single read)
         final firstDayOfMonth = DateTime(rangeStart.year, rangeStart.month);
 
-        final buckets = await ref
-            .watch(monthlyTreatmentBucketsProvider(firstDayOfMonth).future);
+        final buckets = await ref.watch(
+          monthlyTreatmentBucketsProvider(firstDayOfMonth).future,
+        );
 
         // Transform buckets to status map
         return buildMonthStatusesFromBuckets(buckets, DateTime.now());
@@ -407,77 +415,86 @@ fluidDailySummaryViewProvider = Provider.autoDispose
 ///
 /// Returns null if no symptoms were logged for the day.
 final AutoDisposeProviderFamily<SymptomsDailySummaryView?, DateTime>
-    symptomsDailySummaryViewProvider = Provider.autoDispose
-        .family<SymptomsDailySummaryView?, DateTime>((ref, day) {
-  final normalized = AppDateUtils.startOfDay(day);
-  final weekStart = AppDateUtils.startOfWeekMonday(normalized);
-  final summariesAsync = ref.watch(weekSummariesProvider(weekStart));
+symptomsDailySummaryViewProvider = Provider.autoDispose
+    .family<SymptomsDailySummaryView?, DateTime>((ref, day) {
+      final normalized = AppDateUtils.startOfDay(day);
+      final weekStart = AppDateUtils.startOfWeekMonday(normalized);
+      final summariesAsync = ref.watch(weekSummariesProvider(weekStart));
 
-  return summariesAsync.maybeWhen(
-    data: (map) {
-      final summary = map[normalized];
+      return summariesAsync.maybeWhen(
+        data: (map) {
+          final summary = map[normalized];
 
-      // Return null if no summary or no symptoms for this day
-      if (summary == null || summary.hasSymptoms == false) {
-        return null;
-      }
-
-      final symptoms = <SymptomItem>[];
-
-      // Build symptom items in a consistent order matching SymptomType.all
-      final symptomData = [
-        (SymptomType.vomiting, summary.hadVomiting, summary.vomitingRawValue),
-        (SymptomType.diarrhea, summary.hadDiarrhea, summary.diarrheaRawValue),
-        (
-          SymptomType.constipation,
-          summary.hadConstipation,
-          summary.constipationRawValue
-        ),
-        (SymptomType.energy, summary.hadEnergy, summary.energyRawValue),
-        (
-          SymptomType.suppressedAppetite,
-          summary.hadSuppressedAppetite,
-          summary.suppressedAppetiteRawValue
-        ),
-        (
-          SymptomType.injectionSiteReaction,
-          summary.hadInjectionSiteReaction,
-          summary.injectionSiteReactionRawValue
-        ),
-      ];
-
-      for (final (symptomKey, hadSymptom, rawValue) in symptomData) {
-        if (hadSymptom) {
-          final label = SymptomDescriptorUtils.getSymptomLabel(symptomKey);
-          final descriptor = SymptomDescriptorUtils.formatRawValueDescriptor(
-            symptomKey,
-            rawValue,
-          );
-
-          // Only add if we have a valid descriptor
-          if (descriptor != null) {
-            symptoms.add(
-              SymptomItem(
-                symptomKey: symptomKey,
-                label: label,
-                descriptor: descriptor,
-              ),
-            );
+          // Return null if no summary or no symptoms for this day
+          if (summary == null || summary.hasSymptoms == false) {
+            return null;
           }
-        }
-      }
 
-      // Return null if no valid symptoms after filtering
-      if (symptoms.isEmpty) return null;
+          final symptoms = <SymptomItem>[];
 
-      return SymptomsDailySummaryView(
-        symptoms: symptoms,
-        isToday: AppDateUtils.isToday(normalized),
+          // Build symptom items in a consistent order matching SymptomType.all
+          final symptomData = [
+            (
+              SymptomType.vomiting,
+              summary.hadVomiting,
+              summary.vomitingRawValue,
+            ),
+            (
+              SymptomType.diarrhea,
+              summary.hadDiarrhea,
+              summary.diarrheaRawValue,
+            ),
+            (
+              SymptomType.constipation,
+              summary.hadConstipation,
+              summary.constipationRawValue,
+            ),
+            (SymptomType.energy, summary.hadEnergy, summary.energyRawValue),
+            (
+              SymptomType.suppressedAppetite,
+              summary.hadSuppressedAppetite,
+              summary.suppressedAppetiteRawValue,
+            ),
+            (
+              SymptomType.injectionSiteReaction,
+              summary.hadInjectionSiteReaction,
+              summary.injectionSiteReactionRawValue,
+            ),
+          ];
+
+          for (final (symptomKey, hadSymptom, rawValue) in symptomData) {
+            if (hadSymptom) {
+              final label = SymptomDescriptorUtils.getSymptomLabel(symptomKey);
+              final descriptor =
+                  SymptomDescriptorUtils.formatRawValueDescriptor(
+                    symptomKey,
+                    rawValue,
+                  );
+
+              // Only add if we have a valid descriptor
+              if (descriptor != null) {
+                symptoms.add(
+                  SymptomItem(
+                    symptomKey: symptomKey,
+                    label: label,
+                    descriptor: descriptor,
+                  ),
+                );
+              }
+            }
+          }
+
+          // Return null if no valid symptoms after filtering
+          if (symptoms.isEmpty) return null;
+
+          return SymptomsDailySummaryView(
+            symptoms: symptoms,
+            isToday: AppDateUtils.isToday(normalized),
+          );
+        },
+        orElse: () => null,
       );
-    },
-    orElse: () => null,
-  );
-});
+    });
 
 /// Provider for current month's symptoms summary
 ///
@@ -792,10 +809,10 @@ List<TreatmentDayBucket>? buildMonthlyTreatmentBuckets({
 
   final hasMismatch =
       summary.dailyVolumes.length != monthLength ||
-          summary.dailyGoals.length != monthLength ||
-          summary.dailyScheduledSessions.length != monthLength ||
-          summary.dailyMedicationDoses.length != monthLength ||
-          summary.dailyMedicationScheduledDoses.length != monthLength;
+      summary.dailyGoals.length != monthLength ||
+      summary.dailyScheduledSessions.length != monthLength ||
+      summary.dailyMedicationDoses.length != monthLength ||
+      summary.dailyMedicationScheduledDoses.length != monthLength;
 
   if (hasMismatch) {
     if (kDebugMode) {
@@ -841,7 +858,9 @@ List<TreatmentDayBucket>? buildMonthlyTreatmentBuckets({
 ///
 /// Example:
 /// ```dart
-/// final buckets = await ref.watch(monthlyTreatmentBucketsProvider(monthStart).future);
+/// final buckets = await ref.watch(
+///   monthlyTreatmentBucketsProvider(monthStart).future,
+/// );
 /// final statuses = _buildMonthStatusesFromBuckets(buckets, DateTime.now());
 /// // statuses[Oct 15] == DayDotStatus.complete (if goal met)
 /// ```
@@ -858,12 +877,14 @@ Map<DateTime, DayDotStatus> buildMonthStatusesFromBuckets(
   final statuses = <DateTime, DayDotStatus>{};
 
   for (final bucket in buckets) {
-    final isBucketToday = bucket.date.year == today.year &&
+    final isBucketToday =
+        bucket.date.year == today.year &&
         bucket.date.month == today.month &&
         bucket.date.day == today.day;
     final isPast = bucket.date.isBefore(today);
     final hasSchedules = bucket.hasScheduledTreatments;
-    final isMissed = (bucket.hasFluidScheduled && !bucket.isFluidComplete) ||
+    final isMissed =
+        (bucket.hasFluidScheduled && !bucket.isFluidComplete) ||
         (bucket.hasMedicationScheduled && !bucket.isMedicationComplete);
 
     // Future days → none
@@ -873,14 +894,16 @@ Map<DateTime, DayDotStatus> buildMonthStatusesFromBuckets(
     }
 
     if (!hasSchedules) {
-      statuses[bucket.date] =
-          isBucketToday ? DayDotStatus.today : DayDotStatus.none;
+      statuses[bucket.date] = isBucketToday
+          ? DayDotStatus.today
+          : DayDotStatus.none;
       continue;
     }
 
     if (isBucketToday) {
-      statuses[bucket.date] =
-          bucket.isComplete ? DayDotStatus.complete : DayDotStatus.today;
+      statuses[bucket.date] = bucket.isComplete
+          ? DayDotStatus.complete
+          : DayDotStatus.today;
       continue;
     }
 
@@ -921,7 +944,7 @@ FluidMonthChartData? _transformBucketsToMonthChartData(
   final days = <FluidMonthDayData>[];
 
   // Transform each bucket to chart day data
-  for (int i = 0; i < monthLength; i++) {
+  for (var i = 0; i < monthLength; i++) {
     final bucket = buckets[i];
     final volumeMl = bucket.fluidVolumeMl.toDouble();
     final goalMl = bucket.fluidGoalMl.toDouble();
@@ -958,8 +981,9 @@ FluidMonthChartData? _transformBucketsToMonthChartData(
   // Detect unified goal (all days have same goal AND goal > 0)
   final uniqueGoals = goals.toSet();
   final allDaysHaveGoals = goals.length == monthLength;
-  final goalLineY =
-      (uniqueGoals.length == 1 && allDaysHaveGoals) ? uniqueGoals.first : null;
+  final goalLineY = (uniqueGoals.length == 1 && allDaysHaveGoals)
+      ? uniqueGoals.first
+      : null;
 
   return FluidMonthChartData(
     days: days,

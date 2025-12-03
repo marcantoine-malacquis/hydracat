@@ -449,7 +449,6 @@ class _SymptomsEntryDialogState extends ConsumerState<SymptomsEntryDialog> {
     final isCupertino =
         defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS;
-    final label = isCupertino ? 'Done' : 'Save';
 
     if (_isSaving) {
       return const SizedBox(
@@ -466,7 +465,7 @@ class _SymptomsEntryDialogState extends ConsumerState<SymptomsEntryDialog> {
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
       child: Text(
-        label,
+        'Save',
         style: AppTextStyles.buttonPrimary.copyWith(
           fontWeight: isCupertino ? FontWeight.w600 : FontWeight.w500,
         ),

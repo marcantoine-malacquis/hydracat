@@ -32,7 +32,8 @@ class LabValueDisplayWithGauge extends StatelessWidget {
     required this.label,
     required this.value,
     required this.referenceRange,
-    required this.onEdit,
+    this.unit,
+    this.onEdit,
     super.key,
   });
 
@@ -45,12 +46,17 @@ class LabValueDisplayWithGauge extends StatelessWidget {
   /// The reference range object containing min, max, and unit.
   final LabReferenceRange referenceRange;
 
-  /// Callback when the edit button is pressed.
-  final VoidCallback onEdit;
+  /// Unit of measurement (e.g., 'mg/dL', 'µmol/L', 'µg/dL')
+  /// If null, uses the unit from referenceRange
+  final String? unit;
+
+  /// Callback when the edit button is pressed (null to hide edit button).
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
     final hasValue = value != null;
+    final displayUnit = unit ?? referenceRange.unit;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -88,29 +94,30 @@ class LabValueDisplayWithGauge extends StatelessWidget {
                 ),
               ),
 
-              // Edit button
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: IconButton(
-                  onPressed: onEdit,
-                  icon: const Icon(
-                    Icons.edit,
-                    size: 16,
-                    color: AppColors.primary,
+              // Edit button (only shown if callback provided)
+              if (onEdit != null)
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
                   ),
-                  tooltip: 'Edit $label',
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 36,
-                    minHeight: 36,
+                  child: IconButton(
+                    onPressed: onEdit,
+                    icon: const Icon(
+                      Icons.edit,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
+                    tooltip: 'Edit $label',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
 
@@ -126,7 +133,7 @@ class LabValueDisplayWithGauge extends StatelessWidget {
                     value: value!,
                     min: referenceRange.min,
                     max: referenceRange.max,
-                    unit: referenceRange.unit,
+                    unit: displayUnit,
                   ),
                 )
               else

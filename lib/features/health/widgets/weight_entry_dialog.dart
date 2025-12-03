@@ -198,9 +198,7 @@ class _WeightEntryDialogState extends ConsumerState<WeightEntryDialog> {
     final isCupertino =
         defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS;
-    final label = isCupertino
-        ? 'Done'
-        : (widget.existingEntry != null ? 'Save' : 'Add');
+    final label = widget.existingEntry != null ? 'Save' : 'Add';
 
     return TextButton(
       onPressed: _save,

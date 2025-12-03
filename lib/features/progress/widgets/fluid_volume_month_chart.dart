@@ -219,7 +219,6 @@ class _FluidVolumeMonthChartState extends ConsumerState<FluidVolumeMonthChart>
   /// Builds X-axis titles showing day numbers every 5 days
   FlTitlesData _buildTitlesData(FluidMonthChartData chartData) {
     return FlTitlesData(
-      show: true,
       bottomTitles: AxisTitles(
         sideTitles: SideTitles(
           showTitles: true,
@@ -233,8 +232,8 @@ class _FluidVolumeMonthChartState extends ConsumerState<FluidVolumeMonthChart>
             final dayOfMonth = chartData.days[dayIndex].dayOfMonth;
 
             // Show labels for days 1, 5, 10, 15, 20, 25, 30
-            final showLabel = dayOfMonth == 1 ||
-                (dayOfMonth % 5 == 0 && dayOfMonth <= 30);
+            final showLabel =
+                dayOfMonth == 1 || (dayOfMonth % 5 == 0 && dayOfMonth <= 30);
 
             if (!showLabel) {
               return const SizedBox.shrink();
@@ -253,9 +252,9 @@ class _FluidVolumeMonthChartState extends ConsumerState<FluidVolumeMonthChart>
           },
         ),
       ),
-      leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      leftTitles: const AxisTitles(),
+      topTitles: const AxisTitles(),
+      rightTitles: const AxisTitles(),
     );
   }
 
@@ -337,8 +336,8 @@ class _FluidVolumeMonthChartState extends ConsumerState<FluidVolumeMonthChart>
         begin: Alignment.bottomCenter,
         end: Alignment.topCenter,
         colors: [
-          AppColors.primary.withOpacity(baseOpacity),
-          AppColors.primary.withOpacity(topOpacity),
+          AppColors.primary.withValues(alpha: baseOpacity),
+          AppColors.primary.withValues(alpha: topOpacity),
         ],
       ),
     );
@@ -357,7 +356,7 @@ class _FluidVolumeMonthChartState extends ConsumerState<FluidVolumeMonthChart>
         horizontalLines: [
           HorizontalLine(
             y: chartData.goalLineY!,
-            color: Colors.amber[600]!,
+            color: Colors.amber[600],
             strokeWidth: 1.5,
             dashArray: const [8, 4],
           ),
@@ -411,11 +410,12 @@ class _FluidVolumeMonthChartState extends ConsumerState<FluidVolumeMonthChart>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.7),
+              color: Theme.of(
+                context,
+              ).scaffoldBackgroundColor.withValues(alpha: 0.7),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Colors.amber[600]!.withOpacity(0.3),
-                width: 1,
+                color: Colors.amber[600]!.withValues(alpha: 0.3),
               ),
             ),
             child: Text(
@@ -439,8 +439,9 @@ class _FluidVolumeMonthChartState extends ConsumerState<FluidVolumeMonthChart>
     final formattedDate = DateFormat('MMM d').format(day.date);
     final volumeText = '${day.volumeMl.toInt()} ml';
     final goalText = day.goalMl > 0 ? '/ ${day.goalMl.toInt()} ml' : '';
-    final percentageText =
-        day.goalMl > 0 ? ' (${day.percentage.toInt()}%)' : '';
+    final percentageText = day.goalMl > 0
+        ? ' (${day.percentage.toInt()}%)'
+        : '';
 
     // Position tooltip left or right based on bar index
     // Left side for bars 0-14, right side for bars 15+
@@ -448,7 +449,9 @@ class _FluidVolumeMonthChartState extends ConsumerState<FluidVolumeMonthChart>
 
     return Positioned(
       left: isLeftSide ? _touchPosition!.dx + 16 : null,
-      right: isLeftSide ? null : MediaQuery.of(context).size.width - _touchPosition!.dx + 16,
+      right: isLeftSide
+          ? null
+          : MediaQuery.of(context).size.width - _touchPosition!.dx + 16,
       top: _touchPosition!.dy - 60,
       child: IgnorePointer(
         child: Material(
@@ -460,7 +463,7 @@ class _FluidVolumeMonthChartState extends ConsumerState<FluidVolumeMonthChart>
               borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),

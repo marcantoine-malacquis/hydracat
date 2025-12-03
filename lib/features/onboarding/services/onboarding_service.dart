@@ -14,6 +14,8 @@ import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_progress.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
+import 'package:hydracat/features/profile/models/lab_measurement.dart';
+import 'package:hydracat/features/profile/models/lab_result.dart';
 import 'package:hydracat/features/profile/services/pet_service.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
 import 'package:hydracat/shared/services/secure_preferences_service.dart';
@@ -468,6 +470,42 @@ class OnboardingService {
             'Schedules can be added later from profile screens.',
           );
         }
+
+        // Create lab result if lab data was provided during onboarding
+        if (_currentData!.hasCompleteLabData) {
+          if (kDebugMode) {
+            debugPrint(
+              '[OnboardingService] Creating lab result from onboarding data',
+            );
+          }
+
+          final labResult = _createLabResultFromOnboardingData(
+            petProfile.id,
+            _currentData!,
+          );
+
+          final labResultResult = await _petService.createLabResult(
+            petId: petProfile.id,
+            labResult: labResult,
+            preferredUnitSystem: 'us', // Default to US units
+          );
+
+          if (labResultResult is PetFailure) {
+            // Log error but don't fail onboarding
+            // User can add lab results later
+            if (kDebugMode) {
+              debugPrint(
+                '[OnboardingService] WARNING: Failed to create lab result: '
+                '${labResultResult.message}',
+              );
+            }
+          } else if (kDebugMode) {
+            debugPrint(
+              '[OnboardingService] Successfully created lab result '
+              '${labResult.id}',
+            );
+          }
+        }
       }
 
       // Mark onboarding as completed
@@ -667,5 +705,59 @@ class OnboardingService {
   /// Generates a unique pet ID
   String _generatePetId() {
     return 'pet_${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  /// Creates a LabResult from onboarding data
+  ///
+  /// Converts the flat lab value fields in OnboardingData to a structured
+  /// LabResult with proper measurements and metadata.
+  LabResult _createLabResultFromOnboardingData(
+    String petId,
+    OnboardingData data,
+  ) {
+    final values = <String, LabMeasurement>{};
+
+    // Add creatinine if present
+    if (data.creatinineMgDl != null) {
+      values['creatinine'] = LabMeasurement(
+        value: data.creatinineMgDl!,
+        unit: 'mg/dL',
+      );
+    }
+
+    // Add BUN if present
+    if (data.bunMgDl != null) {
+      values['bun'] = LabMeasurement(
+        value: data.bunMgDl!,
+        unit: 'mg/dL',
+      );
+    }
+
+    // Add SDMA if present
+    if (data.sdmaMcgDl != null) {
+      values['sdma'] = LabMeasurement(
+        value: data.sdmaMcgDl!,
+        unit: 'µg/dL',
+      );
+    }
+
+    // Create metadata if we have vet notes or IRIS stage
+    LabResultMetadata? metadata;
+    if (data.vetNotes != null || data.irisStage != null) {
+      metadata = LabResultMetadata(
+        source: 'manual',
+        enteredBy: data.userId,
+        vetNotes: data.vetNotes,
+        irisStage: data.irisStage?.name,
+      );
+    }
+
+    // Create the lab result using the factory constructor
+    return LabResult.create(
+      petId: petId,
+      testDate: data.bloodworkDate!,
+      values: values,
+      metadata: metadata,
+    );
   }
 }

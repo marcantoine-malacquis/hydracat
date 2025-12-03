@@ -15,6 +15,7 @@ class LabValueData {
     this.bun,
     this.sdma,
     this.bloodworkDate,
+    this.vetNotes,
   });
 
   /// Creatinine level in mg/dL
@@ -29,22 +30,29 @@ class LabValueData {
   /// Date when bloodwork was performed
   final DateTime? bloodworkDate;
 
+  /// Optional veterinarian notes or comments
+  final String? vetNotes;
+
   /// Creates a copy with updated values
   LabValueData copyWith({
     Object? creatinine = _undefined,
     Object? bun = _undefined,
     Object? sdma = _undefined,
     Object? bloodworkDate = _undefined,
+    Object? vetNotes = _undefined,
   }) {
     return LabValueData(
-      creatinine: creatinine == _undefined 
-          ? this.creatinine 
+      creatinine: creatinine == _undefined
+          ? this.creatinine
           : creatinine as double?,
       bun: bun == _undefined ? this.bun : bun as double?,
       sdma: sdma == _undefined ? this.sdma : sdma as double?,
-      bloodworkDate: bloodworkDate == _undefined 
-          ? this.bloodworkDate 
+      bloodworkDate: bloodworkDate == _undefined
+          ? this.bloodworkDate
           : bloodworkDate as DateTime?,
+      vetNotes: vetNotes == _undefined
+          ? this.vetNotes
+          : vetNotes as String?,
     );
   }
 
@@ -91,6 +99,7 @@ class _LabValuesInputState extends State<LabValuesInput> {
   final _creatinineController = TextEditingController();
   final _bunController = TextEditingController();
   final _sdmaController = TextEditingController();
+  final _vetNotesController = TextEditingController();
 
   // Flag to prevent controller updates during user input
   bool _isUserTyping = false;
@@ -116,6 +125,7 @@ class _LabValuesInputState extends State<LabValuesInput> {
     _creatinineController.dispose();
     _bunController.dispose();
     _sdmaController.dispose();
+    _vetNotesController.dispose();
     super.dispose();
   }
 
@@ -129,6 +139,7 @@ class _LabValuesInputState extends State<LabValuesInput> {
     _sdmaController.text = NumberInputUtils.formatForInput(
       widget.labValues.sdma,
     );
+    _vetNotesController.text = widget.labValues.vetNotes ?? '';
   }
 
   void _updateControllers() {
@@ -137,6 +148,7 @@ class _LabValuesInputState extends State<LabValuesInput> {
     );
     final bunText = NumberInputUtils.formatForInput(widget.labValues.bun);
     final sdmaText = NumberInputUtils.formatForInput(widget.labValues.sdma);
+    final vetNotesText = widget.labValues.vetNotes ?? '';
 
     if (_creatinineController.text != creatinineText) {
       _creatinineController.text = creatinineText;
@@ -146,6 +158,9 @@ class _LabValuesInputState extends State<LabValuesInput> {
     }
     if (_sdmaController.text != sdmaText) {
       _sdmaController.text = sdmaText;
+    }
+    if (_vetNotesController.text != vetNotesText) {
+      _vetNotesController.text = vetNotesText;
     }
   }
 
@@ -179,6 +194,22 @@ class _LabValuesInputState extends State<LabValuesInput> {
     _isUserTyping = true;
     final parsedValue = NumberInputUtils.parseDecimal(value);
     widget.onValuesChanged(widget.labValues.copyWith(sdma: parsedValue));
+    // Reset typing flag after a brief delay
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _isUserTyping = false;
+      }
+    });
+  }
+
+  void _onVetNotesChanged(String value) {
+    _isUserTyping = true;
+    final trimmedValue = value.trim();
+    widget.onValuesChanged(
+      widget.labValues.copyWith(
+        vetNotes: trimmedValue.isEmpty ? null : trimmedValue,
+      ),
+    );
     // Reset typing flag after a brief delay
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
@@ -309,6 +340,43 @@ class _LabValuesInputState extends State<LabValuesInput> {
           hintText: '0.00',
           onChanged: _onSdmaChanged,
           errorText: widget.sdmaError,
+        ),
+
+        const SizedBox(height: AppSpacing.lg),
+
+        // Vet Notes (Optional)
+        _buildSectionTitle('Veterinarian Notes (Optional)'),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          'Add any comments or observations from your veterinarian.',
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        TextFormField(
+          controller: _vetNotesController,
+          maxLines: 3,
+          maxLength: 500,
+          decoration: InputDecoration(
+            hintText: 'e.g., "Vet recommends monitoring hydration levels"',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.primary),
+            ),
+            counterStyle: AppTextStyles.caption.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          onChanged: _onVetNotesChanged,
         ),
       ],
     );

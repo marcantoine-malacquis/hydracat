@@ -37,6 +37,7 @@ class OnboardingData {
     this.creatinineMgDl,
     this.bunMgDl,
     this.sdmaMcgDl,
+    this.vetNotes,
   });
 
   /// Creates empty initial data
@@ -56,7 +57,8 @@ class OnboardingData {
       bloodworkDate = null,
       creatinineMgDl = null,
       bunMgDl = null,
-      sdmaMcgDl = null;
+      sdmaMcgDl = null,
+      vetNotes = null;
 
   /// Creates an [OnboardingData] from JSON data
   factory OnboardingData.fromJson(Map<String, dynamic> json) {
@@ -93,6 +95,7 @@ class OnboardingData {
       sdmaMcgDl: json['sdmaMcgDl'] != null
           ? (json['sdmaMcgDl'] as num).toDouble()
           : null,
+      vetNotes: json['vetNotes'] as String?,
     );
   }
 
@@ -143,6 +146,9 @@ class OnboardingData {
 
   /// Symmetric Dimethylarginine (SDMA) level in μg/dL
   final double? sdmaMcgDl;
+
+  /// Optional veterinarian notes or comments about the lab results
+  final String? vetNotes;
 
   /// Pet's weight in pounds (converted from kg)
   double? get petWeightLbs =>
@@ -211,6 +217,7 @@ class OnboardingData {
       'creatinineMgDl': creatinineMgDl,
       'bunMgDl': bunMgDl,
       'sdmaMcgDl': sdmaMcgDl,
+      'vetNotes': vetNotes,
     };
   }
 
@@ -232,6 +239,7 @@ class OnboardingData {
     Object? creatinineMgDl = _undefined,
     Object? bunMgDl = _undefined,
     Object? sdmaMcgDl = _undefined,
+    Object? vetNotes = _undefined,
   }) {
     return OnboardingData(
       userId: userId == _undefined ? this.userId : userId as String?,
@@ -266,6 +274,7 @@ class OnboardingData {
       sdmaMcgDl: sdmaMcgDl == _undefined
           ? this.sdmaMcgDl
           : sdmaMcgDl as double?,
+      vetNotes: vetNotes == _undefined ? this.vetNotes : vetNotes as String?,
     );
   }
 
@@ -290,6 +299,7 @@ class OnboardingData {
       creatinineMgDl: null,
       bunMgDl: null,
       sdmaMcgDl: null,
+      vetNotes: null,
     );
   }
 
@@ -435,7 +445,8 @@ class OnboardingData {
         other.bloodworkDate == bloodworkDate &&
         other.creatinineMgDl == creatinineMgDl &&
         other.bunMgDl == bunMgDl &&
-        other.sdmaMcgDl == sdmaMcgDl;
+        other.sdmaMcgDl == sdmaMcgDl &&
+        other.vetNotes == vetNotes;
   }
 
   @override
@@ -456,7 +467,7 @@ class OnboardingData {
       bloodworkDate,
       creatinineMgDl,
       bunMgDl,
-      sdmaMcgDl,
+      Object.hash(sdmaMcgDl, vetNotes),
     );
   }
 
@@ -478,7 +489,8 @@ class OnboardingData {
         'bloodworkDate: $bloodworkDate, '
         'creatinineMgDl: $creatinineMgDl, '
         'bunMgDl: $bunMgDl, '
-        'sdmaMcgDl: $sdmaMcgDl'
+        'sdmaMcgDl: $sdmaMcgDl, '
+        'vetNotes: $vetNotes'
         ')';
   }
 }

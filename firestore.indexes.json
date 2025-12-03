@@ -21,6 +21,16 @@
         { "fieldPath": "isActive", "order": "ASCENDING" },
         { "fieldPath": "hasFcmToken", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "labResults",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "testDate",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -13,6 +13,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/features/profile/exceptions/profile_exceptions.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
+import 'package:hydracat/features/profile/models/lab_result.dart';
+import 'package:hydracat/features/profile/models/latest_lab_summary.dart';
 import 'package:hydracat/features/profile/services/profile_validation_service.dart';
 import 'package:hydracat/shared/services/firebase_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -534,7 +536,8 @@ class PetService {
   Future<void> _saveToPersistentCache(CatProfile pet, String userId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final petJson = json.encode(pet.toJson());
+      final cacheReadyData = _prepareForPersistentCache(pet.toJson());
+      final petJson = json.encode(cacheReadyData);
       final timestamp = DateTime.now().toIso8601String();
 
       await prefs.setString('${_persistentCacheKey}_$userId', petJson);
@@ -573,6 +576,48 @@ class PetService {
     } on Exception catch (e) {
       debugPrint('Error clearing persistent cache for user: $e');
     }
+  }
+
+  /// Converts Firestore-specific objects into JSON-safe values before caching.
+  Map<String, dynamic> _prepareForPersistentCache(
+    Map<String, dynamic> data,
+  ) {
+    return data.map(
+      (key, value) => MapEntry(key, _convertCacheValue(value)),
+    );
+  }
+
+  /// Recursively converts values into primitives encodable by json.encode.
+  dynamic _convertCacheValue(dynamic value) {
+    if (value == null ||
+        value is num ||
+        value is bool ||
+        value is String) {
+      return value;
+    }
+
+    if (value is DateTime) {
+      return value.toIso8601String();
+    }
+
+    if (value is Timestamp) {
+      return value.toDate().toIso8601String();
+    }
+
+    if (value is Iterable) {
+      return value.map(_convertCacheValue).toList();
+    }
+
+    if (value is Map) {
+      return value.map(
+        (key, dynamic nestedValue) => MapEntry(
+          key.toString(),
+          _convertCacheValue(nestedValue),
+        ),
+      );
+    }
+
+    return value.toString();
   }
 
   /// Validates whether primary cache is still valid
@@ -756,6 +801,246 @@ class PetService {
           ),
         );
       }
+    }
+  }
+
+  // ========== Lab Results Methods ==========
+
+  /// Creates a new lab result and updates the denormalized snapshot
+  ///
+  /// Uses a batch write to atomically:
+  /// 1. Create the lab result document in the labResults subcollection
+  /// 2. Update the pet's medicalInfo.latestLabResult denormalized snapshot
+  ///
+  /// The denormalized snapshot provides instant UI access without querying
+  /// the subcollection (cost optimization).
+  Future<PetResult> createLabResult({
+    required String petId,
+    required LabResult labResult,
+    String? preferredUnitSystem,
+  }) async {
+    try {
+      final userId = _currentUserId;
+      if (userId == null) {
+        return const PetFailure(
+          PetServiceException('Must be logged in to create lab results'),
+        );
+      }
+
+      // Validate the lab result
+      final validationErrors = labResult.validate();
+      if (validationErrors.isNotEmpty) {
+        return PetFailure(
+          ProfileValidationException(validationErrors),
+        );
+      }
+
+      // Ensure the lab result belongs to the correct pet
+      if (labResult.petId != petId) {
+        return const PetFailure(
+          PetServiceException('Lab result pet ID does not match'),
+        );
+      }
+
+      // Get the pet to verify ownership
+      final pet = await getPet(petId);
+      if (pet == null) {
+        return const PetFailure(PetNotFoundException());
+      }
+
+      if (pet.userId != userId) {
+        return const PetFailure(PetServiceException.permission());
+      }
+
+      // Create denormalized summary for the pet document
+      final latestSummary = _createLatestLabSummary(
+        labResult,
+        preferredUnitSystem,
+      );
+
+      // Use batch write for atomicity
+      final batch = _firestore.batch();
+
+      // 1. Create lab result document in subcollection
+      final labResultRef = _petsCollection!
+          .doc(petId)
+          .collection('labResults')
+          .doc(labResult.id);
+
+      batch.set(labResultRef, labResult.toJson());
+
+      // 2. Update pet document with latest lab summary
+      final petRef = _petsCollection!.doc(petId);
+      batch.update(petRef, {
+        'medicalInfo.latestLabResult': latestSummary.toJson(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Commit the batch
+      await batch.commit();
+
+      // Update cache with new latestLabResult
+      if (_cachedPrimaryPet?.id == petId) {
+        _cachedPrimaryPet = _cachedPrimaryPet!.copyWith(
+          medicalInfo: _cachedPrimaryPet!.medicalInfo.copyWith(
+            latestLabResult: latestSummary,
+          ),
+          updatedAt: DateTime.now(),
+        );
+        _cacheTimestamp = DateTime.now();
+
+        // Save to persistent cache (fire and forget)
+        unawaited(_saveToPersistentCache(_cachedPrimaryPet!, userId));
+      }
+
+      // Update multi-pet cache if present
+      if (_multiPetCache.containsKey(petId)) {
+        _multiPetCache[petId] = _multiPetCache[petId]!.copyWith(
+          medicalInfo: _multiPetCache[petId]!.medicalInfo.copyWith(
+            latestLabResult: latestSummary,
+          ),
+          updatedAt: DateTime.now(),
+        );
+        _multiPetCacheTimestamps[petId] = DateTime.now();
+      }
+
+      return PetSuccess(pet);
+    } on FirebaseException catch (e) {
+      return PetFailure(ProfileExceptionMapper.mapFirestoreException(e));
+    } on Exception catch (e) {
+      return PetFailure(ProfileExceptionMapper.mapGenericException(e));
+    }
+  }
+
+  /// Helper to create a denormalized lab summary from a full LabResult
+  ///
+  /// CRITICAL: Stores the user-entered value with the preferredUnitSystem.
+  /// The actual unit for each analyte is derived at display time using
+  /// getDefaultUnit(analyte, preferredUnitSystem).
+  ///
+  /// This works because the unit toggle applies to ALL values:
+  /// - preferredUnitSystem='us' → creatinine in mg/dL, BUN in mg/dL
+  /// - preferredUnitSystem='si' → creatinine in µmol/L, BUN in mmol/L
+  /// - SDMA always in µg/dL regardless of system
+  ///
+  /// Example:
+  /// If user enters Creatinine=120 in SI units:
+  /// - LabResult stores: {value: 120, unit: "µmol/L", valueUs: null, valueSi: null}
+  /// - LatestLabSummary stores: {creatinine: 120, preferredUnitSystem: "si"}
+  /// - Display derives: unit = getDefaultUnit('creatinine', 'si') = "µmol/L"
+  /// - Gauge uses: getLabReferenceRange('creatinine', 'µmol/L') = SI range (53-141)
+  LatestLabSummary _createLatestLabSummary(
+    LabResult labResult,
+    String? preferredUnitSystem,
+  ) {
+    // Extract the entered values directly (NOT valueUs/valueSi - those are null)
+    final creatinineValue = labResult.creatinine?.value;
+    final bunValue = labResult.bun?.value;
+    final sdmaValue = labResult.sdma?.value;
+    final phosphorusValue = labResult.phosphorus?.value;
+
+    return LatestLabSummary(
+      testDate: labResult.testDate,
+      labResultId: labResult.id,
+      creatinine: creatinineValue,
+      bun: bunValue,
+      sdma: sdmaValue,
+      phosphorus: phosphorusValue,
+      preferredUnitSystem: preferredUnitSystem ?? 'us',
+    );
+  }
+
+  /// Watches lab results for a pet (realtime stream)
+  ///
+  /// Returns a stream of lab results ordered by test date (most recent first).
+  /// Useful for displaying lab history in the UI.
+  Stream<List<LabResult>> watchLabResults(
+    String petId, {
+    int limit = 20,
+  }) {
+    final userId = _currentUserId;
+    if (userId == null) {
+      return Stream.value([]);
+    }
+
+    return _petsCollection!
+        .doc(petId)
+        .collection('labResults')
+        .orderBy('testDate', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return LabResult.fromJson({
+          ...doc.data(),
+          'id': doc.id,
+        });
+      }).toList();
+    });
+  }
+
+  /// Gets lab results for a pet (paginated)
+  ///
+  /// Returns a list of lab results ordered by test date (most recent first).
+  /// Supports pagination with [startAfter] parameter.
+  Future<List<LabResult>> getLabResults(
+    String petId, {
+    int limit = 20,
+    DocumentSnapshot? startAfter,
+  }) async {
+    final userId = _currentUserId;
+    if (userId == null) return [];
+
+    try {
+      var query = _petsCollection!
+          .doc(petId)
+          .collection('labResults')
+          .orderBy('testDate', descending: true)
+          .limit(limit);
+
+      if (startAfter != null) {
+        query = query.startAfterDocument(startAfter);
+      }
+
+      final labResultsQuery = await query.get();
+
+      return labResultsQuery.docs.map((doc) {
+        return LabResult.fromJson({
+          ...doc.data(),
+          'id': doc.id,
+        });
+      }).toList();
+    } on FirebaseException catch (e) {
+      debugPrint('Error getting lab results: ${e.message}');
+      return [];
+    }
+  }
+
+  /// Gets a specific lab result by ID
+  ///
+  /// Useful for viewing detailed information about a single lab result.
+  Future<LabResult?> getLabResult(String petId, String labResultId) async {
+    final userId = _currentUserId;
+    if (userId == null) return null;
+
+    try {
+      final labResultDoc = await _petsCollection!
+          .doc(petId)
+          .collection('labResults')
+          .doc(labResultId)
+          .get();
+
+      if (!labResultDoc.exists) {
+        return null;
+      }
+
+      return LabResult.fromJson({
+        ...labResultDoc.data()!,
+        'id': labResultDoc.id,
+      });
+    } on FirebaseException catch (e) {
+      debugPrint('Error getting lab result $labResultId: ${e.message}');
+      return null;
     }
   }
 }

@@ -61,6 +61,7 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
           bun: onboardingData.bunMgDl,
           sdma: onboardingData.sdmaMcgDl,
           bloodworkDate: onboardingData.bloodworkDate,
+          vetNotes: onboardingData.vetNotes,
         );
         _notes = onboardingData.notes ?? '';
       });
@@ -156,6 +157,7 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
         bunMgDl: _labValues.bun,
         sdmaMcgDl: _labValues.sdma,
         bloodworkDate: _labValues.bloodworkDate,
+        vetNotes: _labValues.vetNotes,
         notes: _notes.trim().isEmpty ? null : _notes.trim(),
       );
 
