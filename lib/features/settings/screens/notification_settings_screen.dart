@@ -69,7 +69,6 @@ class _NotificationSettingsScreenState
       backgroundColor: AppColors.background,
       appBar: HydraAppBar(
         title: Text(l10n.notificationSettingsTitle),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         leading: HydraBackButton(
           onPressed: () => context.pop(),
         ),

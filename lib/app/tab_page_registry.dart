@@ -227,6 +227,7 @@ class TabPageRegistry {
 
   static PreferredSizeWidget _buildHomeAppBar(BuildContext context) {
     return const HydraAppBar(
+      title: Text('Home'),
       actions: [
         NotificationStatusWidget(),
       ],

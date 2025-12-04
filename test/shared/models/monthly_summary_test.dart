@@ -5,6 +5,7 @@ MonthlySummary _buildSummary({
   List<int>? dailyVolumes,
   List<int>? dailyGoals,
   List<int>? dailyScheduledSessions,
+  List<int>? dailyFluidSessionCounts,
   List<int>? dailyMedicationDoses,
   List<int>? dailyMedicationScheduledDoses,
 }) {
@@ -14,6 +15,7 @@ MonthlySummary _buildSummary({
     dailyVolumes: dailyVolumes ?? List.filled(31, 0),
     dailyGoals: dailyGoals ?? List.filled(31, 0),
     dailyScheduledSessions: dailyScheduledSessions ?? List.filled(31, 0),
+    dailyFluidSessionCounts: dailyFluidSessionCounts ?? List.filled(31, 0),
     dailyMedicationDoses: dailyMedicationDoses ?? List.filled(31, 0),
     dailyMedicationScheduledDoses:
         dailyMedicationScheduledDoses ?? List.filled(31, 0),
@@ -50,6 +52,7 @@ void main() {
           dailyVolumes: List.generate(31, (i) => i * 10),
           dailyGoals: List.filled(31, 250),
           dailyScheduledSessions: List.filled(31, 2),
+          dailyFluidSessionCounts: List.generate(31, (i) => i % 3),
           dailyMedicationDoses: List.generate(31, (i) => i % 4),
           dailyMedicationScheduledDoses: List.filled(31, 3),
           fluidTreatmentDays: 15,

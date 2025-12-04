@@ -16,9 +16,7 @@ This schema supports comprehensive CKD management while maintaining strict cost 
 
 ✅ **Fully Implemented:**
 - `healthParameters` - Weight, appetite, symptoms tracking (hybrid symptom model with rawValue + severityScore)
-
-📋 **Schema Documented, Implementation Pending:**
-- `labResults` - Bloodwork and lab test tracking (schema finalized, awaiting code implementation)
+- `labResults` - Bloodwork and lab test tracking (models, services, UI, Firestore rules, and indexes implemented)
 
 🚧 **Planned/Not Yet Implemented:**
 - `fluidInventory` - Fluid volume tracking
@@ -878,6 +876,8 @@ This schema maintains your excellent cost optimization principles while supporti
 
 This checklist tracks the implementation of the `labResults` feature from schema to production. Refer to `~PLANNING/lab_values_implementation.md` for detailed phase breakdowns.
 
+**Status**: Phases 1-5 complete ✅ | Core functionality fully implemented | QA and testing in progress
+
 ### Phase 1: Schema & Rules (Documentation) ✅
 - [x] Finalize Firestore structure for `labResults` subcollection
 - [x] Define denormalized snapshot field (`medicalInfo.latestLabResult`)
@@ -899,36 +899,36 @@ This checklist tracks the implementation of the `labResults` feature from schema
 - [ ] Write unit tests for models and serialization (deferred to Phase 7)
 - [ ] Update existing tests that assumed inline `LabValues` (deferred to Phase 7)
 
-### Phase 3: Onboarding Flow Integration ⏳
-- [ ] Ensure `LabValuesInput` widget captures all required fields
-- [ ] Modify `OnboardingData.toCatProfile` to build `LabResultInput`
-- [ ] Update onboarding submission to write first lab result to subcollection
-- [ ] Update onboarding to set `medicalInfo.latestLabResult` snapshot
-- [ ] Use transaction/batch for atomic profile + lab result creation
-- [ ] Update onboarding validation for new structure
-- [ ] Add test coverage for new metadata fields
+### Phase 3: Onboarding Flow Integration ✅
+- [x] Ensure `LabValuesInput` widget captures all required fields
+- [x] Modify `OnboardingData.toCatProfile` to build `LabResultInput`
+- [x] Update onboarding submission to write first lab result to subcollection
+- [x] Update onboarding to set `medicalInfo.latestLabResult` snapshot
+- [x] Use transaction/batch for atomic profile + lab result creation
+- [x] Update onboarding validation for new structure
+- [ ] Add test coverage for new metadata fields (deferred to Phase 7)
 
-### Phase 4: Profile Screen Enhancements ⏳
-- [ ] Add UI section in `CkdProfileScreen` to display lab history list
-- [ ] Reuse `LabValueDisplayWithGauge` for each entry
-- [ ] Implement "Add new lab result" flow
-- [ ] Implement "Edit lab values" functionality (append-only vs edit decision)
-- [ ] Update Riverpod providers with `labResultsProvider`
-- [ ] Add derived `latestLabResult` selector
-- [ ] Display metadata (test date, vet notes, panel type)
-- [ ] Implement empty state UI ("No lab history yet")
+### Phase 4: Profile Screen Enhancements ✅
+- [x] Add UI section in `CkdProfileScreen` to display lab history list
+- [x] Reuse `LabValueDisplayWithGauge` for each entry
+- [x] Implement "Add new lab result" flow
+- [x] Implement "Edit lab values" functionality (append-only vs edit decision)
+- [x] Update Riverpod providers with `labResultsProvider`
+- [x] Add derived `latestLabResult` selector
+- [x] Display metadata (test date, vet notes, panel type)
+- [x] Implement empty state UI ("No lab history yet")
 
-### Phase 5: Backend Rules & Index Implementation ⏳
-- [ ] Update `firestore.rules` with `labResults` rules from schema doc
-- [ ] Add `isValidLabResult()` helper function to rules
-- [ ] Enforce immutability for `testDate` and `createdAt`
-- [ ] Update `firestore.indexes.json` with required indexes
-- [ ] Deploy rules: `firebase deploy --only firestore:rules`
-- [ ] Deploy indexes: `firebase deploy --only firestore:indexes`
-- [ ] Test rules with unit tests or manual verification
+### Phase 5: Backend Rules & Index Implementation ✅
+- [x] Update `firestore.rules` with `labResults` rules from schema doc
+- [x] Add `isValidLabResult()` helper function to rules
+- [x] Enforce immutability for `testDate` and `createdAt`
+- [x] Update `firestore.indexes.json` with required indexes
+- [x] Deploy rules: `firebase deploy --only firestore:rules`
+- [x] Deploy indexes: `firebase deploy --only firestore:indexes`
+- [ ] Test rules with unit tests or manual verification (deferred to Phase 7)
 
-### Phase 6: Data Migration / Backfill ⏳
-- [ ] Write migration script to convert inline `medicalInfo.labValues` to subcollection
+### Phase 6: Data Migration / Backfill ⏸️
+- [ ] Write migration script to convert inline `medicalInfo.labValues` to subcollection (may not be needed if feature launched before production)
 - [ ] Script should create single `labResults` doc with fallback metadata
 - [ ] Script should update `medicalInfo.latestLabResult` denormalized field
 - [ ] Use batched writes (respect Firestore limits: 500 writes/batch)
@@ -944,7 +944,7 @@ This checklist tracks the implementation of the `labResults` feature from schema
 - [ ] User testing: View lab history → verify sorting and display
 - [ ] User testing: Offline/poor network scenarios
 - [ ] Run `flutter analyze` after all code changes
-- [ ] Update `.cursor/rules/firestore_schema.md` (if needed)
+- [x] Update `.cursor/rules/firestore_schema.md` (updated to reflect implementation status)
 - [ ] Document provider usage in relevant architecture docs
 - [ ] Add quick-start snippet for querying lab history
 - [ ] Verify analytics events are tracked (if applicable)

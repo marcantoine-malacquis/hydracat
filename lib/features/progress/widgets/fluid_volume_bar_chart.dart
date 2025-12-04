@@ -207,7 +207,10 @@ class _FluidVolumeBarChartState extends ConsumerState<FluidVolumeBarChart>
             HapticFeedback.selectionClick(); // Gentle tap feedback
             _touchedBarIndex = response!.spot!.touchedBarGroupIndex;
             _touchPosition = event.localPosition; // Actual pixel position
-          } else if (event is FlTapUpEvent || event is FlTapCancelEvent) {
+          } else if (event is FlTapUpEvent ||
+              event is FlPanEndEvent ||
+              event is FlLongPressEnd) {
+            // Clear tooltip only when touch actually ends
             _touchedBarIndex = null;
             _touchPosition = null;
           }

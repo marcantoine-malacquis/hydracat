@@ -68,6 +68,33 @@ lib/
 - **Standard Dart Classes**: Manual data classes with optional JSON serialization
 - **Code Generation**: Run `dart run build_runner build` after model changes
 
+### Flutter Performance Best Practices
+- **Widget Classes Over Methods**: Extract widget-returning methods into dedicated widget classes (StatelessWidget/StatefulWidget). This allows Flutter's reconciliation algorithm to optimize rebuilds and enables const constructors.
+  - ❌ `Widget _buildHeader() => Container(...)`
+  - ✅ `class _Header extends StatelessWidget { ... }`
+- **ListView.builder() for Lists**: Always use `ListView.builder()` instead of `ListView(children: [...])` for dynamic lists. Builder pattern enables lazy loading and widget recycling, critical for lists with 10+ items.
+  - ❌ `ListView(children: items.map((i) => ItemWidget(i)).toList())`
+  - ✅ `ListView.builder(itemCount: items.length, itemBuilder: (context, index) => ItemWidget(items[index]))`
+- **Minimize calculations in build()**: The build() method can be called frequently. Avoid repeated expensive operations within the same build() call by computing values once and storing them in local variables.
+- **Lifecycle-scoped caching**: For StatefulWidgets, move calculations that don't depend on changing parameters to `initState()` when possible. Note: values from InheritedWidgets (Theme, MediaQuery) cannot be computed in `initState()`.
+- **Const constructors**: Use `const` wherever possible - Flutter can skip rebuilding const widgets entirely.
+- **Isolates for CPU-Intensive Operations**: Isolates run code in separate memory spaces, preventing UI blocking. Use for operations that take >16ms of CPU time (image processing, large JSON parsing, complex calculations).
+- **Use `compute()` for simplicity**: Flutter's `compute()` function simplifies one-off isolate tasks without manual management.
+- **Don't use Isolates for async I/O**: Network requests and file operations are already non-blocking via async/await - they don't need Isolates.
+- **Mind the overhead**: Data serialization between isolates has cost. Profile to ensure the benefit outweighs the overhead.
+- **Profile first**: Use Flutter DevTools to identify actual bottlenecks before optimizing.
+
+### Image Optimization
+- **Multi-density assets**: Provide 1x, 2x, 3x variants for raster images in assets/images/ subfolders. Flutter automatically selects based on devicePixelRatio.
+- **Format selection**:
+  - SVG for icons/logos (use flutter_svg package) - scalable and smallest file size
+  - PNG for images requiring transparency
+  - JPEG (quality: 85) for photos and complex images
+  - WebP when file size is critical (test cross-platform compatibility first)
+- **Size appropriately**: Match image resolution to display size at 3x density (e.g., 100px display → provide 100px @1x, 200px @2x, 300px @3x). Avoid loading oversized images that get downscaled.
+- **Compress**: Use tools like TinyPNG, ImageOptim, or squoosh.app to reduce file size without quality loss.
+- **Lazy loading**: Use FadeInImage or cached_network_image for network images to improve initial load time.
+
 ### Feature Structure
 Each feature follows domain-driven design:
 ```

@@ -544,8 +544,11 @@ class NotificationCoordinator {
       final threadIdentifier = 'pet_$petId';
 
       // Schedule notification
-      final actualScheduledTime =
-          isWithinGracePeriod ? tz.TZDateTime.now(tz.local) : scheduledTime;
+      // Add a 1-second buffer for immediate notifications to ensure they're
+      // always in the future when validated by the platform
+      final actualScheduledTime = isWithinGracePeriod
+          ? tz.TZDateTime.now(tz.local).add(const Duration(seconds: 1))
+          : scheduledTime;
 
       await _plugin.showZoned(
         id: notificationId,

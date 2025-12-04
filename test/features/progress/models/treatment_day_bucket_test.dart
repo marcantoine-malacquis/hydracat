@@ -10,6 +10,7 @@ void main() {
       int fluidVolumeMl = 0,
       int fluidGoalMl = 0,
       int fluidScheduled = 0,
+      int fluidSessionCount = 0,
       int medicationDoses = 0,
       int medicationScheduled = 0,
     }) {
@@ -18,6 +19,7 @@ void main() {
         fluidVolumeMl: fluidVolumeMl,
         fluidGoalMl: fluidGoalMl,
         fluidScheduledSessions: fluidScheduled,
+        fluidSessionCount: fluidSessionCount,
         medicationDoses: medicationDoses,
         medicationScheduledDoses: medicationScheduled,
       );
@@ -39,16 +41,14 @@ void main() {
       expect(buildBucket().hasScheduledTreatments, isFalse);
     });
 
-    test('fluid completion uses goal when scheduled', () {
+    test('fluid completion uses session count vs scheduled', () {
       final complete = buildBucket(
         fluidScheduled: 2,
-        fluidGoalMl: 300,
-        fluidVolumeMl: 320,
+        fluidSessionCount: 2,
       );
       final incomplete = buildBucket(
         fluidScheduled: 2,
-        fluidGoalMl: 300,
-        fluidVolumeMl: 100,
+        fluidSessionCount: 1,
       );
       expect(complete.isFluidComplete, isTrue);
       expect(incomplete.isFluidComplete, isFalse);
@@ -72,8 +72,7 @@ void main() {
       final bucket = buildBucket(
         date: pastDate,
         fluidScheduled: 1,
-        fluidGoalMl: 200,
-        fluidVolumeMl: 100,
+        fluidSessionCount: 0,
       );
       expect(bucket.isMissed, isTrue);
 
@@ -88,16 +87,14 @@ void main() {
     test('isComplete true only when all scheduled treatments complete', () {
       final complete = buildBucket(
         fluidScheduled: 1,
-        fluidGoalMl: 200,
-        fluidVolumeMl: 250,
+        fluidSessionCount: 1,
         medicationScheduled: 2,
         medicationDoses: 2,
       );
 
       final incompleteMed = buildBucket(
         fluidScheduled: 1,
-        fluidGoalMl: 200,
-        fluidVolumeMl: 250,
+        fluidSessionCount: 1,
         medicationScheduled: 2,
         medicationDoses: 1,
       );
@@ -111,7 +108,7 @@ void main() {
       final bucket = buildBucket(
         date: DateTime(today.year, today.month, today.day),
         fluidScheduled: 1,
-        fluidGoalMl: 200,
+        fluidSessionCount: 0,
       );
       expect(bucket.isPending, isTrue);
     });

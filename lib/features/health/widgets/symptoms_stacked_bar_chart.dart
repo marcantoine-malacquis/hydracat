@@ -164,20 +164,30 @@ class _SymptomsStackedBarChartState
           // Chart area with fixed height and tooltip overlay
           SizedBox(
             height: _chartHeight,
-            child: Stack(
-              children: [
-                // Chart body
-                _buildChartBody(viewModel, chartState),
-                // Tooltip overlay (appears when a bar is tapped)
-                if (_touchedBarGroupIndex != null &&
-                    _touchPosition != null &&
-                    _touchedBarGroupIndex! < viewModel.buckets.length)
-                  _buildTooltip(
-                    viewModel,
-                    viewModel.buckets[_touchedBarGroupIndex!],
-                    _touchedBarGroupIndex!,
-                  ),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final chartWidth = constraints.maxWidth;
+
+                return Stack(
+                  children: [
+                    // Chart body
+                    _buildChartBody(
+                      viewModel,
+                      chartState,
+                      chartWidth,
+                    ),
+                    // Tooltip overlay (appears when a bar is tapped)
+                    if (_touchedBarGroupIndex != null &&
+                        _touchPosition != null &&
+                        _touchedBarGroupIndex! < viewModel.buckets.length)
+                      _buildTooltip(
+                        viewModel,
+                        viewModel.buckets[_touchedBarGroupIndex!],
+                        _touchedBarGroupIndex!,
+                      ),
+                  ],
+                );
+              },
             ),
           ),
           // Legend with symptom color chips (below chart, not constrained)
@@ -195,11 +205,21 @@ class _SymptomsStackedBarChartState
   Widget _buildChartBody(
     SymptomsChartViewModel viewModel,
     SymptomsChartState chartState,
+    double availableWidth,
   ) {
     final isStackedMode = widget.selectedSymptomKey == null;
     final maxY = _computeMaxY(viewModel, isStackedMode);
     final yAxisInterval = _computeYAxisInterval(maxY);
-    final barGroups = _buildBarGroups(viewModel, isStackedMode);
+    final barWidth = _calculateBarWidth(
+      granularity: widget.granularity,
+      bucketCount: viewModel.buckets.length,
+      availableWidth: availableWidth,
+    );
+    final barGroups = _buildBarGroups(
+      viewModel,
+      isStackedMode,
+      barWidth,
+    );
 
     // Calculate optimal Y-axis reserved size
     final yAxisReservedSize = _calculateYAxisReservedSize(
@@ -362,18 +382,48 @@ class _SymptomsStackedBarChartState
     );
   }
 
-  /// Computes bar width based on granularity and bucket count
+  /// Computes responsive bar width to prevent overlapping bars
   ///
-  /// Returns appropriate bar width for the chart:
-  /// - Week: 40px (7 buckets)
-  /// - Year: 40px (up to 12 buckets)
-  /// - Month: 8px (28-31 daily buckets, narrow "sticks")
-  double _barWidthFor(SymptomGranularity granularity, int bucketCount) {
-    return switch (granularity) {
-      SymptomGranularity.week => 40,
-      SymptomGranularity.year => 40,
-      SymptomGranularity.month => 8, // Narrow sticks for daily view
-    };
+  /// Uses the available chart width and bucket count to size each bar while
+  /// keeping spacing between groups. Year view previously used a fixed 40px
+  /// width which caused overlap when 12 buckets were visible; this method
+  /// scales widths dynamically per granularity.
+  double _calculateBarWidth({
+    required SymptomGranularity granularity,
+    required int bucketCount,
+    required double availableWidth,
+  }) {
+    if (bucketCount <= 0 || availableWidth <= 0 || availableWidth.isInfinite) {
+      return switch (granularity) {
+        SymptomGranularity.week => 32,
+        SymptomGranularity.year => 20,
+        SymptomGranularity.month => 8,
+      };
+    }
+
+    final spacing = availableWidth / bucketCount;
+
+    double minWidth;
+    double maxWidth;
+    double coverageFactor;
+
+    switch (granularity) {
+      case SymptomGranularity.week:
+        minWidth = 18;
+        maxWidth = 40;
+        coverageFactor = 0.85;
+      case SymptomGranularity.month:
+        minWidth = 4;
+        maxWidth = 12;
+        coverageFactor = 0.4;
+      case SymptomGranularity.year:
+        minWidth = 10;
+        maxWidth = 28;
+        coverageFactor = 0.65;
+    }
+
+    final computedWidth = spacing * coverageFactor;
+    return computedWidth.clamp(minWidth, maxWidth);
   }
 
   /// Formats X-axis label based on granularity and bucket
@@ -409,15 +459,26 @@ class _SymptomsStackedBarChartState
   List<BarChartGroupData> _buildBarGroups(
     SymptomsChartViewModel viewModel,
     bool isStackedMode,
+    double barWidth,
   ) {
     return viewModel.buckets.asMap().entries.map((entry) {
       final index = entry.key;
       final bucket = entry.value;
 
       if (isStackedMode) {
-        return _buildStackedBarGroup(bucket, index, viewModel);
+        return _buildStackedBarGroup(
+          bucket,
+          index,
+          viewModel,
+          barWidth,
+        );
       } else {
-        return _buildSingleSymptomBarGroup(bucket, index, viewModel);
+        return _buildSingleSymptomBarGroup(
+          bucket,
+          index,
+          viewModel,
+          barWidth,
+        );
       }
     }).toList();
   }
@@ -430,6 +491,7 @@ class _SymptomsStackedBarChartState
     SymptomBucket bucket,
     int index,
     SymptomsChartViewModel viewModel,
+    double barWidth,
   ) {
     final stackItems = <BarChartRodStackItem>[];
     var runningTotal = 0.0;
@@ -476,11 +538,6 @@ class _SymptomsStackedBarChartState
       );
     }
 
-    final barWidth = _barWidthFor(
-      widget.granularity,
-      viewModel.buckets.length,
-    );
-
     return BarChartGroupData(
       x: index,
       barRods: [
@@ -502,14 +559,10 @@ class _SymptomsStackedBarChartState
     SymptomBucket bucket,
     int index,
     SymptomsChartViewModel viewModel,
+    double barWidth,
   ) {
     final count = (bucket.daysWithSymptom[widget.selectedSymptomKey] ?? 0)
         .toDouble();
-
-    final barWidth = _barWidthFor(
-      widget.granularity,
-      viewModel.buckets.length,
-    );
 
     return BarChartGroupData(
       x: index,
@@ -537,7 +590,10 @@ class _SymptomsStackedBarChartState
             HapticFeedback.selectionClick(); // Gentle tap feedback
             _touchedBarGroupIndex = response!.spot!.touchedBarGroupIndex;
             _touchPosition = event.localPosition; // Actual pixel position
-          } else if (event is FlTapUpEvent || event is FlTapCancelEvent) {
+          } else if (event is FlTapUpEvent ||
+              event is FlPanEndEvent ||
+              event is FlLongPressEnd) {
+            // Clear tooltip only when touch actually ends
             _touchedBarGroupIndex = null;
             _touchPosition = null;
           }
@@ -654,8 +710,12 @@ class _SymptomsStackedBarChartState
               label: label,
               count: count,
               color: SymptomColors.colorForSymptom(symptomKey),
-              formattedLabel:
-                  _getSymptomRowLabel(symptomKey, label, count, bucket),
+              formattedLabel: _getSymptomRowLabel(
+                symptomKey,
+                label,
+                count,
+                bucket,
+              ),
             ),
           );
         }
@@ -674,8 +734,12 @@ class _SymptomsStackedBarChartState
               label: 'Other',
               count: otherCount,
               color: SymptomColors.colorForOther(),
-              formattedLabel:
-                  _getSymptomRowLabel('other', 'Other', otherCount, bucket),
+              formattedLabel: _getSymptomRowLabel(
+                'other',
+                'Other',
+                otherCount,
+                bucket,
+              ),
             ),
           );
         }
@@ -728,10 +792,9 @@ class _SymptomsStackedBarChartState
   /// day-count label for year view.
   String _getTotalLabel(int total) {
     return switch (widget.granularity) {
-      SymptomGranularity.week || SymptomGranularity.month =>
-        'Total severity: $total',
-      SymptomGranularity.year =>
-        'Total symptom days: $total',
+      SymptomGranularity.week ||
+      SymptomGranularity.month => 'Total severity: $total',
+      SymptomGranularity.year => 'Total symptom days: $total',
     };
   }
 
@@ -781,10 +844,12 @@ class _SymptomsStackedBarChartState
         ..write(
           symptomRows
               .map(
-                (row) => row.formattedLabel ?? () {
-                  final dayLabel = row.count == 1 ? 'day' : 'days';
-                  return '${row.label}: ${row.count} $dayLabel';
-                }(),
+                (row) =>
+                    row.formattedLabel ??
+                    () {
+                      final dayLabel = row.count == 1 ? 'day' : 'days';
+                      return '${row.label}: ${row.count} $dayLabel';
+                    }(),
               )
               .join(', '),
         );
@@ -1058,10 +1123,13 @@ class _SymptomsTooltipCard extends StatelessWidget {
                         const SizedBox(width: 6),
                         // Symptom label and count
                         Text(
-                          row.formattedLabel ?? () {
-                            final dayLabel = row.count == 1 ? 'day' : 'days';
-                            return '${row.label}: ${row.count} $dayLabel';
-                          }(),
+                          row.formattedLabel ??
+                              () {
+                                final dayLabel = row.count == 1
+                                    ? 'day'
+                                    : 'days';
+                                return '${row.label}: ${row.count} $dayLabel';
+                              }(),
                           style: AppTextStyles.caption.copyWith(
                             color: AppColors.textPrimary,
                             fontSize: 11,

@@ -9,6 +9,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/core/utils/weight_utils.dart';
+import 'package:hydracat/features/health/exceptions/health_exceptions.dart';
 import 'package:hydracat/features/health/models/health_parameter.dart';
 import 'package:hydracat/features/health/models/weight_granularity.dart';
 import 'package:hydracat/features/health/widgets/weight_entry_dialog.dart';
@@ -175,12 +176,18 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
             : null,
       ),
       body: weightState.isLoading && weightState.historyEntries.isEmpty
-          ? _buildLoadingState()
+          ? const _LoadingState()
           : weightState.error != null && weightState.historyEntries.isEmpty
-          ? _buildErrorState()
+          ? _ErrorState(error: weightState.error)
           : weightState.historyEntries.isEmpty
-          ? _buildEmptyState()
-          : _buildContentView(weightState),
+          ? _EmptyState(onAddWeight: _showAddWeightDialog)
+          : _ContentView(
+              state: weightState,
+              scrollController: _scrollController,
+              onShowAddDialog: _showAddWeightDialog,
+              onShowEditDialog: _showEditWeightDialog,
+              onDeleteWeight: _deleteWeight,
+            ),
       // On iOS, use navigation bar button instead of FAB
       // On Android, show solid FAB (no glass effect)
       floatingActionButton: isIOS
@@ -199,15 +206,100 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
     );
   }
 
-  Widget _buildLoadingState() {
-    return const Center(
-      child: HydraProgressIndicator(
-        color: AppColors.primary,
+
+
+
+  /// Shows dialog to edit an existing weight entry
+  Future<void> _showEditWeightDialog(HealthParameter entry) async {
+    final result = await showHydraBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      backgroundColor: AppColors.background,
+      builder: (sheetContext) => HydraBottomSheet(
+        backgroundColor: AppColors.background,
+        child: WeightEntryDialog(existingEntry: entry),
+      ),
+    );
+
+    if (result != null && mounted) {
+      final success = await ref
+          .read(weightProvider.notifier)
+          .updateWeight(
+            oldDate: entry.date,
+            oldWeightKg: entry.weight!,
+            newDate: result['date'] as DateTime,
+            newWeightKg: result['weightKg'] as double,
+            newNotes: result['notes'] as String?,
+          );
+
+      if (success && mounted) {
+        HydraSnackBar.showSuccess(context, 'Weight updated successfully');
+      }
+    }
+  }
+
+  /// Deletes a weight entry
+  Future<void> _deleteWeight(DateTime date) async {
+    // Provide haptic feedback
+    unawaited(HapticFeedback.mediumImpact());
+
+    final success = await ref
+        .read(weightProvider.notifier)
+        .deleteWeight(
+          date: date,
+        );
+
+    if (mounted) {
+      if (success) {
+        HydraSnackBar.showSuccess(context, 'Weight entry deleted');
+      } else {
+        final error = ref.read(weightProvider).error;
+        HydraSnackBar.showError(
+          context,
+          error?.message ?? 'Failed to delete weight',
+        );
+      }
+    }
+  }
+}
+
+/// Loading state widget for weight screen
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const HydraProgressIndicator(
+            color: AppColors.primary,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            'Loading weight data...',
+            style: AppTextStyles.body.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildEmptyState() {
+/// Empty state widget when no weight entries exist
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({
+    required this.onAddWeight,
+  });
+
+  final VoidCallback onAddWeight;
+
+  @override
+  Widget build(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -236,7 +328,7 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
             ),
             const SizedBox(height: AppSpacing.xl),
             FilledButton.icon(
-              onPressed: _showAddWeightDialog,
+              onPressed: onAddWeight,
               icon: const Icon(Icons.add),
               label: const Text('Log Your First Weight'),
             ),
@@ -245,10 +337,18 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
       ),
     );
   }
+}
 
-  Widget _buildErrorState() {
-    final error = ref.read(weightProvider).error;
+/// Error state widget for weight screen
+class _ErrorState extends ConsumerWidget {
+  const _ErrorState({
+    required this.error,
+  });
 
+  final HealthException? error;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -285,82 +385,160 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
       ),
     );
   }
+}
 
-  /// Content view with graph controls and chart
-  Widget _buildContentView(WeightState state) {
+/// Content view widget with graph controls and chart
+class _ContentView extends ConsumerWidget {
+  const _ContentView({
+    required this.state,
+    required this.scrollController,
+    required this.onShowAddDialog,
+    required this.onShowEditDialog,
+    required this.onDeleteWeight,
+  });
+
+  final WeightState state;
+  final ScrollController? scrollController;
+  final VoidCallback onShowAddDialog;
+  final void Function(HealthParameter) onShowEditDialog;
+  final Future<void> Function(DateTime) onDeleteWeight;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final currentUnit = ref.watch(weightUnitProvider);
 
     return SafeArea(
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Weight change indicator at the top
-            if (state.graphData.isEmpty)
-              const WeightStatCard.empty()
-            else if (state.graphData.length == 1)
-              // Show stat card for single data point
-              WeightStatCard(
-                weight: currentUnit == 'kg'
-                    ? state.graphData.first.weightKg
-                    : state.graphData.first.weightLbs,
-                unit: currentUnit,
-              )
-            else
-              // Calculate change from previous period
-              () {
-                final sorted = [...state.graphData]
-                  ..sort((a, b) => a.date.compareTo(b.date));
-                final latest = sorted.last.weightKg;
-                final previous = sorted[sorted.length - 2].weightKg;
-                final changeKg = latest - previous;
-                final change = currentUnit == 'kg'
-                    ? changeKg
-                    : WeightUtils.convertKgToLbs(changeKg);
+      child: Stack(
+        children: [
+          HydraRefreshIndicator(
+            onRefresh: () async {
+              await ref.read(weightProvider.notifier).refreshData();
+            },
+            child: SingleChildScrollView(
+              controller: scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Weight change indicator at the top
+                  if (state.graphData.isEmpty)
+                    const WeightStatCard.empty()
+                  else if (state.graphData.length == 1)
+                    // Show stat card for single data point
+                    WeightStatCard(
+                      weight: currentUnit == 'kg'
+                          ? state.graphData.first.weightKg
+                          : state.graphData.first.weightLbs,
+                      unit: currentUnit,
+                    )
+                  else
+                    // Calculate change from previous period
+                    () {
+                      final sorted = [...state.graphData]
+                        ..sort((a, b) => a.date.compareTo(b.date));
+                      final latest = sorted.last.weightKg;
+                      final previous = sorted[sorted.length - 2].weightKg;
+                      final changeKg = latest - previous;
+                      final change = currentUnit == 'kg'
+                          ? changeKg
+                          : WeightUtils.convertKgToLbs(changeKg);
 
-                return WeightStatCard(
-                  weight: currentUnit == 'kg'
-                      ? sorted.last.weightKg
-                      : sorted.last.weightLbs,
-                  unit: currentUnit,
-                  change: change,
-                );
-              }(),
-            const SizedBox(height: AppSpacing.lg),
-            // Graph controls and chart together
-            _buildGranularitySelector(state),
-            const SizedBox(height: AppSpacing.sm),
-            _buildGraphHeader(state),
-            const SizedBox(height: AppSpacing.md),
-            // Show chart - either empty state or with data
-            if (state.graphData.isEmpty)
-              WeightLineChart(
-                dataPoints: const [],
-                unit: currentUnit,
-                granularity: state.granularity,
-                showEmptyState: true,
-              )
-            else
-              WeightLineChart(
-                dataPoints: state.graphData,
-                unit: currentUnit,
-                granularity: state.granularity,
+                      return WeightStatCard(
+                        weight: currentUnit == 'kg'
+                            ? sorted.last.weightKg
+                            : sorted.last.weightLbs,
+                        unit: currentUnit,
+                        change: change,
+                      );
+                    }(),
+                  const SizedBox(height: AppSpacing.lg),
+                  // Graph controls and chart together
+                  _GranularitySelector(state: state),
+                  const SizedBox(height: AppSpacing.sm),
+                  _GraphHeader(state: state),
+                  const SizedBox(height: AppSpacing.md),
+                  // Show chart - either empty state or with data
+                  if (state.graphData.isEmpty)
+                    WeightLineChart(
+                      dataPoints: const [],
+                      unit: currentUnit,
+                      granularity: state.granularity,
+                      showEmptyState: true,
+                    )
+                  else
+                    WeightLineChart(
+                      dataPoints: state.graphData,
+                      unit: currentUnit,
+                      granularity: state.granularity,
+                    ),
+                  const SizedBox(height: AppSpacing.lg),
+                  _HistorySection(
+                    state: state,
+                    currentUnit: currentUnit,
+                    onShowEditDialog: onShowEditDialog,
+                    onDeleteWeight: onDeleteWeight,
+                  ),
+                ],
               ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildHistorySection(state, currentUnit),
-          ],
-        ),
+            ),
+          ),
+          // Show loading overlay when refreshing
+          if (state.isRefreshing)
+            ColoredBox(
+              color: AppColors.background.withValues(alpha: 0.7),
+              child: const Center(
+                child: HydraProgressIndicator(
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
+}
 
-  /// Builds period navigation header with chevrons and Today button
-  Widget _buildGraphHeader(WeightState state) {
-    final isOnCurrentPeriod = ref
-        .read(weightProvider.notifier)
-        .isOnCurrentPeriod;
+/// Granularity selector widget (Week/Month/Year)
+class _GranularitySelector extends ConsumerWidget {
+  const _GranularitySelector({
+    required this.state,
+  });
+
+  final WeightState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return SizedBox(
+      width: double.infinity,
+      child: HydraSlidingSegmentedControl<WeightGranularity>(
+        value: state.granularity,
+        segments: const {
+          WeightGranularity.week: Text('Week'),
+          WeightGranularity.month: Text('Month'),
+          WeightGranularity.year: Text('Year'),
+        },
+        onChanged: (newGranularity) {
+          HapticFeedback.selectionClick();
+          ref.read(weightProvider.notifier).setGranularity(newGranularity);
+        },
+      ),
+    );
+  }
+}
+
+/// Graph header widget with period navigation
+class _GraphHeader extends ConsumerWidget {
+  const _GraphHeader({
+    required this.state,
+  });
+
+  final WeightState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isOnCurrentPeriod =
+        ref.read(weightProvider.notifier).isOnCurrentPeriod;
     final periodLabel = _formatPeriodLabel(state);
 
     return Row(
@@ -422,32 +600,13 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
     );
   }
 
-  /// Builds granularity selector (Week/Month/Year)
-  Widget _buildGranularitySelector(WeightState state) {
-    return SizedBox(
-      width: double.infinity,
-      child: HydraSlidingSegmentedControl<WeightGranularity>(
-        value: state.granularity,
-        segments: const {
-          WeightGranularity.week: Text('Week'),
-          WeightGranularity.month: Text('Month'),
-          WeightGranularity.year: Text('Year'),
-        },
-        onChanged: (newGranularity) {
-          HapticFeedback.selectionClick();
-          ref.read(weightProvider.notifier).setGranularity(newGranularity);
-        },
-      ),
-    );
-  }
-
   /// Formats period label based on granularity
   String _formatPeriodLabel(WeightState state) {
     return switch (state.granularity) {
       WeightGranularity.week => _formatWeekLabel(state.periodStart),
-      WeightGranularity.month => DateFormat(
-        'MMMM yyyy',
-      ).format(state.periodStart),
+      WeightGranularity.month => DateFormat('MMMM yyyy').format(
+          state.periodStart,
+        ),
       WeightGranularity.year => state.periodStart.year.toString(),
     };
   }
@@ -465,9 +624,24 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
           '${DateFormat('MMM d, yyyy').format(weekEnd)}';
     }
   }
+}
 
-  /// Builds the paginated history list section
-  Widget _buildHistorySection(WeightState state, String currentUnit) {
+/// History section widget displaying paginated weight entries
+class _HistorySection extends ConsumerWidget {
+  const _HistorySection({
+    required this.state,
+    required this.currentUnit,
+    required this.onShowEditDialog,
+    required this.onDeleteWeight,
+  });
+
+  final WeightState state;
+  final String currentUnit;
+  final void Function(HealthParameter) onShowEditDialog;
+  final Future<void> Function(DateTime) onDeleteWeight;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     if (state.historyEntries.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -498,7 +672,7 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
                 extentRatio: 0.25,
                 children: [
                   SlidableAction(
-                    onPressed: (context) => _deleteWeight(entry.date),
+                    onPressed: (context) => onDeleteWeight(entry.date),
                     backgroundColor: AppColors.error,
                     foregroundColor: Colors.white,
                     icon: Icons.delete_outline,
@@ -545,7 +719,7 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
                     const SizedBox(width: AppSpacing.xs),
                     IconButton(
                       icon: const Icon(Icons.edit, size: 18),
-                      onPressed: () => _showEditWeightDialog(entry),
+                      onPressed: () => onShowEditDialog(entry),
                       tooltip: 'Edit',
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(
@@ -579,59 +753,5 @@ class _WeightScreenState extends ConsumerState<WeightScreen> {
         ],
       ],
     );
-  }
-
-  /// Shows dialog to edit an existing weight entry
-  Future<void> _showEditWeightDialog(HealthParameter entry) async {
-    final result = await showHydraBottomSheet<Map<String, dynamic>>(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      backgroundColor: AppColors.background,
-      builder: (sheetContext) => HydraBottomSheet(
-        backgroundColor: AppColors.background,
-        child: WeightEntryDialog(existingEntry: entry),
-      ),
-    );
-
-    if (result != null && mounted) {
-      final success = await ref
-          .read(weightProvider.notifier)
-          .updateWeight(
-            oldDate: entry.date,
-            oldWeightKg: entry.weight!,
-            newDate: result['date'] as DateTime,
-            newWeightKg: result['weightKg'] as double,
-            newNotes: result['notes'] as String?,
-          );
-
-      if (success && mounted) {
-        HydraSnackBar.showSuccess(context, 'Weight updated successfully');
-      }
-    }
-  }
-
-  /// Deletes a weight entry
-  Future<void> _deleteWeight(DateTime date) async {
-    // Provide haptic feedback
-    unawaited(HapticFeedback.mediumImpact());
-
-    final success = await ref
-        .read(weightProvider.notifier)
-        .deleteWeight(
-          date: date,
-        );
-
-    if (mounted) {
-      if (success) {
-        HydraSnackBar.showSuccess(context, 'Weight entry deleted');
-      } else {
-        final error = ref.read(weightProvider).error;
-        HydraSnackBar.showError(
-          context,
-          error?.message ?? 'Failed to delete weight',
-        );
-      }
-    }
   }
 }

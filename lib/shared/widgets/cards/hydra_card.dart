@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/theme/theme.dart';
 
@@ -55,6 +57,7 @@ class _HydraCardState extends State<HydraCard>
   AnimationController? _animationController;
   Animation<double>? _scaleAnimation;
   Animation<double>? _shadowOpacityAnimation;
+  bool _isPressed = false;
 
   @override
   void initState() {
@@ -75,29 +78,31 @@ class _HydraCardState extends State<HydraCard>
   void _initializeAnimations() {
     if (widget.onTap != null) {
       _animationController = AnimationController(
-        duration: const Duration(milliseconds: 150),
+        duration: const Duration(milliseconds: 100),
         vsync: this,
       );
 
       // Scale animation (1.0 -> 0.95 for press feedback)
+      // Uses easeOutCubic to front-load the animation for fast taps
       _scaleAnimation = Tween<double>(
         begin: 1,
         end: 0.95,
       ).animate(
         CurvedAnimation(
           parent: _animationController!,
-          curve: Curves.easeOut,
+          curve: Curves.easeOutCubic,
         ),
       );
 
       // Shadow opacity animation (0 -> 1 for press feedback)
+      // Uses easeOutCubic to front-load the animation for fast taps
       _shadowOpacityAnimation = Tween<double>(
         begin: 0,
         end: 1,
       ).animate(
         CurvedAnimation(
           parent: _animationController!,
-          curve: Curves.easeOut,
+          curve: Curves.easeOutCubic,
         ),
       );
     }
@@ -117,15 +122,41 @@ class _HydraCardState extends State<HydraCard>
   }
 
   void _onTapDown(TapDownDetails details) {
+    setState(() {
+      _isPressed = true;
+    });
     _animationController?.forward();
   }
 
-  void _onTapUp(TapUpDetails details) {
-    _animationController?.reverse();
+  Future<void> _onTapUp(TapUpDetails details) async {
+    // Ensure minimum press duration of 80ms for animation visibility
+    if (_animationController != null) {
+      final elapsed =
+          _animationController!.lastElapsedDuration?.inMilliseconds ?? 0;
+      if (elapsed < 80) {
+        await Future<void>.delayed(Duration(milliseconds: 80 - elapsed));
+      }
+    }
+
+    if (mounted && _isPressed) {
+      setState(() {
+        _isPressed = false;
+      });
+      // Start reverse animation (don't await - let it run in background)
+      unawaited(_animationController?.reverse() ?? Future<void>.value());
+
+      // Call onTap immediately for responsive feel
+      widget.onTap?.call();
+    }
   }
 
   void _onTapCancel() {
-    _animationController?.reverse();
+    if (mounted && _isPressed) {
+      setState(() {
+        _isPressed = false;
+      });
+      _animationController?.reverse();
+    }
   }
 
   @override
@@ -170,7 +201,6 @@ class _HydraCardState extends State<HydraCard>
               ],
             ),
             child: GestureDetector(
-              onTap: widget.onTap,
               onTapDown: _onTapDown,
               onTapUp: _onTapUp,
               onTapCancel: _onTapCancel,

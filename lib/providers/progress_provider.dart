@@ -811,6 +811,7 @@ List<TreatmentDayBucket>? buildMonthlyTreatmentBuckets({
       summary.dailyVolumes.length != monthLength ||
       summary.dailyGoals.length != monthLength ||
       summary.dailyScheduledSessions.length != monthLength ||
+      summary.dailyFluidSessionCounts.length != monthLength ||
       summary.dailyMedicationDoses.length != monthLength ||
       summary.dailyMedicationScheduledDoses.length != monthLength;
 
@@ -839,6 +840,7 @@ List<TreatmentDayBucket>? buildMonthlyTreatmentBuckets({
         fluidVolumeMl: summary.dailyVolumes[dayIndex],
         fluidGoalMl: summary.dailyGoals[dayIndex],
         fluidScheduledSessions: summary.dailyScheduledSessions[dayIndex],
+        fluidSessionCount: summary.dailyFluidSessionCounts[dayIndex],
         medicationDoses: summary.dailyMedicationDoses[dayIndex],
         medicationScheduledDoses:
             summary.dailyMedicationScheduledDoses[dayIndex],

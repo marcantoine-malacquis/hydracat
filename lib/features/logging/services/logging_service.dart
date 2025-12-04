@@ -640,9 +640,11 @@ class LoggingService {
         dayVolumeTotal: dailyTotals.volumeTotal,
         dayGoalMl: dailyTotals.goalMl,
         dayScheduledCount: dailyTotals.scheduledCount,
+        daySessionCount: dailyTotals.sessionCount,
         currentDailyVolumes: monthlyArrays.dailyVolumes,
         currentDailyGoals: monthlyArrays.dailyGoals,
         currentDailyScheduledSessions: monthlyArrays.dailyScheduledSessions,
+        currentDailyFluidSessionCounts: monthlyArrays.dailyFluidSessionCounts,
       );
 
       // STEP 6A: Update pet document with last injection site
@@ -850,9 +852,11 @@ class LoggingService {
           dayVolumeTotal: dailyTotals.volumeTotal,
           dayGoalMl: dailyTotals.goalMl,
           dayScheduledCount: dailyTotals.scheduledCount,
+          daySessionCount: dailyTotals.sessionCount,
           currentDailyVolumes: monthlyArrays.dailyVolumes,
           currentDailyGoals: monthlyArrays.dailyGoals,
           currentDailyScheduledSessions: monthlyArrays.dailyScheduledSessions,
+          currentDailyFluidSessionCounts: monthlyArrays.dailyFluidSessionCounts,
         ),
         SetOptions(merge: true),
       );
@@ -1864,9 +1868,11 @@ class LoggingService {
     int? dayVolumeTotal,
     int? dayGoalMl,
     int? dayScheduledCount,
+    int? daySessionCount,
     List<int>? currentDailyVolumes,
     List<int>? currentDailyGoals,
     List<int>? currentDailyScheduledSessions,
+    List<int>? currentDailyFluidSessionCounts,
   }) {
     final sessionRef = _getFluidSessionRef(userId, petId, session.id);
     final date = AppDateUtils.startOfDay(session.dateTime);
@@ -1907,9 +1913,11 @@ class LoggingService {
         dayVolumeTotal: dayVolumeTotal,
         dayGoalMl: dayGoalMl,
         dayScheduledCount: dayScheduledCount,
+        daySessionCount: daySessionCount,
         currentDailyVolumes: currentDailyVolumes,
         currentDailyGoals: currentDailyGoals,
         currentDailyScheduledSessions: currentDailyScheduledSessions,
+        currentDailyFluidSessionCounts: currentDailyFluidSessionCounts,
       ),
       SetOptions(merge: true),
     );
@@ -2031,9 +2039,11 @@ class LoggingService {
     int? dayVolumeTotal,
     int? dayGoalMl,
     int? dayScheduledCount,
+    int? daySessionCount,
     List<int>? currentDailyVolumes,
     List<int>? currentDailyGoals,
     List<int>? currentDailyScheduledSessions,
+    List<int>? currentDailyFluidSessionCounts,
     // Optional per-day medication data for monthly arrays
     int? dayDosesTotal,
     int? dayScheduledDoses,
@@ -2078,6 +2088,17 @@ class LoggingService {
         dayOfMonth: date.day,
         monthLength: monthLength,
         newValue: dayScheduledCount,
+      );
+    }
+
+    if (daySessionCount != null) {
+      final monthLength = AppDateUtils.getMonthStartEnd(date)['end']!.day;
+      map['dailyFluidSessionCounts'] = MonthlyArrayHelper.updateDailyArrayValue(
+        currentArray: currentDailyFluidSessionCounts,
+        dayOfMonth: date.day,
+        monthLength: monthLength,
+        newValue: daySessionCount,
+        maxValue: 10,
       );
     }
 
@@ -2413,7 +2434,8 @@ class LoggingService {
   /// - `volumeTotal`: Total fluid volume for the day (after this operation)
   /// - `goalMl`: Daily goal (from session or existing summary)
   /// - `scheduledCount`: Number of scheduled sessions for the day
-  Future<({int volumeTotal, int goalMl, int scheduledCount})>
+  /// - `sessionCount`: Number of actual sessions logged for the day
+  Future<({int volumeTotal, int goalMl, int scheduledCount, int sessionCount})>
   _fetchDailyTotalsForMonthly({
     required String userId,
     required String petId,
@@ -2428,12 +2450,14 @@ class LoggingService {
     var currentVolume = 0;
     var currentGoal = 0;
     var currentScheduled = 0;
+    var currentSessionCount = 0;
 
     if (docSnapshot.exists) {
       final data = docSnapshot.data()! as Map<String, dynamic>;
       currentVolume = (data['fluidTotalVolume'] as num?)?.toInt() ?? 0;
       currentGoal = (data['fluidDailyGoalMl'] as num?)?.toInt() ?? 0;
       currentScheduled = (data['fluidScheduledSessions'] as num?)?.toInt() ?? 0;
+      currentSessionCount = (data['fluidSessionCount'] as num?)?.toInt() ?? 0;
     }
 
     // Calculate new totals after this operation
@@ -2443,11 +2467,14 @@ class LoggingService {
       0,
       100,
     );
+    // +1 session count for this new session
+    final newSessionCount = (currentSessionCount + 1).clamp(0, 100);
 
     return (
       volumeTotal: newVolume,
       goalMl: newGoal,
       scheduledCount: newScheduled,
+      sessionCount: newSessionCount,
     );
   }
 
@@ -2503,11 +2530,13 @@ class LoggingService {
   /// - `dailyVolumes`: Existing volume array or null if doc missing
   /// - `dailyGoals`: Existing goal array or null if doc missing
   /// - `dailyScheduledSessions`: Existing scheduled count array or null
+  /// - `dailyFluidSessionCounts`: Existing session count array or null
   Future<
     ({
       List<int>? dailyVolumes,
       List<int>? dailyGoals,
       List<int>? dailyScheduledSessions,
+      List<int>? dailyFluidSessionCounts,
       List<int>? dailyMedicationDoses,
       List<int>? dailyMedicationScheduledDoses,
     })
@@ -2525,6 +2554,7 @@ class LoggingService {
         dailyVolumes: null,
         dailyGoals: null,
         dailyScheduledSessions: null,
+        dailyFluidSessionCounts: null,
         dailyMedicationDoses: null,
         dailyMedicationScheduledDoses: null,
       );
@@ -2562,6 +2592,11 @@ class LoggingService {
       dailyGoals: parseIntListOrNull(data['dailyGoals'], monthLength),
       dailyScheduledSessions: parseIntListOrNull(
         data['dailyScheduledSessions'],
+        monthLength,
+        maxValue: 10,
+      ),
+      dailyFluidSessionCounts: parseIntListOrNull(
+        data['dailyFluidSessionCounts'],
         monthLength,
         maxValue: 10,
       ),

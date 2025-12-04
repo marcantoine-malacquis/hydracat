@@ -21,6 +21,12 @@ class AppDateUtils {
     return formatter.format(dateTime);
   }
 
+  /// Format date as "d MMMM" (e.g., "3 December")
+  static String formatDayMonth(DateTime date) {
+    final formatter = DateFormat('d MMMM');
+    return formatter.format(date);
+  }
+
   /// Get relative time (e.g., "2 hours ago")
   static String getRelativeTime(DateTime dateTime) {
     final now = DateTime.now();

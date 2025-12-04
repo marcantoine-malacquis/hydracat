@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/app/app_shell.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
@@ -114,6 +115,11 @@ class HydraSnackBar {
     Duration? duration,
   }) {
     final platform = Theme.of(context).platform;
+
+    // Haptic feedback for success snackbars (core app actions)
+    if (type == HydraSnackBarType.success) {
+      HapticFeedback.heavyImpact();
+    }
 
     // Announce to screen readers
     final announcement = actionLabel != null

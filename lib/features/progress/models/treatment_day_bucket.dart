@@ -12,6 +12,7 @@ class TreatmentDayBucket {
     required this.fluidVolumeMl,
     required this.fluidGoalMl,
     required this.fluidScheduledSessions,
+    required this.fluidSessionCount,
     required this.medicationDoses,
     required this.medicationScheduledDoses,
   });
@@ -27,6 +28,9 @@ class TreatmentDayBucket {
 
   /// Number of scheduled fluid sessions for the day.
   final int fluidScheduledSessions;
+
+  /// Actual fluid sessions logged for the day.
+  final int fluidSessionCount;
 
   /// Completed medication doses for the day.
   final int medicationDoses;
@@ -51,12 +55,13 @@ class TreatmentDayBucket {
   }
 
   /// Whether fluid treatments met their goal.
+  ///
+  /// Uses session-based adherence (matches week view logic):
+  /// - If no sessions scheduled: complete
+  /// - Otherwise: actual sessions >= scheduled sessions
   bool get isFluidComplete {
     if (!hasFluidScheduled) return true;
-    if (fluidGoalMl <= 0) {
-      return fluidVolumeMl > 0;
-    }
-    return fluidVolumeMl >= fluidGoalMl;
+    return fluidSessionCount >= fluidScheduledSessions;
   }
 
   /// Whether medication treatments met scheduled doses.
@@ -99,6 +104,7 @@ class TreatmentDayBucket {
           fluidVolumeMl == other.fluidVolumeMl &&
           fluidGoalMl == other.fluidGoalMl &&
           fluidScheduledSessions == other.fluidScheduledSessions &&
+          fluidSessionCount == other.fluidSessionCount &&
           medicationDoses == other.medicationDoses &&
           medicationScheduledDoses == other.medicationScheduledDoses;
 
@@ -108,6 +114,7 @@ class TreatmentDayBucket {
         fluidVolumeMl,
         fluidGoalMl,
         fluidScheduledSessions,
+        fluidSessionCount,
         medicationDoses,
         medicationScheduledDoses,
       );
@@ -118,6 +125,7 @@ class TreatmentDayBucket {
       'fluidVolumeMl: $fluidVolumeMl, '
       'fluidGoalMl: $fluidGoalMl, '
       'fluidScheduledSessions: $fluidScheduledSessions, '
+      'fluidSessionCount: $fluidSessionCount, '
       'medicationDoses: $medicationDoses, '
       'medicationScheduledDoses: $medicationScheduledDoses'
       ')';

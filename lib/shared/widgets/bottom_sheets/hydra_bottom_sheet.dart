@@ -100,6 +100,14 @@ class HydraBottomSheet extends StatelessWidget {
       );
     }
 
+    // Add padding to push sheet above keyboard
+    // This is the standard Flutter pattern for keyboard avoidance
+    // in bottom sheets
+    content = Padding(
+      padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
+      child: content,
+    );
+
     // Wrap in SafeArea with bottom breathing room for all platforms
     // This ensures content has comfortable clearance
     // from the system home indicator

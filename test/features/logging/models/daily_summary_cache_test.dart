@@ -598,6 +598,26 @@ void main() {
 
         expect(cache.hasMedicationLogged('Benazepril'), false);
       });
+
+      test('completedMedicationDoseCount sums all completion timestamps', () {
+        final cache = DailySummaryCache(
+          date: '2025-10-13',
+          medicationSessionCount: 2,
+          fluidSessionCount: 0,
+          medicationNames: const ['Amlodipine', 'Benazepril'],
+          totalMedicationDosesGiven: 2,
+          totalFluidVolumeGiven: 0,
+          medicationCompletedTimes: {
+            'Amlodipine': [
+              DateTime(2025, 10, 13, 9).toIso8601String(),
+              DateTime(2025, 10, 13, 21).toIso8601String(),
+            ],
+            'Benazepril': [DateTime(2025, 10, 13, 7).toIso8601String()],
+          },
+        );
+
+        expect(cache.completedMedicationDoseCount, 3);
+      });
     });
 
     group('copyWithSession', () {

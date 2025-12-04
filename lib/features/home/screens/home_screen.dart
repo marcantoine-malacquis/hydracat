@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/home/models/pending_fluid_treatment.dart';
 import 'package:hydracat/features/home/models/pending_treatment.dart';
 import 'package:hydracat/features/home/widgets/widgets.dart';
@@ -89,298 +90,26 @@ class _HomeScreenContent {
         if (profileState.medicationSchedules == null ||
             profileState.isLoading ||
             profileState.scheduleIsLoading) {
-          return _buildLoadingSkeleton(context);
+          return const _LoadingSkeleton();
         }
 
         // Show empty state with setup options if no schedules (after loading)
         if (!hasFluid && !hasMedication) {
-          return _buildEmptyState(context);
+          return const _EmptyState();
         }
 
         // Show main dashboard with progressive disclosure
-        return _buildDashboard(context, ref, hasFluid, hasMedication);
-      },
-    );
-  }
-
-  /// Builds empty state when no schedules are set up
-  static Widget _buildEmptyState(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.pets,
-              size: 64,
-              color: AppColors.primary,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              "Let's Get Started!",
-              style: AppTextStyles.h1.copyWith(
-                color: AppColors.primary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            const Text(
-              "Set up tracking for your cat's treatment",
-              textAlign: TextAlign.center,
-              style: AppTextStyles.body,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // Medication tracking option
-            SizedBox(
-              width: double.infinity,
-              height: 140,
-              child: SelectionCard(
-                icon: Icons.medication_outlined,
-                title: 'Track Medications',
-                subtitle: 'Set up medication schedules and reminders',
-                layout: CardLayout.rectangle,
-                onTap: () => context.push('/profile/medication'),
-              ),
-            ),
-
-            const SizedBox(height: AppSpacing.md),
-
-            // Fluid therapy option
-            SizedBox(
-              width: double.infinity,
-              height: 140,
-              child: SelectionCard(
-                icon: Icons.water_drop_outlined,
-                title: 'Track Fluid Therapy',
-                subtitle: 'Set up subcutaneous fluid tracking',
-                layout: CardLayout.rectangle,
-                onTap: () => context.push('/profile/fluid/create'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Builds dashboard with treatment widgets and progressive disclosure
-  static Widget _buildDashboard(
-    BuildContext context,
-    WidgetRef ref,
-    bool hasFluid,
-    bool hasMedication,
-  ) {
-    return Consumer(
-      builder: (context, ref, child) {
-        final dashboardState = ref.watch(dashboardProvider);
-        final profileState = ref.watch(profileProvider);
-
-        // Show loading skeletons while data is loading
-        if (dashboardState.isLoading) {
-          return _buildLoadingSkeleton(context);
-        }
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const HomeHeroHeader(),
-              const SizedBox(height: AppSpacing.md),
-
-              // Error state
-              if (dashboardState.errorMessage != null) ...[
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Column(
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          color: AppColors.error,
-                          size: 48,
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          'Failed to load treatments',
-                          style: AppTextStyles.h3.copyWith(
-                            color: AppColors.error,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          dashboardState.errorMessage!,
-                          style: AppTextStyles.caption,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        TextButton(
-                          onPressed: () =>
-                              ref.read(dashboardProvider.notifier).refresh(),
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ]
-              // Pending treatments section
-              else if (dashboardState.hasPendingTreatments) ...[
-                Text(
-                  "Today's Treatments",
-                  style: AppTextStyles.h2.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-
-                // Pending medication cards
-                ...dashboardState.pendingMedications.map(
-                  (treatment) => PendingTreatmentCard(
-                    treatment: treatment,
-                    onTap: () => _openMedicationLoggingFromDashboard(
-                      context,
-                      ref,
-                      treatment,
-                    ),
-                  ),
-                ),
-
-                // Pending fluid card
-                if (dashboardState.pendingFluid != null)
-                  PendingFluidCard(
-                    fluidTreatment: dashboardState.pendingFluid!,
-                    onTap: () => _openFluidLoggingFromDashboard(
-                      context,
-                      ref,
-                      dashboardState.pendingFluid!,
-                    ),
-                  ),
-
-                const SizedBox(height: AppSpacing.xl),
-              ]
-              // Success empty state (all completed for today)
-              else if (hasFluid || hasMedication) ...[
-                _HomeScreenContent._buildSuccessEmptyState(profileState),
-                const SizedBox(height: AppSpacing.xl),
-              ],
-
-              // Weekly progress card (only show if has fluid schedule)
-              if (hasFluid) ...[
-                Text(
-                  'This Week',
-                  style: AppTextStyles.h2.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                const WaterDropProgressCard(),
-                const SizedBox(height: AppSpacing.lg),
-              ],
-
-              // Progressive disclosure CTAs
-              if (!hasMedication || !hasFluid) ...[
-                Text(
-                  'Add More Tracking',
-                  style: AppTextStyles.h3.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-              ],
-
-              if (!hasMedication)
-                SizedBox(
-                  width: double.infinity,
-                  height: 140,
-                  child: SelectionCard(
-                    icon: Icons.medication_outlined,
-                    title: 'Track Medications',
-                    subtitle: 'Set up medication schedules',
-                    layout: CardLayout.rectangle,
-                    onTap: () => context.push('/profile/medication'),
-                  ),
-                ),
-
-              if (!hasFluid) ...[
-                if (!hasMedication) const SizedBox(height: AppSpacing.md),
-                SizedBox(
-                  width: double.infinity,
-                  height: 140,
-                  child: SelectionCard(
-                    icon: Icons.water_drop_outlined,
-                    title: 'Track Fluid Therapy',
-                    subtitle: 'Set up subcutaneous fluid tracking',
-                    layout: CardLayout.rectangle,
-                    onTap: () => context.push('/profile/fluid/create'),
-                  ),
-                ),
-              ],
-            ],
-          ),
+        return _Dashboard(
+          hasFluid: hasFluid,
+          hasMedication: hasMedication,
         );
       },
     );
   }
 
-  /// Builds loading skeleton layout with shimmer effects
-  static Widget _buildLoadingSkeleton(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const HomeHeroHeader(),
-          const SizedBox(height: AppSpacing.md),
 
-          // "Today's Treatments" skeleton header
-          Container(
-            width: 150,
-            height: 20,
-            decoration: BoxDecoration(
-              color: const Color(0xFFDDD6CE),
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
 
-          // Treatment skeletons (2 medication + 1 fluid)
-          const PendingTreatmentCardSkeleton(),
-          const PendingTreatmentCardSkeleton(),
-          const PendingFluidCardSkeleton(),
-        ],
-      ),
-    );
-  }
 
-  /// Build success empty state widget with completion count
-  static Widget _buildSuccessEmptyState(ProfileState profileState) {
-    final now = DateTime.now();
-    var count = 0;
-
-    // Count medication reminder times for today
-    if (profileState.medicationSchedules != null) {
-      for (final schedule in profileState.medicationSchedules!) {
-        if (schedule.isActive && schedule.hasReminderTimeToday(now)) {
-          count += schedule.todaysReminderTimes(now).toList().length;
-        }
-      }
-    }
-
-    // Count fluid reminder times for today (count each scheduled session)
-    if (profileState.fluidSchedule != null &&
-        profileState.fluidSchedule!.isActive &&
-        profileState.fluidSchedule!.hasReminderTimeToday(now)) {
-      // For fluids, count the number of scheduled times (not volume)
-      count += profileState.fluidSchedule!
-          .todaysReminderTimes(now)
-          .toList()
-          .length;
-    }
-
-    return DashboardEmptyState(completedCount: count);
-  }
 
   /// Open medication logging screen from dashboard with pre-selected medication
   static void _openMedicationLoggingFromDashboard(
@@ -463,5 +192,300 @@ class _HomeScreenContent {
         dashboardContext: dashboardContext,
       ),
     );
+  }
+}
+
+/// Loading skeleton widget for home screen
+class _LoadingSkeleton extends StatelessWidget {
+  const _LoadingSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // "Today's Treatments" skeleton header
+          Container(
+            width: 150,
+            height: 20,
+            decoration: BoxDecoration(
+              color: const Color(0xFFDDD6CE),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+
+          // Treatment skeletons (2 medication + 1 fluid)
+          const PendingTreatmentCardSkeleton(),
+          const PendingTreatmentCardSkeleton(),
+          const PendingFluidCardSkeleton(),
+        ],
+      ),
+    );
+  }
+}
+
+/// Empty state widget when no schedules are set up
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.pets,
+              size: 64,
+              color: AppColors.primary,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              "Let's Get Started!",
+              style: AppTextStyles.h1.copyWith(
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            const Text(
+              "Set up tracking for your cat's treatment",
+              textAlign: TextAlign.center,
+              style: AppTextStyles.body,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            // Medication tracking option
+            SizedBox(
+              width: double.infinity,
+              height: 140,
+              child: SelectionCard(
+                icon: Icons.medication_outlined,
+                title: 'Track Medications',
+                subtitle: 'Set up medication schedules and reminders',
+                layout: CardLayout.rectangle,
+                onTap: () => context.push('/profile/medication'),
+              ),
+            ),
+
+            const SizedBox(height: AppSpacing.md),
+
+            // Fluid therapy option
+            SizedBox(
+              width: double.infinity,
+              height: 140,
+              child: SelectionCard(
+                icon: Icons.water_drop_outlined,
+                title: 'Track Fluid Therapy',
+                subtitle: 'Set up subcutaneous fluid tracking',
+                layout: CardLayout.rectangle,
+                onTap: () => context.push('/profile/fluid/create'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Dashboard widget with treatment widgets and progressive disclosure
+class _Dashboard extends ConsumerWidget {
+  const _Dashboard({
+    required this.hasFluid,
+    required this.hasMedication,
+  });
+
+  final bool hasFluid;
+  final bool hasMedication;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dashboardState = ref.watch(dashboardProvider);
+    final profileState = ref.watch(profileProvider);
+
+    // Show loading skeletons while data is loading
+    if (dashboardState.isLoading) {
+      return const _LoadingSkeleton();
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Error state
+          if (dashboardState.errorMessage != null) ...[
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: AppColors.error,
+                      size: 48,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      'Failed to load treatments',
+                      style: AppTextStyles.h3.copyWith(
+                        color: AppColors.error,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      dashboardState.errorMessage!,
+                      style: AppTextStyles.caption,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    TextButton(
+                      onPressed: () =>
+                          ref.read(dashboardProvider.notifier).refresh(),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ]
+          // Pending treatments section
+          else if (dashboardState.hasPendingTreatments) ...[
+            Text(
+              'Today, ${AppDateUtils.formatDayMonth(DateTime.now())}',
+              style: AppTextStyles.h2.copyWith(
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+
+            // Pending medication cards
+            ...dashboardState.pendingMedications.map(
+              (treatment) => PendingTreatmentCard(
+                treatment: treatment,
+                onTap: () =>
+                    _HomeScreenContent._openMedicationLoggingFromDashboard(
+                  context,
+                  ref,
+                  treatment,
+                ),
+              ),
+            ),
+
+            // Pending fluid card
+            if (dashboardState.pendingFluid != null)
+              PendingFluidCard(
+                fluidTreatment: dashboardState.pendingFluid!,
+                onTap: () => _HomeScreenContent._openFluidLoggingFromDashboard(
+                  context,
+                  ref,
+                  dashboardState.pendingFluid!,
+                ),
+              ),
+
+            const SizedBox(height: AppSpacing.xl),
+          ]
+          // Success empty state (all completed for today)
+          else if (hasFluid || hasMedication) ...[
+            _SuccessEmptyState(profileState: profileState),
+            const SizedBox(height: AppSpacing.xl),
+          ],
+
+          // Weekly progress card (only show if has fluid schedule)
+          if (hasFluid) ...[
+            Text(
+              'This Week',
+              style: AppTextStyles.h2.copyWith(
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            const WaterDropProgressCard(),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+
+          // Progressive disclosure CTAs
+          if (!hasMedication || !hasFluid) ...[
+            Text(
+              'Add More Tracking',
+              style: AppTextStyles.h3.copyWith(
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+
+          if (!hasMedication)
+            SizedBox(
+              width: double.infinity,
+              height: 140,
+              child: SelectionCard(
+                icon: Icons.medication_outlined,
+                title: 'Track Medications',
+                subtitle: 'Set up medication schedules',
+                layout: CardLayout.rectangle,
+                onTap: () => context.push('/profile/medication'),
+              ),
+            ),
+
+          if (!hasFluid) ...[
+            if (!hasMedication) const SizedBox(height: AppSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              height: 140,
+              child: SelectionCard(
+                icon: Icons.water_drop_outlined,
+                title: 'Track Fluid Therapy',
+                subtitle: 'Set up subcutaneous fluid tracking',
+                layout: CardLayout.rectangle,
+                onTap: () => context.push('/profile/fluid/create'),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Success empty state widget with completion count
+class _SuccessEmptyState extends StatelessWidget {
+  const _SuccessEmptyState({
+    required this.profileState,
+  });
+
+  final ProfileState profileState;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    var count = 0;
+
+    // Count medication reminder times for today
+    if (profileState.medicationSchedules != null) {
+      for (final schedule in profileState.medicationSchedules!) {
+        if (schedule.isActive && schedule.hasReminderTimeToday(now)) {
+          count += schedule.todaysReminderTimes(now).toList().length;
+        }
+      }
+    }
+
+    // Count fluid reminder times for today (count each scheduled session)
+    if (profileState.fluidSchedule != null &&
+        profileState.fluidSchedule!.isActive &&
+        profileState.fluidSchedule!.hasReminderTimeToday(now)) {
+      // For fluids, count the number of scheduled times (not volume)
+      count += profileState.fluidSchedule!
+          .todaysReminderTimes(now)
+          .toList()
+          .length;
+    }
+
+    return DashboardEmptyState(completedCount: count);
   }
 }

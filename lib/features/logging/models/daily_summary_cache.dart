@@ -170,6 +170,19 @@ class DailySummaryCache {
   /// medication quick-log button.
   bool get hasMedicationSession => medicationSessionCount > 0;
 
+  /// Total count of completed medication doses stored in the cache.
+  ///
+  /// This sums every timestamp stored in [medicationCompletedTimes] and is used
+  /// to detect when cached completion data falls out of sync with the server,
+  /// so the cache can be rehydrated from Firestore.
+  int get completedMedicationDoseCount {
+    var total = 0;
+    for (final entries in medicationCompletedTimes.values) {
+      total += entries.length;
+    }
+    return total;
+  }
+
   /// Check if medication has been logged within time window of scheduled time
   ///
   /// Used for dashboard completion detection with ±2h window.
@@ -362,7 +375,9 @@ class DailySummaryCache {
         other.fluidSessionCount == fluidSessionCount &&
         listEquals(other.medicationNames, medicationNames) &&
         other.totalMedicationDosesGiven == totalMedicationDosesGiven &&
-        other.totalFluidVolumeGiven == totalFluidVolumeGiven;
+        other.totalFluidVolumeGiven == totalFluidVolumeGiven &&
+        mapEquals(other.medicationRecentTimes, medicationRecentTimes) &&
+        mapEquals(other.medicationCompletedTimes, medicationCompletedTimes);
   }
 
   @override
@@ -374,6 +389,8 @@ class DailySummaryCache {
       Object.hashAll(medicationNames),
       totalMedicationDosesGiven,
       totalFluidVolumeGiven,
+      _mapHash(medicationRecentTimes),
+      _mapHash(medicationCompletedTimes),
     );
   }
 
@@ -388,5 +405,21 @@ class DailySummaryCache {
         'totalFluidVolumeGiven: $totalFluidVolumeGiven, '
         'medicationRecentTimes: $medicationRecentTimes'
         ')';
+  }
+
+  /// Hash helper that produces a stable hash for a map of lists by sorting
+  /// keys to avoid order-dependent results.
+  static int _mapHash(Map<String, List<String>> map) {
+    if (map.isEmpty) return 0;
+    final entries = map.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    return Object.hashAll(
+      entries.map(
+        (entry) => Object.hash(
+          entry.key,
+          Object.hashAll(entry.value),
+        ),
+      ),
+    );
   }
 }

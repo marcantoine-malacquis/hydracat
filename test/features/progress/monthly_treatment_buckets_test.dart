@@ -59,6 +59,7 @@ void main() {
       int fluidVolume = 0,
       int fluidGoal = 0,
       int fluidScheduled = 0,
+      int fluidSessionCount = 0,
       int medicationDoses = 0,
       int medicationScheduled = 0,
     }) {
@@ -67,6 +68,7 @@ void main() {
         fluidVolumeMl: fluidVolume,
         fluidGoalMl: fluidGoal,
         fluidScheduledSessions: fluidScheduled,
+        fluidSessionCount: fluidSessionCount,
         medicationDoses: medicationDoses,
         medicationScheduledDoses: medicationScheduled,
       );

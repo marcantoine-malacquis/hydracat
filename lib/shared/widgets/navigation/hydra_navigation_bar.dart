@@ -371,49 +371,52 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
     // Material: Standard w600 for selected
     final selectedFontWeight = isCupertino ? FontWeight.w500 : FontWeight.w600;
 
-    return GestureDetector(
-      onTap: () => widget.onTap(index),
-      child: Semantics(
-        button: true,
-        selected: isSelected,
-        label: item.label,
-        child: HydraTouchTarget(
-          minSize: 48, // Accessibility touch target (platform-agnostic)
-          child: Container(
-            margin: const EdgeInsets.only(
-              bottom: 4,
-              left: 2,
-              right: 2,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                HydraIcon(
-                  icon: item.icon,
-                  color: color,
-                  semanticLabel: item.label,
-                  size: iconSize, // Platform-specific size
-                ),
-                const SizedBox(height: 2),
-                Flexible(
-                  child: Text(
-                    item.label,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: color,
-                      fontWeight: isSelected
-                          ? selectedFontWeight
-                          : FontWeight.w400,
-                      fontSize: 12,
-                      height: 1,
-                    ),
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: item.label,
+      child: GestureDetector(
+        onTap: () => widget.onTap(index),
+        // Make entire area tappable (industry standard for bottom navigation)
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          // Maintain minimum accessibility height (44-48px industry standard)
+          constraints: const BoxConstraints(
+            minHeight: AppAccessibility.minTouchTarget,
+          ),
+          margin: const EdgeInsets.only(
+            bottom: 4,
+            left: 2,
+            right: 2,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              HydraIcon(
+                icon: item.icon,
+                color: color,
+                semanticLabel: item.label,
+                size: iconSize, // Platform-specific size
+              ),
+              const SizedBox(height: 2),
+              Flexible(
+                child: Text(
+                  item.label,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: color,
+                    fontWeight: isSelected
+                        ? selectedFontWeight
+                        : FontWeight.w400,
+                    fontSize: 12,
+                    height: 1,
                   ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

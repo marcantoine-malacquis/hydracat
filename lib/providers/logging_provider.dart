@@ -535,8 +535,19 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
           existing?.medicationNames ?? const [],
         );
 
-        if ((medicationNames.isEmpty || medicationCompletedTimes.isEmpty) &&
-            (summary.medicationTotalDoses > 0)) {
+        final summaryCompletedCount = summary.medicationTotalDoses;
+        final currentCompletedCount =
+            existing?.completedMedicationDoseCount ?? 0;
+        final hasCompletionMismatch =
+            currentCompletedCount != summaryCompletedCount;
+
+        final shouldHydrateMedicationTimes = summaryCompletedCount > 0
+            ? medicationNames.isEmpty ||
+                medicationCompletedTimes.isEmpty ||
+                hasCompletionMismatch
+            : hasCompletionMismatch;
+
+        if (shouldHydrateMedicationTimes) {
           final sessions = await _loggingService.getTodaysMedicationSessionsAll(
             userId: user.id,
             petId: pet.id,
@@ -589,6 +600,12 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
                 trimmed.map((t) => t.toIso8601String()).toList(),
               );
             });
+          } else if (summaryCompletedCount == 0 && hasCompletionMismatch) {
+            // Summary reports no doses today but cache still has entries -
+            // clear them to avoid showing stale completions.
+            medicationNames = const <String>[];
+            medicationRecentTimes = const <String, List<String>>{};
+            medicationCompletedTimes = const <String, List<String>>{};
           }
         }
 
