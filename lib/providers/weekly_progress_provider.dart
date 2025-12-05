@@ -48,8 +48,9 @@ class WeeklyProgressViewModel {
 /// - User or pet is not available
 /// - Data fetch fails
 final AutoDisposeFutureProvider<WeeklyProgressViewModel?>
-    weeklyProgressProvider =
-    FutureProvider.autoDispose<WeeklyProgressViewModel?>((ref) async {
+weeklyProgressProvider = FutureProvider.autoDispose<WeeklyProgressViewModel?>((
+  ref,
+) async {
   if (kDebugMode) {
     debugPrint('[WeeklyProgressProvider] ===== START =====');
   }
@@ -75,6 +76,9 @@ final AutoDisposeFutureProvider<WeeklyProgressViewModel?>
   }
 
   final summaryService = ref.read(summaryServiceProvider);
+  // Read fluidScheduleProvider BEFORE the await to avoid
+  // Riverpod assertion errors
+  final fluidSchedule = ref.read(fluidScheduleProvider);
 
   try {
     if (kDebugMode) {
@@ -110,7 +114,7 @@ final AutoDisposeFutureProvider<WeeklyProgressViewModel?>
 
     // 2. Get weekly goal from summary (0 reads, already in summary)
     // Fallback to calculating from schedule if not yet logged this week
-    final fluidSchedule = ref.read(fluidScheduleProvider);
+    // Use the fluidSchedule we read earlier (before await)
 
     if (kDebugMode) {
       debugPrint(
@@ -129,7 +133,8 @@ final AutoDisposeFutureProvider<WeeklyProgressViewModel?>
       }
     }
 
-    final goalMl = weeklySummary?.fluidScheduledVolume ??
+    final goalMl =
+        weeklySummary?.fluidScheduledVolume ??
         _calculateWeeklyGoalFromSchedule(fluidSchedule);
 
     if (kDebugMode) {
@@ -138,8 +143,9 @@ final AutoDisposeFutureProvider<WeeklyProgressViewModel?>
 
     // 3. Get last injection site from pet profile (0 reads, already cached)
     final lastSite = pet.lastFluidInjectionSite;
-    final lastInjectionSite =
-        lastSite != null ? _formatInjectionSite(lastSite) : 'None yet';
+    final lastInjectionSite = lastSite != null
+        ? _formatInjectionSite(lastSite)
+        : 'None yet';
 
     if (kDebugMode) {
       debugPrint(
@@ -148,8 +154,9 @@ final AutoDisposeFutureProvider<WeeklyProgressViewModel?>
     }
 
     // 4. Calculate fill percentage (clamped to 0.0-2.0 for UI)
-    final fillPercentage =
-        goalMl > 0 ? (givenMl / goalMl).clamp(0.0, 2.0) : 0.0;
+    final fillPercentage = goalMl > 0
+        ? (givenMl / goalMl).clamp(0.0, 2.0)
+        : 0.0;
 
     if (kDebugMode) {
       debugPrint(
@@ -212,9 +219,9 @@ int _calculateWeeklyGoalFromSchedule(Schedule? fluidSchedule) {
 String _formatInjectionSite(String siteValue) {
   // Try to parse as FluidLocation enum
   final location = FluidLocation.values.cast<FluidLocation?>().firstWhere(
-        (e) => e?.name == siteValue,
-        orElse: () => null,
-      );
+    (e) => e?.name == siteValue,
+    orElse: () => null,
+  );
 
   if (location != null) {
     return location.displayName;
@@ -225,8 +232,7 @@ String _formatInjectionSite(String siteValue) {
       .replaceAll('_', ' ')
       .split(' ')
       .map(
-        (word) =>
-            word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1),
+        (word) => word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1),
       )
       .join(' ');
 }

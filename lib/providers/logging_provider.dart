@@ -34,6 +34,7 @@ import 'package:hydracat/features/progress/providers/injection_sites_provider.da
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/connectivity_provider.dart';
+import 'package:hydracat/providers/inventory_provider.dart';
 import 'package:hydracat/providers/logging_queue_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 // progress_provider.dart intentionally not imported to avoid
@@ -113,6 +114,14 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
   ) : super(const LoggingState.initial()) {
     _initialize();
   }
+
+  /// Testing-only constructor that skips initialization side effects.
+  @visibleForTesting
+  LoggingNotifier.test(
+    this._loggingService,
+    this._cacheService,
+    this._ref,
+  ) : super(const LoggingState.initial());
 
   final LoggingService _loggingService;
   final SummaryCacheService _cacheService;
@@ -543,8 +552,8 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
 
         final shouldHydrateMedicationTimes = summaryCompletedCount > 0
             ? medicationNames.isEmpty ||
-                medicationCompletedTimes.isEmpty ||
-                hasCompletionMismatch
+                  medicationCompletedTimes.isEmpty ||
+                  hasCompletionMismatch
             : hasCompletionMismatch;
 
         if (shouldHydrateMedicationTimes) {
@@ -1604,12 +1613,64 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         );
       }
 
+      // STEP 3A: Check if inventory is enabled (await load if needed)
+      final inventoryAsync = _ref.read(inventoryProvider);
+      var inventoryState = inventoryAsync.valueOrNull;
+
+      // If inventory is still loading, wait briefly for the first value so we
+      // don't skip deductions due to race conditions on startup.
+      if (inventoryState == null && inventoryAsync.isLoading) {
+        try {
+          inventoryState = await _ref
+              .read(inventoryProvider.future)
+              .timeout(const Duration(seconds: 2));
+        } on TimeoutException {
+          if (kDebugMode) {
+            debugPrint(
+              '[LoggingNotifier] Inventory load timed out; proceeding without '
+              'deduction',
+            );
+          }
+        } on Exception catch (e) {
+          if (kDebugMode) {
+            debugPrint(
+              '[LoggingNotifier] Inventory load failed: $e; proceeding without '
+              'deduction',
+            );
+          }
+        }
+      }
+
+      final inventoryEnabled = inventoryState != null;
+      final inventoryEnabledAt = inventoryState?.inventory.inventoryEnabledAt;
+
+      if (kDebugMode && inventoryEnabled) {
+        debugPrint(
+          '[LoggingNotifier] Inventory enabled - will deduct '
+          '${session.volumeGiven}mL',
+        );
+      } else if (kDebugMode &&
+          inventoryAsync.isLoading &&
+          inventoryState == null) {
+        debugPrint(
+          '[LoggingNotifier] Inventory still loading after wait, skipping '
+          'deduction',
+        );
+      } else if (kDebugMode && !inventoryEnabled) {
+        debugPrint(
+          '[LoggingNotifier] Inventory disabled or unavailable; no deduction. '
+          'wasLoading=${inventoryAsync.isLoading}',
+        );
+      }
+
       final sessionId = await _loggingService.logFluidSession(
         userId: user.id,
         petId: pet.id,
         session: session,
         todaysSchedules: fluidSchedule != null ? [fluidSchedule] : [],
         recentSessions: [], // Fluids don't need duplicate detection
+        updateInventory: inventoryEnabled,
+        inventoryEnabledAt: inventoryEnabledAt,
       );
 
       // STEP 3.5: Throttle notification refresh (waits 500ms after last log)
@@ -1641,6 +1702,13 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         debugPrint(
           '[LoggingNotifier] Invalidated week providers '
           'for immediate UI update',
+        );
+      }
+
+      // STEP 4.3: Check inventory threshold after successful logging (Phase 2)
+      if (inventoryEnabled) {
+        await _checkInventoryThreshold(
+          volumeDeducted: session.volumeGiven,
         );
       }
 
@@ -1712,6 +1780,103 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
 
       if (kDebugMode) {
         debugPrint('[LoggingNotifier] Fluid logging error: $e');
+      }
+
+      return false;
+    }
+  }
+
+  /// Deletes a fluid session and keeps local cache in sync
+  ///
+  /// If inventory is enabled and the session was logged after inventory
+  /// activation, the volume will be restored to inventory and threshold
+  /// will be re-checked (Phase 2).
+  Future<bool> deleteFluidSession({
+    required FluidSession session,
+  }) async {
+    state = state.withLoading(loading: true);
+
+    try {
+      final user = _ref.read(currentUserProvider);
+      final pet = _ref.read(primaryPetProvider);
+
+      if (user == null || pet == null) {
+        state = state.copyWith(
+          isLoading: false,
+          error: 'User or pet not found. Please try again.',
+        );
+        return false;
+      }
+
+      // Check if inventory is enabled (async-aware)
+      final inventoryAsync = _ref.read(inventoryProvider);
+      final inventoryState = inventoryAsync.when(
+        data: (state) => state,
+        loading: () => null, // Still loading, skip inventory update
+        error: (_, _) => null, // Error or not enabled
+      );
+
+      final inventoryEnabled = inventoryState != null;
+      final inventoryEnabledAt = inventoryState?.inventory.inventoryEnabledAt;
+
+      if (kDebugMode && inventoryEnabled) {
+        debugPrint(
+          '[LoggingNotifier] Inventory enabled - will restore '
+          '${session.volumeGiven}mL',
+        );
+      } else if (kDebugMode && inventoryAsync.isLoading) {
+        debugPrint(
+          '[LoggingNotifier] Inventory still loading, skipping restoration',
+        );
+      }
+
+      await _loggingService.deleteFluidSession(
+        userId: user.id,
+        petId: pet.id,
+        session: session,
+        updateInventory: inventoryEnabled,
+        inventoryEnabledAt: inventoryEnabledAt,
+      );
+
+      // Update local cache (only affects today)
+      await _cacheService.removeCachedFluidSession(session: session);
+      await loadTodaysCache();
+
+      // Clear in-memory caches so progress screens refresh promptly
+      _ref.read(summaryServiceProvider).clearAllCaches();
+      _ref.invalidate(injectionSitesStatsProvider);
+
+      // Re-check threshold if inventory was restored (Phase 2)
+      if (inventoryEnabled) {
+        await _checkInventoryThreshold(
+          volumeDeducted: -session.volumeGiven, // Negative = volume added back
+        );
+      }
+
+      // Track analytics
+      await _ref
+          .read(analyticsServiceDirectProvider)
+          .trackSessionDeletion(
+            treatmentType: 'fluid',
+            volume: session.volumeGiven,
+            inventoryAdjusted: inventoryEnabled,
+          );
+
+      state = state.copyWith(isLoading: false);
+
+      if (kDebugMode) {
+        debugPrint('[LoggingNotifier] Deleted fluid session ${session.id}');
+      }
+
+      return true;
+    } on Exception catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: _handleError(e),
+      );
+
+      if (kDebugMode) {
+        debugPrint('[LoggingNotifier] Delete fluid session error: $e');
       }
 
       return false;
@@ -1845,30 +2010,93 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
     return targetVolume * reminderCount;
   }
 
-  /// Cancel notifications for a successfully logged session
+  /// Check inventory threshold and send notification if low (Phase 2)
   ///
-  /// Called after a session is successfully logged to cancel any pending
-  /// notifications (initial, follow-up, snooze) for the matched time slot.
-  ///
-  /// This method:
-  /// 1. Validates that the session matched a schedule (has scheduleId and
-  ///    scheduledTime)
-  /// 2. Converts scheduledTime to "HH:mm" format
-  /// 3. Calls ReminderService.cancelSlot() to cancel notifications
-  /// 4. Tracks analytics (success or error)
-  /// 5. Logs errors silently without throwing (non-blocking)
-  ///
-  /// Error handling: All exceptions are caught and logged with analytics.
-  /// The method never throws, ensuring that successful logging operations
-  /// are not blocked by notification cancellation failures.
+  /// Called after successful fluid logging to get fresh inventory state,
+  /// compute threshold using current schedules, send low-inventory alert
+  /// if needed, and re-arm notification flag if volume above threshold.
   ///
   /// Parameters:
-  /// - [scheduleId]: Schedule ID that the session matched to (from
-  ///   LoggingService)
-  /// - [scheduledTime]: Scheduled time that was matched (from LoggingService)
-  /// - [treatmentType]: Type of treatment ('medication' or 'fluid')
-  /// - [userId]: Current user ID
-  /// - [petId]: Current pet ID
+  /// - [volumeDeducted]: Amount deducted (for debug logging)
+  ///
+  /// Returns: void (non-critical, errors logged but don't fail logging)
+  Future<void> _checkInventoryThreshold({
+    required double volumeDeducted,
+  }) async {
+    try {
+      // Get fresh inventory from provider (post-deduction)
+      final inventoryState = await _ref.read(inventoryProvider.future);
+      if (inventoryState == null) {
+        if (kDebugMode) {
+          debugPrint(
+            '[LoggingNotifier] Inventory state null, '
+            'skipping threshold check',
+          );
+        }
+        return;
+      }
+
+      // Get user and pet info for notification
+      final user = _ref.read(currentUserProvider);
+      final pet = _ref.read(primaryPetProvider);
+      if (user == null || pet == null) {
+        if (kDebugMode) {
+          debugPrint(
+            '[LoggingNotifier] User or pet null, '
+            'skipping threshold check',
+          );
+        }
+        return;
+      }
+
+      // Get current schedules from profile provider
+      final profileState = _ref.read(profileProvider);
+      final schedules = <Schedule>[];
+      if (profileState.fluidSchedule != null) {
+        schedules.add(profileState.fluidSchedule!);
+      }
+
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingNotifier] Checking inventory threshold: '
+          '${inventoryState.inventory.remainingVolume}mL remaining '
+          '(deducted $volumeDeducted mL)',
+        );
+      }
+
+      // Call service to check threshold and notify if needed
+      final inventoryService = _ref.read(inventoryServiceProvider);
+      await inventoryService.checkThresholdAndNotify(
+        userId: user.id,
+        petId: pet.id,
+        petName: pet.name,
+        inventory: inventoryState.inventory,
+        schedules: schedules,
+      );
+
+      if (kDebugMode) {
+        debugPrint('[LoggingNotifier] Threshold check completed');
+      }
+    } on Exception catch (e) {
+      // Non-critical - don't fail logging if threshold check fails
+      if (kDebugMode) {
+        debugPrint('[LoggingNotifier] Threshold check error: $e');
+      }
+    }
+  }
+
+  /// Cancel pending notifications for a logged session (non-blocking)
+  ///
+  /// When a session is logged that matches a scheduled reminder, this method
+  /// cancels any pending notifications for that specific time slot to avoid
+  /// reminding the user about a treatment they've already completed.
+  ///
+  /// Parameters:
+  /// - scheduleId: Schedule ID for the notification
+  /// - scheduledTime: Exact reminder time (matched to ±2 hours)
+  /// - treatmentType: "fluid" or "medication"
+  /// - userId: Current user ID
+  /// - petId: Current pet ID
   ///
   /// Returns: void (errors logged silently)
   Future<void> _cancelNotificationsForSession({

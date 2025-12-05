@@ -273,6 +273,19 @@ Events monitoring cache performance and optimization.
 
 ---
 
+#### `session_deleted`
+**Trigger:** User deletes a treatment session
+**Parameters:**
+- `treatment_type` (string): `'medication'` or `'fluid'`
+- `volume` (int): Volume removed (for fluid)
+- `inventory_adjusted` (bool): Whether inventory was restored
+- `timestamp` (string): ISO 8601 timestamp
+
+**Implementation:** `analytics_provider.dart:792-805`
+**Usage:** `logging_provider.dart:1685-1690`
+
+---
+
 #### `logging_popup_opened`
 **Trigger:** User opens a treatment logging popup
 **Parameters:**

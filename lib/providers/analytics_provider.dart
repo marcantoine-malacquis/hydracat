@@ -79,6 +79,9 @@ class AnalyticsEvents {
   /// Session updated event name
   static const String sessionUpdated = 'session_updated';
 
+  /// Session deleted event name
+  static const String sessionDeleted = 'session_deleted';
+
   /// Logging popup opened event name
   static const String loggingPopupOpened = 'logging_popup_opened';
 
@@ -786,6 +789,25 @@ class AnalyticsService {
         if (volumeGiven != null) AnalyticsParams.volumeGiven: volumeGiven,
         if (source != null) AnalyticsParams.source: source,
         if (durationMs != null) AnalyticsParams.durationMs: durationMs,
+      },
+    );
+  }
+
+  /// Track session deletion
+  Future<void> trackSessionDeletion({
+    required String treatmentType,
+    required double volume,
+    required bool inventoryAdjusted,
+  }) async {
+    if (!_isEnabled) return;
+
+    await _analytics.logEvent(
+      name: AnalyticsEvents.sessionDeleted,
+      parameters: {
+        AnalyticsParams.treatmentType: treatmentType,
+        AnalyticsParams.volumeGiven: volume.toInt(),
+        'inventory_adjusted': inventoryAdjusted,
+        'timestamp': DateTime.now().toIso8601String(),
       },
     );
   }

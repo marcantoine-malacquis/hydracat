@@ -72,7 +72,6 @@ void main() {
       final bucket = buildBucket(
         date: pastDate,
         fluidScheduled: 1,
-        fluidSessionCount: 0,
       );
       expect(bucket.isMissed, isTrue);
 
@@ -108,7 +107,6 @@ void main() {
       final bucket = buildBucket(
         date: DateTime(today.year, today.month, today.day),
         fluidScheduled: 1,
-        fluidSessionCount: 0,
       );
       expect(bucket.isPending, isTrue);
     });

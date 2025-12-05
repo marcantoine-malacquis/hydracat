@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/logging/models/daily_summary_cache.dart';
+import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -292,6 +293,62 @@ class SummaryCacheService {
         _analyticsService?.trackError(
           errorType: AnalyticsErrorTypes.cacheUpdateFailure,
           errorContext: 'updateFluidSession: $e',
+        ),
+      );
+    }
+  }
+
+  /// Removes a fluid session from today's cache (if applicable)
+  ///
+  /// Only adjusts cache when the session date is today to keep historical
+  /// caches untouched. Silently no-ops if cache is missing or expired.
+  Future<void> removeCachedFluidSession({
+    required FluidSession session,
+  }) async {
+    try {
+      final today = AppDateUtils.formatDateForSummary(DateTime.now());
+      final sessionDate = AppDateUtils.formatDateForSummary(session.dateTime);
+
+      // Only adjust today's cache
+      if (today != sessionDate) {
+        return;
+      }
+
+      final cacheKey = _getCacheKey(session.userId, session.petId);
+      final existingCache = await getTodaySummary(
+        session.userId,
+        session.petId,
+      );
+      if (existingCache == null) {
+        return;
+      }
+
+      final updatedCache = existingCache.copyWith(
+        fluidSessionCount: (existingCache.fluidSessionCount - 1).clamp(0, 100),
+        totalFluidVolumeGiven:
+            (existingCache.totalFluidVolumeGiven - session.volumeGiven).clamp(
+              0,
+              500000,
+            ),
+      );
+
+      await _prefs.setString(cacheKey, jsonEncode(updatedCache.toJson()));
+
+      if (kDebugMode) {
+        debugPrint(
+          '[SummaryCacheService] Removed fluid session from cache: '
+          '${session.id} (-${session.volumeGiven}ml)',
+        );
+      }
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('[SummaryCacheService] Error removing fluid cache: $e');
+      }
+
+      unawaited(
+        _analyticsService?.trackError(
+          errorType: AnalyticsErrorTypes.cacheUpdateFailure,
+          errorContext: 'removeCachedFluidSession: $e',
         ),
       );
     }

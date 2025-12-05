@@ -8,6 +8,7 @@ import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/widgets/debug_panel.dart';
 import 'package:hydracat/features/profile/widgets/pet_info_card.dart';
 import 'package:hydracat/providers/auth_provider.dart';
+import 'package:hydracat/providers/inventory_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/weight_unit_provider.dart';
 import 'package:hydracat/shared/widgets/empty_states/onboarding_cta_empty_state.dart';
@@ -469,6 +470,29 @@ class _ProfileScreenContent {
             icon: Icons.add_circle_outline,
             onTap: () => context.push('/profile/medication'),
             margin: EdgeInsets.zero,
+          ),
+        ],
+
+        // Inventory section (only if user has fluid schedule)
+        if (profileState.hasFluidSchedule) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Consumer(
+            builder: (context, ref, _) {
+              final inventoryState = ref.watch(inventoryProvider).valueOrNull;
+
+              final metadata = inventoryState != null
+                  ? '${inventoryState.displayVolume.toInt()} mL remaining '
+                        '(~${inventoryState.sessionsLeft} sessions)'
+                  : 'Track your fluid supply';
+
+              return NavigationCard(
+                title: 'Inventory',
+                icon: Icons.inventory_2,
+                metadata: metadata,
+                onTap: () => context.push('/profile/inventory'),
+                margin: EdgeInsets.zero,
+              );
+            },
           ),
         ],
 

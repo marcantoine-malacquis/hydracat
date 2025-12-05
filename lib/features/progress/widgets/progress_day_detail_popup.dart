@@ -469,7 +469,7 @@ class _ProgressDayDetailPopupState
               _maybeSummaryCard(context, ref),
               const SizedBox(height: AppSpacing.sm),
               // Show logged sessions
-              ..._buildFluidSessionsList(fluidSessions),
+              ..._buildFluidSessionsList(context, ref, fluidSessions),
               // Show scheduled but unlogged reminders
               if (fluidSessions.isEmpty && fluidReminders.isNotEmpty)
                 ...fluidReminders.map(
@@ -1220,8 +1220,79 @@ class _ProgressDayDetailPopupState
     );
   }
 
+  Future<void> _confirmDeleteFluidSession(
+    BuildContext context,
+    WidgetRef ref,
+    FluidSession session,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete session?'),
+        content: Text(
+          'Delete this ${session.volumeGiven.toStringAsFixed(0)}ml session? '
+          'This cannot be undone.',
+          style: AppTextStyles.body,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.error,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if ((confirmed ?? false) && context.mounted) {
+      await _deleteFluidSession(context, ref, session);
+    }
+  }
+
+  Future<void> _deleteFluidSession(
+    BuildContext context,
+    WidgetRef ref,
+    FluidSession session,
+  ) async {
+    try {
+      final success = await ref
+          .read(loggingProvider.notifier)
+          .deleteFluidSession(session: session);
+
+      if (!context.mounted || !success) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Session deleted'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } on Exception catch (e) {
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete session: $e'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
   /// Builds list tiles for actual fluid sessions on the selected day.
-  List<Widget> _buildFluidSessionsList(List<FluidSession> sessions) {
+  List<Widget> _buildFluidSessionsList(
+    BuildContext context,
+    WidgetRef ref,
+    List<FluidSession> sessions,
+  ) {
     if (sessions.isEmpty) return const [];
 
     final sorted = [...sessions]
@@ -1245,16 +1316,34 @@ class _ProgressDayDetailPopupState
         title: Text(volumeStr, style: AppTextStyles.body),
         subtitle: Text(timeStr, style: AppTextStyles.caption),
         trailing: !isFuture
-            ? IconButton(
-                icon: const Icon(Icons.edit_outlined, size: 20),
-                onPressed: () => _handleEditFluid(session),
-                tooltip: 'Edit',
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 40,
-                  minHeight: 40,
-                ),
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 20),
+                    onPressed: () => _handleEditFluid(session),
+                    tooltip: 'Edit',
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 20),
+                    color: AppColors.error,
+                    onPressed: () =>
+                        _confirmDeleteFluidSession(context, ref, session),
+                    tooltip: 'Delete',
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
+                  ),
+                ],
               )
             : null,
       );

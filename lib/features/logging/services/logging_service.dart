@@ -1,6 +1,8 @@
 /// Service for logging treatment sessions with summary aggregation
 library;
 
+import 'dart:math' as math;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
@@ -507,6 +509,9 @@ class LoggingService {
     required List<Schedule> todaysSchedules,
     // Unused but kept for API consistency
     required List<FluidSession> recentSessions,
+    // Inventory integration (Phase 2)
+    bool updateInventory = false,
+    DateTime? inventoryEnabledAt,
   }) async {
     try {
       if (kDebugMode) {
@@ -665,6 +670,39 @@ class LoggingService {
           '[LoggingService] Updating pet injection site: '
           '${session.injectionSite.name}',
         );
+      }
+
+      // STEP 6B: Check if inventory should be deducted (no extra read)
+      var shouldUpdateInventory = false;
+      if (updateInventory && inventoryEnabledAt != null) {
+        // Only deduct inventory if session was logged after activation
+        shouldUpdateInventory =
+            session.dateTime.isAfter(inventoryEnabledAt) ||
+                session.dateTime.isAtSameMomentAs(inventoryEnabledAt);
+      }
+
+      // STEP 6C: Add inventory deduction to batch (if enabled)
+      if (shouldUpdateInventory) {
+        final inventoryRef = _getInventoryRef(userId);
+        batch.update(inventoryRef, {
+          'remainingVolume': FieldValue.increment(-session.volumeGiven),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        if (kDebugMode) {
+          debugPrint(
+            '[LoggingService] Inventory will be updated: '
+            '-${session.volumeGiven}mL deducted',
+          );
+        }
+      } else if (kDebugMode && updateInventory) {
+        debugPrint(
+          '[LoggingService] Inventory update skipped despite flag; '
+          'activation=${inventoryEnabledAt?.toIso8601String()}, '
+          'session=${session.dateTime.toIso8601String()}',
+        );
+      } else if (kDebugMode && !updateInventory) {
+        debugPrint('[LoggingService] Inventory update disabled; skipping');
       }
 
       // STEP 7: Commit batch
@@ -907,6 +945,185 @@ class LoggingService {
       );
 
       throw LoggingException('Unexpected error updating fluid: $e');
+    }
+  }
+
+  // ============================================
+  // PUBLIC API - Fluid Session Deletion
+  // ============================================
+
+  /// Deletes a fluid session with summary updates and optional inventory
+  /// restore.
+  ///
+  /// Process:
+  /// 1. Validates session exists (caller provides full session)
+  /// 2. Builds negative delta DTO for summaries
+  /// 3. Fetches monthly arrays and current daily totals for accurate rewrites
+  /// 4. Builds batch: delete session + summaries + optional inventory update
+  /// 5. Commits atomically to Firestore
+  ///
+  /// Parameters:
+  /// - `userId`: Current authenticated user ID
+  /// - `petId`: Target pet ID
+  /// - `session`: Fluid session to delete
+  /// - `updateInventory`: Whether to restore inventory volume
+  /// - `inventoryEnabledAt`: Timestamp when inventory was enabled (cached)
+  Future<void> deleteFluidSession({
+    required String userId,
+    required String petId,
+    required FluidSession session,
+    bool updateInventory = false,
+    DateTime? inventoryEnabledAt,
+  }) async {
+    try {
+      if (kDebugMode) {
+        debugPrint('[LoggingService] Deleting fluid session: ${session.id}');
+      }
+
+      final date = AppDateUtils.startOfDay(session.dateTime);
+
+      // STEP 1: Build DTO for negative deltas
+      final dto = SummaryUpdateDto.forFluidSessionDelete(session: session);
+
+      // STEP 2: Fetch current monthly arrays (for array rewrites)
+      final monthlyArrays = await _fetchMonthlyArrays(
+        userId: userId,
+        petId: petId,
+        date: date,
+      );
+
+      // STEP 3: Fetch current daily summary to compute accurate totals
+      final dailyRef = _getDailySummaryRef(userId, petId, date);
+      final dailySnap = await dailyRef.get();
+      final dailyData = dailySnap.data() as Map<String, dynamic>?;
+
+      final currentDailyVolume = dailySnap.exists
+          ? (dailyData?['fluidTotalVolume'] as num?)?.toDouble() ?? 0.0
+          : 0.0;
+      final currentDailyGoal = dailySnap.exists
+          ? (dailyData?['fluidDailyGoalMl'] as num?)?.toInt() ?? 0
+          : 0;
+      final currentDailyScheduled = dailySnap.exists
+          ? (dailyData?['fluidScheduledSessions'] as num?)?.toInt() ?? 0
+          : 0;
+      final currentDailySessionCount = dailySnap.exists
+          ? (dailyData?['fluidSessionCount'] as num?)?.toInt() ?? 0
+          : 0;
+
+      final newDailyVolume =
+          math.max(0, currentDailyVolume - session.volumeGiven);
+      final newSessionCount = math.max(0, currentDailySessionCount - 1);
+      final newScheduledCount = math.max(0, currentDailyScheduled);
+      final dayGoalMl = currentDailyGoal != 0
+          ? currentDailyGoal
+          : (session.dailyGoalMl?.toInt() ?? 0);
+
+      // STEP 4: Determine if inventory should be restored
+      var shouldUpdateInventory = false;
+      if (updateInventory && inventoryEnabledAt != null) {
+        shouldUpdateInventory =
+            session.dateTime.isAfter(inventoryEnabledAt) ||
+                session.dateTime.isAtSameMomentAs(inventoryEnabledAt);
+      }
+
+      // STEP 5: Build batch
+      final batch = _firestore.batch();
+
+      // Operation 1: Delete session document
+      final sessionRef = _getFluidSessionRef(userId, petId, session.id);
+      final weeklyRef = _getWeeklySummaryRef(userId, petId, date);
+      final monthlyRef = _getMonthlySummaryRef(userId, petId, date);
+
+      batch
+        ..delete(sessionRef)
+        // Operation 2: Daily summary (negative increments)
+        ..set(
+          dailyRef,
+          _buildDailySummaryWithIncrements(date, dto),
+          SetOptions(merge: true),
+        )
+        // Operation 3: Weekly summary (negative increments)
+        ..set(
+          weeklyRef,
+          _buildWeeklySummaryWithIncrements(date, dto),
+          SetOptions(merge: true),
+        )
+        // Operation 4: Monthly summary (negative increments + array rewrite)
+        ..set(
+          monthlyRef,
+          _buildMonthlySummaryWithIncrements(
+            date,
+            dto,
+            dayVolumeTotal: newDailyVolume.toInt(),
+            dayGoalMl: dayGoalMl,
+            dayScheduledCount: newScheduledCount,
+            daySessionCount: newSessionCount,
+            currentDailyVolumes: monthlyArrays.dailyVolumes,
+            currentDailyGoals: monthlyArrays.dailyGoals,
+            currentDailyScheduledSessions:
+                monthlyArrays.dailyScheduledSessions,
+            currentDailyFluidSessionCounts:
+                monthlyArrays.dailyFluidSessionCounts,
+          ),
+          SetOptions(merge: true),
+        );
+
+      // Operation 5: Optional inventory restore
+      if (shouldUpdateInventory) {
+        final inventoryRef = _getInventoryRef(userId);
+        batch.update(inventoryRef, {
+          'remainingVolume': FieldValue.increment(session.volumeGiven),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        if (kDebugMode) {
+          debugPrint(
+            '[LoggingService] Inventory restored: +${session.volumeGiven}mL',
+          );
+        }
+      }
+
+      // STEP 6: Commit batch
+      await _executeBatchWrite(
+        batch: batch,
+        operation: 'deleteFluidSession',
+      );
+
+      if (kDebugMode) {
+        debugPrint(
+          '[LoggingService] Successfully deleted fluid session ${session.id}',
+        );
+      }
+    } on FirebaseException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[LoggingService] Firebase error: ${e.message}');
+      }
+
+      await _analyticsService?.trackLoggingFailure(
+        errorType: 'batch_write_failure',
+        treatmentType: 'fluid',
+        source: 'delete',
+        errorCode: e.code,
+        exception: 'FirebaseException',
+      );
+
+      throw BatchWriteException(
+        'deleteFluidSession',
+        e.message ?? 'Unknown Firebase error',
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[LoggingService] Unexpected error: $e');
+      }
+
+      await _analyticsService?.trackLoggingFailure(
+        errorType: 'unexpected_logging_error',
+        treatmentType: 'fluid',
+        source: 'delete',
+        exception: e.runtimeType.toString(),
+      );
+
+      throw LoggingException('Unexpected error deleting fluid session: $e');
     }
   }
 
@@ -2347,6 +2564,17 @@ class LoggingService {
         .doc(petId)
         .collection('fluidSessions')
         .doc(sessionId);
+  }
+
+  /// Gets inventory document reference
+  ///
+  /// Path: users/{userId}/fluidInventory/main
+  DocumentReference _getInventoryRef(String userId) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('fluidInventory')
+        .doc('main');
   }
 
   /// Gets daily summary document reference

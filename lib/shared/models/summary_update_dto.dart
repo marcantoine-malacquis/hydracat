@@ -179,6 +179,20 @@ class SummaryUpdateDto {
     );
   }
 
+  /// Factory constructor for fluid session deletion (negative deltas)
+  ///
+  /// Used when deleting a fluid session to decrement volume and session count.
+  /// Medication-related fields are unaffected.
+  factory SummaryUpdateDto.forFluidSessionDelete({
+    required FluidSession session,
+  }) {
+    return SummaryUpdateDto(
+      // Fluid deltas (negative to reverse the logged values)
+      fluidVolumeDelta: -session.volumeGiven,
+      fluidSessionDelta: -1,
+    );
+  }
+
   // Medication Deltas
 
   /// Change in completed medication doses (+1, -1, or null)
@@ -264,16 +278,19 @@ class SummaryUpdateDto {
 
     // Medication deltas
     if (medicationDosesDelta != null) {
-      update['medicationTotalDoses'] =
-          FieldValue.increment(medicationDosesDelta!);
+      update['medicationTotalDoses'] = FieldValue.increment(
+        medicationDosesDelta!,
+      );
     }
     if (medicationScheduledDelta != null) {
-      update['medicationScheduledDoses'] =
-          FieldValue.increment(medicationScheduledDelta!);
+      update['medicationScheduledDoses'] = FieldValue.increment(
+        medicationScheduledDelta!,
+      );
     }
     if (medicationMissedDelta != null) {
-      update['medicationMissedCount'] =
-          FieldValue.increment(medicationMissedDelta!);
+      update['medicationMissedCount'] = FieldValue.increment(
+        medicationMissedDelta!,
+      );
     }
 
     // Fluid deltas
@@ -284,8 +301,9 @@ class SummaryUpdateDto {
       update['fluidSessionCount'] = FieldValue.increment(fluidSessionDelta!);
     }
     if (fluidScheduledDelta != null) {
-      update['fluidScheduledSessions'] =
-          FieldValue.increment(fluidScheduledDelta!);
+      update['fluidScheduledSessions'] = FieldValue.increment(
+        fluidScheduledDelta!,
+      );
     }
 
     // Overall deltas

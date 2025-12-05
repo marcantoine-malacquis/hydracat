@@ -14,6 +14,7 @@ import 'package:hydracat/features/health/screens/symptoms_screen.dart';
 import 'package:hydracat/features/health/screens/weight_screen.dart';
 import 'package:hydracat/features/home/screens/component_demo_screen.dart';
 import 'package:hydracat/features/home/screens/home_screen.dart';
+import 'package:hydracat/features/inventory/screens/inventory_screen.dart';
 import 'package:hydracat/features/learn/screens/learn_screen.dart';
 import 'package:hydracat/features/onboarding/debug_onboarding_replay.dart';
 import 'package:hydracat/features/onboarding/screens/ckd_medical_info_screen.dart';
@@ -339,6 +340,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'profile-weight',
         pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
           child: const WeightScreen(),
+          key: state.pageKey,
+        ),
+      ),
+      GoRoute(
+        path: '/profile/inventory',
+        name: 'profile-inventory',
+        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
+          child: const InventoryScreen(),
           key: state.pageKey,
         ),
       ),

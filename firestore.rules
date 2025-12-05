@@ -23,9 +23,11 @@ service cloud.firestore {
                 && resource.data.userId == request.auth.uid;
 
     // Users can update their own device documents
-    // (including setting userId to null on sign-out)
+    // Checks the NEW userId being written, not the existing one
+    // This allows the same device to be used by different users over time
     allow update: if request.auth != null
-                  && resource.data.userId == request.auth.uid;
+                  && (request.resource.data.userId == request.auth.uid
+                      || request.resource.data.userId == null);
   }
 
     // ─────────────────────────────
@@ -42,10 +44,9 @@ service cloud.firestore {
                && resource.data.subscriptionExpiresAt > request.time;
       }
 
-      // Cascade rule for all subcollections
-      match /{subCollection=**}/{docId} {
-        allow read, write: if request.auth != null
-                           && request.auth.uid == userId;
+      // Helper function to check ownership
+      function isOwner() {
+        return request.auth != null && request.auth.uid == userId;
       }
 
       // ─────────────────────────────
@@ -54,6 +55,99 @@ service cloud.firestore {
       match /crossPetSummaries/{summaryId} {
         allow read: if request.auth.uid == userId && isPremium();
         allow write: if false; // only server/cloud functions should write
+      }
+
+      // ─────────────────────────────
+      // FLUID INVENTORY
+      // ─────────────────────────────
+      match /fluidInventory/{inventoryId} {
+        // Validation helper for CREATE - requires all fields
+        function isValidInventoryCreate(data) {
+          return data.keys().hasAll(['id', 'remainingVolume', 'initialVolume',
+                                     'reminderSessionsLeft', 'lastRefillDate',
+                                     'refillCount', 'inventoryEnabledAt',
+                                     'createdAt', 'updatedAt'])
+                 && data.id is string
+                 && data.remainingVolume is number
+                 && data.initialVolume is number
+                 && data.initialVolume > 0
+                 && data.reminderSessionsLeft is int
+                 && data.reminderSessionsLeft >= 1
+                 && data.reminderSessionsLeft <= 20
+                 && data.refillCount is int
+                 && data.refillCount >= 0
+                 // Accept both timestamp and server timestamp sentinel (request.time)
+                 && (data.lastRefillDate is timestamp || data.lastRefillDate == request.time)
+                 && (data.inventoryEnabledAt is timestamp || data.inventoryEnabledAt == request.time)
+                 && (data.createdAt is timestamp || data.createdAt == request.time)
+                 && (data.updatedAt is timestamp || data.updatedAt == request.time)
+                 && (!data.keys().hasAny(['lastThresholdNotificationSentAt'])
+                     || data.lastThresholdNotificationSentAt is timestamp
+                     || data.lastThresholdNotificationSentAt == null);
+        }
+
+        // Validation helper for UPDATE - only validates fields being modified
+        function isValidInventoryUpdate() {
+          let data = request.resource.data;
+          return // Validate types of modified fields
+                 (!data.keys().hasAny(['remainingVolume']) || data.remainingVolume is number)
+                 && (!data.keys().hasAny(['initialVolume']) || (data.initialVolume is number && data.initialVolume > 0))
+                 && (!data.keys().hasAny(['reminderSessionsLeft']) || (data.reminderSessionsLeft is int && data.reminderSessionsLeft >= 1 && data.reminderSessionsLeft <= 20))
+                 && (!data.keys().hasAny(['refillCount']) || (data.refillCount is int && data.refillCount >= 0))
+                 && (!data.keys().hasAny(['lastThresholdNotificationSentAt']) || data.lastThresholdNotificationSentAt is timestamp || data.lastThresholdNotificationSentAt == null)
+                 // Immutable fields - cannot be changed after creation
+                 && (!data.keys().hasAny(['id']) || data.id == resource.data.id)
+                 && (!data.keys().hasAny(['inventoryEnabledAt']) || data.inventoryEnabledAt == resource.data.inventoryEnabledAt)
+                 && (!data.keys().hasAny(['createdAt']) || data.createdAt == resource.data.createdAt)
+                 // updatedAt must be present and use server timestamp (accepts sentinel value or actual timestamp)
+                 && (data.updatedAt == request.time || data.updatedAt is timestamp);
+        }
+
+        // Owner can read their inventory
+        allow read: if isOwner();
+
+        // Owner can create inventory with valid data (strict validation)
+        allow create: if isOwner() && isValidInventoryCreate(request.resource.data);
+
+        // Owner can update inventory (lenient validation - only checks modified fields)
+        allow update: if isOwner() && isValidInventoryUpdate();
+
+        // Inventory cannot be deleted (permanent once created)
+        allow delete: if false;
+
+        // ─────────────────────────────
+        // REFILLS SUBCOLLECTION
+        // ─────────────────────────────
+        match /refills/{refillId} {
+          // Validation helper for refill documents
+          // Note: Handles FieldValue.serverTimestamp() sentinel values
+          function isValidRefill(data) {
+            return data.keys().hasAll(['id', 'volumeAdded', 'totalAfterRefill',
+                                       'isReset', 'reminderSessionsLeft',
+                                       'refillDate', 'createdAt', 'updatedAt'])
+                   && data.id is string
+                   && data.volumeAdded is number
+                   && data.volumeAdded > 0
+                   && data.totalAfterRefill is number
+                   && data.isReset is bool
+                   && data.reminderSessionsLeft is int
+                   && data.reminderSessionsLeft >= 1
+                   && data.reminderSessionsLeft <= 20
+                   // Accept both timestamp and server timestamp sentinel (request.time)
+                   && (data.refillDate is timestamp || data.refillDate == request.time)
+                   && (data.createdAt is timestamp || data.createdAt == request.time)
+                   && (data.updatedAt is timestamp || data.updatedAt == request.time);
+          }
+
+          // Owner can read refills
+          allow read: if isOwner();
+
+          // Owner can create refills with valid data (append-only)
+          allow create: if isOwner() && isValidRefill(request.resource.data);
+
+          // Refills are immutable - cannot be updated or deleted
+          allow update, delete: if false;
+        }
       }
 
       // ─────────────────────────────
@@ -83,22 +177,10 @@ service cloud.firestore {
           allow read, write: if request.auth.uid == userId;
         }
 
-        // DAILY TREATMENT SUMMARIES
-        match /treatmentSummaryDaily/{dayId} {
+        // TREATMENT SUMMARIES (Nested structure: daily/summaries, weekly/summaries, monthly/summaries)
+        match /treatmentSummaries/{summaryType}/{document=**} {
           allow read: if request.auth.uid == userId;
-          allow write: if false; // only written by server
-        }
-
-        // WEEKLY TREATMENT SUMMARIES
-        match /treatmentSummaryWeekly/{weekId} {
-          allow read: if request.auth.uid == userId;
-          allow write: if false; // only written by server
-        }
-
-        // MONTHLY TREATMENT SUMMARIES
-        match /treatmentSummaryMonthly/{monthId} {
-          allow read: if request.auth.uid == userId;
-          allow write: if false; // only written by server
+          allow write: if request.auth.uid == userId;
         }
 
         // SCHEDULES
@@ -114,8 +196,3 @@ service cloud.firestore {
     }
   }
 }
-    // TODO: Add specific rules for other collections as you develop your app
-    // Example patterns:
-    // - Public collections: allow read: if true; allow write: if request.auth != null;
-    // - Owner-only collections: allow read, write: if request.auth != null && request.auth.uid == resource.data.ownerId;
-    // - Shared collections: custom logic based on your app's requirements

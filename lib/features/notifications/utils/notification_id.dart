@@ -239,6 +239,40 @@ int generateWeeklySummaryNotificationId({
   return notificationId;
 }
 
+/// Generates a deterministic notification ID for inventory low alerts.
+///
+/// Creates a stable 31-bit positive integer for inventory notifications.
+/// Since there's only one inventory notification type per user, we only
+/// need userId and petId to generate a unique ID.
+///
+/// **Use case**: One-time alert when fluid inventory drops below threshold.
+///
+/// **Parameters**:
+/// - [userId]: User ID (must be non-empty)
+/// - [petId]: Pet ID (must be non-empty)
+///
+/// **Returns**: 31-bit positive integer suitable for Android/iOS notifications
+///
+/// **Throws**: [ArgumentError] if userId or petId is empty
+int generateInventoryNotificationId({
+  required String userId,
+  required String petId,
+}) {
+  if (userId.isEmpty) {
+    throw ArgumentError('userId must not be empty');
+  }
+  if (petId.isEmpty) {
+    throw ArgumentError('petId must not be empty');
+  }
+
+  // Create composite: inventory_low|userId|petId
+  final composite = 'inventory_low|$userId|$petId';
+
+  // Compute FNV-1a hash and mask to 31 bits
+  final hash = _fnv1aHash32(composite);
+  return hash & 0x7FFFFFFF;
+}
+
 /// Generates a deterministic notification ID for time-slot-based bundled
 /// notifications.
 ///

@@ -17,9 +17,9 @@ This schema supports comprehensive CKD management while maintaining strict cost 
 ✅ **Fully Implemented:**
 - `healthParameters` - Weight, appetite, symptoms tracking (hybrid symptom model with rawValue + severityScore)
 - `labResults` - Bloodwork and lab test tracking (models, services, UI, Firestore rules, and indexes implemented)
+- `fluidInventory` - Fluid volume tracking with automatic deduction, threshold notifications, and refill history (Phase 0-5 complete)
 
 🚧 **Planned/Not Yet Implemented:**
-- `fluidInventory` - Fluid volume tracking
 - `crossPetSummaries` - Premium multi-pet analytics
 
 ## Design Notes
@@ -138,13 +138,31 @@ users/
       │           ├── createdAt: Timestamp
       │           └── updatedAt: Timestamp
       │
-      ├── fluidInventory (subcollection)
-      │     └── {inventoryId}  # e.g., "main"
-      │           ├── initialVolume: number       # volume entered at the start (ml)
-      │           ├── remainingVolume: number     # updated after each session
-      │           ├── thresholdVolume: number     # for triggering low-fluid notifications
-      │           ├── lastUpdatedAt: Timestamp
-      │           └── createdAt: Timestamp
+      ├── fluidInventory (subcollection) - **AUTOMATIC TRACKING**
+      │     │
+      │     └── main (document) - Single inventory document per user
+      │           ├── id: string                              # "main"
+      │           ├── remainingVolume: number                 # current volume in mL (can be negative)
+      │           ├── initialVolume: number                   # volume at last refill/reset
+      │           ├── reminderSessionsLeft: number            # user setting (1-20, default 10)
+      │           ├── lastRefillDate: Timestamp               # for UI display
+      │           ├── refillCount: number                     # lifetime refill counter
+      │           ├── inventoryEnabledAt: Timestamp           # when user first activated tracking
+      │           ├── lastThresholdNotificationSentAt: Timestamp? # to avoid duplicate notifications
+      │           ├── createdAt: Timestamp
+      │           ├── updatedAt: Timestamp
+      │           │
+      │           └── refills (subcollection) - **APPEND-ONLY**: Refill history
+      │                 │
+      │                 └── {refillId} (auto-generated)
+      │                       ├── id: string                    # auto-generated document ID
+      │                       ├── volumeAdded: number           # mL added (always positive)
+      │                       ├── totalAfterRefill: number      # snapshot of remainingVolume after refill
+      │                       ├── isReset: boolean              # whether "reset inventory" toggle was used
+      │                       ├── reminderSessionsLeft: number  # threshold setting at time of refill
+      │                       ├── refillDate: Timestamp         # when refill was performed
+      │                       ├── createdAt: Timestamp
+      │                       └── updatedAt: Timestamp
       │
       └── pets (subcollection)
             │
@@ -569,6 +587,143 @@ History entries:
 When viewing calendar for Nov 5, query returns first entry showing 9am/9pm times.
 When viewing calendar for Nov 15, query returns second entry showing 10am time.
 
+## Fluid Inventory Tracking
+
+### Purpose
+The `fluidInventory` subcollection enables users to track their fluid supply, estimate remaining sessions, and receive low-inventory alerts. The feature integrates seamlessly with fluid logging to automatically deduct volumes.
+
+### Key Features
+- **Automatic Deduction**: Inventory decrements atomically when logging fluid sessions
+- **Threshold Notifications**: One-time alerts when inventory drops below user-defined threshold
+- **Refill History**: Append-only audit trail of all refills with timestamps
+- **Negative Inventory Support**: Tracks overdraw (logged while empty) with clear warnings
+- **Dynamic Threshold**: Computed in real-time using current schedules (not persisted)
+
+### Design Notes
+
+#### Single Document Pattern
+- One `main` document per user (not per pet) - shared across all pets
+- Path: `users/{userId}/fluidInventory/main`
+- StreamProvider watches this document for real-time updates (1 listener)
+
+#### Threshold Calculation Strategy
+**thresholdVolume is NOT stored** - it's computed dynamically on each check:
+```dart
+thresholdVolume = reminderSessionsLeft × averageVolumePerSession
+```
+
+**Why dynamic?**
+- User sets "remind at 10 sessions left" (stored in `reminderSessionsLeft`)
+- App calculates threshold using **current** schedules at check time
+- If user changes schedules (e.g., 100mL → 150mL/session), threshold auto-adjusts
+- No stale threshold data - always accurate
+
+**Example**:
+```
+User sets: "Remind at 10 sessions left"
+Current schedules average: 117mL/session
+→ Threshold = 10 × 117 = 1,170mL
+
+User changes schedule to 150mL/session
+→ Threshold = 10 × 150 = 1,500mL (automatically recalculated)
+```
+
+#### Automatic Deduction Flow
+1. User logs fluid session (e.g., 100mL)
+2. LoggingService checks: `session.dateTime >= inventoryEnabledAt`?
+3. If yes: adds batch operation `remainingVolume -= 100`
+4. Batch commits atomically: session + 3 summaries + pet doc + **inventory** (5 writes)
+5. LoggingProvider calls `checkThresholdAndNotify()` with fresh inventory state
+6. If threshold crossed: notification fires once
+
+#### Refill Transactions
+Refills use Firestore transactions to prevent race conditions:
+```dart
+await firestore.runTransaction((transaction) async {
+  // Read fresh inventory value
+  final inventorySnap = await transaction.get(inventoryRef);
+  final currentVolume = inventorySnap.data()['remainingVolume'];
+
+  // Calculate new total (additive or reset mode)
+  final newTotal = isReset ? volumeAdded : currentVolume + volumeAdded;
+
+  // Update inventory + create refill entry atomically
+  transaction.update(inventoryRef, {
+    'remainingVolume': newTotal,
+    'lastThresholdNotificationSentAt': null, // re-arm notification
+    // ...
+  });
+  transaction.set(refillRef, refillData);
+});
+```
+
+### Query Patterns
+
+#### Watch Inventory (Real-Time)
+```dart
+// StreamProvider for reactive UI updates
+Stream<FluidInventory?> watchInventory(String userId) {
+  return firestore
+    .collection('users')
+    .doc(userId)
+    .collection('fluidInventory')
+    .doc('main')
+    .snapshots()
+    .map((snap) => snap.exists ? FluidInventory.fromJson(snap.data()!) : null);
+}
+```
+
+**Cost**: 1 real-time listener per user (minimal)
+
+#### Get Refill History (On-Demand)
+```dart
+// Limit to most recent refills
+Query recentRefills = firestore
+  .collection('users')
+  .doc(userId)
+  .collection('fluidInventory')
+  .doc('main')
+  .collection('refills')
+  .orderBy('refillDate', descending: true)
+  .limit(20);
+```
+
+**Cost**: 1 read for initial fetch, then cached
+
+### Cost Analysis
+
+#### Per Active User (30 days, 3 logs/day = 90 logs)
+- **Reads**:
+  - StreamProvider (real-time): 1 initial read
+  - Threshold checks: 0 reads (uses cached provider data)
+  - Total: **~1 read/month**
+
+- **Writes**:
+  - Fluid logging with inventory: 5 writes/log × 90 logs = 450 writes
+  - Refills (avg 2/month): 2 transactions × 2 writes each = 4 writes
+  - Session deletions with restore (rare): ~5 writes
+  - Total: **~459 writes/month**
+
+- **Incremental cost** vs. logging without inventory:
+  - +1 write per fluid log (4 → 5 writes)
+  - +90 writes/month for typical user
+  - +1 transaction read per refill (acceptable for correctness)
+
+#### Cost Optimization Strategies
+1. **Zero extra reads for logging/delete**: Uses cached `inventoryEnabledAt` from StreamProvider
+2. **Threshold re-computation**: Happens in-memory using cached schedules (no reads)
+3. **Notification re-arming**: Piggybacks on existing writes (no extra writes)
+4. **Single listener**: One StreamProvider for entire inventory state
+5. **Batch writes**: Inventory update included in existing fluid logging batch
+
+#### Trade-offs
+- **Accepted overhead**: +1 write per fluid log for automatic tracking
+- **Avoided overhead**: No extra reads during logging (uses cached timestamp)
+- **Correctness priority**: Refills use transactions (+1 read) to prevent race conditions
+
+### Security Rules Requirements
+See Phase 6 implementation (Step 6.2) for detailed security rules.
+
 ## Query Patterns for Cost Optimization
 
 ### Free Users (30-day limitation)
@@ -813,7 +968,12 @@ When a session is logged:
 4. Update monthly summary (`treatmentSummaries/monthly/summaries/{YYYY-MM}`)
    - Includes updating daily arrays (`dailyVolumes`, `dailyGoals`, `dailyScheduledSessions`, etc.)
    - Arrays are updated atomically by reading current array, modifying specific index, and writing back
-5. Update cross-pet summaries for premium users (future)
+5. Update pet document (`lastFluidInjectionSite`, `lastFluidSessionDate`)
+6. **Update fluid inventory** (`fluidInventory/main`) - **if enabled**
+   - Decrements `remainingVolume` using `FieldValue.increment(-volumeGiven)`
+   - Only applies if session logged after `inventoryEnabledAt` timestamp
+   - Atomic operation prevents race conditions
+7. Update cross-pet summaries for premium users (future)
 
 ### Cost-Efficient Batch Operations
 ```dart
@@ -864,7 +1024,25 @@ batch.set(monthlyRef, {
   'updatedAt': FieldValue.serverTimestamp(),
 }, SetOptions(merge: true));
 
+// Update pet document with injection site
+final petRef = user.collection('pets').doc(petId);
+batch.update(petRef, {
+  'lastFluidInjectionSite': injectionSite,
+  'lastFluidSessionDate': sessionDateTime,
+  'updatedAt': FieldValue.serverTimestamp(),
+});
+
+// Update fluid inventory (if enabled)
+if (inventoryEnabled && sessionDateTime >= inventoryEnabledAt) {
+  final inventoryRef = user.collection('fluidInventory').doc('main');
+  batch.update(inventoryRef, {
+    'remainingVolume': FieldValue.increment(-volumeGiven),
+    'updatedAt': FieldValue.serverTimestamp(),
+  });
+}
+
 await batch.commit();
+// Total: 4-5 writes (session + 3 summaries + [pet doc + optional inventory])
 ```
 
 
