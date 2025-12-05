@@ -47,8 +47,8 @@ class IconProvider {
         return Icons.pets;
       case AppIcons.progress:
         return Icons.show_chart;
-      case AppIcons.learn:
-        return Icons.menu_book;
+      case AppIcons.discover:
+        return Icons.explore;
       case AppIcons.profile:
         return Icons.person; // Fallback for profile
       case AppIcons.logSession:
@@ -155,8 +155,8 @@ class IconProvider {
         return CupertinoIcons.paw;
       case AppIcons.progress:
         return CupertinoIcons.chart_bar_fill;
-      case AppIcons.learn:
-        return CupertinoIcons.book_fill;
+      case AppIcons.discover:
+        return CupertinoIcons.compass_fill;
       case AppIcons.profile:
         return CupertinoIcons.person_fill; // Fallback for profile
       case AppIcons.logSession:

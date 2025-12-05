@@ -30,13 +30,13 @@ class AppLayout {
   /// Top app bar height - 56px
   static const double topAppBarHeight = 56;
 
-  /// Card corner radius - 12px
+  /// @deprecated Use AppBorderRadius.card instead
   static const double cardRadius = 12;
 
-  /// Button corner radius - 8px
+  /// @deprecated Use AppBorderRadius.button instead
   static const double buttonRadius = 8;
 
-  /// Input field corner radius - 8px
+  /// @deprecated Use AppBorderRadius.input instead
   static const double inputRadius = 8;
 
   // Responsive helpers

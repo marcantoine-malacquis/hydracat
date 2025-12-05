@@ -18,7 +18,7 @@ Widget _wrapWithScaffold(Widget child, {TargetPlatform? platform}) {
 List<HydraNavigationItem> _items() => const [
   HydraNavigationItem(icon: AppIcons.home, label: 'Home'),
   HydraNavigationItem(icon: AppIcons.progress, label: 'Progress'),
-  HydraNavigationItem(icon: AppIcons.learn, label: 'Learn'),
+  HydraNavigationItem(icon: AppIcons.discover, label: 'Discover'),
   HydraNavigationItem(icon: AppIcons.profile, label: 'Profile'),
 ];
 
@@ -172,13 +172,13 @@ void main() {
 
     // Verify semantics for the active label
     expect(
-      find.text('Learn'),
+      find.text('Discover'),
       findsOneWidget,
     );
     expect(
-      tester.getSemantics(find.text('Learn')),
+      tester.getSemantics(find.text('Discover')),
       matchesSemantics(
-        label: 'Learn',
+        label: 'Discover',
         isButton: true,
         isSelected: true,
       ),

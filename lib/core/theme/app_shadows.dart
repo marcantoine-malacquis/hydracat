@@ -24,9 +24,44 @@ class AppShadows {
   );
 
   // Card and container shadows
-  /// Shadow for cards and elevated surfaces
-  static const BoxShadow card = BoxShadow(
+
+  /// Subtle shadow for standard cards and containers
+  /// Use for: Regular cards, list items, standard containers
+  /// Color: rgba(0, 0, 0, 0.06)
+  static const BoxShadow cardSubtle = BoxShadow(
     color: Color(0x0F000000), // rgba(0, 0, 0, 0.06)
+    offset: Offset(0, 2),
+    blurRadius: 8,
+  );
+
+  /// Elevated shadow for prominent cards
+  /// Use for: Feature cards (water drop progress), important containers,
+  /// hero sections
+  /// Color: rgba(0, 0, 0, 0.08)
+  static const BoxShadow cardElevated = BoxShadow(
+    color: Color(0x14000000), // rgba(0, 0, 0, 0.08)
+    offset: Offset(0, 4),
+    blurRadius: 12,
+  );
+
+  /// Popup shadow for modals and overlays
+  /// Use for: Dialogs, bottom sheets, popups, overlays
+  /// Color: rgba(0, 0, 0, 0.12)
+  static const BoxShadow cardPopup = BoxShadow(
+    color: Color(0x1F000000), // rgba(0, 0, 0, 0.12)
+    offset: Offset(0, 6),
+    blurRadius: 16,
+  );
+
+  /// @deprecated Use cardSubtle instead for clarity
+  /// Shadow for cards and elevated surfaces (default/subtle)
+  static const BoxShadow card = cardSubtle;
+
+  /// Tooltip shadow for chart labels and floating indicators
+  /// Use for: Chart tooltips, floating labels, overlay indicators
+  /// Color: rgba(0, 0, 0, 0.08)
+  static const BoxShadow tooltip = BoxShadow(
+    color: Color(0x14000000), // rgba(0, 0, 0, 0.08)
     offset: Offset(0, 2),
     blurRadius: 8,
   );

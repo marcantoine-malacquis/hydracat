@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
+import 'package:hydracat/core/theme/app_shadows.dart';
+import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
@@ -124,18 +126,14 @@ class _WaterDropProgressCardState
       container: true,
       label: 'Weekly fluid intake progress card',
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 12),
+        margin: const EdgeInsets.symmetric(vertical: AppSpacing.mdSm),
         padding: widget.padding ?? const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-              color: Colors.black.withValues(alpha: 0.08),
-            ),
+          boxShadow: const [
+            AppShadows.cardElevated,
           ],
         ),
         child: Column(
@@ -179,7 +177,7 @@ class _WaterDropProgressCardState
               color: AppColors.border,
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.mdSm),
 
             // Injection site (centered, full-width)
             _buildInjectionSite(lastSiteDisplay),
@@ -269,12 +267,8 @@ class _WaterDropProgressCardState
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-            color: Colors.black.withValues(alpha: 0.08),
-          ),
+        boxShadow: const [
+          AppShadows.cardElevated,
         ],
       ),
       child: const Center(
@@ -293,18 +287,14 @@ class _WaterDropProgressCardState
         border: Border.all(
           color: AppColors.error.withValues(alpha: 0.3),
         ),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-            color: Colors.black.withValues(alpha: 0.08),
-          ),
+        boxShadow: const [
+          AppShadows.cardElevated,
         ],
       ),
       child: Row(
         children: [
           const Icon(Icons.error_outline, color: AppColors.error),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.mdSm),
           Expanded(
             child: Text(
               'Unable to load weekly progress',

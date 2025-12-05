@@ -15,7 +15,7 @@ import 'package:hydracat/features/health/screens/weight_screen.dart';
 import 'package:hydracat/features/home/screens/component_demo_screen.dart';
 import 'package:hydracat/features/home/screens/home_screen.dart';
 import 'package:hydracat/features/inventory/screens/inventory_screen.dart';
-import 'package:hydracat/features/learn/screens/learn_screen.dart';
+import 'package:hydracat/features/learn/screens/discover_screen.dart';
 import 'package:hydracat/features/onboarding/debug_onboarding_replay.dart';
 import 'package:hydracat/features/onboarding/screens/ckd_medical_info_screen.dart';
 import 'package:hydracat/features/onboarding/screens/onboarding_completion_screen.dart';
@@ -250,10 +250,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
-            path: '/learn',
-            name: 'learn',
+            path: '/discover',
+            name: 'discover',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: ResourcesScreen(),
+              child: DiscoverScreen(),
             ),
           ),
           GoRoute(
@@ -267,7 +267,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/resources',
             name: 'resources',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: ResourcesScreen(),
+              child: DiscoverScreen(),
             ),
           ),
           GoRoute(

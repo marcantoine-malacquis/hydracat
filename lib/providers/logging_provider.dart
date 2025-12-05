@@ -1808,13 +1808,32 @@ class LoggingNotifier extends StateNotifier<LoggingState> {
         return false;
       }
 
-      // Check if inventory is enabled (async-aware)
+      // Check if inventory is enabled (async-aware). Wait briefly if still
+      // loading to avoid skipping restoration due to startup races.
       final inventoryAsync = _ref.read(inventoryProvider);
-      final inventoryState = inventoryAsync.when(
-        data: (state) => state,
-        loading: () => null, // Still loading, skip inventory update
-        error: (_, _) => null, // Error or not enabled
-      );
+      var inventoryState = inventoryAsync.valueOrNull;
+
+      if (inventoryState == null && inventoryAsync.isLoading) {
+        try {
+          inventoryState = await _ref
+              .read(inventoryProvider.future)
+              .timeout(const Duration(seconds: 2));
+        } on TimeoutException {
+          if (kDebugMode) {
+            debugPrint(
+              '[LoggingNotifier] Inventory load timed out; proceeding without '
+              'restoration',
+            );
+          }
+        } on Exception catch (e) {
+          if (kDebugMode) {
+            debugPrint(
+              '[LoggingNotifier] Inventory load failed: $e; proceeding without '
+              'restoration',
+            );
+          }
+        }
+      }
 
       final inventoryEnabled = inventoryState != null;
       final inventoryEnabledAt = inventoryState?.inventory.inventoryEnabledAt;

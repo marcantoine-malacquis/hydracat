@@ -168,7 +168,7 @@ lib/
 │   ├── learn/                       # Educational content
 │   │   ├── models/                  # Learn data models
 │   │   ├── screens/                 # Learn UI screens
-│   │   │   └── learn_screen.dart    # Main learning screen
+│   │   │   └── discover_screen.dart    # Main discover screen
 │   │   └── widgets/                 # Learn components
 │   ├── logging/                     # Session logging
 │   │   ├── models/                  # Logging data models

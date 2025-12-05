@@ -279,7 +279,7 @@ This avoids multiple `Theme.of(context)` lookups during the same build cycle, wh
     - `email_verification_screen.dart` (migrated)
     - `create_fluid_schedule_screen.dart` (migrated)
     - `onboarding_screen_wrapper.dart` (migrated)
-    - `learn_screen.dart` (migrated)
+    - `discover_screen.dart` (migrated)
     - `schedule_screen.dart` (migrated)
     - `injection_sites_analytics_screen.dart` (migrated)
     - `component_demo_screen.dart` (migrated)

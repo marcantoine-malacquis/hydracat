@@ -15,6 +15,7 @@ import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/features/profile/services/pet_service.dart';
 import 'package:hydracat/features/profile/services/schedule_service.dart';
+import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/connectivity_provider.dart';
 import 'package:hydracat/providers/inventory_provider.dart';
@@ -29,6 +30,8 @@ class _MockSummaryCacheService extends Mock implements SummaryCacheService {}
 class _MockSummaryService extends Mock implements SummaryService {}
 
 class _MockInventoryService extends Mock implements InventoryService {}
+
+class _MockAnalyticsService extends Mock implements AnalyticsService {}
 
 class _MockPetService extends Mock implements PetService {}
 
@@ -54,6 +57,15 @@ void main() {
   setUpAll(() {
     registerFallbackValue(<Schedule>[]);
     registerFallbackValue(<FluidSession>[]);
+    registerFallbackValue(
+      FluidSession.create(
+        petId: 'fallback',
+        userId: 'fallback',
+        dateTime: DateTime.now(),
+        volumeGiven: 1,
+        injectionSite: FluidLocation.shoulderBladeMiddle,
+      ),
+    );
   });
 
   group('LoggingNotifier - inventory deduction', () {
@@ -61,6 +73,7 @@ void main() {
     late _MockSummaryCacheService cacheService;
     late _MockSummaryService summaryService;
     late _MockInventoryService inventoryService;
+    late _MockAnalyticsService analyticsService;
     late AppUser user;
     late CatProfile pet;
     late FluidSession session;
@@ -70,6 +83,7 @@ void main() {
       cacheService = _MockSummaryCacheService();
       summaryService = _MockSummaryService();
       inventoryService = _MockInventoryService();
+      analyticsService = _MockAnalyticsService();
 
       user = const AppUser(
         id: 'user-123',
@@ -116,6 +130,11 @@ void main() {
           volumeGiven: any(named: 'volumeGiven'),
         ),
       ).thenAnswer((_) async {});
+      when(
+        () => cacheService.removeCachedFluidSession(
+          session: any(named: 'session'),
+        ),
+      ).thenAnswer((_) async {});
       when(() => summaryService.clearAllCaches()).thenAnswer((_) async {});
       when(
         () => inventoryService.checkThresholdAndNotify(
@@ -124,6 +143,13 @@ void main() {
           petName: any(named: 'petName'),
           inventory: any(named: 'inventory'),
           schedules: any(named: 'schedules'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => analyticsService.trackSessionDeletion(
+          treatmentType: any(named: 'treatmentType'),
+          volume: any(named: 'volume'),
+          inventoryAdjusted: any(named: 'inventoryAdjusted'),
         ),
       ).thenAnswer((_) async {});
     });
@@ -155,6 +181,7 @@ void main() {
           ),
           summaryServiceProvider.overrideWithValue(summaryService),
           inventoryServiceProvider.overrideWithValue(inventoryService),
+          analyticsServiceDirectProvider.overrideWithValue(analyticsService),
         ],
       );
     }
@@ -284,6 +311,70 @@ void main() {
             session: any(named: 'session'),
             todaysSchedules: any(named: 'todaysSchedules'),
             recentSessions: any(named: 'recentSessions'),
+            updateInventory: true,
+            inventoryEnabledAt: activation,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'waits for inventory load before restoring on delete',
+      () async {
+        final controller = StreamController<InventoryState?>();
+        addTearDown(controller.close);
+
+        final activation = DateTime.now().subtract(const Duration(hours: 1));
+        final inventory = FluidInventory(
+          id: 'main',
+          remainingVolume: 1000,
+          initialVolume: 1000,
+          reminderSessionsLeft: 5,
+          lastRefillDate: activation,
+          refillCount: 1,
+          inventoryEnabledAt: activation,
+          createdAt: activation,
+          updatedAt: activation,
+        );
+        final inventoryState = InventoryState(
+          inventory: inventory,
+          sessionsLeft: 5,
+          estimatedEndDate: null,
+          displayVolume: inventory.remainingVolume,
+          displayPercentage: 1,
+          isNegative: false,
+          overageVolume: 0,
+        );
+
+        when(
+          () => loggingService.deleteFluidSession(
+            userId: any(named: 'userId'),
+            petId: any(named: 'petId'),
+            session: any(named: 'session'),
+            updateInventory: any(named: 'updateInventory'),
+            inventoryEnabledAt: any(named: 'inventoryEnabledAt'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final container = buildContainer(
+          inventoryStream: controller.stream,
+          profileState: ProfileState(primaryPet: pet),
+        );
+
+        final deleteFuture = container
+            .read(loggingProvider.notifier)
+            .deleteFluidSession(session: session);
+
+        await Future.microtask(() => controller.add(inventoryState));
+
+        final result = await deleteFuture;
+
+        expect(result, isTrue);
+        verify(
+          () => loggingService.deleteFluidSession(
+            userId: user.id,
+            petId: pet.id,
+            session: any(named: 'session'),
             updateInventory: true,
             inventoryEnabledAt: activation,
           ),

@@ -678,7 +678,7 @@ class LoggingService {
         // Only deduct inventory if session was logged after activation
         shouldUpdateInventory =
             session.dateTime.isAfter(inventoryEnabledAt) ||
-                session.dateTime.isAtSameMomentAs(inventoryEnabledAt);
+            session.dateTime.isAtSameMomentAs(inventoryEnabledAt);
       }
 
       // STEP 6C: Add inventory deduction to batch (if enabled)
@@ -1010,8 +1010,10 @@ class LoggingService {
           ? (dailyData?['fluidSessionCount'] as num?)?.toInt() ?? 0
           : 0;
 
-      final newDailyVolume =
-          math.max(0, currentDailyVolume - session.volumeGiven);
+      final newDailyVolume = math.max(
+        0,
+        currentDailyVolume - session.volumeGiven,
+      );
       final newSessionCount = math.max(0, currentDailySessionCount - 1);
       final newScheduledCount = math.max(0, currentDailyScheduled);
       final dayGoalMl = currentDailyGoal != 0
@@ -1020,10 +1022,39 @@ class LoggingService {
 
       // STEP 4: Determine if inventory should be restored
       var shouldUpdateInventory = false;
-      if (updateInventory && inventoryEnabledAt != null) {
+
+      var effectiveInventoryEnabledAt = inventoryEnabledAt;
+
+      // Safety net: if caller asked to update inventory but did not provide
+      // activation timestamp (e.g., provider still loading), fetch it once
+      // from Firestore to avoid silently skipping restoration.
+      if (updateInventory && effectiveInventoryEnabledAt == null) {
+        try {
+          final inventorySnap = await _getInventoryRef(userId).get();
+          final inventoryData = inventorySnap.data() as Map<String, dynamic>?;
+          final enabledTs = inventoryData?['inventoryEnabledAt'] as Timestamp?;
+          effectiveInventoryEnabledAt = enabledTs?.toDate();
+
+          if (kDebugMode) {
+            debugPrint(
+              '[LoggingService] Fetched inventoryEnabledAt fallback: '
+              '${effectiveInventoryEnabledAt?.toIso8601String()}',
+            );
+          }
+        } on Exception catch (e) {
+          if (kDebugMode) {
+            debugPrint(
+              '[LoggingService] Failed to fetch inventoryEnabledAt: $e '
+              '(will skip restoration if null)',
+            );
+          }
+        }
+      }
+
+      if (updateInventory && effectiveInventoryEnabledAt != null) {
         shouldUpdateInventory =
-            session.dateTime.isAfter(inventoryEnabledAt) ||
-                session.dateTime.isAtSameMomentAs(inventoryEnabledAt);
+            session.dateTime.isAfter(effectiveInventoryEnabledAt) ||
+            session.dateTime.isAtSameMomentAs(effectiveInventoryEnabledAt);
       }
 
       // STEP 5: Build batch
@@ -1060,8 +1091,7 @@ class LoggingService {
             daySessionCount: newSessionCount,
             currentDailyVolumes: monthlyArrays.dailyVolumes,
             currentDailyGoals: monthlyArrays.dailyGoals,
-            currentDailyScheduledSessions:
-                monthlyArrays.dailyScheduledSessions,
+            currentDailyScheduledSessions: monthlyArrays.dailyScheduledSessions,
             currentDailyFluidSessionCounts:
                 monthlyArrays.dailyFluidSessionCounts,
           ),

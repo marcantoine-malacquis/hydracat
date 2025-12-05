@@ -86,7 +86,7 @@ class HydraButton extends StatelessWidget {
           onPressed: isLoading ? null : onPressed,
           padding: buttonPadding,
           minimumSize: Size(0, minHeight),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppBorderRadius.buttonRadius,
           color: AppColors.primary,
           disabledColor: AppColors.disabled,
           child: DefaultTextStyle(
@@ -104,13 +104,13 @@ class HydraButton extends StatelessWidget {
             border: Border.all(
               color: isDisabled ? AppColors.disabled : AppColors.primary,
             ),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppBorderRadius.buttonRadius,
           ),
           child: CupertinoButton(
             onPressed: isLoading ? null : onPressed,
             padding: buttonPadding,
             minimumSize: Size(0, minHeight),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppBorderRadius.buttonRadius,
             color: Colors.transparent,
             disabledColor: Colors.transparent,
             child: DefaultTextStyle(
@@ -128,7 +128,7 @@ class HydraButton extends StatelessWidget {
           onPressed: isLoading ? null : onPressed,
           padding: buttonPadding,
           minimumSize: Size(0, minHeight),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppBorderRadius.buttonRadius,
           color: Colors.transparent,
           disabledColor: Colors.transparent,
           child: DefaultTextStyle(
@@ -207,7 +207,7 @@ class HydraButton extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppBorderRadius.buttonRadius,
           ),
         );
       case HydraButtonVariant.secondary:
@@ -219,7 +219,7 @@ class HydraButton extends StatelessWidget {
           padding: buttonPadding,
           minimumSize: Size(0, minHeight),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppBorderRadius.buttonRadius,
           ),
         );
       case HydraButtonVariant.text:
@@ -231,7 +231,7 @@ class HydraButton extends StatelessWidget {
           padding: buttonPadding,
           minimumSize: Size(0, minHeight),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppBorderRadius.buttonRadius,
           ),
         );
     }
@@ -240,11 +240,17 @@ class HydraButton extends StatelessWidget {
   EdgeInsets _getButtonPadding() {
     switch (size) {
       case HydraButtonSize.small:
-        return const EdgeInsets.symmetric(horizontal: 12, vertical: 8);
+        return const EdgeInsets.symmetric(
+          horizontal: AppSpacing.mdSm,
+          vertical: AppSpacing.sm,
+        );
       case HydraButtonSize.medium:
-        return const EdgeInsets.symmetric(horizontal: 16, vertical: 12);
+        return const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.mdSm,
+        );
       case HydraButtonSize.large:
-        return const EdgeInsets.symmetric(horizontal: 20);
+        return const EdgeInsets.symmetric(horizontal: AppSpacing.mdLg);
     }
   }
 

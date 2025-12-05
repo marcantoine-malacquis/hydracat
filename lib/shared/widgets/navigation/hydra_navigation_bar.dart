@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:hydracat/core/constants/app_accessibility.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/constants/app_icons.dart';
+import 'package:hydracat/core/theme/app_border_radius.dart';
 import 'package:hydracat/core/theme/app_layout.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/shared/widgets/accessibility/hydra_touch_target.dart';
@@ -14,7 +15,6 @@ import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
 const double _indicatorHeight = 3;
 // Edge spacing for full-width indicators
 const double _indicatorHorizontalPadding = 4;
-const double _indicatorRadius = 12;
 
 // Animation durations - platform-specific
 // Material: Standard Material motion (160ms)
@@ -346,7 +346,7 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
                   height: _indicatorHeight,
                   decoration: BoxDecoration(
                     color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(_indicatorRadius),
+                    borderRadius: AppBorderRadius.navigationIndicatorRadius,
                   ),
                 ),
               ),

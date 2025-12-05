@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/app/app_shell.dart';
 import 'package:hydracat/features/home/screens/home_screen.dart';
-import 'package:hydracat/features/learn/screens/learn_screen.dart';
+import 'package:hydracat/features/learn/screens/discover_screen.dart';
 import 'package:hydracat/features/notifications/widgets/notification_status_widget.dart';
 import 'package:hydracat/features/profile/screens/profile_screen.dart';
 import 'package:hydracat/features/progress/screens/progress_screen.dart';
@@ -25,7 +25,7 @@ import 'package:table_calendar/table_calendar.dart';
 /// for each route.
 ///
 /// **Route Classification:**
-/// - **Tab routes** (`/`, `/progress`, `/profile`, `/learn`): Use tab fade transitions
+/// - **Tab routes** (`/`, `/progress`, `/profile`, `/discover`): Use tab fade transitions
 ///   when switching between tabs. These routes are managed
 ///   by the tab shell with a stable AppBar and bottom navigation bar.
 ///   a stable AppBar and bottom navigation bar.
@@ -84,9 +84,9 @@ class TabPageRegistry {
       return _buildProfileTabPage(context, ref, location);
     }
 
-    // Learn/Resources tab routes
-    if (_isLearnRoute(location)) {
-      return _buildLearnTabPage(context);
+    // Discover/Resources tab routes
+    if (_isDiscoverRoute(location)) {
+      return _buildDiscoverTabPage(context);
     }
 
     // Unknown route - treat as non-tab
@@ -156,8 +156,8 @@ class TabPageRegistry {
     return location.startsWith('/profile') && !_isNonTabRoute(location);
   }
 
-  static bool _isLearnRoute(String location) {
-    return location.startsWith('/learn') || location == '/resources';
+  static bool _isDiscoverRoute(String location) {
+    return location.startsWith('/discover') || location == '/resources';
   }
 
   // Tab page builders
@@ -216,10 +216,10 @@ class TabPageRegistry {
     );
   }
 
-  static TabPageDescriptor _buildLearnTabPage(BuildContext context) {
+  static TabPageDescriptor _buildDiscoverTabPage(BuildContext context) {
     return TabPageDescriptor(
-      appBar: _buildLearnAppBar(context),
-      body: ResourcesScreen.buildBody(context),
+      appBar: _buildDiscoverAppBar(context),
+      body: DiscoverScreen.buildBody(context),
     );
   }
 
@@ -341,9 +341,9 @@ class TabPageRegistry {
     );
   }
 
-  static PreferredSizeWidget _buildLearnAppBar(BuildContext context) {
+  static PreferredSizeWidget _buildDiscoverAppBar(BuildContext context) {
     return const HydraAppBar(
-      title: Text('Learn'),
+      title: Text('Discover'),
     );
   }
 }

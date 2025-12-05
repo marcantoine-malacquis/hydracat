@@ -6,6 +6,7 @@ import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/constants/symptom_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
+import 'package:hydracat/core/utils/chart_tooltip_positioning.dart';
 import 'package:hydracat/core/utils/chart_utils.dart';
 import 'package:hydracat/core/utils/symptom_descriptor_utils.dart';
 import 'package:hydracat/features/health/models/symptom_bucket.dart';
@@ -184,6 +185,7 @@ class _SymptomsStackedBarChartState
                         viewModel,
                         viewModel.buckets[_touchedBarGroupIndex!],
                         _touchedBarGroupIndex!,
+                        chartWidth,
                       ),
                   ],
                 );
@@ -604,6 +606,11 @@ class _SymptomsStackedBarChartState
 
   /// Builds tooltip positioned based on bar index and touch location
   ///
+  /// Uses [ChartTooltipPositioner] for smart positioning that:
+  /// - Avoids finger overlap during touch
+  /// - Prevents overflow beyond container bounds
+  /// - Adapts to bar position (left/right side logic)
+  ///
   /// Returns an empty widget if:
   /// - Touch position is null
   /// - Bucket has no symptom data (empty/zero buckets)
@@ -612,6 +619,7 @@ class _SymptomsStackedBarChartState
     SymptomsChartViewModel viewModel,
     SymptomBucket bucket,
     int barIndex,
+    double containerWidth,
   ) {
     if (_touchPosition == null) return const SizedBox.shrink();
 
@@ -623,13 +631,16 @@ class _SymptomsStackedBarChartState
 
     if (!hasData) return const SizedBox.shrink();
 
-    // Smart positioning: left half of bars → tooltip on right,
-    // right half → left
+    // Calculate optimal tooltip position using positioning utility
     final totalBars = viewModel.buckets.length;
-    final showOnRight = barIndex < (totalBars / 2);
-
-    // Use actual touch position from fl_chart
-    final screenWidth = MediaQuery.of(context).size.width;
+    final position = ChartTooltipPositioner.calculate(
+      touchPosition: _touchPosition!,
+      containerWidth: containerWidth,
+      containerHeight: _chartHeight,
+      barIndex: barIndex,
+      totalBars: totalBars,
+      // Tooltip size will be estimated by the utility
+    );
 
     // Build tooltip content
     final periodLabel = _formatTooltipPeriodLabel(bucket);
@@ -637,9 +648,9 @@ class _SymptomsStackedBarChartState
     final symptomRows = _buildSymptomTooltipRows(bucket, viewModel);
 
     return Positioned(
-      left: showOnRight ? _touchPosition!.dx + 8 : null,
-      right: !showOnRight ? screenWidth - _touchPosition!.dx + 8 : null,
-      top: _touchPosition!.dy - 40, // Position above touch point
+      left: position.left,
+      right: position.right,
+      top: position.top,
       child: TweenAnimationBuilder<double>(
         key: ValueKey('symptom-tooltip-$barIndex-${bucket.start}'),
         tween: Tween<double>(begin: 0.9, end: 1),
@@ -651,9 +662,7 @@ class _SymptomsStackedBarChartState
             opacity: opacity,
             child: Transform.scale(
               scale: scale,
-              alignment: showOnRight
-                  ? Alignment.centerLeft
-                  : Alignment.centerRight,
+              alignment: position.scaleAlignment,
               child: child,
             ),
           );
@@ -668,7 +677,7 @@ class _SymptomsStackedBarChartState
             periodLabel: periodLabel,
             totalLabel: _getTotalLabel(totalDays),
             symptomRows: symptomRows,
-            pointsLeft: showOnRight,
+            pointsLeft: position.pointsLeft,
           ),
         ),
       ),

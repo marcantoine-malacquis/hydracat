@@ -86,9 +86,9 @@ class _AppShellState extends ConsumerState<AppShell>
       route: '/progress',
     ),
     HydraNavigationItem(
-      icon: AppIcons.learn,
-      label: 'Learn',
-      route: '/learn',
+      icon: AppIcons.discover,
+      label: 'Discover',
+      route: '/discover',
     ),
     HydraNavigationItem(
       icon: AppIcons.profile,
@@ -113,7 +113,7 @@ class _AppShellState extends ConsumerState<AppShell>
     if (currentLocation.startsWith('/profile')) {
       return 3;
     }
-    if (currentLocation.startsWith('/learn')) {
+    if (currentLocation.startsWith('/discover')) {
       return 2;
     }
 
@@ -155,8 +155,8 @@ class _AppShellState extends ConsumerState<AppShell>
     if (currentLocation.startsWith('/profile')) {
       return 'tab-profile';
     }
-    if (currentLocation.startsWith('/learn')) {
-      return 'tab-learn';
+    if (currentLocation.startsWith('/discover')) {
+      return 'tab-discover';
     }
 
     // Home route (exact match or default)

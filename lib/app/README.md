@@ -6,7 +6,7 @@
 
 The app uses two distinct navigation patterns:
 
-1. **Tab Routes** (`/`, `/progress`, `/profile`, `/learn`, `/resources`, `/demo`):
+1. **Tab Routes** (`/`, `/progress`, `/profile`, `/discover`, `/resources`, `/demo`):
    - Managed by `AppShell` with a stable AppBar and bottom navigation bar
    - Use **tab fade transitions** (via `TabFadeSwitcher`) when switching between tabs
    - Content-only fade (AppBar remains stable)

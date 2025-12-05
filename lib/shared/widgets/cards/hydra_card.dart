@@ -165,7 +165,9 @@ class _HydraCardState extends State<HydraCard>
       elevation: widget.elevation ?? 0,
       color: widget.backgroundColor ?? AppColors.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(widget.borderRadius ?? 12),
+        borderRadius: BorderRadius.circular(
+          widget.borderRadius ?? AppBorderRadius.card,
+        ),
         side: BorderSide(
           color: widget.borderColor ?? AppColors.border,
         ),
@@ -190,7 +192,9 @@ class _HydraCardState extends State<HydraCard>
           scale: _scaleAnimation!.value,
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(widget.borderRadius ?? 12),
+              borderRadius: BorderRadius.circular(
+                widget.borderRadius ?? AppBorderRadius.card,
+              ),
               boxShadow: [
                 AppShadows.navigationIconPressed.copyWith(
                   color: AppShadows.navigationIconPressed.color.withValues(

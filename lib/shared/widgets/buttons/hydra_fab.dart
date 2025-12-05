@@ -359,7 +359,7 @@ class HydraExtendedFab extends StatelessWidget {
 
     // Apply glass morphism effect with custom widget
     return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: AppBorderRadius.capsuleRadius,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
         child: AnimatedContainer(
@@ -367,7 +367,7 @@ class HydraExtendedFab extends StatelessWidget {
           curve: Curves.easeInOut,
           decoration: BoxDecoration(
             color: baseBackgroundColor.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppBorderRadius.capsuleRadius,
             border: Border.all(
               color: baseForegroundColor.withValues(
                 alpha: 0.4,
@@ -388,7 +388,7 @@ class HydraExtendedFab extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               onTap: isLoading ? null : onPressed,
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: AppBorderRadius.capsuleRadius,
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -438,7 +438,7 @@ class HydraExtendedFab extends StatelessWidget {
       // Apply glass morphism effect with custom widget
       // (works on both platforms)
       return ClipRRect(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: AppBorderRadius.capsuleRadius,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
           child: AnimatedContainer(
@@ -446,7 +446,7 @@ class HydraExtendedFab extends StatelessWidget {
             curve: Curves.easeInOut,
             decoration: BoxDecoration(
               color: baseBackgroundColor.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: AppBorderRadius.capsuleRadius,
               border: Border.all(
                 color: baseForegroundColor.withValues(
                   alpha: 0.4,
@@ -466,7 +466,7 @@ class HydraExtendedFab extends StatelessWidget {
             child: CupertinoButton(
               onPressed: isLoading ? null : onPressed,
               padding: EdgeInsets.zero,
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: AppBorderRadius.capsuleRadius,
               color: Colors.transparent,
               disabledColor: Colors.transparent,
               child: content,
@@ -486,7 +486,7 @@ class HydraExtendedFab extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: baseBackgroundColor,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: AppBorderRadius.capsuleRadius,
             border: Border.all(
               color: baseForegroundColor.withValues(alpha: 0.2),
             ),

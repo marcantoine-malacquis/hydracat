@@ -14,8 +14,16 @@ class AppSpacing {
   /// Small spacing - 8px
   static const double sm = 8;
 
+  /// Medium-small spacing - 12px
+  /// Use for: Tight grouping of related elements, compact layouts
+  static const double mdSm = 12;
+
   /// Medium spacing - 16px (standard spacing)
   static const double md = 16;
+
+  /// Medium-large spacing - 20px
+  /// Use for: Between-section spacing, loose grouping
+  static const double mdLg = 20;
 
   /// Large spacing - 24px (section separation)
   static const double lg = 24;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
+import 'package:hydracat/core/theme/app_border_radius.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 
@@ -186,7 +187,7 @@ class AppTheme {
           vertical: AppSpacing.md,
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppBorderRadius.buttonRadius,
         ),
         textStyle: AppTextStyles.buttonPrimary,
         minimumSize: const Size(
@@ -210,7 +211,7 @@ class AppTheme {
           vertical: AppSpacing.md,
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppBorderRadius.buttonRadius,
         ),
         textStyle: AppTextStyles.buttonSecondary,
         minimumSize: const Size(
@@ -254,7 +255,7 @@ class AppTheme {
       elevation: 0,
       shadowColor: AppColors.textTertiary,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppBorderRadius.cardRadius,
         side: const BorderSide(
           color: AppColors.border,
         ),
@@ -302,19 +303,19 @@ class AppTheme {
       filled: true,
       fillColor: AppColors.surface,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: AppBorderRadius.inputRadius,
         borderSide: const BorderSide(color: AppColors.border),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: AppBorderRadius.inputRadius,
         borderSide: const BorderSide(color: AppColors.border),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: AppBorderRadius.inputRadius,
         borderSide: const BorderSide(color: AppColors.primary, width: 2),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: AppBorderRadius.inputRadius,
         borderSide: const BorderSide(color: AppColors.error),
       ),
       contentPadding: const EdgeInsets.all(AppSpacing.md),
@@ -330,7 +331,7 @@ class AppTheme {
       disabledColor: AppColors.disabled,
       labelStyle: AppTextStyles.caption.copyWith(color: AppColors.textPrimary),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppBorderRadius.chipRadius,
       ),
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
@@ -375,7 +376,7 @@ class AppTheme {
     return DialogThemeData(
       backgroundColor: AppColors.background,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppBorderRadius.dialogRadius,
       ),
     );
   }
