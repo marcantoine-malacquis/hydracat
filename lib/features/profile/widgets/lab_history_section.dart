@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/profile/models/lab_result.dart';
 import 'package:hydracat/features/profile/widgets/lab_history_card.dart';
+import 'package:hydracat/features/profile/widgets/lab_result_detail_popup.dart';
 import 'package:hydracat/providers/profile_provider.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A section widget for displaying lab results history
 ///
@@ -12,18 +14,22 @@ import 'package:hydracat/providers/profile_provider.dart';
 class LabHistorySection extends ConsumerWidget {
   /// Creates a [LabHistorySection]
   const LabHistorySection({
-    this.onEditLabResult,
+    this.onUpdateLabResult,
+    this.onDeleteLabResult,
     super.key,
   });
 
-  /// Callback when a lab result is edited (receives the LabResult to edit)
-  final void Function(LabResult)? onEditLabResult;
+  /// Callback when a lab result is updated (receives the updated LabResult)
+  final void Function(LabResult)? onUpdateLabResult;
+
+  /// Callback when a lab result is deleted (receives the deleted LabResult)
+  final void Function(LabResult)? onDeleteLabResult;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final labResults = ref.watch(labResultsProvider);
+    final labResults = ref.watch(labResultsHistoryProvider);
     final isLoading = ref.watch(labResultsIsLoadingProvider);
-    final hasLabResults = ref.watch(hasLabResultsProvider);
+    final hasLabResults = ref.watch(hasLabResultsHistoryProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,17 +68,30 @@ class LabHistorySection extends ConsumerWidget {
               final labResult = labResults[index];
               return LabHistoryCard(
                 labResult: labResult,
-                onTap: () {
-                  // TODO(lab-detail): Navigate to detailed lab result view
-                  // For now, we'll just display it in the card
-                },
-                onEdit: onEditLabResult != null
-                    ? () => onEditLabResult!(labResult)
-                    : null,
+                onTap: () => _showLabResultDetail(context, labResult, ref),
               );
             },
           ),
       ],
+    );
+  }
+
+  /// Show detailed lab result view with gauges
+  Future<void> _showLabResultDetail(
+    BuildContext context,
+    LabResult labResult,
+    WidgetRef ref,
+  ) async {
+    await showHydraBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => HydraBottomSheet(
+        child: LabResultDetailPopup(
+          labResult: labResult,
+          onUpdate: onUpdateLabResult,
+          onDelete: onDeleteLabResult,
+        ),
+      ),
     );
   }
 
@@ -97,7 +116,7 @@ class LabHistorySection extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            'No Lab Results Yet',
+            'No Previous Lab Results',
             style: AppTextStyles.body.copyWith(
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w600,
@@ -105,8 +124,9 @@ class LabHistorySection extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            "Add your first lab result using the '+ Add' button above "
-            "to track your cat's kidney health over time",
+            'Previous lab results will appear here as you add more '
+            'bloodwork data over time to track your '
+            "cat's kidney health progress",
             style: AppTextStyles.caption.copyWith(
               color: AppColors.textTertiary,
             ),

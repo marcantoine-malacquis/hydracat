@@ -22,15 +22,24 @@ import 'package:intl/intl.dart';
 /// - Lab value inputs (Creatinine, BUN, SDMA) with unit-aware labels
 /// - Optional vet notes field (max 500 chars, expands when focused)
 /// - Validation: date required, at least one value required
+/// - Delete button (edit mode only) with confirmation dialog
 class LabValuesEntryDialog extends ConsumerStatefulWidget {
   /// Creates a [LabValuesEntryDialog]
   const LabValuesEntryDialog({
     this.existingResult,
+    this.showBackButton = false,
+    this.onDelete,
     super.key,
   });
 
   /// Existing lab result for edit mode (null for add mode)
   final LabResult? existingResult;
+
+  /// Whether to show a back button in the header
+  final bool showBackButton;
+
+  /// Callback when the delete button is pressed (edit mode only)
+  final VoidCallback? onDelete;
 
   @override
   ConsumerState<LabValuesEntryDialog> createState() =>
@@ -404,6 +413,49 @@ class _LabValuesEntryDialogState extends ConsumerState<LabValuesEntryDialog> {
     );
   }
 
+  /// Show confirmation dialog before deleting
+  Future<bool?> _showDeleteConfirmation() async {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => HydraAlertDialog(
+        title: const Text('Delete Lab Result?'),
+        content: Text(
+          'This will permanently delete the lab result from '
+          '${_formatDate(_selectedDate)}. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.error,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Handle delete button press
+  Future<void> _handleDelete() async {
+    final confirmed = await _showDeleteConfirmation();
+    if (confirmed ?? false) {
+      widget.onDelete?.call();
+      if (mounted) {
+        Navigator.of(context).pop(); // Close the edit dialog
+      }
+    }
+  }
+
+  /// Format date as "MMM d, yyyy" (e.g., "Jan 15, 2024")
+  String _formatDate(DateTime date) {
+    return DateFormat('MMM d, yyyy').format(date);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEditMode = widget.existingResult != null;
@@ -415,6 +467,13 @@ class _LabValuesEntryDialogState extends ConsumerState<LabValuesEntryDialog> {
 
     return LoggingPopupWrapper(
       title: isEditMode ? 'Edit Lab Values' : 'Add Lab Values',
+      leading: widget.showBackButton
+          ? HydraBackButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            )
+          : null,
       headerContent: _buildHeaderDateSelector(),
       trailing: _buildHeaderAction(),
       showCloseButton: false,
@@ -515,6 +574,33 @@ class _LabValuesEntryDialogState extends ConsumerState<LabValuesEntryDialog> {
 
           // Error message
           _buildErrorMessage(),
+
+          // Delete button (only in edit mode)
+          if (isEditMode && widget.onDelete != null) ...[
+            const SizedBox(height: AppSpacing.lg),
+            HydraButton(
+              onPressed: _handleDelete,
+              variant: HydraButtonVariant.secondary,
+              isFullWidth: true,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.delete_outline,
+                    color: AppColors.error,
+                    size: 20,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    'Delete Lab Result',
+                    style: AppTextStyles.buttonPrimary.copyWith(
+                      color: AppColors.error,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

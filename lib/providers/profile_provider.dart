@@ -1149,6 +1149,39 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     }
   }
 
+  /// Deletes a lab result
+  ///
+  /// Deletes the lab result from Firestore and updates the cached list.
+  /// If the deleted result is the latest, the denormalized field on the pet
+  /// document is automatically updated.
+  Future<bool> deleteLabResult(String labResultId) async {
+    final primaryPet = state.primaryPet;
+    if (primaryPet == null) return false;
+
+    state = state.copyWith(labResultsIsLoading: true);
+
+    final result = await _petService.deleteLabResult(
+      petId: primaryPet.id,
+      labResultId: labResultId,
+    );
+
+    switch (result) {
+      case PetSuccess():
+        // Reload lab results to get the updated list
+        await loadLabResults();
+
+        state = state.copyWith(labResultsIsLoading: false);
+        return true;
+
+      case PetFailure(exception: final exception):
+        state = state.copyWith(
+          labResultsIsLoading: false,
+          error: exception,
+        );
+        return false;
+    }
+  }
+
   // ==========================================================================
   // NOTIFICATION INTEGRATION (Step 6.2)
   // ==========================================================================
@@ -1315,9 +1348,32 @@ final labResultsProvider = Provider<List<LabResult>?>((ref) {
   return ref.watch(profileProvider.select((state) => state.labResults));
 });
 
+/// Provider to get lab results history (all except the latest/most recent)
+///
+/// This excludes the first result since lab results are sorted by date
+/// in descending order (most recent first). Use this in history sections
+/// to avoid showing the latest result twice.
+final labResultsHistoryProvider = Provider<List<LabResult>?>((ref) {
+  final allResults = ref.watch(labResultsProvider);
+
+  // If no results or only one result, return empty list
+  if (allResults == null || allResults.length <= 1) {
+    return null;
+  }
+
+  // Return all results except the first (latest) one
+  return allResults.sublist(1);
+});
+
 /// Optimized provider to check if the pet has lab results
 final hasLabResultsProvider = Provider<bool>((ref) {
   return ref.watch(profileProvider.select((state) => state.hasLabResults));
+});
+
+/// Provider to check if the pet has historical lab results (more than one)
+final hasLabResultsHistoryProvider = Provider<bool>((ref) {
+  final historyResults = ref.watch(labResultsHistoryProvider);
+  return historyResults != null && historyResults.isNotEmpty;
 });
 
 /// Optimized provider to get lab result count

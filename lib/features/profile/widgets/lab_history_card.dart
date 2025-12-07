@@ -5,14 +5,14 @@ import 'package:intl/intl.dart';
 
 /// A card widget for displaying a single lab result in history
 ///
-/// Shows the test date and key analyte values (creatinine, BUN, SDMA)
-/// in a compact, card-based layout with an edit button.
+/// Shows the test date, IRIS stage badge, and vet notes preview
+/// in a compact card layout with a view button.
 class LabHistoryCard extends StatelessWidget {
   /// Creates a [LabHistoryCard]
   const LabHistoryCard({
     required this.labResult,
     this.onTap,
-    this.onEdit,
+    this.onView,
     super.key,
   });
 
@@ -22,8 +22,8 @@ class LabHistoryCard extends StatelessWidget {
   /// Callback when the card is tapped
   final VoidCallback? onTap;
 
-  /// Callback when the edit button is pressed
-  final VoidCallback? onEdit;
+  /// Callback when the view button is pressed
+  final VoidCallback? onView;
 
   /// Format date as "MMM d, yyyy" (e.g., "Jan 15, 2024")
   String _formatDate(DateTime date) {
@@ -88,9 +88,9 @@ class LabHistoryCard extends StatelessWidget {
                     ),
                     const SizedBox(width: AppSpacing.xs),
                   ],
-                  if (onEdit != null)
+                  if (onView != null)
                     TextButton(
-                      onPressed: onEdit,
+                      onPressed: onView,
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.sm,
@@ -101,44 +101,12 @@ class LabHistoryCard extends StatelessWidget {
                         foregroundColor: AppColors.primary,
                       ),
                       child: Text(
-                        'Edit',
+                        'View',
                         style: AppTextStyles.caption.copyWith(
                           color: AppColors.primary,
                           fontSize: 12,
                           fontWeight: FontWeight.normal,
                         ),
-                      ),
-                    ),
-                ],
-              ),
-
-              const SizedBox(height: AppSpacing.md),
-
-              // Lab values grid
-              Row(
-                children: [
-                  if (labResult.creatinine != null)
-                    Expanded(
-                      child: _buildValueColumn(
-                        'Creatinine',
-                        labResult.creatinine!.value,
-                        labResult.creatinine!.unit,
-                      ),
-                    ),
-                  if (labResult.bun != null)
-                    Expanded(
-                      child: _buildValueColumn(
-                        'BUN',
-                        labResult.bun!.value,
-                        labResult.bun!.unit,
-                      ),
-                    ),
-                  if (labResult.sdma != null)
-                    Expanded(
-                      child: _buildValueColumn(
-                        'SDMA',
-                        labResult.sdma!.value,
-                        labResult.sdma!.unit,
                       ),
                     ),
                 ],
@@ -177,31 +145,6 @@ class LabHistoryCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  /// Build a column for displaying a single lab value
-  Widget _buildValueColumn(String label, double value, String unit) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTextStyles.caption.copyWith(
-            color: AppColors.textTertiary,
-            fontSize: 11,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          '${value.toStringAsFixed(1)} $unit',
-          style: AppTextStyles.body.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-          ),
-        ),
-      ],
     );
   }
 }

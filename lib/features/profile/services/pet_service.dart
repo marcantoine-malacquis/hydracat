@@ -852,16 +852,19 @@ class PetService {
         return const PetFailure(PetServiceException.permission());
       }
 
-      // Create denormalized summary for the pet document
-      final latestSummary = _createLatestLabSummary(
-        labResult,
-        preferredUnitSystem,
-      );
+      // Check if we should update the latest lab result
+      // Only update if:
+      // 1. No existing latest exists (first lab result), OR
+      // 2. The new result's testDate is more recent than the current latest's testDate
+      final currentLatest = pet.medicalInfo.latestLabResult;
+      final shouldUpdateLatest = currentLatest == null ||
+          labResult.testDate.isAfter(currentLatest.testDate) ||
+          labResult.testDate.isAtSameMomentAs(currentLatest.testDate);
 
       // Use batch write for atomicity
       final batch = _firestore.batch();
 
-      // 1. Create lab result document in subcollection
+      // 1. Create lab result document in subcollection (always create)
       final labResultRef = _petsCollection!
           .doc(petId)
           .collection('labResults')
@@ -869,39 +872,55 @@ class PetService {
 
       batch.set(labResultRef, labResult.toJson());
 
-      // 2. Update pet document with latest lab summary
+      // 2. Update pet document with latest lab summary only if this is the new latest
       final petRef = _petsCollection!.doc(petId);
-      batch.update(petRef, {
-        'medicalInfo.latestLabResult': latestSummary.toJson(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      // Commit the batch
-      await batch.commit();
-
-      // Update cache with new latestLabResult
-      if (_cachedPrimaryPet?.id == petId) {
-        _cachedPrimaryPet = _cachedPrimaryPet!.copyWith(
-          medicalInfo: _cachedPrimaryPet!.medicalInfo.copyWith(
-            latestLabResult: latestSummary,
-          ),
-          updatedAt: DateTime.now(),
+      if (shouldUpdateLatest) {
+        // Create denormalized summary for the pet document
+        final latestSummary = _createLatestLabSummary(
+          labResult,
+          preferredUnitSystem,
         );
-        _cacheTimestamp = DateTime.now();
 
-        // Save to persistent cache (fire and forget)
-        unawaited(_saveToPersistentCache(_cachedPrimaryPet!, userId));
-      }
+        batch.update(petRef, {
+          'medicalInfo.latestLabResult': latestSummary.toJson(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
 
-      // Update multi-pet cache if present
-      if (_multiPetCache.containsKey(petId)) {
-        _multiPetCache[petId] = _multiPetCache[petId]!.copyWith(
-          medicalInfo: _multiPetCache[petId]!.medicalInfo.copyWith(
-            latestLabResult: latestSummary,
-          ),
-          updatedAt: DateTime.now(),
-        );
-        _multiPetCacheTimestamps[petId] = DateTime.now();
+        // Commit the batch
+        await batch.commit();
+
+        // Update cache with new latestLabResult (only if we updated it)
+        if (_cachedPrimaryPet?.id == petId) {
+          _cachedPrimaryPet = _cachedPrimaryPet!.copyWith(
+            medicalInfo: _cachedPrimaryPet!.medicalInfo.copyWith(
+              latestLabResult: latestSummary,
+            ),
+            updatedAt: DateTime.now(),
+          );
+          _cacheTimestamp = DateTime.now();
+
+          // Save to persistent cache (fire and forget)
+          unawaited(_saveToPersistentCache(_cachedPrimaryPet!, userId));
+        }
+
+        // Update multi-pet cache if present
+        if (_multiPetCache.containsKey(petId)) {
+          _multiPetCache[petId] = _multiPetCache[petId]!.copyWith(
+            medicalInfo: _multiPetCache[petId]!.medicalInfo.copyWith(
+              latestLabResult: latestSummary,
+            ),
+            updatedAt: DateTime.now(),
+          );
+          _multiPetCacheTimestamps[petId] = DateTime.now();
+        }
+      } else {
+        // Still update updatedAt timestamp even if we don't update latestLabResult
+        batch.update(petRef, {
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        // Commit the batch
+        await batch.commit();
       }
 
       return PetSuccess(pet);
@@ -1041,6 +1060,161 @@ class PetService {
     } on FirebaseException catch (e) {
       debugPrint('Error getting lab result $labResultId: ${e.message}');
       return null;
+    }
+  }
+
+  /// Deletes a lab result
+  ///
+  /// This will:
+  /// - Delete the lab result document from the subcollection
+  /// - Update the denormalized latestLabResult field if necessary
+  /// - Clear the field if no results remain
+  Future<PetResult> deleteLabResult({
+    required String petId,
+    required String labResultId,
+  }) async {
+    try {
+      final userId = _currentUserId;
+      if (userId == null) {
+        return const PetFailure(
+          PetServiceException('Must be logged in to delete lab results'),
+        );
+      }
+
+      // Get the pet to verify ownership
+      final pet = await getPet(petId);
+      if (pet == null) {
+        return const PetFailure(PetNotFoundException());
+      }
+
+      if (pet.userId != userId) {
+        return const PetFailure(PetServiceException.permission());
+      }
+
+      // Get the lab result to check if it's the latest
+      final labResultToDelete = await getLabResult(petId, labResultId);
+      if (labResultToDelete == null) {
+        return const PetFailure(
+          PetServiceException('Lab result not found'),
+        );
+      }
+
+      final batch = _firestore.batch();
+
+      // 1. Delete the lab result document
+      final labResultRef = _petsCollection!
+          .doc(petId)
+          .collection('labResults')
+          .doc(labResultId);
+      batch.delete(labResultRef);
+
+      // 2. Check if we're deleting the latest result
+      final currentLatest = pet.medicalInfo.latestLabResult;
+      final isDeletingLatest =
+          currentLatest != null && currentLatest.labResultId == labResultId;
+
+      if (isDeletingLatest) {
+        // Fetch remaining lab results to find the new latest
+        final remainingResults = await _petsCollection!
+            .doc(petId)
+            .collection('labResults')
+            .orderBy('testDate', descending: true)
+            .limit(2) // Get top 2 (first will be the one we're deleting)
+            .get();
+
+        final petRef = _petsCollection!.doc(petId);
+
+        // Find the new latest (skip the one we're deleting)
+        LabResult? newLatest;
+        for (final doc in remainingResults.docs) {
+          if (doc.id != labResultId) {
+            newLatest = LabResult.fromJson({
+              ...doc.data(),
+              'id': doc.id,
+            });
+            break;
+          }
+        }
+
+        if (newLatest != null) {
+          // Update with new latest
+          final newLatestSummary = _createLatestLabSummary(
+            newLatest,
+            // Infer unit system from the result
+            newLatest.creatinine?.unit == 'µmol/L' ? 'si' : 'us',
+          );
+
+          batch.update(petRef, {
+            'medicalInfo.latestLabResult': newLatestSummary.toJson(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+
+          // Update cache
+          if (_cachedPrimaryPet?.id == petId) {
+            _cachedPrimaryPet = _cachedPrimaryPet!.copyWith(
+              medicalInfo: _cachedPrimaryPet!.medicalInfo.copyWith(
+                latestLabResult: newLatestSummary,
+              ),
+              updatedAt: DateTime.now(),
+            );
+            _cacheTimestamp = DateTime.now();
+          }
+
+          // Update multi-pet cache if present
+          if (_multiPetCache.containsKey(petId)) {
+            _multiPetCache[petId] = _multiPetCache[petId]!.copyWith(
+              medicalInfo: _multiPetCache[petId]!.medicalInfo.copyWith(
+                latestLabResult: newLatestSummary,
+              ),
+              updatedAt: DateTime.now(),
+            );
+            _multiPetCacheTimestamps[petId] = DateTime.now();
+          }
+        } else {
+          // No results remain, clear the latest field
+          batch.update(petRef, {
+            'medicalInfo.latestLabResult': FieldValue.delete(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+
+          // Update cache
+          if (_cachedPrimaryPet?.id == petId) {
+            _cachedPrimaryPet = _cachedPrimaryPet!.copyWith(
+              medicalInfo: _cachedPrimaryPet!.medicalInfo.copyWith(
+                latestLabResult: null,
+              ),
+              updatedAt: DateTime.now(),
+            );
+            _cacheTimestamp = DateTime.now();
+          }
+
+          // Update multi-pet cache if present
+          if (_multiPetCache.containsKey(petId)) {
+            _multiPetCache[petId] = _multiPetCache[petId]!.copyWith(
+              medicalInfo: _multiPetCache[petId]!.medicalInfo.copyWith(
+                latestLabResult: null,
+              ),
+              updatedAt: DateTime.now(),
+            );
+            _multiPetCacheTimestamps[petId] = DateTime.now();
+          }
+        }
+      }
+
+      // Commit the batch
+      await batch.commit();
+
+      return PetSuccess(pet);
+    } on FirebaseException catch (e) {
+      debugPrint('Error deleting lab result: ${e.message}');
+      return PetFailure(
+        PetServiceException('Failed to delete lab result: ${e.message}'),
+      );
+    } on Exception catch (e) {
+      debugPrint('Error deleting lab result: $e');
+      return PetFailure(
+        PetServiceException('Failed to delete lab result: $e'),
+      );
     }
   }
 }

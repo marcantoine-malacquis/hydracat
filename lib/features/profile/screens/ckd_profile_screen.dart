@@ -231,7 +231,85 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
     }
   }
 
-  /// Save lab result from dialog data
+  /// Update an existing lab result (called from detail popup after editing)
+  Future<void> _updateLabResult(LabResult updatedLabResult) async {
+    setState(() {
+      _isSaving = true;
+      _saveError = null;
+    });
+
+    try {
+      // Save the updated lab result using createLabResult
+      // (which upserts based on ID)
+      final success = await ref
+          .read(profileProvider.notifier)
+          .createLabResult(
+            labResult: updatedLabResult,
+            preferredUnitSystem: updatedLabResult.creatinine?.unit == 'µmol/L'
+                ? 'si'
+                : 'us',
+          );
+
+      if (success && mounted) {
+        HydraSnackBar.showSuccess(context, 'Lab values updated successfully');
+      } else if (mounted) {
+        setState(() {
+          _saveError = 'Failed to update lab values';
+        });
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        setState(() {
+          _saveError = e.toString().replaceFirst('Exception: ', '');
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
+  /// Delete a lab result (called from detail popup)
+  Future<void> _deleteLabResult(LabResult labResult) async {
+    setState(() {
+      _isSaving = true;
+      _saveError = null;
+    });
+
+    try {
+      final success = await ref
+          .read(profileProvider.notifier)
+          .deleteLabResult(labResult.id);
+
+      if (success && mounted) {
+        HydraSnackBar.showSuccess(
+          context,
+          'Lab result deleted successfully',
+        );
+      } else if (mounted) {
+        setState(() {
+          _saveError = 'Failed to delete lab result';
+        });
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        setState(() {
+          _saveError = e.toString().replaceFirst('Exception: ', '');
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
+  /// Save lab result from dialog data (used when adding new results)
   Future<void> _saveLabResult(Map<String, dynamic> data) async {
     setState(() {
       _isSaving = true;
@@ -368,7 +446,8 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
 
                     // Lab Results History Section
                     LabHistorySection(
-                      onEditLabResult: _showEditLabValuesDialog,
+                      onUpdateLabResult: _updateLabResult,
+                      onDeleteLabResult: _deleteLabResult,
                     ),
 
                     const SizedBox(height: AppSpacing.xl),
@@ -534,6 +613,15 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
       _triggerBackfillIfNeeded(latestResult);
     }
 
+    // Get the full lab result for vet notes
+    // Use latestFromSubcollection if it matches, otherwise fetch it
+    LabResult? fullLabResult;
+    if (latestResult != null) {
+      if (latestFromSubcollection?.id == latestResult.labResultId) {
+        fullLabResult = latestFromSubcollection;
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -617,6 +705,50 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
                     ),
                 ],
               ),
+
+              // Veterinarian notes if available
+              if (latestResult != null)
+                FutureBuilder<LabResult?>(
+                  future: fullLabResult != null
+                      ? Future.value(fullLabResult)
+                      : ref
+                          .read(profileProvider.notifier)
+                          .getLabResult(latestResult.labResultId),
+                  builder: (context, snapshot) {
+                    final labResult = snapshot.data;
+                    final vetNotes = labResult?.metadata?.vetNotes;
+
+                    if (vetNotes != null && vetNotes.isNotEmpty) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: AppSpacing.sm),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.notes,
+                                size: 14,
+                                color: AppColors.textTertiary,
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              Expanded(
+                                child: Text(
+                                  vetNotes,
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
 
               const SizedBox(height: AppSpacing.md),
               const Divider(),
