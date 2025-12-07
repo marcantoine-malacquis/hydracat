@@ -501,7 +501,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get fluidLoggingTitle => 'Log Fluid Session';
+  String get fluidLoggingTitle => 'Fluid Therapy';
+
+  @override
+  String get fluidLogButton => 'Log Fluid Session';
 
   @override
   String get fluidLoggingLoadingMessage => 'Logging fluid session';
@@ -588,7 +591,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get medicationLoggingTitle => 'Log Medication';
+  String get medicationLoggingTitle => 'Medication';
 
   @override
   String get medicationLoggingLoadingMessage => 'Logging medication session';
@@ -623,7 +626,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get treatmentChoiceTitle => 'Add one-time entry';
+  String get treatmentChoiceTitle => 'What would you like to log?';
 
   @override
   String get treatmentChoiceMedicationLabel => 'Log medication';
@@ -638,6 +641,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get treatmentChoiceFluidHint =>
       'Opens fluid therapy logging form to record subcutaneous fluids';
+
+  @override
+  String get treatmentChoiceSymptomsLabel => 'Log symptoms';
+
+  @override
+  String get treatmentChoiceSymptomsHint =>
+      'Opens symptoms logging form to record daily health symptoms';
 
   @override
   String get treatmentChoiceSemanticLabel => 'Choose treatment type to log';

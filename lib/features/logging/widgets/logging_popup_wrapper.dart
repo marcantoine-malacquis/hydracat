@@ -153,19 +153,29 @@ class LoggingPopupWrapper extends StatelessWidget {
           ),
           Row(
             children: [
-              if (leading != null) leading!,
+              // Left side: leading widget or spacer to balance close button
+              if (leading != null)
+                leading!
+              else if (trailing != null || showCloseButton)
+                const SizedBox(width: 44),
+              // Center: title/content
               Expanded(
                 child:
                     headerContent ??
-                    Text(
-                      title,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        title,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
+                        ),
                       ),
                     ),
               ),
+              // Right side: trailing widget or close button
               if (trailing != null)
                 trailing!
               else if (showCloseButton)

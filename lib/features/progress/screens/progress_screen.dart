@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
+import 'package:hydracat/core/icons/icon_provider.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/progress/providers/injection_sites_provider.dart';
 import 'package:hydracat/features/progress/widgets/calendar_help_popup.dart';
@@ -103,10 +105,18 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         : null;
 
     // Build actions with help and calendar icons
+    final platform = Theme.of(context).platform;
+    final isCupertino =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
     final actions = hasCompletedOnboarding
         ? [
             IconButton(
-              icon: const Icon(Icons.help_outline),
+              icon: Icon(
+                IconProvider.resolveIconData(
+                  AppIcons.help,
+                  isCupertino: isCupertino,
+                ),
+              ),
               onPressed: () => showCalendarHelpPopup(context),
               tooltip: 'Calendar help',
             ),
@@ -114,7 +124,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
               tooltip: 'Jump to date',
-              icon: const Icon(Icons.calendar_month, size: 24),
+              icon: Icon(
+                IconProvider.resolveIconData(
+                  AppIcons.calendar,
+                  isCupertino: isCupertino,
+                ),
+                size: 24,
+              ),
               onPressed: () async {
                 final theme = Theme.of(context);
                 final focused = ref.read(focusedDayProvider);
@@ -243,13 +259,24 @@ class _ProgressScreenContent {
                         const SizedBox(height: 12),
 
                         // Injection sites card
-                        NavigationCard(
-                          title: 'Injection Sites',
-                          metadata: 'Track rotation patterns',
-                          icon: Icons.location_on,
-                          onTap: () =>
-                              context.push('/progress/injection-sites'),
-                          margin: EdgeInsets.zero,
+                        Builder(
+                          builder: (context) {
+                            final platform = Theme.of(context).platform;
+                            final isCupertino =
+                                platform == TargetPlatform.iOS ||
+                                platform == TargetPlatform.macOS;
+                            return NavigationCard(
+                              title: 'Injection Sites',
+                              metadata: 'Track rotation patterns',
+                              icon: IconProvider.resolveIconData(
+                                AppIcons.locationOn,
+                                isCupertino: isCupertino,
+                              ),
+                              onTap: () =>
+                                  context.push('/progress/injection-sites'),
+                              margin: EdgeInsets.zero,
+                            );
+                          },
                         ),
 
                         const SizedBox(height: 12),
@@ -287,12 +314,25 @@ class _WeightCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final petName = ref.watch(petNameProvider);
+    final platform = Theme.of(context).platform;
+    final isCupertino =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
+    final customIconAsset = IconProvider.getPlatformSpecificIconAsset(
+      AppIcons.scale,
+      isCupertino: isCupertino,
+    );
     return NavigationCard(
       title: 'Weight',
       metadata: petName != null
           ? "Track $petName's weight"
           : "Track your cat's weight",
-      icon: Icons.monitor_weight,
+      icon: customIconAsset == null
+          ? IconProvider.resolveIconData(
+              AppIcons.scale,
+              isCupertino: isCupertino,
+            )
+          : null,
+      customIconAsset: customIconAsset,
       onTap: () => context.push('/progress/weight'),
       margin: EdgeInsets.zero,
     );
@@ -332,10 +372,16 @@ class _SymptomsCard extends ConsumerWidget {
       orElse: () => 'No symptoms logged yet this month',
     );
 
+    final platform = Theme.of(context).platform;
+    final isCupertino =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
     return NavigationCard(
       title: 'Symptoms',
       metadata: metadata,
-      icon: Icons.medical_services,
+      icon: IconProvider.resolveIconData(
+        AppIcons.symptoms,
+        isCupertino: isCupertino,
+      ),
       onTap: () => context.push('/progress/symptoms'),
       margin: EdgeInsets.zero,
     );

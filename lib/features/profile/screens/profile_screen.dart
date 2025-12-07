@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
+import 'package:hydracat/core/icons/icon_provider.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/core/utils/weight_utils.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
@@ -50,7 +52,7 @@ class ProfileScreen extends ConsumerWidget {
           actions: [
             IconButton(
               onPressed: () => context.push('/profile/settings'),
-              icon: const Icon(Icons.settings),
+              icon: const HydraIcon(icon: AppIcons.settings),
               tooltip: 'Settings',
             ),
           ],
@@ -303,8 +305,8 @@ class _ProfileScreenContent {
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.pets_outlined,
+          HydraIcon(
+            icon: AppIcons.petProfileOutlined,
             size: 48,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
@@ -342,8 +344,8 @@ class _ProfileScreenContent {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.pets,
+                HydraIcon(
+                  icon: AppIcons.home,
                   size: 32,
                   color: Theme.of(context).colorScheme.onPrimary,
                 ),
@@ -380,7 +382,7 @@ class _ProfileScreenContent {
 
           // Settings options could go here in the future
           ListTile(
-            leading: const Icon(Icons.info_outline),
+            leading: const HydraIcon(icon: AppIcons.info),
             title: const Text('About'),
             onTap: () {
               Navigator.pop(context);
@@ -401,12 +403,23 @@ class _ProfileScreenContent {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // CKD Profile section with IRIS stage metadata
-        NavigationCard(
-          title: 'CKD Profile',
-          icon: Icons.medical_information,
-          metadata: primaryPet?.medicalInfo.irisStage?.displayName,
-          onTap: () => context.push('/profile/ckd'),
-          margin: EdgeInsets.zero,
+        Builder(
+          builder: (context) {
+            final platform = Theme.of(context).platform;
+            final isCupertino =
+                platform == TargetPlatform.iOS ||
+                platform == TargetPlatform.macOS;
+            return NavigationCard(
+              title: 'CKD Profile',
+              icon: IconProvider.resolveIconData(
+                AppIcons.medicalInformation,
+                isCupertino: isCupertino,
+              ),
+              metadata: primaryPet?.medicalInfo.irisStage?.displayName,
+              onTap: () => context.push('/profile/ckd'),
+              margin: EdgeInsets.zero,
+            );
+          },
         ),
 
         // Fluid Schedule section (only if user has fluid schedule)
@@ -421,9 +434,16 @@ class _ProfileScreenContent {
                 final frequency = fluidSchedule.frequency.displayName;
                 metadata = '${volume}ml, $frequency';
               }
+              final platform = Theme.of(context).platform;
+              final isCupertino =
+                  platform == TargetPlatform.iOS ||
+                  platform == TargetPlatform.macOS;
               return NavigationCard(
                 title: 'Fluid Schedule',
-                icon: Icons.water_drop,
+                icon: IconProvider.resolveIconData(
+                  AppIcons.fluidTherapy,
+                  isCupertino: isCupertino,
+                ),
                 metadata: metadata,
                 onTap: () => context.push('/profile/fluid'),
                 margin: EdgeInsets.zero,
@@ -435,11 +455,22 @@ class _ProfileScreenContent {
         // Add Fluid Therapy button (if no fluid schedule exists)
         if (!profileState.hasFluidSchedule) ...[
           const SizedBox(height: AppSpacing.sm),
-          NavigationCard(
-            title: 'Add Fluid Therapy Tracking',
-            icon: Icons.add_circle_outline,
-            onTap: () => context.push('/profile/fluid/create'),
-            margin: EdgeInsets.zero,
+          Builder(
+            builder: (context) {
+              final platform = Theme.of(context).platform;
+              final isCupertino =
+                  platform == TargetPlatform.iOS ||
+                  platform == TargetPlatform.macOS;
+              return NavigationCard(
+                title: 'Add Fluid Therapy Tracking',
+                icon: IconProvider.resolveIconData(
+                  AppIcons.addCircleOutline,
+                  isCupertino: isCupertino,
+                ),
+                onTap: () => context.push('/profile/fluid/create'),
+                margin: EdgeInsets.zero,
+              );
+            },
           ),
         ],
 
@@ -451,9 +482,16 @@ class _ProfileScreenContent {
               final count = ref.watch(medicationScheduleCountProvider);
               final metadata =
                   '$count ${count == 1 ? 'medication' : 'medications'}';
+              final platform = Theme.of(context).platform;
+              final isCupertino =
+                  platform == TargetPlatform.iOS ||
+                  platform == TargetPlatform.macOS;
               return NavigationCard(
                 title: 'Medication Schedule',
-                icon: Icons.medication,
+                icon: IconProvider.resolveIconData(
+                  AppIcons.medication,
+                  isCupertino: isCupertino,
+                ),
                 metadata: metadata,
                 onTap: () => context.push('/profile/medication'),
                 margin: EdgeInsets.zero,
@@ -465,11 +503,22 @@ class _ProfileScreenContent {
         // Add Medication button (if no medication schedules exist)
         if (!profileState.hasMedicationSchedules) ...[
           const SizedBox(height: AppSpacing.sm),
-          NavigationCard(
-            title: 'Add Medication Tracking',
-            icon: Icons.add_circle_outline,
-            onTap: () => context.push('/profile/medication'),
-            margin: EdgeInsets.zero,
+          Builder(
+            builder: (context) {
+              final platform = Theme.of(context).platform;
+              final isCupertino =
+                  platform == TargetPlatform.iOS ||
+                  platform == TargetPlatform.macOS;
+              return NavigationCard(
+                title: 'Add Medication Tracking',
+                icon: IconProvider.resolveIconData(
+                  AppIcons.addCircleOutline,
+                  isCupertino: isCupertino,
+                ),
+                onTap: () => context.push('/profile/medication'),
+                margin: EdgeInsets.zero,
+              );
+            },
           ),
         ],
 
@@ -485,9 +534,16 @@ class _ProfileScreenContent {
                         '(~${inventoryState.sessionsLeft} sessions)'
                   : 'Track your fluid supply';
 
+              final platform = Theme.of(context).platform;
+              final isCupertino =
+                  platform == TargetPlatform.iOS ||
+                  platform == TargetPlatform.macOS;
               return NavigationCard(
                 title: 'Inventory',
-                icon: Icons.inventory_2,
+                icon: IconProvider.resolveIconData(
+                  AppIcons.inventory2,
+                  isCupertino: isCupertino,
+                ),
                 metadata: metadata,
                 onTap: () => context.push('/profile/inventory'),
                 margin: EdgeInsets.zero,
@@ -505,9 +561,23 @@ class _ProfileScreenContent {
               primaryPet?.weightKg,
               weightUnit,
             );
+            final platform = Theme.of(context).platform;
+            final isCupertino =
+                platform == TargetPlatform.iOS ||
+                platform == TargetPlatform.macOS;
+            final customIconAsset = IconProvider.getPlatformSpecificIconAsset(
+              AppIcons.scale,
+              isCupertino: isCupertino,
+            );
             return NavigationCard(
               title: 'Weight',
-              icon: Icons.scale,
+              icon: customIconAsset == null
+                  ? IconProvider.resolveIconData(
+                      AppIcons.scale,
+                      isCupertino: isCupertino,
+                    )
+                  : null,
+              customIconAsset: customIconAsset,
               metadata: metadata,
               onTap: () => context.push('/profile/weight'),
               margin: EdgeInsets.zero,

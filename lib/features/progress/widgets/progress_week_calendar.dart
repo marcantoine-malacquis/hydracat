@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
+import 'package:hydracat/core/icons/icon_provider.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/progress/models/day_dot_status.dart';
@@ -126,18 +128,31 @@ class ProgressWeekCalendar extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Left chevron - jumps by week or month based on format
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            iconSize: 22,
-            onPressed: () {
-              final previous = isMonth
-                  ? _getPreviousMonth(focusedDay)
-                  : focusedDay.subtract(const Duration(days: 7));
-              ref.read(focusedDayProvider.notifier).state = previous;
+          Builder(
+            builder: (context) {
+              final platform = Theme.of(context).platform;
+              final isCupertino =
+                  platform == TargetPlatform.iOS ||
+                  platform == TargetPlatform.macOS;
+              return IconButton(
+                icon: Icon(
+                  IconProvider.resolveIconData(
+                    AppIcons.chevronLeft,
+                    isCupertino: isCupertino,
+                  ),
+                ),
+                iconSize: 22,
+                onPressed: () {
+                  final previous = isMonth
+                      ? _getPreviousMonth(focusedDay)
+                      : focusedDay.subtract(const Duration(days: 7));
+                  ref.read(focusedDayProvider.notifier).state = previous;
+                },
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: isMonth ? 'Previous month' : 'Previous week',
+              );
             },
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            tooltip: isMonth ? 'Previous month' : 'Previous week',
           ),
           // Month and year - centered in available space
           Expanded(
@@ -159,22 +174,35 @@ class ProgressWeekCalendar extends ConsumerWidget {
             children: [
               // Right chevron - jumps by week or month based on format
               // Disabled when on current period to prevent future navigation
-              IconButton(
-                icon: const Icon(Icons.chevron_right),
-                iconSize: 22,
-                onPressed: isOnCurrentPeriod
-                    ? null
-                    : () {
-                        final next = isMonth
-                            ? _getNextMonth(focusedDay)
-                            : focusedDay.add(const Duration(days: 7));
-                        ref.read(focusedDayProvider.notifier).state = next;
-                      },
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                tooltip: isOnCurrentPeriod
-                    ? 'Cannot view future'
-                    : (isMonth ? 'Next month' : 'Next week'),
+              Builder(
+                builder: (context) {
+                  final platform = Theme.of(context).platform;
+                  final isCupertino =
+                      platform == TargetPlatform.iOS ||
+                      platform == TargetPlatform.macOS;
+                  return IconButton(
+                    icon: Icon(
+                      IconProvider.resolveIconData(
+                        AppIcons.chevronRight,
+                        isCupertino: isCupertino,
+                      ),
+                    ),
+                    iconSize: 22,
+                    onPressed: isOnCurrentPeriod
+                        ? null
+                        : () {
+                            final next = isMonth
+                                ? _getNextMonth(focusedDay)
+                                : focusedDay.add(const Duration(days: 7));
+                            ref.read(focusedDayProvider.notifier).state = next;
+                          },
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    tooltip: isOnCurrentPeriod
+                        ? 'Cannot view future'
+                        : (isMonth ? 'Next month' : 'Next week'),
+                  );
+                },
               ),
               // "Today" button - only show when not on current period
               if (!isOnCurrentPeriod)

@@ -589,10 +589,7 @@ class PetService {
 
   /// Recursively converts values into primitives encodable by json.encode.
   dynamic _convertCacheValue(dynamic value) {
-    if (value == null ||
-        value is num ||
-        value is bool ||
-        value is String) {
+    if (value == null || value is num || value is bool || value is String) {
       return value;
     }
 
@@ -855,9 +852,11 @@ class PetService {
       // Check if we should update the latest lab result
       // Only update if:
       // 1. No existing latest exists (first lab result), OR
-      // 2. The new result's testDate is more recent than the current latest's testDate
+      // 2. The new result's testDate is more recent than
+      // the current latest's testDate
       final currentLatest = pet.medicalInfo.latestLabResult;
-      final shouldUpdateLatest = currentLatest == null ||
+      final shouldUpdateLatest =
+          currentLatest == null ||
           labResult.testDate.isAfter(currentLatest.testDate) ||
           labResult.testDate.isAtSameMomentAs(currentLatest.testDate);
 
@@ -872,7 +871,8 @@ class PetService {
 
       batch.set(labResultRef, labResult.toJson());
 
-      // 2. Update pet document with latest lab summary only if this is the new latest
+      // 2. Update pet document with latest lab summary only
+      // if this is the new latest
       final petRef = _petsCollection!.doc(petId);
       if (shouldUpdateLatest) {
         // Create denormalized summary for the pet document
@@ -914,7 +914,8 @@ class PetService {
           _multiPetCacheTimestamps[petId] = DateTime.now();
         }
       } else {
-        // Still update updatedAt timestamp even if we don't update latestLabResult
+        // Still update updatedAt timestamp even if we don't update
+        // latestLabResult
         batch.update(petRef, {
           'updatedAt': FieldValue.serverTimestamp(),
         });
@@ -989,13 +990,13 @@ class PetService {
         .limit(limit)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        return LabResult.fromJson({
-          ...doc.data(),
-          'id': doc.id,
+          return snapshot.docs.map((doc) {
+            return LabResult.fromJson({
+              ...doc.data(),
+              'id': doc.id,
+            });
+          }).toList();
         });
-      }).toList();
-    });
   }
 
   /// Gets lab results for a pet (paginated)

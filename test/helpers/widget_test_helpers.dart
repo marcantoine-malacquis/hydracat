@@ -333,12 +333,14 @@ Future<void> pumpFluidLoggingScreen(
 ///   tester,
 ///   onMedicationSelected: () => medicationSelected = true,
 ///   onFluidSelected: () {},
+///   onSymptomsSelected: () {},
 /// );
 /// ```
 Future<void> pumpTreatmentChoicePopup(
   WidgetTester tester, {
   required VoidCallback onMedicationSelected,
   required VoidCallback onFluidSelected,
+  required VoidCallback onSymptomsSelected,
   MockLoggingNotifier? mockLoggingNotifier,
   MockAnalyticsService? mockAnalyticsService,
 }) async {
@@ -349,6 +351,7 @@ Future<void> pumpTreatmentChoicePopup(
           body: TreatmentChoicePopup(
             onMedicationSelected: onMedicationSelected,
             onFluidSelected: onFluidSelected,
+            onSymptomsSelected: onSymptomsSelected,
           ),
         ),
       ),

@@ -11,14 +11,15 @@ void main() {
   setUpAll(registerFallbackValues);
 
   group('TreatmentChoicePopup - Initial Rendering', () {
-    testWidgets('displays title "Add one-time entry"', (tester) async {
+    testWidgets('displays title "What would you like to log?"', (tester) async {
       await pumpTreatmentChoicePopup(
         tester,
         onMedicationSelected: () {},
         onFluidSelected: () {},
+        onSymptomsSelected: () {},
       );
 
-      expect(find.text('Add one-time entry'), findsOneWidget);
+      expect(find.text('What would you like to log?'), findsOneWidget);
     });
 
     testWidgets('displays medication button', (tester) async {
@@ -26,6 +27,7 @@ void main() {
         tester,
         onMedicationSelected: () {},
         onFluidSelected: () {},
+        onSymptomsSelected: () {},
       );
 
       expect(find.text('Medication'), findsOneWidget);
@@ -36,9 +38,21 @@ void main() {
         tester,
         onMedicationSelected: () {},
         onFluidSelected: () {},
+        onSymptomsSelected: () {},
       );
 
       expect(find.text('Fluid Therapy'), findsOneWidget);
+    });
+
+    testWidgets('displays symptoms button', (tester) async {
+      await pumpTreatmentChoicePopup(
+        tester,
+        onMedicationSelected: () {},
+        onFluidSelected: () {},
+        onSymptomsSelected: () {},
+      );
+
+      expect(find.text('Symptoms'), findsOneWidget);
     });
 
     testWidgets('displays cancel button', (tester) async {
@@ -46,6 +60,7 @@ void main() {
         tester,
         onMedicationSelected: () {},
         onFluidSelected: () {},
+        onSymptomsSelected: () {},
       );
 
       expect(find.text('Cancel'), findsOneWidget);
@@ -61,6 +76,7 @@ void main() {
         tester,
         onMedicationSelected: () => medicationCalled = true,
         onFluidSelected: () {},
+        onSymptomsSelected: () {},
       );
 
       await tester.tap(find.text('Medication'));
@@ -75,12 +91,30 @@ void main() {
         tester,
         onMedicationSelected: () {},
         onFluidSelected: () => fluidCalled = true,
+        onSymptomsSelected: () {},
       );
 
       await tester.tap(find.text('Fluid Therapy'));
       await tester.pump();
 
       expect(fluidCalled, isTrue);
+    });
+
+    testWidgets('calls onSymptomsSelected when symptoms tapped', (
+      tester,
+    ) async {
+      var symptomsCalled = false;
+      await pumpTreatmentChoicePopup(
+        tester,
+        onMedicationSelected: () {},
+        onFluidSelected: () {},
+        onSymptomsSelected: () => symptomsCalled = true,
+      );
+
+      await tester.tap(find.text('Symptoms'));
+      await tester.pump();
+
+      expect(symptomsCalled, isTrue);
     });
 
     testWidgets('sets treatment choice to medication on tap', (tester) async {
@@ -91,6 +125,7 @@ void main() {
         tester,
         onMedicationSelected: () {},
         onFluidSelected: () {},
+        onSymptomsSelected: () {},
         mockLoggingNotifier: mockNotifier,
       );
 
@@ -110,6 +145,7 @@ void main() {
         tester,
         onMedicationSelected: () {},
         onFluidSelected: () {},
+        onSymptomsSelected: () {},
         mockLoggingNotifier: mockNotifier,
       );
 
@@ -129,6 +165,7 @@ void main() {
         tester,
         onMedicationSelected: () {},
         onFluidSelected: () {},
+        onSymptomsSelected: () {},
         mockLoggingNotifier: mockNotifier,
       );
 
@@ -152,6 +189,7 @@ void main() {
         tester,
         onMedicationSelected: () {},
         onFluidSelected: () {},
+        onSymptomsSelected: () {},
         mockAnalyticsService: mockAnalytics,
       );
 
@@ -175,6 +213,7 @@ void main() {
         tester,
         onMedicationSelected: () {},
         onFluidSelected: () {},
+        onSymptomsSelected: () {},
         mockAnalyticsService: mockAnalytics,
       );
 
@@ -185,6 +224,30 @@ void main() {
         () => mockAnalytics.trackTreatmentChoiceSelected(choice: 'fluid'),
       ).called(1);
     });
+
+    testWidgets('tracks symptoms choice selection', (tester) async {
+      final mockAnalytics = MockAnalyticsService();
+      when(
+        () => mockAnalytics.trackTreatmentChoiceSelected(
+          choice: any(named: 'choice'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await pumpTreatmentChoicePopup(
+        tester,
+        onMedicationSelected: () {},
+        onFluidSelected: () {},
+        onSymptomsSelected: () {},
+        mockAnalyticsService: mockAnalytics,
+      );
+
+      await tester.tap(find.text('Symptoms'));
+      await tester.pump();
+
+      verify(
+        () => mockAnalytics.trackTreatmentChoiceSelected(choice: 'symptoms'),
+      ).called(1);
+    });
   });
 
   group('TreatmentChoicePopup - Navigation', () {
@@ -193,6 +256,7 @@ void main() {
         tester,
         onMedicationSelected: () {},
         onFluidSelected: () {},
+        onSymptomsSelected: () {},
       );
 
       // Verify Material widget exists (required for proper navigation)
@@ -207,6 +271,7 @@ void main() {
         tester,
         onMedicationSelected: () => callbackExecuted = true,
         onFluidSelected: () {},
+        onSymptomsSelected: () {},
       );
 
       await tester.tap(find.text('Medication'));
@@ -221,9 +286,25 @@ void main() {
         tester,
         onMedicationSelected: () {},
         onFluidSelected: () => callbackExecuted = true,
+        onSymptomsSelected: () {},
       );
 
       await tester.tap(find.text('Fluid Therapy'));
+      await tester.pump();
+
+      expect(callbackExecuted, isTrue);
+    });
+
+    testWidgets('calls onSymptomsSelected without errors', (tester) async {
+      var callbackExecuted = false;
+      await pumpTreatmentChoicePopup(
+        tester,
+        onMedicationSelected: () {},
+        onFluidSelected: () {},
+        onSymptomsSelected: () => callbackExecuted = true,
+      );
+
+      await tester.tap(find.text('Symptoms'));
       await tester.pump();
 
       expect(callbackExecuted, isTrue);
@@ -236,11 +317,15 @@ void main() {
         tester,
         onMedicationSelected: () {},
         onFluidSelected: () {},
+        onSymptomsSelected: () {},
       );
 
       // Find HydraIcon widgets
       final hydraIcons = find.byType(HydraIcon);
-      expect(hydraIcons, findsNWidgets(2)); // medication + fluid icons
+      expect(
+        hydraIcons,
+        findsNWidgets(3),
+      ); // medication + fluid + symptoms icons
 
       // Verify medication icon exists by checking the icon string
       final medicationIcon = tester.widget<HydraIcon>(hydraIcons.first);
@@ -252,25 +337,53 @@ void main() {
         tester,
         onMedicationSelected: () {},
         onFluidSelected: () {},
+        onSymptomsSelected: () {},
       );
 
       // Find HydraIcon widgets
       final hydraIcons = find.byType(HydraIcon);
-      expect(hydraIcons, findsNWidgets(2)); // medication + fluid icons
+      expect(
+        hydraIcons,
+        findsNWidgets(3),
+      ); // medication + fluid + symptoms icons
 
       // Verify fluid therapy icon exists by checking the icon string
-      final fluidIcon = tester.widget<HydraIcon>(hydraIcons.last);
+      final fluidIcon = tester.widget<HydraIcon>(hydraIcons.at(1));
       expect(fluidIcon.icon, equals(AppIcons.fluidTherapy));
     });
 
-    testWidgets('shows divider between buttons', (tester) async {
+    testWidgets('displays symptoms icon', (tester) async {
       await pumpTreatmentChoicePopup(
         tester,
         onMedicationSelected: () {},
         onFluidSelected: () {},
+        onSymptomsSelected: () {},
       );
 
-      expect(find.byType(Divider), findsOneWidget);
+      // Find HydraIcon widgets
+      final hydraIcons = find.byType(HydraIcon);
+      expect(
+        hydraIcons,
+        findsNWidgets(3),
+      ); // medication + fluid + symptoms icons
+
+      // Verify symptoms icon exists by checking the icon string
+      final symptomsIcon = tester.widget<HydraIcon>(hydraIcons.last);
+      expect(symptomsIcon.icon, equals(AppIcons.symptoms));
+    });
+
+    testWidgets('shows dividers between buttons', (tester) async {
+      await pumpTreatmentChoicePopup(
+        tester,
+        onMedicationSelected: () {},
+        onFluidSelected: () {},
+        onSymptomsSelected: () {},
+      );
+
+      expect(
+        find.byType(Divider),
+        findsNWidgets(2),
+      ); // between medication/fluid and fluid/symptoms
     });
   });
 
@@ -280,6 +393,7 @@ void main() {
         tester,
         onMedicationSelected: () {},
         onFluidSelected: () {},
+        onSymptomsSelected: () {},
       );
 
       // Verify Semantics widget exists for medication button
@@ -297,6 +411,7 @@ void main() {
         tester,
         onMedicationSelected: () {},
         onFluidSelected: () {},
+        onSymptomsSelected: () {},
       );
 
       // Verify Semantics widget exists for fluid button
@@ -308,11 +423,30 @@ void main() {
       expect(find.text('Fluid Therapy'), findsOneWidget);
     });
 
+    testWidgets('has semantic labels on symptoms button', (tester) async {
+      await pumpTreatmentChoicePopup(
+        tester,
+        onMedicationSelected: () {},
+        onFluidSelected: () {},
+        onSymptomsSelected: () {},
+      );
+
+      // Verify Semantics widget exists for symptoms button
+      // There should be multiple Semantics widgets (one with label)
+      final semantics = find.byType(Semantics);
+      expect(semantics, findsWidgets);
+
+      // Verify the symptoms button text exists
+      // (confirms accessibility structure)
+      expect(find.text('Symptoms'), findsOneWidget);
+    });
+
     testWidgets('has semantic label on cancel button', (tester) async {
       await pumpTreatmentChoicePopup(
         tester,
         onMedicationSelected: () {},
         onFluidSelected: () {},
+        onSymptomsSelected: () {},
       );
 
       // Verify Semantics widget exists for cancel button

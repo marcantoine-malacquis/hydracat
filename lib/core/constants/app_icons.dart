@@ -27,6 +27,9 @@ class AppIcons {
   /// Fluid therapy icon (droplet)
   static const String fluidTherapy = 'water_drop';
 
+  /// Symptoms icon
+  static const String symptoms = 'symptoms';
+
   /// Session completion status
   static const String completed = 'check_circle';
 
@@ -63,6 +66,12 @@ class AppIcons {
   /// Pet profile
   static const String petProfile = 'pet_profile';
 
+  /// Pet profile outlined
+  static const String petProfileOutlined = 'pets_outlined';
+
+  /// Medical information
+  static const String medicalInformation = 'medical_information';
+
   /// Settings
   static const String settings = 'settings';
 
@@ -72,8 +81,14 @@ class AppIcons {
   /// Inventory tracking
   static const String inventory = 'inventory';
 
+  /// Inventory tracking (variant 2)
+  static const String inventory2 = 'inventory_2';
+
   /// Weight unit selector
   static const String weightUnit = 'monitor_weight';
+
+  /// Weight scale icon
+  static const String scale = 'scale';
 
   /// App theme selector
   static const String theme = 'palette';
@@ -90,6 +105,12 @@ class AppIcons {
   // Utility Icons
   /// Add/Plus
   static const String add = 'add';
+
+  /// Add circle outline
+  static const String addCircleOutline = 'add_circle_outline';
+
+  /// WiFi off
+  static const String wifiOff = 'wifi_off';
 
   /// Edit
   static const String edit = 'edit';
@@ -108,6 +129,36 @@ class AppIcons {
 
   /// Chevron right
   static const String chevronRight = 'chevron_right';
+
+  /// Chevron left
+  static const String chevronLeft = 'chevron_left';
+
+  /// Help/Info outline
+  static const String help = 'help';
+
+  /// Calendar month
+  static const String calendar = 'calendar';
+
+  /// Location on (for injection sites)
+  static const String locationOn = 'location_on';
+
+  /// Refresh
+  static const String refresh = 'refresh';
+
+  /// Cancel
+  static const String cancel = 'cancel';
+
+  /// Remove/Subtract
+  static const String remove = 'remove';
+
+  /// Change history (triangle indicator)
+  static const String changeHistory = 'change_history';
+
+  /// Water drop outlined
+  static const String waterDropOutlined = 'water_drop_outlined';
+
+  /// Error outline
+  static const String errorOutline = 'error_outline';
 
   /// Privacy tip
   static const String privacyTip = 'privacy_tip';

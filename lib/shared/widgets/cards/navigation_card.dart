@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
+import 'package:hydracat/core/icons/icon_provider.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/shared/widgets/cards/hydra_card.dart';
 import 'package:hydracat/shared/widgets/icons/icon_container.dart';
@@ -29,6 +31,7 @@ class NavigationCard extends StatelessWidget {
     super.key,
     this.metadata,
     this.icon,
+    this.customIconAsset,
     this.iconColor,
     this.trailing,
     this.showBackgroundCircle = true,
@@ -41,8 +44,11 @@ class NavigationCard extends StatelessWidget {
   /// Optional metadata/subtitle text (e.g., "3 medications", "Stage 2")
   final String? metadata;
 
-  /// Optional leading icon
+  /// Optional leading icon (IconData)
   final IconData? icon;
+
+  /// Optional custom SVG icon asset path
+  final String? customIconAsset;
 
   /// Optional icon color (defaults to primary color)
   final Color? iconColor;
@@ -71,9 +77,10 @@ class NavigationCard extends StatelessWidget {
       child: Row(
         children: [
           // Leading icon with background circle
-          if (icon != null) ...[
+          if (icon != null || customIconAsset != null) ...[
             IconContainer(
-              icon: icon!,
+              icon: icon,
+              customIconAsset: customIconAsset,
               color: iconColor ?? theme.colorScheme.primary,
               showBackgroundCircle: showBackgroundCircle,
             ),
@@ -116,10 +123,21 @@ class NavigationCard extends StatelessWidget {
 
           // Trailing widget (chevron by default)
           trailing ??
-              const Icon(
-                Icons.chevron_right,
-                color: AppColors.textTertiary,
-                size: 20,
+              Builder(
+                builder: (context) {
+                  final platform = Theme.of(context).platform;
+                  final isCupertino =
+                      platform == TargetPlatform.iOS ||
+                      platform == TargetPlatform.macOS;
+                  return Icon(
+                    IconProvider.resolveIconData(
+                      AppIcons.chevronRight,
+                      isCupertino: isCupertino,
+                    ),
+                    color: AppColors.textTertiary,
+                    size: 20,
+                  );
+                },
               ),
         ],
       ),

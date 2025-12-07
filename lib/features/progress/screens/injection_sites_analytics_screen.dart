@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
+import 'package:hydracat/core/icons/icon_provider.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/progress/models/injection_site_stats.dart';
 import 'package:hydracat/features/progress/providers/injection_sites_provider.dart';
@@ -43,24 +45,35 @@ class InjectionSitesAnalyticsScreen extends ConsumerWidget {
         loading: () => const Center(
           child: CircularProgressIndicator(),
         ),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 48,
-                color: Theme.of(context).colorScheme.error,
+        error: (error, stack) => Builder(
+          builder: (context) {
+            final platform = Theme.of(context).platform;
+            final isCupertino =
+                platform == TargetPlatform.iOS ||
+                platform == TargetPlatform.macOS;
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    IconProvider.resolveIconData(
+                      AppIcons.errorOutline,
+                      isCupertino: isCupertino,
+                    ),
+                    size: 48,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    l10n.injectionSitesErrorLoading,
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                l10n.injectionSitesErrorLoading,
-                style: AppTextStyles.body.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -95,14 +108,25 @@ class InjectionSitesAnalyticsScreen extends ConsumerWidget {
                   children: [
                     Container(
                       padding: const EdgeInsets.all(AppSpacing.sm),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.location_on,
-                        color: AppColors.primary,
-                        size: 24,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                      child: Builder(
+                        builder: (context) {
+                          final platform = Theme.of(context).platform;
+                          final isCupertino =
+                              platform == TargetPlatform.iOS ||
+                              platform == TargetPlatform.macOS;
+                          return Icon(
+                            IconProvider.resolveIconData(
+                              AppIcons.locationOn,
+                              isCupertino: isCupertino,
+                            ),
+                            color: AppColors.primary,
+                            size: 24,
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
@@ -161,10 +185,21 @@ class InjectionSitesAnalyticsScreen extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.water_drop_outlined,
-            size: 64,
-            color: AppColors.primary.withValues(alpha: 0.5),
+          Builder(
+            builder: (context) {
+              final platform = Theme.of(context).platform;
+              final isCupertino =
+                  platform == TargetPlatform.iOS ||
+                  platform == TargetPlatform.macOS;
+              return Icon(
+                IconProvider.resolveIconData(
+                  AppIcons.waterDropOutlined,
+                  isCupertino: isCupertino,
+                ),
+                size: 64,
+                color: AppColors.primary.withValues(alpha: 0.5),
+              );
+            },
           ),
           const SizedBox(height: AppSpacing.md),
           Text(

@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
+import 'package:hydracat/core/icons/icon_provider.dart';
 import 'package:hydracat/core/theme/app_shadows.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/core/utils/chart_tooltip_positioning.dart';
@@ -630,10 +632,21 @@ class _TooltipCard extends StatelessWidget {
           top: 10,
           child: Transform.rotate(
             angle: pointsLeft ? -1.5708 : 1.5708, // ±90 degrees in radians
-            child: const Icon(
-              Icons.change_history,
-              size: 12,
-              color: Colors.white,
+            child: Builder(
+              builder: (context) {
+                final platform = Theme.of(context).platform;
+                final isCupertino =
+                    platform == TargetPlatform.iOS ||
+                    platform == TargetPlatform.macOS;
+                return Icon(
+                  IconProvider.resolveIconData(
+                    AppIcons.changeHistory,
+                    isCupertino: isCupertino,
+                  ),
+                  size: 12,
+                  color: Colors.white,
+                );
+              },
             ),
           ),
         ),
@@ -821,10 +834,21 @@ class FluidVolumeChartEmptyState extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Icon
-                Icon(
-                  Icons.water_drop_outlined,
-                  size: 36,
-                  color: AppColors.primary.withValues(alpha: 0.4),
+                Builder(
+                  builder: (context) {
+                    final platform = Theme.of(context).platform;
+                    final isCupertino =
+                        platform == TargetPlatform.iOS ||
+                        platform == TargetPlatform.macOS;
+                    return Icon(
+                      IconProvider.resolveIconData(
+                        AppIcons.waterDropOutlined,
+                        isCupertino: isCupertino,
+                      ),
+                      size: 36,
+                      color: AppColors.primary.withValues(alpha: 0.4),
+                    );
+                  },
                 ),
                 const SizedBox(height: 10),
 

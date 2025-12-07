@@ -608,6 +608,12 @@ class _MedicationLoggingScreenState
                       horizontal: AppSpacing.lg,
                       vertical: AppSpacing.md,
                     ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
                   child: Text(
                     'Skip this dose',

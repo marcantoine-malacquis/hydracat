@@ -57,6 +57,8 @@ class IconProvider {
       // Session Logging Icons
       case AppIcons.medication:
         return Icons.medication;
+      case AppIcons.symptoms:
+        return Icons.medical_services;
       case AppIcons.completed:
         return Icons.check_circle;
       case AppIcons.notCompleted:
@@ -85,14 +87,22 @@ class IconProvider {
       // Profile & Settings Icons
       case AppIcons.petProfile:
         return Icons.pets;
+      case AppIcons.petProfileOutlined:
+        return Icons.pets_outlined;
+      case AppIcons.medicalInformation:
+        return Icons.medical_information;
       case AppIcons.settings:
         return Icons.settings;
       case AppIcons.export:
         return Icons.picture_as_pdf;
       case AppIcons.inventory:
         return Icons.inventory;
+      case AppIcons.inventory2:
+        return Icons.inventory_2;
       case AppIcons.weightUnit:
         return Icons.monitor_weight;
+      case AppIcons.scale:
+        return Icons.scale;
       case AppIcons.theme:
         return Icons.palette;
       case AppIcons.clearCache:
@@ -105,6 +115,10 @@ class IconProvider {
       // Utility Icons
       case AppIcons.add:
         return Icons.add;
+      case AppIcons.addCircleOutline:
+        return Icons.add_circle_outline;
+      case AppIcons.wifiOff:
+        return Icons.wifi_off;
       case AppIcons.edit:
         return Icons.edit;
       case AppIcons.delete:
@@ -117,6 +131,26 @@ class IconProvider {
         return Icons.arrow_forward;
       case AppIcons.chevronRight:
         return Icons.chevron_right;
+      case AppIcons.chevronLeft:
+        return Icons.chevron_left;
+      case AppIcons.help:
+        return Icons.help_outline;
+      case AppIcons.calendar:
+        return Icons.calendar_month;
+      case AppIcons.locationOn:
+        return Icons.location_on;
+      case AppIcons.refresh:
+        return Icons.refresh;
+      case AppIcons.cancel:
+        return Icons.cancel;
+      case AppIcons.remove:
+        return Icons.remove;
+      case AppIcons.changeHistory:
+        return Icons.change_history;
+      case AppIcons.waterDropOutlined:
+        return Icons.water_drop_outlined;
+      case AppIcons.errorOutline:
+        return Icons.error_outline;
       case AppIcons.privacyTip:
         return Icons.privacy_tip_outlined;
       case AppIcons.info:
@@ -166,6 +200,8 @@ class IconProvider {
       case AppIcons.medication:
         // No pill icon in Cupertino, using square
         return CupertinoIcons.square_fill;
+      case AppIcons.symptoms:
+        return CupertinoIcons.heart_fill;
       case AppIcons.completed:
         return CupertinoIcons.check_mark_circled_solid;
       case AppIcons.notCompleted:
@@ -194,14 +230,23 @@ class IconProvider {
 
       // Profile & Settings Icons
       case AppIcons.petProfile:
-        return CupertinoIcons.person_2_fill;
+        return CupertinoIcons.paw;
+      case AppIcons.petProfileOutlined:
+        return CupertinoIcons.person_2;
+      case AppIcons.medicalInformation:
+        return CupertinoIcons.doc_text_search;
       case AppIcons.settings:
         return CupertinoIcons.settings;
       case AppIcons.export:
         return CupertinoIcons.doc_fill;
       case AppIcons.inventory:
         return CupertinoIcons.archivebox_fill;
+      case AppIcons.inventory2:
+        return CupertinoIcons.archivebox_fill;
       case AppIcons.weightUnit:
+        return CupertinoIcons.square_grid_2x2;
+      case AppIcons.scale:
+        // No direct scale icon in Cupertino, using square_grid as alternative
         return CupertinoIcons.square_grid_2x2;
       case AppIcons.theme:
         return CupertinoIcons.paintbrush_fill;
@@ -215,6 +260,10 @@ class IconProvider {
       // Utility Icons
       case AppIcons.add:
         return CupertinoIcons.add;
+      case AppIcons.addCircleOutline:
+        return CupertinoIcons.add_circled;
+      case AppIcons.wifiOff:
+        return CupertinoIcons.wifi_slash;
       case AppIcons.edit:
         return CupertinoIcons.pencil;
       case AppIcons.delete:
@@ -227,6 +276,26 @@ class IconProvider {
         return CupertinoIcons.arrow_right;
       case AppIcons.chevronRight:
         return CupertinoIcons.chevron_right;
+      case AppIcons.chevronLeft:
+        return CupertinoIcons.chevron_left;
+      case AppIcons.help:
+        return CupertinoIcons.question_circle;
+      case AppIcons.calendar:
+        return CupertinoIcons.calendar;
+      case AppIcons.locationOn:
+        return CupertinoIcons.location_fill;
+      case AppIcons.refresh:
+        return CupertinoIcons.arrow_clockwise;
+      case AppIcons.cancel:
+        return CupertinoIcons.xmark_circle;
+      case AppIcons.remove:
+        return CupertinoIcons.minus;
+      case AppIcons.changeHistory:
+        return CupertinoIcons.triangle_fill;
+      case AppIcons.waterDropOutlined:
+        return CupertinoIcons.drop;
+      case AppIcons.errorOutline:
+        return CupertinoIcons.exclamationmark_triangle;
       case AppIcons.privacyTip:
         return CupertinoIcons.shield_fill;
       case AppIcons.info:
@@ -264,6 +333,25 @@ class IconProvider {
       case AppIcons.profile:
         return 'assets/fonts/icons/cat_profile_icon_nav.svg';
       // Add more custom SVG icons here
+      default:
+        return null;
+    }
+  }
+
+  /// Gets the platform-specific asset path for icons that have
+  /// custom SVG variants
+  /// Returns the custom asset path for iOS/macOS, null for other platforms
+  static String? getPlatformSpecificIconAsset(
+    String iconName, {
+    required bool isCupertino,
+  }) {
+    if (!isCupertino) {
+      return null;
+    }
+
+    switch (iconName) {
+      case AppIcons.scale:
+        return 'assets/fonts/icons/SF_Symboles/weight.svg';
       default:
         return null;
     }

@@ -624,7 +624,7 @@ class _FluidLoggingScreenState extends ConsumerState<FluidLoggingScreen> {
                 ? _logFluidSession
                 : null,
             semanticLabel: l10n.fluidLogButtonLabel,
-            child: Text(l10n.fluidLoggingTitle),
+            child: Text(l10n.fluidLogButton),
           ),
         ),
       ],

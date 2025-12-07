@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/constants/app_icons.dart';
+import 'package:hydracat/core/theme/app_border_radius.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
+import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/features/logging/models/treatment_choice.dart';
 import 'package:hydracat/features/logging/widgets/logging_popup_wrapper.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
@@ -11,10 +13,10 @@ import 'package:hydracat/providers/logging_provider.dart';
 import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
 
 /// A bottom-sheet-style popup for combined persona users to choose
-/// between logging medication or fluid therapy.
+/// between logging medication, fluid therapy, or symptoms.
 ///
 /// Features:
-/// - Two large, tappable buttons (medication/fluid)
+/// - Three large, tappable buttons (medication/fluid/symptoms)
 /// - Consistent styling with other logging popups via LoggingPopupWrapper
 /// - Immediate dismiss on selection
 /// - Stores choice in state via `setTreatmentChoice()`
@@ -35,6 +37,10 @@ import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
 ///         Navigator.pop(context);
 ///         // Navigate to fluid logging
 ///       },
+///       onSymptomsSelected: () {
+///         Navigator.pop(context);
+///         // Navigate to symptoms logging
+///       },
 ///     ),
 ///   ),
 /// );
@@ -44,6 +50,7 @@ class TreatmentChoicePopup extends ConsumerWidget {
   const TreatmentChoicePopup({
     required this.onMedicationSelected,
     required this.onFluidSelected,
+    required this.onSymptomsSelected,
     super.key,
   });
 
@@ -53,9 +60,11 @@ class TreatmentChoicePopup extends ConsumerWidget {
   /// Callback when user selects "Log Fluid Therapy".
   final VoidCallback onFluidSelected;
 
+  /// Callback when user selects "Log Symptoms".
+  final VoidCallback onSymptomsSelected;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
     return LoggingPopupWrapper(
@@ -93,12 +102,10 @@ class TreatmentChoicePopup extends ConsumerWidget {
               },
             ),
           ),
-          Divider(
+          const Divider(
             height: 1,
             thickness: 1,
-            color: theme.colorScheme.outlineVariant.withValues(
-              alpha: 0.3,
-            ),
+            color: AppColors.divider,
           ),
 
           // Fluid therapy button
@@ -125,21 +132,29 @@ class TreatmentChoicePopup extends ConsumerWidget {
               },
             ),
           ),
+          const Divider(
+            height: 1,
+            thickness: 1,
+            color: AppColors.divider,
+          ),
 
-          // Visual separation
-          const SizedBox(height: AppSpacing.md),
-
-          // Cancel button
+          // Symptoms button
           Semantics(
-            label: l10n.cancel,
-            hint: l10n.treatmentChoiceCancelSemantic,
+            label: l10n.treatmentChoiceSymptomsLabel,
+            hint: l10n.treatmentChoiceSymptomsHint,
             button: true,
-            child: _CancelButton(
+            child: _TreatmentChoiceButton(
+              icon: AppIcons.symptoms,
+              label: 'Symptoms',
               onTap: () {
-                ref.read(loggingProvider.notifier).reset();
-                if (Navigator.canPop(context)) {
-                  Navigator.pop(context);
-                }
+                // Track choice selection
+                ref
+                    .read(analyticsServiceDirectProvider)
+                    .trackTreatmentChoiceSelected(
+                      choice: 'symptoms',
+                    );
+
+                onSymptomsSelected();
               },
             ),
           ),
@@ -163,81 +178,13 @@ class _TreatmentChoiceButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Material(
       type: MaterialType.transparency,
       child: InkWell(
         onTap: onTap,
-        splashColor: theme.colorScheme.primary.withValues(alpha: 0.12),
-        highlightColor: theme.colorScheme.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        splashFactory: InkRipple.splashFactory,
-        child: Container(
-          width: double.infinity,
-          constraints: const BoxConstraints(
-            minHeight: AppSpacing.minTouchTarget,
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: AppSpacing.md,
-          ),
-          child: Row(
-            children: [
-              // Icon
-              HydraIcon(
-                icon: icon,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                size: 28,
-              ),
-              const SizedBox(width: AppSpacing.md),
-
-              // Label
-              Expanded(
-                child: Text(
-                  label,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-              ),
-
-              // Chevron
-              Icon(
-                Icons.chevron_right,
-                color: theme.colorScheme.onSurfaceVariant,
-                size: 24,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A cancel button with subtle background styling.
-class _CancelButton extends StatelessWidget {
-  const _CancelButton({
-    required this.onTap,
-  });
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-
-    return Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        onTap: onTap,
-        splashColor: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.12),
-        highlightColor: theme.colorScheme.onSurfaceVariant.withValues(
-          alpha: 0.08,
-        ),
-        borderRadius: BorderRadius.circular(12),
+        splashColor: AppColors.primary.withValues(alpha: 0.12),
+        highlightColor: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: AppBorderRadius.buttonRadius,
         splashFactory: InkRipple.splashFactory,
         child: Container(
           width: double.infinity,
@@ -248,21 +195,34 @@ class _CancelButton extends StatelessWidget {
             horizontal: AppSpacing.md,
             vertical: AppSpacing.md,
           ),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainer.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
-            ),
-          ),
-          child: Center(
-            child: Text(
-              l10n.cancel,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: AppColors.error,
-                fontWeight: FontWeight.w500,
+          child: Row(
+            children: [
+              // Icon
+              HydraIcon(
+                icon: icon,
+                color: AppColors.textSecondary,
+                size: 28,
               ),
-            ),
+              const SizedBox(width: AppSpacing.md),
+
+              // Label
+              Expanded(
+                child: Text(
+                  label,
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+
+              // Chevron
+              const Icon(
+                Icons.chevron_right,
+                color: AppColors.textTertiary,
+                size: 24,
+              ),
+            ],
           ),
         ),
       ),

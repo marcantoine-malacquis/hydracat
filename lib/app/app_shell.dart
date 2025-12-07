@@ -9,6 +9,7 @@ import 'package:hydracat/app/tab_page_registry.dart';
 import 'package:hydracat/core/config/flavor_config.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/constants/app_icons.dart';
+import 'package:hydracat/features/health/widgets/symptoms_entry_dialog.dart';
 import 'package:hydracat/features/logging/exceptions/logging_error_handler.dart';
 import 'package:hydracat/features/logging/screens/fluid_logging_screen.dart';
 import 'package:hydracat/features/logging/screens/medication_logging_screen.dart';
@@ -275,6 +276,22 @@ class _AppShellState extends ConsumerState<AppShell>
             _showLoggingDialog(
               context,
               const FluidLoggingScreen(),
+            );
+          },
+          onSymptomsSelected: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+            showHydraBottomSheet<void>(
+              context: context,
+              isScrollControlled: true,
+              useRootNavigator: true,
+              backgroundColor: AppColors.background,
+              builder: (sheetContext) => const HydraBottomSheet(
+                heightFraction: 0.85,
+                backgroundColor: AppColors.background,
+                child: SymptomsEntryDialog(),
+              ),
             );
           },
         ),

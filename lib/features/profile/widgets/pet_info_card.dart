@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/core/utils/weight_utils.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/weight_unit_provider.dart';
+import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
 
 /// A card widget displaying pet information with photo placeholder
 ///
@@ -76,8 +78,8 @@ class PetInfoCard extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.wifi_off,
+          HydraIcon(
+            icon: AppIcons.wifiOff,
             size: 14,
             color: Colors.orange.shade700,
           ),
@@ -129,8 +131,8 @@ class PetInfoCard extends ConsumerWidget {
         color: AppColors.primary.withValues(alpha: 0.1),
       ),
       child: const Center(
-        child: Icon(
-          Icons.pets,
+        child: HydraIcon(
+          icon: AppIcons.petProfile,
           size: 40,
           color: AppColors.primary,
         ),

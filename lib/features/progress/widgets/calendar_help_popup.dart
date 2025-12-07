@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
+import 'package:hydracat/core/icons/icon_provider.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/features/logging/services/overlay_service.dart';
@@ -56,10 +58,9 @@ class CalendarHelpPopup extends StatelessWidget {
                   Divider(
                     height: 1,
                     thickness: 1,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .outlineVariant
-                        .withValues(alpha: 0.3),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outlineVariant.withValues(alpha: 0.3),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _buildContent(context),
@@ -74,24 +75,37 @@ class CalendarHelpPopup extends StatelessWidget {
 
   /// Builds the header with title and close button.
   Widget _buildHeader(BuildContext context) {
-    return const Row(
+    return Row(
       children: [
-        Expanded(
+        const Expanded(
           child: Text(
             'Calendar Legend',
             style: AppTextStyles.h2,
           ),
         ),
-        SizedBox(
-          width: AppSpacing.minTouchTarget,
-          height: AppSpacing.minTouchTarget,
-          child: IconButton(
-            icon: Icon(Icons.close),
-            onPressed: OverlayService.hide,
-            tooltip: 'Close',
-            iconSize: 24,
-            padding: EdgeInsets.zero,
-          ),
+        Builder(
+          builder: (context) {
+            final platform = Theme.of(context).platform;
+            final isCupertino =
+                platform == TargetPlatform.iOS ||
+                platform == TargetPlatform.macOS;
+            return SizedBox(
+              width: AppSpacing.minTouchTarget,
+              height: AppSpacing.minTouchTarget,
+              child: IconButton(
+                icon: Icon(
+                  IconProvider.resolveIconData(
+                    AppIcons.close,
+                    isCupertino: isCupertino,
+                  ),
+                ),
+                onPressed: OverlayService.hide,
+                tooltip: 'Close',
+                iconSize: 24,
+                padding: EdgeInsets.zero,
+              ),
+            );
+          },
         ),
       ],
     );

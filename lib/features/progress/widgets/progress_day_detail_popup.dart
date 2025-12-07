@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
+import 'package:hydracat/core/icons/icon_provider.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
@@ -539,7 +541,20 @@ class _ProgressDayDetailPopupState
                 // Retry by invalidating the provider
                 ref.invalidate(weekSessionsProvider(weekStart));
               },
-              icon: const Icon(Icons.refresh),
+              icon: Builder(
+                builder: (context) {
+                  final platform = Theme.of(context).platform;
+                  final isCupertino =
+                      platform == TargetPlatform.iOS ||
+                      platform == TargetPlatform.macOS;
+                  return Icon(
+                    IconProvider.resolveIconData(
+                      AppIcons.refresh,
+                      isCupertino: isCupertino,
+                    ),
+                  );
+                },
+              ),
               label: const Text('Retry'),
             ),
           ],
@@ -1045,10 +1060,16 @@ class _ProgressDayDetailPopupState
     final today = AppDateUtils.startOfDay(DateTime.now());
     final isFuture = day.isAfter(today);
 
+    final platform = Theme.of(context).platform;
+    final isCupertino =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: const Icon(
-        Icons.medication,
+      leading: Icon(
+        IconProvider.resolveIconData(
+          AppIcons.medication,
+          isCupertino: isCupertino,
+        ),
         color: AppColors.textSecondary,
         size: 24,
       ),
@@ -1064,14 +1085,20 @@ class _ProgressDayDetailPopupState
         mainAxisSize: MainAxisSize.min,
         children: [
           if (completed)
-            const Icon(
-              Icons.check_circle,
+            Icon(
+              IconProvider.resolveIconData(
+                AppIcons.completed,
+                isCupertino: isCupertino,
+              ),
               color: AppColors.primary,
               size: 28,
             )
           else if (!isFuture)
-            const Icon(
-              Icons.cancel,
+            Icon(
+              IconProvider.resolveIconData(
+                AppIcons.cancel,
+                isCupertino: isCupertino,
+              ),
               color: AppColors.textSecondary,
               size: 28,
             ),
@@ -1086,12 +1113,18 @@ class _ProgressDayDetailPopupState
     DateTime time, {
     bool completed = false,
   }) {
+    final platform = Theme.of(context).platform;
+    final isCupertino =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
     final timeStr = DateFormat.jm().format(time);
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: const Icon(
-        Icons.water_drop,
+      leading: Icon(
+        IconProvider.resolveIconData(
+          AppIcons.fluidTherapy,
+          isCupertino: isCupertino,
+        ),
         color: AppColors.textSecondary,
         size: 24,
       ),
@@ -1106,8 +1139,11 @@ class _ProgressDayDetailPopupState
       trailing: completed
           ? Semantics(
               label: 'Completed',
-              child: const Icon(
-                Icons.check_circle,
+              child: Icon(
+                IconProvider.resolveIconData(
+                  AppIcons.completed,
+                  isCupertino: isCupertino,
+                ),
                 color: AppColors.primary,
                 size: 24,
               ),
@@ -1129,10 +1165,16 @@ class _ProgressDayDetailPopupState
     final isFuture = day.isAfter(today);
     final canEdit = !isFuture; // Show edit for all past dates
 
+    final platform = Theme.of(context).platform;
+    final isCupertino =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: const Icon(
-        Icons.medication,
+      leading: Icon(
+        IconProvider.resolveIconData(
+          AppIcons.medication,
+          isCupertino: isCupertino,
+        ),
         color: AppColors.textSecondary,
         size: 24,
       ),
@@ -1148,21 +1190,33 @@ class _ProgressDayDetailPopupState
         mainAxisSize: MainAxisSize.min,
         children: [
           if (completed)
-            const Icon(
-              Icons.check_circle,
+            Icon(
+              IconProvider.resolveIconData(
+                AppIcons.completed,
+                isCupertino: isCupertino,
+              ),
               color: AppColors.primary,
               size: 28,
             )
           else if (!isFuture)
-            const Icon(
-              Icons.cancel,
+            Icon(
+              IconProvider.resolveIconData(
+                AppIcons.cancel,
+                isCupertino: isCupertino,
+              ),
               color: AppColors.textSecondary,
               size: 28,
             ),
           if (canEdit) ...[
             const SizedBox(width: AppSpacing.xs),
             IconButton(
-              icon: const Icon(Icons.edit_outlined, size: 20),
+              icon: Icon(
+                IconProvider.resolveIconData(
+                  AppIcons.edit,
+                  isCupertino: isCupertino,
+                ),
+                size: 20,
+              ),
               onPressed: () => _handleEditMedication(
                 session ?? _createTempMedicationSession(schedule, time),
                 schedule,
@@ -1188,12 +1242,18 @@ class _ProgressDayDetailPopupState
     double? totalFluidMl,
     bool completed = false,
   }) {
+    final platform = Theme.of(context).platform;
+    final isCupertino =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
     final timeStr = DateFormat.jm().format(time);
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: const Icon(
-        Icons.water_drop,
+      leading: Icon(
+        IconProvider.resolveIconData(
+          AppIcons.fluidTherapy,
+          isCupertino: isCupertino,
+        ),
         color: AppColors.textSecondary,
         size: 24,
       ),
@@ -1210,8 +1270,11 @@ class _ProgressDayDetailPopupState
       trailing: completed
           ? Semantics(
               label: 'Completed',
-              child: const Icon(
-                Icons.check_circle,
+              child: Icon(
+                IconProvider.resolveIconData(
+                  AppIcons.completed,
+                  isCupertino: isCupertino,
+                ),
                 color: AppColors.primary,
                 size: 28,
               ),
@@ -1295,6 +1358,9 @@ class _ProgressDayDetailPopupState
   ) {
     if (sessions.isEmpty) return const [];
 
+    final platform = Theme.of(context).platform;
+    final isCupertino =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
     final sorted = [...sessions]
       ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
 
@@ -1308,8 +1374,11 @@ class _ProgressDayDetailPopupState
 
       return ListTile(
         contentPadding: EdgeInsets.zero,
-        leading: const Icon(
-          Icons.water_drop,
+        leading: Icon(
+          IconProvider.resolveIconData(
+            AppIcons.fluidTherapy,
+            isCupertino: isCupertino,
+          ),
           color: AppColors.textSecondary,
           size: 24,
         ),
@@ -1320,7 +1389,13 @@ class _ProgressDayDetailPopupState
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 20),
+                    icon: Icon(
+                      IconProvider.resolveIconData(
+                        AppIcons.edit,
+                        isCupertino: isCupertino,
+                      ),
+                      size: 20,
+                    ),
                     onPressed: () => _handleEditFluid(session),
                     tooltip: 'Edit',
                     visualDensity: VisualDensity.compact,
@@ -1331,7 +1406,13 @@ class _ProgressDayDetailPopupState
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 20),
+                    icon: Icon(
+                      IconProvider.resolveIconData(
+                        AppIcons.delete,
+                        isCupertino: isCupertino,
+                      ),
+                      size: 20,
+                    ),
                     color: AppColors.error,
                     onPressed: () =>
                         _confirmDeleteFluidSession(context, ref, session),
@@ -1352,6 +1433,9 @@ class _ProgressDayDetailPopupState
 
   /// Build tile for scheduled but unlogged fluid session
   Widget _buildUnloggedFluidTile(Schedule schedule, DateTime time) {
+    final platform = Theme.of(context).platform;
+    final isCupertino =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
     final timeStr = DateFormat.jm().format(time);
     final volumeStr = '${schedule.targetVolume}ml (scheduled)';
 
@@ -1361,8 +1445,11 @@ class _ProgressDayDetailPopupState
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: const Icon(
-        Icons.water_drop,
+      leading: Icon(
+        IconProvider.resolveIconData(
+          AppIcons.fluidTherapy,
+          isCupertino: isCupertino,
+        ),
         color: AppColors.textSecondary,
         size: 24,
       ),
@@ -1375,7 +1462,13 @@ class _ProgressDayDetailPopupState
       subtitle: Text(timeStr, style: AppTextStyles.caption),
       trailing: !isFuture
           ? IconButton(
-              icon: const Icon(Icons.edit_outlined, size: 20),
+              icon: Icon(
+                IconProvider.resolveIconData(
+                  AppIcons.edit,
+                  isCupertino: isCupertino,
+                ),
+                size: 20,
+              ),
               onPressed: () => _handleEditFluid(
                 _createTempFluidSession(schedule, time),
               ),
@@ -1441,10 +1534,17 @@ class _ProgressDayDetailPopupState
               )
               .firstOrNull;
 
+          final platform = Theme.of(context).platform;
+          final isCupertino =
+              platform == TargetPlatform.iOS ||
+              platform == TargetPlatform.macOS;
           return ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(
-              Icons.medication,
+            leading: Icon(
+              IconProvider.resolveIconData(
+                AppIcons.medication,
+                isCupertino: isCupertino,
+              ),
               color: AppColors.textSecondary,
               size: 24,
             ),
@@ -1457,21 +1557,33 @@ class _ProgressDayDetailPopupState
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (session.completed)
-                  const Icon(
-                    Icons.check_circle,
+                  Icon(
+                    IconProvider.resolveIconData(
+                      AppIcons.completed,
+                      isCupertino: isCupertino,
+                    ),
                     color: AppColors.primary,
                     size: 28,
                   )
                 else if (!isFuture)
-                  const Icon(
-                    Icons.cancel,
+                  Icon(
+                    IconProvider.resolveIconData(
+                      AppIcons.cancel,
+                      isCupertino: isCupertino,
+                    ),
                     color: AppColors.textSecondary,
                     size: 28,
                   ),
                 if (canEdit) ...[
                   const SizedBox(width: AppSpacing.xs),
                   IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 20),
+                    icon: Icon(
+                      IconProvider.resolveIconData(
+                        AppIcons.edit,
+                        isCupertino: isCupertino,
+                      ),
+                      size: 20,
+                    ),
                     onPressed: () => _handleEditMedication(
                       session,
                       matchingSchedule ??
@@ -2184,6 +2296,9 @@ class _MedicationEditInlineFormState extends State<_MedicationEditInlineForm> {
   }
 
   Widget _buildCompletionToggle(ThemeData theme) {
+    final platform = Theme.of(context).platform;
+    final isCupertino =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2200,7 +2315,10 @@ class _MedicationEditInlineFormState extends State<_MedicationEditInlineForm> {
             Expanded(
               child: _buildStatusButton(
                 label: 'Completed',
-                icon: Icons.check_circle,
+                icon: IconProvider.resolveIconData(
+                  AppIcons.completed,
+                  isCupertino: isCupertino,
+                )!,
                 isSelected: _completed,
                 onTap: () {
                   setState(() {
@@ -2222,7 +2340,10 @@ class _MedicationEditInlineFormState extends State<_MedicationEditInlineForm> {
             Expanded(
               child: _buildStatusButton(
                 label: 'Missed',
-                icon: Icons.cancel,
+                icon: IconProvider.resolveIconData(
+                  AppIcons.cancel,
+                  isCupertino: isCupertino,
+                )!,
                 isSelected: !_completed,
                 onTap: () {
                   setState(() {
@@ -2297,6 +2418,9 @@ class _MedicationEditInlineFormState extends State<_MedicationEditInlineForm> {
   }
 
   Widget _buildDosageAdjuster(ThemeData theme) {
+    final platform = Theme.of(context).platform;
+    final isCupertino =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
     final unit = widget.schedule.medicationUnit ?? 'dose';
     final displayDosage = _dosageGiven == _dosageGiven.toInt()
         ? _dosageGiven.toInt().toString()
@@ -2327,7 +2451,10 @@ class _MedicationEditInlineFormState extends State<_MedicationEditInlineForm> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _buildCircularButton(
-                  icon: Icons.remove,
+                  icon: IconProvider.resolveIconData(
+                    AppIcons.remove,
+                    isCupertino: isCupertino,
+                  )!,
                   onPressed: _decrementDosage,
                   enabled: !isDisabled && _dosageGiven > 0,
                 ),
@@ -2354,7 +2481,10 @@ class _MedicationEditInlineFormState extends State<_MedicationEditInlineForm> {
                 ),
                 const SizedBox(width: AppSpacing.lg),
                 _buildCircularButton(
-                  icon: Icons.add,
+                  icon: IconProvider.resolveIconData(
+                    AppIcons.add,
+                    isCupertino: isCupertino,
+                  )!,
                   onPressed: _incrementDosage,
                   enabled: !isDisabled && _dosageGiven < 100,
                 ),

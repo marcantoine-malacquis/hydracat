@@ -1015,8 +1015,14 @@ abstract class AppLocalizations {
   /// No description provided for @fluidLoggingTitle.
   ///
   /// In en, this message translates to:
-  /// **'Log Fluid Session'**
+  /// **'Fluid Therapy'**
   String get fluidLoggingTitle;
+
+  /// No description provided for @fluidLogButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Fluid Session'**
+  String get fluidLogButton;
 
   /// No description provided for @fluidLoggingLoadingMessage.
   ///
@@ -1171,7 +1177,7 @@ abstract class AppLocalizations {
   /// No description provided for @medicationLoggingTitle.
   ///
   /// In en, this message translates to:
-  /// **'Log Medication'**
+  /// **'Medication'**
   String get medicationLoggingTitle;
 
   /// No description provided for @medicationLoggingLoadingMessage.
@@ -1231,7 +1237,7 @@ abstract class AppLocalizations {
   /// No description provided for @treatmentChoiceTitle.
   ///
   /// In en, this message translates to:
-  /// **'Add one-time entry'**
+  /// **'What would you like to log?'**
   String get treatmentChoiceTitle;
 
   /// No description provided for @treatmentChoiceMedicationLabel.
@@ -1257,6 +1263,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Opens fluid therapy logging form to record subcutaneous fluids'**
   String get treatmentChoiceFluidHint;
+
+  /// No description provided for @treatmentChoiceSymptomsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Log symptoms'**
+  String get treatmentChoiceSymptomsLabel;
+
+  /// No description provided for @treatmentChoiceSymptomsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens symptoms logging form to record daily health symptoms'**
+  String get treatmentChoiceSymptomsHint;
 
   /// No description provided for @treatmentChoiceSemanticLabel.
   ///

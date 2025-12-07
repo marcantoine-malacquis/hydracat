@@ -112,6 +112,7 @@ flutter:
   assets:
     - assets/fonts/
     - assets/fonts/icons/
+    - assets/fonts/icons/SF_Symboles/
     - assets/legal/
     - assets/branding/
 
