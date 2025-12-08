@@ -211,8 +211,6 @@ class MedicalInfo {
   const MedicalInfo({
     this.ckdDiagnosisDate,
     this.irisStage,
-    this.lastCheckupDate,
-    this.notes,
     this.labValues,
     this.latestLabResult,
   });
@@ -226,10 +224,6 @@ class MedicalInfo {
       irisStage: json['irisStage'] != null
           ? IrisStage.fromString(json['irisStage'] as String)
           : null,
-      lastCheckupDate: json['lastCheckupDate'] != null
-          ? DateTime.parse(json['lastCheckupDate'] as String)
-          : null,
-      notes: json['notes'] as String?,
       labValues: json['labValues'] != null
           ? LabValues.fromJson(json['labValues'] as Map<String, dynamic>)
           : null,
@@ -247,12 +241,6 @@ class MedicalInfo {
   /// Current IRIS stage of the pet's CKD
   final IrisStage? irisStage;
 
-  /// Date of the last veterinary checkup
-  final DateTime? lastCheckupDate;
-
-  /// Additional medical notes
-  final String? notes;
-
   /// Laboratory values from bloodwork
   final LabValues? labValues;
 
@@ -268,8 +256,6 @@ class MedicalInfo {
     return {
       'ckdDiagnosisDate': ckdDiagnosisDate?.toIso8601String(),
       'irisStage': irisStage?.name,
-      'lastCheckupDate': lastCheckupDate?.toIso8601String(),
-      'notes': notes,
       'labValues': labValues?.toJson(),
       if (latestLabResult != null)
         'latestLabResult': latestLabResult!.toJson(),
@@ -280,8 +266,6 @@ class MedicalInfo {
   MedicalInfo copyWith({
     Object? ckdDiagnosisDate = _undefined,
     Object? irisStage = _undefined,
-    Object? lastCheckupDate = _undefined,
-    Object? notes = _undefined,
     LabValues? labValues,
     Object? latestLabResult = _undefined,
   }) {
@@ -292,10 +276,6 @@ class MedicalInfo {
       irisStage: irisStage == _undefined
           ? this.irisStage
           : irisStage as IrisStage?,
-      lastCheckupDate: lastCheckupDate == _undefined
-          ? this.lastCheckupDate
-          : lastCheckupDate as DateTime?,
-      notes: notes == _undefined ? this.notes : notes as String?,
       labValues: labValues ?? this.labValues,
       latestLabResult: latestLabResult == _undefined
           ? this.latestLabResult
@@ -312,18 +292,6 @@ class MedicalInfo {
       errors.add('CKD diagnosis date cannot be in the future');
     }
 
-    // Last checkup date should not be in the future
-    if (lastCheckupDate != null && lastCheckupDate!.isAfter(DateTime.now())) {
-      errors.add('Last checkup date cannot be in the future');
-    }
-
-    // Last checkup should be after diagnosis
-    if (ckdDiagnosisDate != null &&
-        lastCheckupDate != null &&
-        lastCheckupDate!.isBefore(ckdDiagnosisDate!)) {
-      errors.add('Last checkup date should be after diagnosis date');
-    }
-
     // Validate lab values if present
     if (labValues != null) {
       errors.addAll(labValues!.validate());
@@ -336,8 +304,6 @@ class MedicalInfo {
   bool get hasData =>
       ckdDiagnosisDate != null ||
       irisStage != null ||
-      lastCheckupDate != null ||
-      (notes != null && notes!.isNotEmpty) ||
       (labValues != null && labValues!.hasValues) ||
       (latestLabResult != null && latestLabResult!.hasValues);
 
@@ -348,8 +314,6 @@ class MedicalInfo {
     return other is MedicalInfo &&
         other.ckdDiagnosisDate == ckdDiagnosisDate &&
         other.irisStage == irisStage &&
-        other.lastCheckupDate == lastCheckupDate &&
-        other.notes == notes &&
         other.labValues == labValues &&
         other.latestLabResult == latestLabResult;
   }
@@ -359,8 +323,6 @@ class MedicalInfo {
     return Object.hash(
       ckdDiagnosisDate,
       irisStage,
-      lastCheckupDate,
-      notes,
       labValues,
       latestLabResult,
     );
@@ -371,8 +333,6 @@ class MedicalInfo {
     return 'MedicalInfo('
         'ckdDiagnosisDate: $ckdDiagnosisDate, '
         'irisStage: $irisStage, '
-        'lastCheckupDate: $lastCheckupDate, '
-        'notes: $notes, '
         'labValues: $labValues, '
         'latestLabResult: $latestLabResult'
         ')';

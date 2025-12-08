@@ -881,19 +881,32 @@ class PetService {
           preferredUnitSystem,
         );
 
-        batch.update(petRef, {
+        // Prepare batch update
+        final updateData = <String, dynamic>{
           'medicalInfo.latestLabResult': latestSummary.toJson(),
           'updatedAt': FieldValue.serverTimestamp(),
-        });
+        };
+
+        // Auto-update pet's current IRIS stage if lab result has one
+        if (labResult.metadata?.irisStage != null) {
+          updateData['medicalInfo.irisStage'] =
+              labResult.metadata!.irisStage!.name;
+        }
+
+        batch.update(petRef, updateData);
 
         // Commit the batch
         await batch.commit();
 
-        // Update cache with new latestLabResult (only if we updated it)
+        // Update cache with new latestLabResult and IRIS stage
+        // (only if we updated it)
         if (_cachedPrimaryPet?.id == petId) {
           _cachedPrimaryPet = _cachedPrimaryPet!.copyWith(
             medicalInfo: _cachedPrimaryPet!.medicalInfo.copyWith(
               latestLabResult: latestSummary,
+              irisStage:
+                  labResult.metadata?.irisStage ??
+                  _cachedPrimaryPet!.medicalInfo.irisStage,
             ),
             updatedAt: DateTime.now(),
           );
@@ -908,6 +921,9 @@ class PetService {
           _multiPetCache[petId] = _multiPetCache[petId]!.copyWith(
             medicalInfo: _multiPetCache[petId]!.medicalInfo.copyWith(
               latestLabResult: latestSummary,
+              irisStage:
+                  labResult.metadata?.irisStage ??
+                  _multiPetCache[petId]!.medicalInfo.irisStage,
             ),
             updatedAt: DateTime.now(),
           );

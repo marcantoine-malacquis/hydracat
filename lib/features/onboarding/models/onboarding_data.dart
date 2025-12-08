@@ -30,7 +30,6 @@ class OnboardingData {
     this.petWeightKg,
     this.ckdDiagnosisDate,
     this.irisStage,
-    this.notes,
     this.hasSkippedWelcome = false,
     this.useMetricUnits = true,
     this.bloodworkDate,
@@ -51,7 +50,6 @@ class OnboardingData {
       petWeightKg = null,
       ckdDiagnosisDate = null,
       irisStage = null,
-      notes = null,
       hasSkippedWelcome = false,
       useMetricUnits = true,
       bloodworkDate = null,
@@ -80,7 +78,6 @@ class OnboardingData {
       irisStage: json['irisStage'] != null
           ? IrisStage.fromString(json['irisStage'] as String)
           : null,
-      notes: json['notes'] as String?,
       hasSkippedWelcome: json['hasSkippedWelcome'] as bool? ?? false,
       useMetricUnits: json['useMetricUnits'] as bool? ?? true,
       bloodworkDate: json['bloodworkDate'] != null
@@ -125,9 +122,6 @@ class OnboardingData {
 
   /// Current IRIS stage
   final IrisStage? irisStage;
-
-  /// Additional notes
-  final String? notes;
 
   /// Whether the user skipped the welcome screen
   final bool hasSkippedWelcome;
@@ -174,7 +168,6 @@ class OnboardingData {
   bool get hasMedicalInfo =>
       ckdDiagnosisDate != null ||
       irisStage != null ||
-      (notes != null && notes!.isNotEmpty) ||
       hasLabValues;
 
   /// Whether onboarding is complete
@@ -210,7 +203,6 @@ class OnboardingData {
       'petWeightKg': petWeightKg,
       'ckdDiagnosisDate': ckdDiagnosisDate?.toIso8601String(),
       'irisStage': irisStage?.name,
-      'notes': notes,
       'hasSkippedWelcome': hasSkippedWelcome,
       'useMetricUnits': useMetricUnits,
       'bloodworkDate': bloodworkDate?.toIso8601String(),
@@ -232,7 +224,6 @@ class OnboardingData {
     Object? petWeightKg = _undefined,
     Object? ckdDiagnosisDate = _undefined,
     Object? irisStage = _undefined,
-    Object? notes = _undefined,
     bool? hasSkippedWelcome,
     bool? useMetricUnits,
     Object? bloodworkDate = _undefined,
@@ -261,7 +252,6 @@ class OnboardingData {
       irisStage: irisStage == _undefined
           ? this.irisStage
           : irisStage as IrisStage?,
-      notes: notes == _undefined ? this.notes : notes as String?,
       hasSkippedWelcome: hasSkippedWelcome ?? this.hasSkippedWelcome,
       useMetricUnits: useMetricUnits ?? this.useMetricUnits,
       bloodworkDate: bloodworkDate == _undefined
@@ -294,7 +284,6 @@ class OnboardingData {
     return copyWith(
       ckdDiagnosisDate: null,
       irisStage: null,
-      notes: null,
       bloodworkDate: null,
       creatinineMgDl: null,
       bunMgDl: null,
@@ -404,7 +393,6 @@ class OnboardingData {
     final medicalInfo = MedicalInfo(
       ckdDiagnosisDate: ckdDiagnosisDate,
       irisStage: irisStage,
-      notes: notes,
       labValues: labValues,
     );
 
@@ -439,7 +427,6 @@ class OnboardingData {
         other.petWeightKg == petWeightKg &&
         other.ckdDiagnosisDate == ckdDiagnosisDate &&
         other.irisStage == irisStage &&
-        other.notes == notes &&
         other.hasSkippedWelcome == hasSkippedWelcome &&
         other.useMetricUnits == useMetricUnits &&
         other.bloodworkDate == bloodworkDate &&
@@ -461,7 +448,6 @@ class OnboardingData {
       petWeightKg,
       ckdDiagnosisDate,
       irisStage,
-      notes,
       hasSkippedWelcome,
       useMetricUnits,
       bloodworkDate,
@@ -483,7 +469,6 @@ class OnboardingData {
         'petWeightKg: $petWeightKg, '
         'ckdDiagnosisDate: $ckdDiagnosisDate, '
         'irisStage: $irisStage, '
-        'notes: $notes, '
         'hasSkippedWelcome: $hasSkippedWelcome, '
         'useMetricUnits: $useMetricUnits, '
         'bloodworkDate: $bloodworkDate, '

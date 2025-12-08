@@ -359,7 +359,7 @@ class _LabValuesInputState extends State<LabValuesInput> {
           maxLines: 3,
           maxLength: 500,
           decoration: InputDecoration(
-            hintText: 'e.g., "Vet recommends monitoring hydration levels"',
+            hintText: 'e.g., "Checkup in 6 months"',
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: AppColors.border),

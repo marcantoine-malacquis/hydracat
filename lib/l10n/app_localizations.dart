@@ -376,18 +376,6 @@ abstract class AppLocalizations {
   /// **'Last Bloodwork Results'**
   String get lastBloodworkResults;
 
-  /// No description provided for @lastCheckupDateLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Last Checkup Date'**
-  String get lastCheckupDateLabel;
-
-  /// No description provided for @selectLastCheckupDate.
-  ///
-  /// In en, this message translates to:
-  /// **'Select last checkup date (optional)'**
-  String get selectLastCheckupDate;
-
   /// No description provided for @bloodworkDateLabel.
   ///
   /// In en, this message translates to:

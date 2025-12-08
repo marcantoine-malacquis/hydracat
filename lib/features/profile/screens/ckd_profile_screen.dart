@@ -3,12 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/constants/lab_reference_ranges.dart';
 import 'package:hydracat/core/theme/theme.dart';
-import 'package:hydracat/features/onboarding/widgets/iris_stage_selector.dart';
 import 'package:hydracat/features/profile/models/lab_measurement.dart';
 import 'package:hydracat/features/profile/models/lab_result.dart';
 import 'package:hydracat/features/profile/models/latest_lab_summary.dart';
 import 'package:hydracat/features/profile/models/medical_info.dart';
-import 'package:hydracat/features/profile/widgets/editable_medical_field.dart';
+import 'package:hydracat/features/profile/widgets/ckd_stage_hero_card.dart';
 import 'package:hydracat/features/profile/widgets/lab_history_section.dart';
 import 'package:hydracat/features/profile/widgets/lab_value_display_with_gauge.dart';
 import 'package:hydracat/features/profile/widgets/lab_values_entry_dialog.dart';
@@ -27,8 +26,6 @@ class CkdProfileScreen extends ConsumerStatefulWidget {
 class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
   // Local editing state
   IrisStage? _editingIrisStage;
-  DateTime? _editingLastCheckupDate;
-  String _editingNotes = '';
 
   // Track what's been modified
   bool _hasChanges = false;
@@ -37,11 +34,6 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
   // Error state
   String? _saveError;
 
-  // Edit mode tracking
-  bool _isEditingIrisStage = false;
-  bool _isEditingLastCheckup = false;
-  bool _isEditingNotes = false;
-
   @override
   void initState() {
     super.initState();
@@ -49,6 +41,20 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
     // Load lab results after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(profileProvider.notifier).loadLabResults();
+
+      // Listen to changes in primaryPet.medicalInfo.irisStage
+      // This will react when lab results update the IRIS stage
+      ref.listenManual(
+        primaryPetProvider,
+        (previous, next) {
+          final previousStage = previous?.medicalInfo.irisStage;
+          final nextStage = next?.medicalInfo.irisStage;
+          if (previousStage != nextStage) {
+            // IRIS stage changed externally (e.g., from lab result save)
+            _syncWithProvider();
+          }
+        },
+      );
     });
   }
 
@@ -60,18 +66,28 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
       setState(() {
         _editingIrisStage = medicalInfo.irisStage;
         // Lab values removed - now using labResults subcollection
-        _editingLastCheckupDate = medicalInfo.lastCheckupDate;
-        _editingNotes = medicalInfo.notes ?? '';
       });
     }
   }
 
-  /// Mark that changes have been made
-  void _markAsChanged() {
+  /// Sync local editing state with provider data
+  /// Called when provider data changes externally (e.g., lab result save)
+  /// Only updates if there are no unsaved changes to avoid
+  /// overwriting user edits
+  void _syncWithProvider() {
     if (!_hasChanges) {
-      setState(() {
-        _hasChanges = true;
-      });
+      final primaryPet = ref.read(primaryPetProvider);
+      if (primaryPet?.medicalInfo != null) {
+        final medicalInfo = primaryPet!.medicalInfo;
+        final newIrisStage = medicalInfo.irisStage;
+
+        // Only update if the value actually changed externally
+        if (_editingIrisStage != newIrisStage) {
+          setState(() {
+            _editingIrisStage = newIrisStage;
+          });
+        }
+      }
     }
   }
 
@@ -92,8 +108,6 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
       final updatedMedicalInfo = primaryPet.medicalInfo.copyWith(
         irisStage: _editingIrisStage,
         // labValues removed - now using labResults subcollection
-        lastCheckupDate: _editingLastCheckupDate,
-        notes: _editingNotes.trim().isEmpty ? null : _editingNotes.trim(),
       );
 
       // Validate the updated medical info
@@ -114,10 +128,6 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
       // Reset change tracking
       setState(() {
         _hasChanges = false;
-        _isEditingIrisStage = false;
-        // Lab values edit mode removed
-        _isEditingLastCheckup = false;
-        _isEditingNotes = false;
       });
 
       // Show success feedback
@@ -346,11 +356,12 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
         );
       }
 
-      // Create metadata if we have vet notes
+      // Create metadata if we have vet notes or IRIS stage
       LabResultMetadata? metadata;
-      if (data['vetNotes'] != null) {
+      if (data['vetNotes'] != null || data['irisStage'] != null) {
         metadata = LabResultMetadata(
           vetNotes: data['vetNotes'] as String?,
+          irisStage: data['irisStage'] as IrisStage?,
           source: 'manual',
         );
       }
@@ -372,6 +383,9 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
           );
 
       if (success && mounted) {
+        // Sync local state with updated provider data
+        // (IRIS stage may have changed)
+        _syncWithProvider();
         HydraSnackBar.showSuccess(context, 'Lab values saved successfully');
       } else if (mounted) {
         setState(() {
@@ -452,16 +466,6 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
 
                     const SizedBox(height: AppSpacing.xl),
 
-                    // Last Checkup Section
-                    _buildLastCheckupSection(),
-
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // Notes Section
-                    _buildNotesSection(),
-
-                    const SizedBox(height: AppSpacing.xl),
-
                     // Error message
                     if (_saveError != null) ...[
                       Container(
@@ -526,74 +530,8 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
 
   /// Build IRIS Stage section
   Widget _buildIrisStageSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'IRIS Stage',
-          style: AppTextStyles.h3.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-
-        if (_isEditingIrisStage) ...[
-          // Editing mode
-          IrisStageSelector(
-            selectedStage: _editingIrisStage,
-            hasUserSelected: true,
-            onStageChanged: (stage) {
-              setState(() {
-                _editingIrisStage = stage;
-                _markAsChanged();
-              });
-            },
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: HydraButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEditingIrisStage = false;
-                      // Reset to original value
-                      _initializeFromProfile();
-                    });
-                  },
-                  variant: HydraButtonVariant.secondary,
-                  child: const Text('Cancel'),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: HydraButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEditingIrisStage = false;
-                    });
-                  },
-                  child: const Text('Done'),
-                ),
-              ),
-            ],
-          ),
-        ] else ...[
-          // Display mode
-          EditableMedicalField(
-            label: 'IRIS Stage',
-            value: _editingIrisStage?.displayName ?? 'No information',
-            isEmpty: _editingIrisStage == null,
-            icon: Icons.medical_information,
-            onEdit: () {
-              setState(() {
-                _isEditingIrisStage = true;
-              });
-            },
-          ),
-        ],
-      ],
+    return CkdStageHeroCard(
+      stage: _editingIrisStage,
     );
   }
 
@@ -712,8 +650,8 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
                   future: fullLabResult != null
                       ? Future.value(fullLabResult)
                       : ref
-                          .read(profileProvider.notifier)
-                          .getLabResult(latestResult.labResultId),
+                            .read(profileProvider.notifier)
+                            .getLabResult(latestResult.labResultId),
                   builder: (context, snapshot) {
                     final labResult = snapshot.data;
                     final vetNotes = labResult?.metadata?.vetNotes;
@@ -864,205 +802,5 @@ class _CkdProfileScreenState extends ConsumerState<CkdProfileScreen> {
   /// Get BUN unit from latest result (with fallback)
   String _getBunUnit(LatestLabSummary? result) {
     return result?.preferredUnitSystem == 'si' ? 'mmol/L' : 'mg/dL';
-  }
-
-  /// Build Last Checkup section
-  Widget _buildLastCheckupSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Last Vet Checkup',
-          style: AppTextStyles.h3.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-
-        if (_isEditingLastCheckup) ...[
-          // Editing mode
-          GestureDetector(
-            onTap: () async {
-              final selectedDate = await HydraDatePicker.show(
-                context: context,
-                initialDate: _editingLastCheckupDate ?? DateTime.now(),
-                firstDate: DateTime.now().subtract(
-                  const Duration(days: 365 * 3),
-                ),
-                lastDate: DateTime.now(),
-              );
-
-              if (selectedDate != null) {
-                setState(() {
-                  _editingLastCheckupDate = selectedDate;
-                  _markAsChanged();
-                });
-              }
-            },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.border),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.medical_services_outlined,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Text(
-                    _editingLastCheckupDate != null
-                        ? _formatDate(_editingLastCheckupDate!)
-                        : 'Select last checkup date',
-                    style: AppTextStyles.body.copyWith(
-                      color: _editingLastCheckupDate != null
-                          ? AppColors.textPrimary
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: HydraButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEditingLastCheckup = false;
-                      // Reset to original value
-                      _initializeFromProfile();
-                    });
-                  },
-                  variant: HydraButtonVariant.secondary,
-                  child: const Text('Cancel'),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: HydraButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEditingLastCheckup = false;
-                    });
-                  },
-                  child: const Text('Done'),
-                ),
-              ),
-            ],
-          ),
-        ] else ...[
-          // Display mode
-          EditableDateField(
-            label: 'Last Vet Checkup',
-            date: _editingLastCheckupDate,
-            icon: Icons.medical_services,
-            onEdit: () {
-              setState(() {
-                _isEditingLastCheckup = true;
-              });
-            },
-          ),
-        ],
-      ],
-    );
-  }
-
-  /// Build Notes section
-  Widget _buildNotesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Additional Notes',
-          style: AppTextStyles.h3.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-
-        if (_isEditingNotes) ...[
-          // Editing mode
-          HydraTextFormField(
-            initialValue: _editingNotes,
-            maxLines: 4,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: InputDecoration(
-              hintText: 'Any additional medical information or notes...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.primary),
-              ),
-            ),
-            onChanged: (value) {
-              setState(() {
-                _editingNotes = value;
-                _markAsChanged();
-              });
-            },
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: HydraButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEditingNotes = false;
-                      // Reset to original value
-                      _initializeFromProfile();
-                    });
-                  },
-                  variant: HydraButtonVariant.secondary,
-                  child: const Text('Cancel'),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: HydraButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEditingNotes = false;
-                    });
-                  },
-                  child: const Text('Done'),
-                ),
-              ),
-            ],
-          ),
-        ] else ...[
-          // Display mode
-          EditableMedicalField(
-            label: 'Additional Notes',
-            value: _editingNotes.trim().isEmpty
-                ? 'No information'
-                : _editingNotes.trim(),
-            isEmpty: _editingNotes.trim().isEmpty,
-            icon: Icons.notes,
-            onEdit: () {
-              setState(() {
-                _isEditingNotes = true;
-              });
-            },
-          ),
-        ],
-      ],
-    );
   }
 }

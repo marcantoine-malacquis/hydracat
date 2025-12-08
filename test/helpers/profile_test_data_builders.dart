@@ -168,16 +168,12 @@ class MedicalInfoBuilder {
     return MedicalInfoBuilder()
       ..withCkdDiagnosisDate(DateTime(2022, 6, 15))
       ..withIrisStage(IrisStage.stage2)
-      ..withLabValues(LabValuesBuilder().build())
-      ..withLastCheckupDate(DateTime(2024, 1, 10))
-      ..withNotes('Regular monitoring required');
+      ..withLabValues(LabValuesBuilder().build());
   }
 
   DateTime? _ckdDiagnosisDate;
   IrisStage? _irisStage;
   LabValues? _labValues;
-  DateTime? _lastCheckupDate;
-  String? _notes;
 
   /// Sets the CKD diagnosis date
   MedicalInfoBuilder withCkdDiagnosisDate(DateTime? date) {
@@ -197,26 +193,12 @@ class MedicalInfoBuilder {
     return this;
   }
 
-  /// Sets the last checkup date
-  MedicalInfoBuilder withLastCheckupDate(DateTime? date) {
-    _lastCheckupDate = date;
-    return this;
-  }
-
-  /// Sets the notes
-  MedicalInfoBuilder withNotes(String? notes) {
-    _notes = notes;
-    return this;
-  }
-
   /// Builds the MedicalInfo instance
   MedicalInfo build() {
     return MedicalInfo(
       ckdDiagnosisDate: _ckdDiagnosisDate,
       irisStage: _irisStage,
       labValues: _labValues,
-      lastCheckupDate: _lastCheckupDate,
-      notes: _notes,
     );
   }
 }

@@ -9,6 +9,7 @@ import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/core/utils/number_input_utils.dart';
 import 'package:hydracat/features/logging/widgets/logging_popup_wrapper.dart';
 import 'package:hydracat/features/profile/models/lab_result.dart';
+import 'package:hydracat/features/profile/models/medical_info.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 import 'package:intl/intl.dart';
 
@@ -55,6 +56,7 @@ class _LabValuesEntryDialogState extends ConsumerState<LabValuesEntryDialog> {
 
   late DateTime _selectedDate;
   String _unitSystem = 'us'; // 'us' or 'si'
+  IrisStage? _selectedIrisStage;
   String? _errorMessage;
 
   @override
@@ -97,6 +99,9 @@ class _LabValuesEntryDialogState extends ConsumerState<LabValuesEntryDialog> {
       if (result.metadata?.vetNotes != null) {
         _vetNotesController.text = result.metadata!.vetNotes!;
       }
+
+      // Pre-fill IRIS stage
+      _selectedIrisStage = result.metadata?.irisStage;
     }
 
     _notesFocusNode.addListener(() {
@@ -190,6 +195,7 @@ class _LabValuesEntryDialogState extends ConsumerState<LabValuesEntryDialog> {
       'sdma': sdma,
       'sdmaUnit': sdmaUnit,
       'vetNotes': vetNotes.isEmpty ? null : vetNotes,
+      'irisStage': _selectedIrisStage,
       'unitSystem': _unitSystem,
     };
   }
@@ -313,6 +319,60 @@ class _LabValuesEntryDialogState extends ConsumerState<LabValuesEntryDialog> {
     );
   }
 
+  Widget _buildIrisStageSelector() {
+    final selectedSegment = _segmentFromStage(_selectedIrisStage);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'IRIS Stage',
+          style: AppTextStyles.body.copyWith(
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Center(
+          child: HydraSlidingSegmentedControl<_IrisStageSegment>(
+            value: selectedSegment,
+            onChanged: (segment) {
+              setState(() {
+                _selectedIrisStage = _stageFromSegment(segment);
+              });
+            },
+            segments: const {
+              _IrisStageSegment.stage1: Text('1'),
+              _IrisStageSegment.stage2: Text('2'),
+              _IrisStageSegment.stage3: Text('3'),
+              _IrisStageSegment.stage4: Text('4'),
+              _IrisStageSegment.unknown: Text('N/A'),
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  _IrisStageSegment _segmentFromStage(IrisStage? stage) {
+    return switch (stage) {
+      IrisStage.stage1 => _IrisStageSegment.stage1,
+      IrisStage.stage2 => _IrisStageSegment.stage2,
+      IrisStage.stage3 => _IrisStageSegment.stage3,
+      IrisStage.stage4 => _IrisStageSegment.stage4,
+      null => _IrisStageSegment.unknown,
+    };
+  }
+
+  IrisStage? _stageFromSegment(_IrisStageSegment segment) {
+    return switch (segment) {
+      _IrisStageSegment.stage1 => IrisStage.stage1,
+      _IrisStageSegment.stage2 => IrisStage.stage2,
+      _IrisStageSegment.stage3 => IrisStage.stage3,
+      _IrisStageSegment.stage4 => IrisStage.stage4,
+      _IrisStageSegment.unknown => null,
+    };
+  }
+
   Widget _buildLabValueField({
     required TextEditingController controller,
     required String label,
@@ -322,21 +382,11 @@ class _LabValuesEntryDialogState extends ConsumerState<LabValuesEntryDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        RichText(
-          text: TextSpan(
-            text: label,
-            style: AppTextStyles.body.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w500,
-            ),
-            children: [
-              TextSpan(
-                text: ' ($unit)',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
+        Text(
+          label,
+          style: AppTextStyles.body.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -349,15 +399,20 @@ class _LabValuesEntryDialogState extends ConsumerState<LabValuesEntryDialog> {
           decoration: InputDecoration(
             hintText: hintText,
             suffixIcon: IgnorePointer(
-              child: Container(
+              child: Padding(
                 padding: const EdgeInsets.only(
                   right: AppSpacing.md,
                 ),
-                alignment: Alignment.centerRight,
-                width: 60,
-                child: Text(
-                  unit,
-                  style: Theme.of(context).textTheme.bodyMedium,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  widthFactor: 1,
+                  child: Text(
+                    unit,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    maxLines: 1,
+                    overflow: TextOverflow.visible,
+                    textAlign: TextAlign.right,
+                  ),
                 ),
               ),
             ),
@@ -486,18 +541,13 @@ class _LabValuesEntryDialogState extends ConsumerState<LabValuesEntryDialog> {
         children: [
           const SizedBox(height: AppSpacing.sm),
 
-          // Unit system toggle
-          _buildUnitSystemToggle(),
+          // IRIS Stage selector
+          _buildIrisStageSelector(),
 
           const SizedBox(height: AppSpacing.md),
 
-          // Info text
-          Text(
-            'Enter any values you have available. All fields are optional.',
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
+          // Unit system toggle
+          _buildUnitSystemToggle(),
 
           const SizedBox(height: AppSpacing.md),
 
@@ -533,7 +583,7 @@ class _LabValuesEntryDialogState extends ConsumerState<LabValuesEntryDialog> {
 
           // Vet notes
           Text(
-            'Veterinarian Notes (Optional)',
+            'Veterinarian Notes',
             style: AppTextStyles.body.copyWith(
               fontWeight: FontWeight.w500,
             ),
@@ -546,7 +596,7 @@ class _LabValuesEntryDialogState extends ConsumerState<LabValuesEntryDialog> {
             keyboardType: TextInputType.text,
             textInputAction: TextInputAction.done,
             decoration: InputDecoration(
-              hintText: 'e.g., "Vet recommends monitoring hydration levels"',
+              hintText: 'e.g., "Checkup in 6 months"',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -563,10 +613,9 @@ class _LabValuesEntryDialogState extends ConsumerState<LabValuesEntryDialog> {
                 child: Text('${_vetNotesController.text.length}/500'),
               ),
             ),
-            minLines: _vetNotesController.text.isNotEmpty ? 3 : 1,
-            maxLines: 5,
+            minLines: 1,
             onChanged: (_) {
-              setState(() {}); // Update counter and line count
+              setState(() {}); // Update counter
             },
           ),
 
@@ -605,4 +654,13 @@ class _LabValuesEntryDialogState extends ConsumerState<LabValuesEntryDialog> {
       ),
     );
   }
+}
+
+/// Internal enum for IRIS stage segmented control
+enum _IrisStageSegment {
+  stage1,
+  stage2,
+  stage3,
+  stage4,
+  unknown,
 }

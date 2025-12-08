@@ -157,12 +157,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lastBloodworkResults => 'Last Bloodwork Results';
 
   @override
-  String get lastCheckupDateLabel => 'Last Checkup Date';
-
-  @override
-  String get selectLastCheckupDate => 'Select last checkup date (optional)';
-
-  @override
   String get bloodworkDateLabel => 'Bloodwork Date';
 
   @override

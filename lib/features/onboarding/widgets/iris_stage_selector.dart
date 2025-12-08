@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/profile/models/medical_info.dart';
+import 'package:hydracat/shared/widgets/inputs/hydra_sliding_segmented_control.dart';
 
 /// Widget for selecting IRIS stage with horizontal button layout
 class IrisStageSelector extends StatelessWidget {
@@ -28,43 +29,22 @@ class IrisStageSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final selectedSegment = _segmentFromStage(selectedStage);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Stage selection buttons
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _buildStageButton(
-                context,
-                stage: IrisStage.stage1,
-                label: '1',
-                isFirst: true,
-              ),
-              _buildStageButton(
-                context,
-                stage: IrisStage.stage2,
-                label: '2',
-              ),
-              _buildStageButton(
-                context,
-                stage: IrisStage.stage3,
-                label: '3',
-              ),
-              _buildStageButton(
-                context,
-                stage: IrisStage.stage4,
-                label: '4',
-              ),
-              _buildStageButton(
-                context,
-                stage: null,
-                label: 'Unknown',
-                isUnknown: true,
-                isLast: true,
-              ),
-            ],
+        Center(
+          child: HydraSlidingSegmentedControl<_IrisStageSegment>(
+            value: selectedSegment,
+            onChanged: (segment) => onStageChanged(_stageFromSegment(segment)),
+            segments: const {
+              _IrisStageSegment.stage1: Text('1'),
+              _IrisStageSegment.stage2: Text('2'),
+              _IrisStageSegment.stage3: Text('3'),
+              _IrisStageSegment.stage4: Text('4'),
+              _IrisStageSegment.unknown: Text('N/A'),
+            },
           ),
         ),
 
@@ -137,57 +117,31 @@ class IrisStageSelector extends StatelessWidget {
     );
   }
 
-  /// Build individual stage selection button
-  Widget _buildStageButton(
-    BuildContext context, {
-    required IrisStage? stage,
-    required String label,
-    bool isFirst = false,
-    bool isLast = false,
-    bool isUnknown = false,
-  }) {
-    // Only select the button if it matches the selectedStage exactly
-    // For the "Unknown" button (stage == null), only select if user
-    //has made a selection
-    final isSelected =
-        stage == selectedStage && (stage != null || hasUserSelected);
-
-    return Padding(
-      padding: EdgeInsets.only(
-        right: isLast ? 0 : AppSpacing.sm,
-      ),
-      child: SizedBox(
-        height: 56,
-        child: ElevatedButton(
-          onPressed: () => onStageChanged(stage),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: isSelected
-                ? (isUnknown ? AppColors.textSecondary : AppColors.primary)
-                : AppColors.surface,
-            foregroundColor: isSelected ? Colors.white : AppColors.textPrimary,
-            elevation: isSelected ? 2 : 0,
-            side: BorderSide(
-              color: isSelected
-                  ? (isUnknown ? AppColors.textSecondary : AppColors.primary)
-                  : AppColors.border,
-              width: isSelected ? 2 : 1,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: EdgeInsets.symmetric(
-              horizontal: isUnknown ? AppSpacing.lg : AppSpacing.md,
-            ),
-          ),
-          child: Text(
-            label,
-            style: AppTextStyles.body.copyWith(
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              color: isSelected ? Colors.white : AppColors.textPrimary,
-            ),
-          ),
-        ),
-      ),
-    );
+  _IrisStageSegment _segmentFromStage(IrisStage? stage) {
+    return switch (stage) {
+      IrisStage.stage1 => _IrisStageSegment.stage1,
+      IrisStage.stage2 => _IrisStageSegment.stage2,
+      IrisStage.stage3 => _IrisStageSegment.stage3,
+      IrisStage.stage4 => _IrisStageSegment.stage4,
+      null => _IrisStageSegment.unknown,
+    };
   }
+
+  IrisStage? _stageFromSegment(_IrisStageSegment segment) {
+    return switch (segment) {
+      _IrisStageSegment.stage1 => IrisStage.stage1,
+      _IrisStageSegment.stage2 => IrisStage.stage2,
+      _IrisStageSegment.stage3 => IrisStage.stage3,
+      _IrisStageSegment.stage4 => IrisStage.stage4,
+      _IrisStageSegment.unknown => null,
+    };
+  }
+}
+
+enum _IrisStageSegment {
+  stage1,
+  stage2,
+  stage3,
+  stage4,
+  unknown,
 }

@@ -78,7 +78,7 @@ class LabHistoryCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        'Stage ${labResult.metadata!.irisStage}',
+                        'Stage ${labResult.metadata!.irisStage!.stageNumber}',
                         style: AppTextStyles.caption.copyWith(
                           color: AppColors.primary,
                           fontSize: 11,

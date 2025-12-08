@@ -121,8 +121,6 @@
   "@_ONBOARDING_MEDICAL_INFO": {},
   "medicalInfoTitle": "Medical Information",
   "lastBloodworkResults": "Last Bloodwork Results",
-  "lastCheckupDateLabel": "Last Checkup Date",
-  "selectLastCheckupDate": "Select last checkup date (optional)",
   "bloodworkDateLabel": "Bloodwork Date",
   "selectBloodworkDate": "Select bloodwork date",
   "bunLabel": "BUN (Blood Urea Nitrogen)",

@@ -496,66 +496,6 @@ class ProfileValidationService {
     return const ValidationResult.success();
   }
 
-  /// Validates checkup date
-  ValidationResult validateCheckupDate(DateTime? checkupDate) {
-    final errors = <ValidationError>[];
-    final warnings = <String>[];
-
-    if (checkupDate != null) {
-      final now = DateTime.now();
-
-      // Date cannot be in the future
-      if (checkupDate.isAfter(now)) {
-        errors.add(
-          const ValidationError(
-            message: 'Checkup date cannot be in the future',
-            fieldName: 'checkupDate',
-            type: ValidationErrorType.invalid,
-          ),
-        );
-      }
-
-      // Warning if checkup was very long ago
-      final daysSinceCheckup = now.difference(checkupDate).inDays;
-      if (daysSinceCheckup > 365) {
-        warnings.add(
-          'Last checkup was over a year ago. Regular checkups are '
-          'important for CKD management',
-        );
-      }
-    }
-
-    if (errors.isNotEmpty) {
-      return ValidationResult.failure(errors);
-    } else if (warnings.isNotEmpty) {
-      return ValidationResult.withWarnings(warnings);
-    }
-
-    return const ValidationResult.success();
-  }
-
-  /// Validates medical notes (basic length and content check)
-  ValidationResult validateMedicalNotes(String? notes) {
-    final warnings = <String>[];
-
-    if (notes != null && notes.trim().isNotEmpty) {
-      final trimmedNotes = notes.trim();
-
-      // Warning for very long notes (might be better split up)
-      if (trimmedNotes.length > 1000) {
-        warnings.add(
-          'Very long notes might be better organized in separate sections',
-        );
-      }
-    }
-
-    if (warnings.isNotEmpty) {
-      return ValidationResult.withWarnings(warnings);
-    }
-
-    return const ValidationResult.success();
-  }
-
   /// Creates a ProfileValidationException from validation results
   ProfileValidationException createValidationException(
     ValidationResult result,

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/features/profile/models/lab_measurement.dart';
+import 'package:hydracat/features/profile/models/medical_info.dart';
 import 'package:uuid/uuid.dart';
 
 /// Sentinel value for copyWith methods to distinguish between
@@ -25,7 +26,9 @@ class LabResultMetadata {
       panelType: json['panelType'] as String?,
       enteredBy: json['enteredBy'] as String?,
       source: json['source'] as String?,
-      irisStage: json['irisStage'] as String?,
+      irisStage: json['irisStage'] != null
+          ? IrisStage.fromString(json['irisStage'] as String)
+          : null,
       vetNotes: json['vetNotes'] as String?,
     );
   }
@@ -39,8 +42,8 @@ class LabResultMetadata {
   /// Source of the data (e.g., "manual", "import", "vetUpload")
   final String? source;
 
-  /// IRIS stage if provided with the panel (e.g., "1", "2", "3", "4")
-  final String? irisStage;
+  /// IRIS stage if provided with the panel
+  final IrisStage? irisStage;
 
   /// Free-form vet comments/notes
   final String? vetNotes;
@@ -51,7 +54,7 @@ class LabResultMetadata {
       if (panelType != null) 'panelType': panelType,
       if (enteredBy != null) 'enteredBy': enteredBy,
       if (source != null) 'source': source,
-      if (irisStage != null) 'irisStage': irisStage,
+      if (irisStage != null) 'irisStage': irisStage!.name,
       if (vetNotes != null) 'vetNotes': vetNotes,
     };
   }
@@ -71,7 +74,7 @@ class LabResultMetadata {
           enteredBy == _undefined ? this.enteredBy : enteredBy as String?,
       source: source == _undefined ? this.source : source as String?,
       irisStage:
-          irisStage == _undefined ? this.irisStage : irisStage as String?,
+          irisStage == _undefined ? this.irisStage : irisStage as IrisStage?,
       vetNotes: vetNotes == _undefined ? this.vetNotes : vetNotes as String?,
     );
   }

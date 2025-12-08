@@ -27,8 +27,6 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
   IrisStage? _selectedIrisStage;
   bool _hasSelectedIrisStage = true; // Default to Unknown selected
   LabValueData _labValues = const LabValueData();
-  DateTime? _lastCheckupDate;
-  String _notes = '';
 
   // Error states
   String? _irisStageError;
@@ -36,7 +34,6 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
   String? _bunError;
   String? _sdmaError;
   String? _bloodworkDateError;
-  String? _lastCheckupError;
 
   bool _isLoading = false;
 
@@ -63,7 +60,6 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
           bloodworkDate: onboardingData.bloodworkDate,
           vetNotes: onboardingData.vetNotes,
         );
-        _notes = onboardingData.notes ?? '';
       });
     }
   }
@@ -76,7 +72,6 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
       _bunError = null;
       _sdmaError = null;
       _bloodworkDateError = null;
-      _lastCheckupError = null;
     });
 
     var isValid = true;
@@ -125,14 +120,6 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
       }
     }
 
-    // Validate last checkup date
-    if (_lastCheckupDate != null && _lastCheckupDate!.isAfter(DateTime.now())) {
-      setState(() {
-        _lastCheckupError = 'Last checkup date cannot be in the future';
-      });
-      isValid = false;
-    }
-
     return isValid;
   }
 
@@ -158,7 +145,6 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
         sdmaMcgDl: _labValues.sdma,
         bloodworkDate: _labValues.bloodworkDate,
         vetNotes: _labValues.vetNotes,
-        notes: _notes.trim().isEmpty ? null : _notes.trim(),
       );
 
       // Update onboarding data
@@ -238,33 +224,6 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
     if (previousRoute != null && mounted && context.mounted) {
       // Navigate to previous screen
       context.go(previousRoute);
-    }
-  }
-
-  /// Select last checkup date
-  Future<void> _selectLastCheckupDate() async {
-    final selectedDate = await HydraDatePicker.show(
-      context: context,
-      initialDate: _lastCheckupDate ?? DateTime.now(),
-      firstDate: DateTime.now().subtract(const Duration(days: 365 * 3)),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: AppColors.primary,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (selectedDate != null) {
-      setState(() {
-        _lastCheckupDate = selectedDate;
-        _lastCheckupError = null;
-      });
     }
   }
 
@@ -383,101 +342,6 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
 
           const SizedBox(height: AppSpacing.xl),
 
-          // Last Checkup Section
-          Text(
-            'Last Vet Checkup',
-            style: AppTextStyles.h3.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          GestureDetector(
-            onTap: _selectLastCheckupDate,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: _lastCheckupError != null
-                      ? AppColors.error
-                      : AppColors.border,
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.medical_services_outlined,
-                    color: _lastCheckupDate != null
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Text(
-                    _lastCheckupDate != null
-                        ? _formatDate(_lastCheckupDate!)
-                        : 'Select last checkup date (optional)',
-                    style: AppTextStyles.body.copyWith(
-                      color: _lastCheckupDate != null
-                          ? AppColors.textPrimary
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_lastCheckupError != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              _lastCheckupError!,
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.error,
-              ),
-            ),
-          ],
-
-          const SizedBox(height: AppSpacing.xl),
-
-          // Additional Notes Section
-          Text(
-            'Additional Notes',
-            style: AppTextStyles.h3.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          TextFormField(
-            initialValue: _notes,
-            maxLines: 4,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: InputDecoration(
-              hintText:
-                  'Any other relevant medical information or notes '
-                  'from your vet (optional)...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.primary),
-              ),
-            ),
-            onChanged: (value) {
-              _notes = value;
-            },
-          ),
-
-          const SizedBox(height: AppSpacing.xl),
-
           // Continue Button
           HydraButton(
             onPressed: _isLoading ? null : _saveAndContinue,
@@ -521,9 +385,5 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
         ],
       ),
     );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
   }
 }

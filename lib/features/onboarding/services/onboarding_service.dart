@@ -748,7 +748,7 @@ class OnboardingService {
         source: 'manual',
         enteredBy: data.userId,
         vetNotes: data.vetNotes,
-        irisStage: data.irisStage?.name,
+        irisStage: data.irisStage,
       );
     }
 
