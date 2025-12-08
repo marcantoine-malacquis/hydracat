@@ -1,113 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
-import 'package:hydracat/core/constants/app_icons.dart';
-import 'package:hydracat/core/icons/icon_provider.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
-import 'package:hydracat/features/logging/services/overlay_service.dart';
+import 'package:hydracat/features/logging/widgets/logging_popup_wrapper.dart';
+import 'package:hydracat/shared/widgets/bottom_sheets/bottom_sheets.dart';
 
-/// Full-screen popup showing calendar help information and legend.
+/// Bottom sheet showing calendar help information and legend.
 ///
 /// Currently displays:
 /// - Status color legend explaining dot meanings
 ///
-/// Uses [OverlayService.showFullScreenPopup] with slideUp animation.
+/// Uses [LoggingPopupWrapper] for consistent bottom sheet presentation.
 class CalendarHelpPopup extends StatelessWidget {
   /// Creates a calendar help popup.
   const CalendarHelpPopup({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: Material(
-        type: MaterialType.transparency,
-        child: Semantics(
-          liveRegion: true,
-          label: 'Calendar legend help',
-          child: Container(
-            margin: EdgeInsets.only(
-              left: AppSpacing.md,
-              right: AppSpacing.md,
-              bottom: mediaQuery.padding.bottom + AppSpacing.sm,
-            ),
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            constraints: BoxConstraints(
-              maxHeight: mediaQuery.size.height * 0.75,
-            ),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(context),
-                  const SizedBox(height: AppSpacing.md),
-                  Divider(
-                    height: 1,
-                    thickness: 1,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.outlineVariant.withValues(alpha: 0.3),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _buildContent(context),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Builds the header with title and close button.
-  Widget _buildHeader(BuildContext context) {
-    return Row(
-      children: [
-        const Expanded(
-          child: Text(
-            'Calendar Legend',
-            style: AppTextStyles.h2,
-          ),
-        ),
-        Builder(
-          builder: (context) {
-            final platform = Theme.of(context).platform;
-            final isCupertino =
-                platform == TargetPlatform.iOS ||
-                platform == TargetPlatform.macOS;
-            return SizedBox(
-              width: AppSpacing.minTouchTarget,
-              height: AppSpacing.minTouchTarget,
-              child: IconButton(
-                icon: Icon(
-                  IconProvider.resolveIconData(
-                    AppIcons.close,
-                    isCupertino: isCupertino,
-                  ),
-                ),
-                onPressed: OverlayService.hide,
-                tooltip: 'Close',
-                iconSize: 24,
-                padding: EdgeInsets.zero,
-              ),
-            );
-          },
-        ),
-      ],
+    return LoggingPopupWrapper(
+      title: 'Calendar Legend',
+      child: _buildContent(context),
     );
   }
 
@@ -121,19 +33,19 @@ class CalendarHelpPopup extends StatelessWidget {
           label: 'Complete',
           description: 'All scheduled treatments completed',
         ),
-        SizedBox(height: AppSpacing.sm),
+        SizedBox(height: AppSpacing.md),
         _LegendItem(
           color: Color(0xFFFFB300),
           label: 'Today',
           description: 'Current day (until all treatments complete)',
         ),
-        SizedBox(height: AppSpacing.sm),
+        SizedBox(height: AppSpacing.md),
         _LegendItem(
           color: AppColors.warning,
           label: 'Missed',
           description: 'At least one treatment missed',
         ),
-        SizedBox(height: AppSpacing.sm),
+        SizedBox(height: AppSpacing.md),
         _LegendItem(
           color: null,
           label: 'No dot',
@@ -250,19 +162,24 @@ class _LegendItem extends StatelessWidget {
   }
 }
 
-/// Shows the calendar help popup with blur background.
+/// Shows the calendar help popup as a bottom sheet.
 ///
 /// Displays calendar legend and help information.
-/// Uses slideUp animation and is dismissible by tapping background or close
-/// button.
+/// Uses platform-adaptive bottom sheet presentation and is dismissible by
+/// dragging down, tapping background, or close button.
 ///
 /// Example:
 /// ```dart
 /// showCalendarHelpPopup(context);
 /// ```
 void showCalendarHelpPopup(BuildContext context) {
-  OverlayService.showFullScreenPopup(
+  showHydraBottomSheet<void>(
     context: context,
-    child: const CalendarHelpPopup(),
+    isScrollControlled: true,
+    backgroundColor: AppColors.background,
+    builder: (sheetContext) => const HydraBottomSheet(
+      backgroundColor: AppColors.background,
+      child: CalendarHelpPopup(),
+    ),
   );
 }

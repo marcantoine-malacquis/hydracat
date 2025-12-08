@@ -486,12 +486,15 @@ class _ProfileScreenContent {
               final isCupertino =
                   platform == TargetPlatform.iOS ||
                   platform == TargetPlatform.macOS;
+              final medIcon = IconProvider.resolveIconData(
+                AppIcons.medication,
+                isCupertino: isCupertino,
+              );
               return NavigationCard(
                 title: 'Medication Schedule',
-                icon: IconProvider.resolveIconData(
-                  AppIcons.medication,
-                  isCupertino: isCupertino,
-                ),
+                icon: medIcon,
+                customIconAsset:
+                    IconProvider.resolveCustomAsset(AppIcons.medication),
                 metadata: metadata,
                 onTap: () => context.push('/profile/medication'),
                 margin: EdgeInsets.zero,

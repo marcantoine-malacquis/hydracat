@@ -35,8 +35,18 @@ class IconProvider {
 
   /// Checks if an icon requires custom rendering (SVG, etc.)
   static bool _isCustomIcon(String iconName) {
-    return iconName == AppIcons.profile;
+    return iconName == AppIcons.profile || iconName == AppIcons.medication;
     // logSession stays Material for now, will be custom later
+  }
+
+  /// Resolves the asset path for custom-rendered icons (SVG, etc.)
+  static String? resolveCustomAsset(String iconName) {
+    switch (iconName) {
+      case AppIcons.medication:
+        return 'assets/fonts/icons/medication_icon.svg';
+      default:
+        return null;
+    }
   }
 
   /// Resolves Material Design icons

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
+import 'package:hydracat/core/icons/icon_provider.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/home/models/pending_fluid_treatment.dart';
 import 'package:hydracat/shared/widgets/cards/hydra_card.dart';
-import 'package:hydracat/shared/widgets/icons/icon_container.dart';
 
 /// Card widget displaying pending fluid therapy status on the dashboard.
 ///
@@ -25,6 +26,12 @@ class PendingFluidCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isCupertino = theme.platform == TargetPlatform.iOS ||
+        theme.platform == TargetPlatform.macOS;
+    final fluidIcon = IconProvider.resolveIconData(
+      AppIcons.fluidTherapy,
+      isCupertino: isCupertino,
+    );
 
     return Semantics(
       label:
@@ -36,6 +43,16 @@ class PendingFluidCard extends StatelessWidget {
       button: true,
       child: HydraCard(
         onTap: onTap,
+        backgroundColor: fluidTreatment.hasOverdueTimes
+            ? AppColors.surface
+            : Color.alphaBlend(
+                AppColors.primary.withAlpha(8),
+                AppColors.surface,
+              ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
         borderColor: fluidTreatment.hasOverdueTimes
             ? AppColors.success
             : AppColors.border,
@@ -58,10 +75,17 @@ class PendingFluidCard extends StatelessWidget {
               : null,
           child: Row(
             children: [
-              // Fluid therapy icon with background circle
-              IconContainer(
-                icon: Icons.water_drop,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+              // Fluid therapy icon
+              SizedBox(
+                width: CardConstants.iconContainerSize,
+                height: CardConstants.iconContainerSize,
+                child: Center(
+                  child: Icon(
+                    fluidIcon ?? Icons.water_drop,
+                    size: 32,
+                    color: AppColors.primary,
+                  ),
+                ),
               ),
               const SizedBox(width: AppSpacing.md),
 
@@ -73,24 +97,24 @@ class PendingFluidCard extends StatelessWidget {
                     // Title
                     Text(
                       'Fluid Therapy',
-                      style: AppTextStyles.h3.copyWith(
-                        color: theme.colorScheme.onSurface,
+                      style: AppTextStyles.h2.copyWith(
+                        color: AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xs),
 
                     // Remaining volume
                     Text(
                       fluidTreatment.displayVolume,
                       style: AppTextStyles.body.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(width: AppSpacing.sm),
+              const SizedBox(width: AppSpacing.md),
 
               // Scheduled times
               Column(
@@ -101,7 +125,7 @@ class PendingFluidCard extends StatelessWidget {
                     style: AppTextStyles.caption.copyWith(
                       color: fluidTreatment.hasOverdueTimes
                           ? AppColors.success
-                          : theme.colorScheme.onSurfaceVariant,
+                          : AppColors.textSecondary,
                       fontWeight: fluidTreatment.hasOverdueTimes
                           ? FontWeight.w600
                           : null,
@@ -111,12 +135,15 @@ class PendingFluidCard extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(width: AppSpacing.xs),
+              const SizedBox(width: AppSpacing.md),
 
               // Chevron
               Icon(
-                Icons.chevron_right,
-                color: theme.colorScheme.onSurfaceVariant,
+                IconProvider.resolveIconData(
+                  AppIcons.chevronRight,
+                  isCupertino: isCupertino,
+                ),
+                color: AppColors.textSecondary,
                 size: 20,
               ),
             ],

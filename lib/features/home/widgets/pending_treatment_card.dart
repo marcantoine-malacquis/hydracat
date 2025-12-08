@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
+import 'package:hydracat/core/icons/icon_provider.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/home/models/pending_treatment.dart';
 import 'package:hydracat/shared/widgets/cards/hydra_card.dart';
-import 'package:hydracat/shared/widgets/icons/icon_container.dart';
 
 /// Card widget displaying a pending medication treatment on the dashboard.
 ///
@@ -26,9 +28,23 @@ class PendingTreatmentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isCupertino =
+        theme.platform == TargetPlatform.iOS ||
+        theme.platform == TargetPlatform.macOS;
+    final medIcon = IconProvider.resolveIconData(
+      AppIcons.medication,
+      isCupertino: isCupertino,
+    );
+    final medIconAsset = IconProvider.resolveCustomAsset(AppIcons.medication);
     final strengthText = treatment.displayStrength != null
         ? ' ${treatment.displayStrength}'
         : '';
+    final cardBackground = treatment.isOverdue
+        ? AppColors.surface
+        : Color.alphaBlend(
+            AppColors.primary.withAlpha(8),
+            AppColors.surface,
+          );
 
     return Semantics(
       label:
@@ -40,6 +56,11 @@ class PendingTreatmentCard extends StatelessWidget {
       button: true,
       child: HydraCard(
         onTap: onTap,
+        backgroundColor: cardBackground,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
         borderColor: treatment.isOverdue ? AppColors.success : AppColors.border,
         margin: const EdgeInsets.symmetric(
           vertical: CardConstants.cardMarginVertical,
@@ -60,10 +81,27 @@ class PendingTreatmentCard extends StatelessWidget {
               : null,
           child: Row(
             children: [
-              // Medication icon with background circle
-              IconContainer(
-                icon: Icons.medication,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+              // Medication icon in clinical container
+              SizedBox(
+                width: CardConstants.iconContainerSize,
+                height: CardConstants.iconContainerSize,
+                child: Center(
+                  child: medIconAsset != null
+                      ? SvgPicture.asset(
+                          medIconAsset,
+                          width: 32,
+                          height: 32,
+                          colorFilter: const ColorFilter.mode(
+                            AppColors.primary,
+                            BlendMode.srcIn,
+                          ),
+                        )
+                      : Icon(
+                          medIcon ?? Icons.medication,
+                          size: 32,
+                          color: AppColors.primary,
+                        ),
+                ),
               ),
               const SizedBox(width: AppSpacing.md),
 
@@ -78,8 +116,8 @@ class PendingTreatmentCard extends StatelessWidget {
                         children: [
                           TextSpan(
                             text: treatment.displayName,
-                            style: AppTextStyles.h3.copyWith(
-                              color: theme.colorScheme.onSurface,
+                            style: AppTextStyles.h2.copyWith(
+                              color: AppColors.textPrimary,
                             ),
                           ),
                           if (treatment.displayStrength != null) ...[
@@ -93,20 +131,20 @@ class PendingTreatmentCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xs),
 
                     // Dosage
                     Text(
                       treatment.displayDosage,
                       style: AppTextStyles.body.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(width: AppSpacing.sm),
+              const SizedBox(width: AppSpacing.md),
 
               // Time
               Column(
@@ -114,17 +152,17 @@ class PendingTreatmentCard extends StatelessWidget {
                 children: [
                   Text(
                     treatment.displayTime,
-                    style: AppTextStyles.body.copyWith(
+                    style: AppTextStyles.caption.copyWith(
                       color: treatment.isOverdue
                           ? AppColors.success
-                          : theme.colorScheme.onSurfaceVariant,
+                          : AppColors.textSecondary,
                       fontWeight: treatment.isOverdue ? FontWeight.w600 : null,
                     ),
                   ),
                 ],
               ),
 
-              const SizedBox(width: AppSpacing.xs),
+              const SizedBox(width: AppSpacing.md),
 
               // Chevron
               Icon(
