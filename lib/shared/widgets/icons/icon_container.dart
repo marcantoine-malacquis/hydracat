@@ -82,6 +82,28 @@ class IconContainer extends StatelessWidget {
     final containerSizeValue = containerSize ?? CardConstants.iconContainerSize;
     final circleSizeValue = circleSize ?? CardConstants.iconCircleSize;
 
+    final iconContent = customIconAsset != null
+        ? SizedBox(
+            width: iconSizeValue,
+            height: iconSizeValue,
+            child: SvgPicture.asset(
+              customIconAsset!,
+              colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+            ),
+          )
+        : Icon(
+            icon,
+            size: iconSizeValue,
+            color: iconColor,
+            semanticLabel: semanticLabel,
+          );
+
+    // If no background is requested, return just the icon
+    if (!showBackgroundCircle) {
+      return iconContent;
+    }
+
+    // Create inner container with background
     final iconWidget = Container(
       width: containerSizeValue,
       height: containerSizeValue,
@@ -90,45 +112,28 @@ class IconContainer extends StatelessWidget {
         borderRadius: CardConstants.iconContainerBorderRadius,
       ),
       child: Center(
-        child: customIconAsset != null
-            ? SizedBox(
-                width: iconSizeValue,
-                height: iconSizeValue,
-                child: SvgPicture.asset(
-                  customIconAsset!,
-                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-                ),
-              )
-            : Icon(
-                icon,
-                size: iconSizeValue,
-                color: iconColor,
-                semanticLabel: semanticLabel,
-              ),
+        child: iconContent,
       ),
     );
 
-    if (showBackgroundCircle) {
-      return SizedBox(
-        width: circleSizeValue,
-        height: circleSizeValue,
-        child: Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [
-                CardConstants.iconCircleGradientStart(iconColor),
-                CardConstants.iconCircleGradientEnd(iconColor),
-              ],
-            ),
-          ),
-          child: Center(
-            child: iconWidget,
+    // Wrap in outer circular gradient
+    return SizedBox(
+      width: circleSizeValue,
+      height: circleSizeValue,
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [
+              CardConstants.iconCircleGradientStart(iconColor),
+              CardConstants.iconCircleGradientEnd(iconColor),
+            ],
           ),
         ),
-      );
-    }
-
-    return iconWidget;
+        child: Center(
+          child: iconWidget,
+        ),
+      ),
+    );
   }
 }

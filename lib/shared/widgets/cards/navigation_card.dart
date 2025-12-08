@@ -74,72 +74,78 @@ class NavigationCard extends StatelessWidget {
       margin: margin ?? CardConstants.cardMargin,
       padding: CardConstants.contentPadding,
       borderColor: CardConstants.cardBorderColor(context),
-      child: Row(
-        children: [
-          // Leading icon with background circle
-          if (icon != null || customIconAsset != null) ...[
-            IconContainer(
-              icon: icon,
-              customIconAsset: customIconAsset,
-              color: iconColor ?? theme.colorScheme.primary,
-              showBackgroundCircle: showBackgroundCircle,
-            ),
-            const SizedBox(width: AppSpacing.md),
-          ],
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          minHeight: CardConstants.iconContainerSize,
+        ),
+        child: Row(
+          children: [
+            // Leading icon with background circle
+            if (icon != null || customIconAsset != null) ...[
+              IconContainer(
+                icon: icon,
+                customIconAsset: customIconAsset,
+                color: iconColor ?? theme.colorScheme.primary,
+                showBackgroundCircle: showBackgroundCircle,
+              ),
+              const SizedBox(width: AppSpacing.md),
+            ],
 
-          // Title and metadata
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Title
-                Text(
-                  title,
-                  style: AppTextStyles.h3.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-
-                // Metadata/subtitle
-                if (metadata != null) ...[
-                  const SizedBox(height: 2),
+            // Title and metadata
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Title
                   Text(
-                    metadata!,
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textSecondary,
+                    title,
+                    style: AppTextStyles.h3.copyWith(
+                      color: AppColors.textPrimary,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                ],
-              ],
-            ),
-          ),
 
-          const SizedBox(width: AppSpacing.sm),
-
-          // Trailing widget (chevron by default)
-          trailing ??
-              Builder(
-                builder: (context) {
-                  final platform = Theme.of(context).platform;
-                  final isCupertino =
-                      platform == TargetPlatform.iOS ||
-                      platform == TargetPlatform.macOS;
-                  return Icon(
-                    IconProvider.resolveIconData(
-                      AppIcons.chevronRight,
-                      isCupertino: isCupertino,
+                  // Metadata/subtitle
+                  if (metadata != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      metadata!,
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    color: AppColors.textTertiary,
-                    size: 20,
-                  );
-                },
+                  ],
+                ],
               ),
-        ],
+            ),
+
+            const SizedBox(width: AppSpacing.sm),
+
+            // Trailing widget (chevron by default)
+            trailing ??
+                Builder(
+                  builder: (context) {
+                    final platform = Theme.of(context).platform;
+                    final isCupertino =
+                        platform == TargetPlatform.iOS ||
+                        platform == TargetPlatform.macOS;
+                    return Icon(
+                      IconProvider.resolveIconData(
+                        AppIcons.chevronRight,
+                        isCupertino: isCupertino,
+                      ),
+                      color: AppColors.textTertiary,
+                      size: 20,
+                    );
+                  },
+                ),
+          ],
+        ),
       ),
     );
   }

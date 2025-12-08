@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -267,11 +266,11 @@ class _ProgressScreenContent {
                                 platform == TargetPlatform.macOS;
                             return NavigationCard(
                               title: 'Injection Sites',
-                              metadata: 'Track rotation patterns',
                               icon: IconProvider.resolveIconData(
                                 AppIcons.locationOn,
                                 isCupertino: isCupertino,
                               ),
+                              showBackgroundCircle: false,
                               onTap: () =>
                                   context.push('/progress/injection-sites'),
                               margin: EdgeInsets.zero,
@@ -306,14 +305,11 @@ class _ProgressScreenContent {
 }
 
 /// Weight tracking card widget
-///
-/// Displays a NavigationCard for weight tracking with pet name in metadata.
-class _WeightCard extends ConsumerWidget {
+class _WeightCard extends StatelessWidget {
   const _WeightCard();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final petName = ref.watch(petNameProvider);
+  Widget build(BuildContext context) {
     final platform = Theme.of(context).platform;
     final isCupertino =
         platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
@@ -323,9 +319,6 @@ class _WeightCard extends ConsumerWidget {
     );
     return NavigationCard(
       title: 'Weight',
-      metadata: petName != null
-          ? "Track $petName's weight"
-          : "Track your cat's weight",
       icon: customIconAsset == null
           ? IconProvider.resolveIconData(
               AppIcons.scale,
@@ -333,6 +326,7 @@ class _WeightCard extends ConsumerWidget {
             )
           : null,
       customIconAsset: customIconAsset,
+      showBackgroundCircle: false,
       onTap: () => context.push('/progress/weight'),
       margin: EdgeInsets.zero,
     );
@@ -340,48 +334,21 @@ class _WeightCard extends ConsumerWidget {
 }
 
 /// Symptoms tracking card widget
-///
-/// Displays a NavigationCard for symptoms tracking with metadata showing
-/// the number of days with symptoms this month.
-class _SymptomsCard extends ConsumerWidget {
+class _SymptomsCard extends StatelessWidget {
   const _SymptomsCard();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final monthlySummaryAsync = ref.watch(currentMonthSymptomsSummaryProvider);
-
-    final metadata = monthlySummaryAsync.maybeWhen(
-      data: (summary) {
-        if (kDebugMode) {
-          final summaryStr = summary == null
-              ? 'null'
-              : 'days=${summary.daysWithAnySymptoms}';
-          debugPrint('[SymptomsCard] summary=$summaryStr');
-        }
-        if (summary == null) {
-          return 'No symptoms logged yet this month';
-        }
-        final days = summary.daysWithAnySymptoms;
-        if (days == 0) {
-          return 'No symptoms logged yet this month';
-        }
-        return 'This month: $days ${days == 1 ? 'day' : 'days'} with symptoms';
-      },
-      loading: () => 'Loading symptom data…',
-      error: (_, _) => 'No symptoms logged yet this month',
-      orElse: () => 'No symptoms logged yet this month',
-    );
-
+  Widget build(BuildContext context) {
     final platform = Theme.of(context).platform;
     final isCupertino =
         platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
     return NavigationCard(
       title: 'Symptoms',
-      metadata: metadata,
       icon: IconProvider.resolveIconData(
         AppIcons.symptoms,
         isCupertino: isCupertino,
       ),
+      showBackgroundCircle: false,
       onTap: () => context.push('/progress/symptoms'),
       margin: EdgeInsets.zero,
     );

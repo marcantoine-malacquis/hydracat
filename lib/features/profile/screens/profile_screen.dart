@@ -5,14 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/core/icons/icon_provider.dart';
 import 'package:hydracat/core/theme/theme.dart';
-import 'package:hydracat/core/utils/weight_utils.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/widgets/debug_panel.dart';
 import 'package:hydracat/features/profile/widgets/pet_info_card.dart';
 import 'package:hydracat/providers/auth_provider.dart';
-import 'package:hydracat/providers/inventory_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
-import 'package:hydracat/providers/weight_unit_provider.dart';
 import 'package:hydracat/shared/widgets/empty_states/onboarding_cta_empty_state.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 
@@ -397,12 +394,11 @@ class _ProfileScreenContent {
   /// Builds the profile sections list
   static Widget _buildProfileSections(BuildContext context, WidgetRef ref) {
     final profileState = ref.watch(profileProvider);
-    final primaryPet = ref.watch(primaryPetProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // CKD Profile section with IRIS stage metadata
+        // CKD Profile section
         Builder(
           builder: (context) {
             final platform = Theme.of(context).platform;
@@ -415,7 +411,7 @@ class _ProfileScreenContent {
                 AppIcons.medicalInformation,
                 isCupertino: isCupertino,
               ),
-              metadata: primaryPet?.medicalInfo.irisStage?.displayName,
+              showBackgroundCircle: false,
               onTap: () => context.push('/profile/ckd'),
               margin: EdgeInsets.zero,
             );
@@ -425,15 +421,8 @@ class _ProfileScreenContent {
         // Fluid Schedule section (only if user has fluid schedule)
         if (profileState.hasFluidSchedule) ...[
           const SizedBox(height: AppSpacing.sm),
-          Consumer(
-            builder: (context, ref, _) {
-              final fluidSchedule = profileState.fluidSchedule;
-              String? metadata;
-              if (fluidSchedule != null) {
-                final volume = fluidSchedule.targetVolume?.toInt() ?? 0;
-                final frequency = fluidSchedule.frequency.displayName;
-                metadata = '${volume}ml, $frequency';
-              }
+          Builder(
+            builder: (context) {
               final platform = Theme.of(context).platform;
               final isCupertino =
                   platform == TargetPlatform.iOS ||
@@ -444,7 +433,7 @@ class _ProfileScreenContent {
                   AppIcons.fluidTherapy,
                   isCupertino: isCupertino,
                 ),
-                metadata: metadata,
+                showBackgroundCircle: false,
                 onTap: () => context.push('/profile/fluid'),
                 margin: EdgeInsets.zero,
               );
@@ -467,6 +456,7 @@ class _ProfileScreenContent {
                   AppIcons.addCircleOutline,
                   isCupertino: isCupertino,
                 ),
+                showBackgroundCircle: false,
                 onTap: () => context.push('/profile/fluid/create'),
                 margin: EdgeInsets.zero,
               );
@@ -477,11 +467,8 @@ class _ProfileScreenContent {
         // Medication Schedule section (only if user has medication schedules)
         if (profileState.hasMedicationSchedules) ...[
           const SizedBox(height: AppSpacing.sm),
-          Consumer(
-            builder: (context, ref, _) {
-              final count = ref.watch(medicationScheduleCountProvider);
-              final metadata =
-                  '$count ${count == 1 ? 'medication' : 'medications'}';
+          Builder(
+            builder: (context) {
               final platform = Theme.of(context).platform;
               final isCupertino =
                   platform == TargetPlatform.iOS ||
@@ -493,9 +480,10 @@ class _ProfileScreenContent {
               return NavigationCard(
                 title: 'Medication Schedule',
                 icon: medIcon,
-                customIconAsset:
-                    IconProvider.resolveCustomAsset(AppIcons.medication),
-                metadata: metadata,
+                customIconAsset: IconProvider.resolveCustomAsset(
+                  AppIcons.medication,
+                ),
+                showBackgroundCircle: false,
                 onTap: () => context.push('/profile/medication'),
                 margin: EdgeInsets.zero,
               );
@@ -518,6 +506,7 @@ class _ProfileScreenContent {
                   AppIcons.addCircleOutline,
                   isCupertino: isCupertino,
                 ),
+                showBackgroundCircle: false,
                 onTap: () => context.push('/profile/medication'),
                 margin: EdgeInsets.zero,
               );
@@ -528,15 +517,8 @@ class _ProfileScreenContent {
         // Inventory section (only if user has fluid schedule)
         if (profileState.hasFluidSchedule) ...[
           const SizedBox(height: AppSpacing.sm),
-          Consumer(
-            builder: (context, ref, _) {
-              final inventoryState = ref.watch(inventoryProvider).valueOrNull;
-
-              final metadata = inventoryState != null
-                  ? '${inventoryState.displayVolume.toInt()} mL remaining '
-                        '(~${inventoryState.sessionsLeft} sessions)'
-                  : 'Track your fluid supply';
-
+          Builder(
+            builder: (context) {
               final platform = Theme.of(context).platform;
               final isCupertino =
                   platform == TargetPlatform.iOS ||
@@ -547,7 +529,7 @@ class _ProfileScreenContent {
                   AppIcons.inventory2,
                   isCupertino: isCupertino,
                 ),
-                metadata: metadata,
+                showBackgroundCircle: false,
                 onTap: () => context.push('/profile/inventory'),
                 margin: EdgeInsets.zero,
               );
@@ -555,15 +537,10 @@ class _ProfileScreenContent {
           ),
         ],
 
-        // Weight section - always shown with current weight
+        // Weight section
         const SizedBox(height: AppSpacing.sm),
-        Consumer(
-          builder: (context, ref, _) {
-            final weightUnit = ref.watch(weightUnitProvider);
-            final metadata = WeightUtils.formatWeight(
-              primaryPet?.weightKg,
-              weightUnit,
-            );
+        Builder(
+          builder: (context) {
             final platform = Theme.of(context).platform;
             final isCupertino =
                 platform == TargetPlatform.iOS ||
@@ -581,7 +558,7 @@ class _ProfileScreenContent {
                     )
                   : null,
               customIconAsset: customIconAsset,
-              metadata: metadata,
+              showBackgroundCircle: false,
               onTap: () => context.push('/profile/weight'),
               margin: EdgeInsets.zero,
             );

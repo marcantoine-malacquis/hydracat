@@ -26,8 +26,15 @@ class PendingFluidCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isCupertino = theme.platform == TargetPlatform.iOS ||
+    final isCupertino =
+        theme.platform == TargetPlatform.iOS ||
         theme.platform == TargetPlatform.macOS;
+    final iconColor = fluidTreatment.hasOverdueTimes
+        ? AppColors.success
+        : AppColors.primary;
+    final cardTone = fluidTreatment.hasOverdueTimes
+        ? AppColors.success
+        : AppColors.primary;
     final fluidIcon = IconProvider.resolveIconData(
       AppIcons.fluidTherapy,
       isCupertino: isCupertino,
@@ -43,111 +50,91 @@ class PendingFluidCard extends StatelessWidget {
       button: true,
       child: HydraCard(
         onTap: onTap,
-        backgroundColor: fluidTreatment.hasOverdueTimes
-            ? AppColors.surface
-            : Color.alphaBlend(
-                AppColors.primary.withAlpha(8),
-                AppColors.surface,
-              ),
+        backgroundColor: Color.alphaBlend(
+          cardTone.withAlpha(8),
+          AppColors.surface,
+        ),
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.md,
         ),
         borderColor: fluidTreatment.hasOverdueTimes
-            ? AppColors.success
+            ? Color.alphaBlend(cardTone.withAlpha(80), AppColors.border)
             : AppColors.border,
         margin: const EdgeInsets.symmetric(
           vertical: CardConstants.cardMarginVertical,
         ),
-        child: Container(
-          decoration: fluidTreatment.hasOverdueTimes
-              ? const BoxDecoration(
-                  border: Border(
-                    left: BorderSide(
-                      color: AppColors.success,
-                      width: 3,
-                    ),
-                  ),
-                )
-              : null,
-          padding: fluidTreatment.hasOverdueTimes
-              ? const EdgeInsets.only(left: AppSpacing.sm)
-              : null,
-          child: Row(
-            children: [
-              // Fluid therapy icon
-              SizedBox(
-                width: CardConstants.iconContainerSize,
-                height: CardConstants.iconContainerSize,
-                child: Center(
-                  child: Icon(
-                    fluidIcon ?? Icons.water_drop,
-                    size: 32,
-                    color: AppColors.primary,
-                  ),
+        child: Row(
+          children: [
+            // Fluid therapy icon
+            SizedBox(
+              width: CardConstants.iconContainerSize,
+              height: CardConstants.iconContainerSize,
+              child: Center(
+                child: Icon(
+                  fluidIcon ?? Icons.water_drop,
+                  size: 32,
+                  color: iconColor,
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
+            ),
+            const SizedBox(width: AppSpacing.md),
 
-              // Fluid info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title
-                    Text(
-                      'Fluid Therapy',
-                      style: AppTextStyles.h2.copyWith(
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-
-                    // Remaining volume
-                    Text(
-                      fluidTreatment.displayVolume,
-                      style: AppTextStyles.body.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: AppSpacing.md),
-
-              // Scheduled times
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+            // Fluid info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Title
                   Text(
-                    fluidTreatment.displayTimes,
-                    style: AppTextStyles.caption.copyWith(
-                      color: fluidTreatment.hasOverdueTimes
-                          ? AppColors.success
-                          : AppColors.textSecondary,
-                      fontWeight: fluidTreatment.hasOverdueTimes
-                          ? FontWeight.w600
-                          : null,
+                    'Fluid Therapy',
+                    style: AppTextStyles.h2.copyWith(
+                      color: AppColors.textPrimary,
                     ),
-                    textAlign: TextAlign.end,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+
+                  // Remaining volume
+                  Text(
+                    fluidTreatment.displayVolume,
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
+            ),
 
-              const SizedBox(width: AppSpacing.md),
+            const SizedBox(width: AppSpacing.md),
 
-              // Chevron
-              Icon(
-                IconProvider.resolveIconData(
-                  AppIcons.chevronRight,
-                  isCupertino: isCupertino,
+            // Scheduled times
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  fluidTreatment.displayTimes,
+                  style: AppTextStyles.caption.copyWith(
+                    color: fluidTreatment.hasOverdueTimes
+                        ? AppColors.success
+                        : AppColors.textSecondary,
+                  ),
+                  textAlign: TextAlign.end,
                 ),
-                color: AppColors.textSecondary,
-                size: 20,
+              ],
+            ),
+
+            const SizedBox(width: AppSpacing.md),
+
+            // Chevron
+            Icon(
+              IconProvider.resolveIconData(
+                AppIcons.chevronRight,
+                isCupertino: isCupertino,
               ),
-            ],
-          ),
+              color: AppColors.textSecondary,
+              size: 20,
+            ),
+          ],
         ),
       ),
     );

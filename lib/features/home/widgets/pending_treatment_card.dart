@@ -36,15 +36,19 @@ class PendingTreatmentCard extends StatelessWidget {
       isCupertino: isCupertino,
     );
     final medIconAsset = IconProvider.resolveCustomAsset(AppIcons.medication);
+    final iconColor = treatment.isOverdue
+        ? AppColors.success
+        : AppColors.primary;
     final strengthText = treatment.displayStrength != null
         ? ' ${treatment.displayStrength}'
         : '';
-    final cardBackground = treatment.isOverdue
-        ? AppColors.surface
-        : Color.alphaBlend(
-            AppColors.primary.withAlpha(8),
-            AppColors.surface,
-          );
+    final cardTone = treatment.isOverdue
+        ? AppColors.success
+        : AppColors.primary;
+    final cardBackground = Color.alphaBlend(
+      cardTone.withAlpha(8),
+      AppColors.surface,
+    );
 
     return Semantics(
       label:
@@ -61,117 +65,103 @@ class PendingTreatmentCard extends StatelessWidget {
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.md,
         ),
-        borderColor: treatment.isOverdue ? AppColors.success : AppColors.border,
+        borderColor: treatment.isOverdue
+            ? Color.alphaBlend(cardTone.withAlpha(80), AppColors.border)
+            : AppColors.border,
         margin: const EdgeInsets.symmetric(
           vertical: CardConstants.cardMarginVertical,
         ),
-        child: Container(
-          decoration: treatment.isOverdue
-              ? const BoxDecoration(
-                  border: Border(
-                    left: BorderSide(
-                      color: AppColors.success,
-                      width: 3,
+        child: Row(
+          children: [
+            // Medication icon in clinical container
+            SizedBox(
+              width: CardConstants.iconContainerSize,
+              height: CardConstants.iconContainerSize,
+              child: Center(
+                child: medIconAsset != null
+                    ? SvgPicture.asset(
+                        medIconAsset,
+                        width: 32,
+                        height: 32,
+                        colorFilter: ColorFilter.mode(
+                          iconColor,
+                          BlendMode.srcIn,
+                        ),
+                      )
+                    : Icon(
+                        medIcon ?? Icons.medication,
+                        size: 32,
+                        color: iconColor,
+                      ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+
+            // Medication info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Medication name and strength on same line
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: treatment.displayName,
+                          style: AppTextStyles.h2.copyWith(
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        if (treatment.displayStrength != null) ...[
+                          TextSpan(
+                            text: ' ${treatment.displayStrength}',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                )
-              : null,
-          padding: treatment.isOverdue
-              ? const EdgeInsets.only(left: AppSpacing.sm)
-              : null,
-          child: Row(
-            children: [
-              // Medication icon in clinical container
-              SizedBox(
-                width: CardConstants.iconContainerSize,
-                height: CardConstants.iconContainerSize,
-                child: Center(
-                  child: medIconAsset != null
-                      ? SvgPicture.asset(
-                          medIconAsset,
-                          width: 32,
-                          height: 32,
-                          colorFilter: const ColorFilter.mode(
-                            AppColors.primary,
-                            BlendMode.srcIn,
-                          ),
-                        )
-                      : Icon(
-                          medIcon ?? Icons.medication,
-                          size: 32,
-                          color: AppColors.primary,
-                        ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.xs),
 
-              // Medication info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Medication name and strength on same line
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: treatment.displayName,
-                            style: AppTextStyles.h2.copyWith(
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          if (treatment.displayStrength != null) ...[
-                            TextSpan(
-                              text: ' ${treatment.displayStrength}',
-                              style: AppTextStyles.caption.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-
-                    // Dosage
-                    Text(
-                      treatment.displayDosage,
-                      style: AppTextStyles.body.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: AppSpacing.md),
-
-              // Time
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
+                  // Dosage
                   Text(
-                    treatment.displayTime,
-                    style: AppTextStyles.caption.copyWith(
-                      color: treatment.isOverdue
-                          ? AppColors.success
-                          : AppColors.textSecondary,
-                      fontWeight: treatment.isOverdue ? FontWeight.w600 : null,
+                    treatment.displayDosage,
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
+            ),
 
-              const SizedBox(width: AppSpacing.md),
+            const SizedBox(width: AppSpacing.md),
 
-              // Chevron
-              Icon(
-                Icons.chevron_right,
-                color: theme.colorScheme.onSurfaceVariant,
-                size: 20,
-              ),
-            ],
-          ),
+            // Time
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  treatment.displayTime,
+                  style: AppTextStyles.caption.copyWith(
+                    color: treatment.isOverdue
+                        ? AppColors.success
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(width: AppSpacing.md),
+
+            // Chevron
+            Icon(
+              Icons.chevron_right,
+              color: theme.colorScheme.onSurfaceVariant,
+              size: 20,
+            ),
+          ],
         ),
       ),
     );
