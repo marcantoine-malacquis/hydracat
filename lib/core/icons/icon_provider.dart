@@ -68,7 +68,7 @@ class IconProvider {
       case AppIcons.medication:
         return Icons.medication;
       case AppIcons.symptoms:
-        return Icons.medical_services;
+        return Icons.favorite_border;
       case AppIcons.completed:
         return Icons.check_circle;
       case AppIcons.notCompleted:
@@ -108,11 +108,11 @@ class IconProvider {
       case AppIcons.inventory:
         return Icons.inventory;
       case AppIcons.inventory2:
-        return Icons.inventory_2;
+        return Icons.inventory_2_outlined;
       case AppIcons.weightUnit:
         return Icons.monitor_weight;
       case AppIcons.scale:
-        return Icons.scale;
+        return Icons.monitor_weight_outlined;
       case AppIcons.theme:
         return Icons.palette;
       case AppIcons.clearCache:
@@ -148,7 +148,15 @@ class IconProvider {
       case AppIcons.calendar:
         return Icons.calendar_month;
       case AppIcons.locationOn:
-        return Icons.location_on;
+        return Icons.location_on_outlined;
+      case AppIcons.frequency:
+        return Icons.schedule;
+      case AppIcons.volume:
+        return Icons.local_drink;
+      case AppIcons.needleGauge:
+        return Icons.colorize;
+      case AppIcons.reminderTime:
+        return Icons.access_time;
       case AppIcons.refresh:
         return Icons.refresh;
       case AppIcons.cancel:
@@ -211,7 +219,7 @@ class IconProvider {
         // No pill icon in Cupertino, using square
         return CupertinoIcons.square_fill;
       case AppIcons.symptoms:
-        return CupertinoIcons.heart_fill;
+        return CupertinoIcons.heart;
       case AppIcons.completed:
         return CupertinoIcons.check_mark_circled_solid;
       case AppIcons.notCompleted:
@@ -252,11 +260,11 @@ class IconProvider {
       case AppIcons.inventory:
         return CupertinoIcons.archivebox_fill;
       case AppIcons.inventory2:
-        return CupertinoIcons.archivebox_fill;
+        return CupertinoIcons.archivebox;
       case AppIcons.weightUnit:
         return CupertinoIcons.square_grid_2x2;
       case AppIcons.scale:
-        // No direct scale icon in Cupertino, using square_grid as alternative
+        // Prefer outlined/regular drop for weight on Cupertino
         return CupertinoIcons.square_grid_2x2;
       case AppIcons.theme:
         return CupertinoIcons.paintbrush_fill;
@@ -293,7 +301,15 @@ class IconProvider {
       case AppIcons.calendar:
         return CupertinoIcons.calendar;
       case AppIcons.locationOn:
-        return CupertinoIcons.location_fill;
+        return CupertinoIcons.location;
+      case AppIcons.frequency:
+        return CupertinoIcons.clock_fill;
+      case AppIcons.volume:
+        return CupertinoIcons.drop_fill;
+      case AppIcons.needleGauge:
+        return CupertinoIcons.square_fill;
+      case AppIcons.reminderTime:
+        return CupertinoIcons.clock_fill;
       case AppIcons.refresh:
         return CupertinoIcons.arrow_clockwise;
       case AppIcons.cancel:
@@ -342,6 +358,8 @@ class IconProvider {
     switch (iconName) {
       case AppIcons.profile:
         return 'assets/fonts/icons/cat_profile_icon_nav.svg';
+      case AppIcons.medication:
+        return 'assets/fonts/icons/medication_icon.svg';
       // Add more custom SVG icons here
       default:
         return null;
@@ -361,7 +379,7 @@ class IconProvider {
 
     switch (iconName) {
       case AppIcons.scale:
-        return 'assets/fonts/icons/SF_Symboles/weight.svg';
+        return 'assets/fonts/icons/SF_Symboles/weight_outlined.svg';
       default:
         return null;
     }
@@ -375,6 +393,8 @@ class IconProvider {
     switch (iconName) {
       case AppIcons.profile:
         return isCupertino ? CupertinoIcons.person_fill : Icons.person;
+      case AppIcons.medication:
+        return isCupertino ? CupertinoIcons.square_fill : Icons.medication;
       default:
         return isCupertino ? CupertinoIcons.question : Icons.help_outline;
     }

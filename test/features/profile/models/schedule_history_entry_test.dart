@@ -47,7 +47,7 @@ void main() {
             .withId('fluid-456')
             .withTargetVolume(150)
             .withPreferredLocation(FluidLocation.shoulderBladeLeft)
-            .withNeedleGauge('18G')
+            .withNeedleGauge(NeedleGauge.gauge18)
             .withFrequency(TreatmentFrequency.onceDaily)
             .withReminderTimes([DateTime(2024, 11, 1, 19)])
             .withCreatedAt(DateTime(2024, 10))
@@ -68,7 +68,7 @@ void main() {
         expect(entry.reminderTimesIso, ['19:00:00']);
         expect(entry.targetVolume, 150);
         expect(entry.preferredLocation, 'shoulderBladeLeft');
-        expect(entry.needleGauge, '18G');
+        expect(entry.needleGauge, NeedleGauge.gauge18);
       });
 
       test('converts reminder times to ISO time strings correctly', () {
@@ -164,7 +164,7 @@ void main() {
           reminderTimesIso: const ['19:00:00'],
           targetVolume: 150,
           preferredLocation: 'shoulderBladeLeft',
-          needleGauge: '18G',
+          needleGauge: NeedleGauge.gauge18,
         );
 
         final json = original.toJson();

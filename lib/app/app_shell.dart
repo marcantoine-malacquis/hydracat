@@ -1213,9 +1213,6 @@ class _AppShellState extends ConsumerState<AppShell>
     final currentLocation = GoRouterState.of(context).uri.path;
     final isInOnboardingFlow = currentLocation.startsWith('/onboarding');
     final isOverlayVisible = OverlayService.isShowingNotifier.value;
-    // Determine if the current route should hide the nav bar
-    // Non-tab routes (detail screens, auth, onboarding) hide the nav bar
-    final shouldHideNavBar = TabPageRegistry.isNonTabRoute(currentLocation);
 
     // Load pet profile if authenticated and onboarding completed
     final hasCompletedOnboarding = ref.watch(hasCompletedOnboardingProvider);
@@ -1346,10 +1343,17 @@ class _AppShellState extends ConsumerState<AppShell>
       widget.child,
     );
 
-    // For tab routes, build Scaffold with stable AppBar and fade transition
-    final isNavBarVisible =
-        !(isInOnboardingFlow || shouldHideNavBar || isOverlayVisible) &&
-        (tabPage?.showBottomNav ?? true);
+    // Determine bottom nav visibility:
+    // - Hide during onboarding flow or when overlay is visible
+    // - For non-tab routes, check if they should show bottom nav
+    //   (e.g., settings)
+    // - For tab routes, use the showBottomNav property
+    final shouldShowNavForNonTab =
+        TabPageRegistry.shouldShowBottomNavForNonTabRoute(currentLocation);
+    final isNavBarVisible = !(isInOnboardingFlow || isOverlayVisible) &&
+        (tabPage != null
+            ? (tabPage.showBottomNav)
+            : shouldShowNavForNonTab);
 
     // Schedule provider update after build completes to avoid modification
     // during build phase
@@ -1431,8 +1435,7 @@ class _AppShellState extends ConsumerState<AppShell>
           ),
         ],
       ),
-      // Hide bottom navigation during onboarding flow, on full-screen
-      // profile/settings screens, and when overlay is visible
+      // Show/hide bottom navigation based on route type and app state
       bottomNavigationBar: isNavBarVisible
           ? HydraNavigationBar(
               items: _navigationItems,

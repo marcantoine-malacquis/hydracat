@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
@@ -30,14 +31,13 @@ class CreateFluidScheduleScreen extends ConsumerStatefulWidget {
 class _CreateFluidScheduleScreenState
     extends ConsumerState<CreateFluidScheduleScreen> {
   final TextEditingController _volumeController = TextEditingController();
-  final TextEditingController _needleGaugeController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   // Form data
   TreatmentFrequency _selectedFrequency = TreatmentFrequency.onceDaily;
   double _volumePerAdministration = 0;
   FluidLocation _preferredLocation = FluidLocation.shoulderBladeMiddle;
-  String _needleGauge = '';
+  NeedleGauge? _selectedNeedleGauge;
 
   bool _isLoading = false;
 
@@ -50,7 +50,6 @@ class _CreateFluidScheduleScreenState
   @override
   void dispose() {
     _volumeController.dispose();
-    _needleGaugeController.dispose();
     super.dispose();
   }
 
@@ -58,8 +57,7 @@ class _CreateFluidScheduleScreenState
     // Set default values for new schedule
     _volumeController.text = '100';
     _volumePerAdministration = 100;
-    _needleGaugeController.text = '20G';
-    _needleGauge = '20G';
+    _selectedNeedleGauge = NeedleGauge.gauge20;
   }
 
   @override
@@ -269,7 +267,10 @@ class _CreateFluidScheduleScreenState
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            prefixIcon: const Icon(Icons.local_drink),
+            prefixIcon: const HydraIcon(
+              icon: AppIcons.volume,
+              color: AppColors.primary,
+            ),
             helperText: l10n.volumeHelperText,
           ),
           validator: (value) {
@@ -396,78 +397,24 @@ class _CreateFluidScheduleScreenState
         ),
         const SizedBox(height: 16),
 
-        TextFormField(
-          controller: _needleGaugeController,
-          onChanged: (value) {
-            setState(() {
-              _needleGauge = value.trim();
-            });
-          },
-          decoration: InputDecoration(
-            labelText: l10n.needleGaugeLabel,
-            hintText: l10n.needleGaugeHint,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            prefixIcon: const Icon(Icons.colorize),
-          ),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Needle gauge is required';
-            }
-            return null;
-          },
-        ),
-
-        const SizedBox(height: 12),
-
-        Wrap(
-          spacing: 8,
-          runSpacing: 4,
-          children: [
-            '18G',
-            '20G',
-            '22G',
-            '25G',
-          ].map((gauge) => _buildGaugeChip(gauge, theme)).toList(),
-        ),
+        if (_selectedNeedleGauge != null)
+          HydraSlidingSegmentedControl<NeedleGauge>(
+            value: _selectedNeedleGauge!,
+            onChanged: (value) {
+              setState(() {
+                _selectedNeedleGauge = value;
+              });
+            },
+            segments: {
+              NeedleGauge.gauge18: Text(NeedleGauge.gauge18.displayName),
+              NeedleGauge.gauge20: Text(NeedleGauge.gauge20.displayName),
+              NeedleGauge.gauge22: Text(NeedleGauge.gauge22.displayName),
+              NeedleGauge.gauge25: Text(NeedleGauge.gauge25.displayName),
+            },
+          )
+        else
+          const SizedBox.shrink(),
       ],
-    );
-  }
-
-  Widget _buildGaugeChip(String gauge, ThemeData theme) {
-    final isSelected = _needleGauge == gauge;
-
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _needleGauge = gauge;
-          _needleGaugeController.text = gauge;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? theme.colorScheme.primary
-              : theme.colorScheme.surface,
-          border: Border.all(
-            color: isSelected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outline.withValues(alpha: 0.3),
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(
-          gauge,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: isSelected
-                ? theme.colorScheme.onPrimary
-                : theme.colorScheme.onSurface,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
     );
   }
 
@@ -502,6 +449,13 @@ class _CreateFluidScheduleScreenState
 
   Future<void> _onSave() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedNeedleGauge == null) {
+      // Show error if needle gauge is not selected
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a needle gauge')),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -515,7 +469,7 @@ class _CreateFluidScheduleScreenState
         frequency: _selectedFrequency,
         targetVolume: _volumePerAdministration,
         preferredLocation: _preferredLocation,
-        needleGauge: _needleGauge,
+        needleGauge: _selectedNeedleGauge,
         reminderTimes: _getDefaultReminderTimes(_selectedFrequency),
         isActive: true,
         createdAt: now,

@@ -4,7 +4,6 @@ import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/core/utils/dosage_utils.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
-import 'package:hydracat/features/onboarding/widgets/rotating_wheel_picker.dart';
 import 'package:hydracat/features/onboarding/widgets/time_picker_group.dart';
 import 'package:hydracat/features/onboarding/widgets/treatment_popup_wrapper.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
@@ -407,6 +406,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
   Widget _buildFrequencyStep() {
     final theme = Theme.of(context);
+    const frequencies = TreatmentFrequency.values;
 
     return SingleChildScrollView(
       child: Column(
@@ -428,29 +428,46 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
           ),
           const SizedBox(height: 24),
 
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.3),
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: RotatingWheelPicker<TreatmentFrequency>(
-              items: TreatmentFrequency.values,
-              initialIndex: TreatmentFrequency.values.indexOf(
-                _selectedFrequency,
-              ),
-              onSelectedItemChanged: (index) {
-                setState(() {
-                  _selectedFrequency = TreatmentFrequency.values[index];
-                  // Update reminder times when frequency changes
-                  _reminderTimes = AppDateUtils.generateDefaultReminderTimes(
-                    _selectedFrequency.administrationsPerDay,
-                  );
-                });
-                widget.onFormChanged?.call();
-              },
-            ),
+          HydraList(
+            padding: EdgeInsets.zero,
+            items: frequencies.map((frequency) {
+              final isSelected = frequency == _selectedFrequency;
+              return HydraListItem(
+                title: Text(
+                  frequency.displayName,
+                  textAlign: TextAlign.center,
+                  style:
+                      theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.9,
+                        ),
+                      ) ??
+                      TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.9,
+                        ),
+                      ),
+                ),
+                isSelected: isSelected,
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 14,
+                  horizontal: 16,
+                ),
+                onTap: () {
+                  setState(() {
+                    _selectedFrequency = frequency;
+                    // Update reminder times when frequency changes
+                    _reminderTimes = AppDateUtils.generateDefaultReminderTimes(
+                      _selectedFrequency.administrationsPerDay,
+                    );
+                  });
+                  widget.onFormChanged?.call();
+                },
+              );
+            }).toList(),
           ),
 
           const SizedBox(height: 24),

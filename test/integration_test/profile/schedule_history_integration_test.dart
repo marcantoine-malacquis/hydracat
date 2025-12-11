@@ -72,7 +72,7 @@ void main() {
             .withId('fluid-schedule-001')
             .withTargetVolume(150)
             .withPreferredLocation(FluidLocation.shoulderBladeLeft)
-            .withNeedleGauge('18G')
+            .withNeedleGauge(NeedleGauge.gauge18)
             .withFrequency(TreatmentFrequency.onceDaily)
             .withReminderTimes([DateTime(2024, 11, 1, 19)])
             .withCreatedAt(DateTime(2024, 11))

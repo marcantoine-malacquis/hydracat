@@ -308,7 +308,7 @@ class ScheduleBuilder {
       ..asFluid()
       ..withTargetVolume(150)
       ..withPreferredLocation(FluidLocation.shoulderBladeLeft)
-      ..withNeedleGauge('18G')
+      ..withNeedleGauge(NeedleGauge.gauge18)
       ..withFrequency(TreatmentFrequency.onceDaily)
       ..withReminderTimes([DateTime(2024, 1, 15, 19)]);
   }
@@ -332,7 +332,7 @@ class ScheduleBuilder {
   late DateTime _updatedAt;
   double? _targetVolume;
   FluidLocation? _preferredLocation;
-  String? _needleGauge;
+  NeedleGauge? _needleGauge;
   String? _medicationName;
   double? _targetDosage;
   String? _medicationUnit;
@@ -401,7 +401,7 @@ class ScheduleBuilder {
   }
 
   /// Sets the needle gauge (for fluid schedules)
-  ScheduleBuilder withNeedleGauge(String? gauge) {
+  ScheduleBuilder withNeedleGauge(NeedleGauge? gauge) {
     _needleGauge = gauge;
     return this;
   }

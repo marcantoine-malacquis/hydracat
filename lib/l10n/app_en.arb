@@ -25,6 +25,12 @@
   "getStarted": "Get Started",
   "goBack": "Go Back",
   "continue_": "Continue",
+  "close": "Close",
+  "previous": "Previous",
+  "next": "Next",
+  "discard": "Discard",
+  "discardChanges": "Discard Changes?",
+  "discardChangesMessage": "You have unsaved changes. Are you sure you want to discard them?",
 
   "@_COMMON_MESSAGES": {},
   "loading": "Loading...",
@@ -148,22 +154,24 @@
   "addMedicationDetails": "Add Medication Details",
   "editMedicationDetails": "Edit Medication Details",
   "addMedication": "Add Medication",
+  "editMedication": "Edit Medication",
   "medicationInformation": "Medication Information",
   "medicationInformationDesc": "Enter the name and dosage form of the medication.",
+  "whatMedicationToAdd": "What medication do you want to add?",
   "medicationNameLabel": "Medication Name *",
   "medicationNameHint": "e.g., Benazepril, Furosemide",
   "medicationStrengthLabel": "Medication Strength (optional)",
   "medicationStrengthDesc": "Enter the concentration or strength of the medication",
   "strengthAmountLabel": "Amount",
   "strengthAmountHint": "e.g., 2.5, 1/2, 10",
-  "strengthUnitLabel": "Unit",
+  "strengthUnitLabel": "Strenght unit",
   "customStrengthUnitLabel": "Custom Unit",
   "customStrengthUnitHint": "e.g., mg/kg",
   "strengthHelperText": "e.g., 2.5 mg, 5 mg/mL",
   "dosageLabel": "Dosage",
   "setDosage": "Set Dosage",
   "dosageAmountRequired": "Required: amount per administration",
-  "unitTypeLabel": "Unit Type *",
+  "unitTypeLabel": "Dose unit",
   "frequencyLabel": "Frequency",
   "setFrequency": "Set Frequency",
   "administrationFrequency": "Administration Frequency",
@@ -192,6 +200,26 @@
     }
   },
   "saveMedication": "Save Medication",
+  "medicationNameRequired": "Medication name is required",
+  "strengthUnitRequired": "Please select a strength unit",
+  "customStrengthUnitRequired": "Please specify the custom unit",
+  "dosageRequired": "Dosage is required",
+  "dosageHint": "e.g., 1, 1/2, 2.5",
+  "dosageDescriptionPart1": "Enter the ",
+  "dosageDescriptionPart2": "amount per administration",
+  "dosageDescriptionPart3": " and select the medication unit.",
+  "frequencyDescription": "How often should this medication be given?",
+  "reminderTimesDescription": "Set the times when you want to be reminded to give this medication.",
+  "reminderTimesIncomplete": "Please set all {count} reminder times",
+  "@reminderTimesIncomplete": {
+    "description": "Error when not all reminder times are set",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "errorSavingMedication": "Failed to save medication. Please check all fields and try again.",
 
   "@_ONBOARDING_FLUID_THERAPY": {},
   "fluidTherapySetupTitle": "Fluid Therapy Setup",
@@ -451,6 +479,31 @@
   "duplicateDialogStatusNotCompleted": "Not completed",
   "duplicateDialogNotes": "Notes",
   "duplicateDialogNoNotes": "No notes",
+
+  "@_DOSAGE_ADJUSTER": {},
+  "dosageAdjustLink": "Adjust dose",
+  "dosageCollapseLink": "Collapse",
+  "dosageGivenLabel": "Dosage given:",
+  "dosagePresetFull": "Full",
+  "dosagePresetHalf": "Half",
+  "dosagePresetSkip": "Skip",
+  "dosageBadgeMissed": "Skipped",
+  "dosageBadgePartial": "{percent}% of scheduled",
+  "@dosageBadgePartial": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "dosageBadgeExtra": "{percent}% of scheduled",
+  "@dosageBadgeExtra": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
 
   "@_LOGGING_QUICK_LOG": {},
   "quickLogTreatmentSingular": "treatment",

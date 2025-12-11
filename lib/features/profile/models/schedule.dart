@@ -75,7 +75,7 @@ class Schedule {
       preferredLocation: json['preferredLocation'] != null
           ? FluidLocation.fromString(json['preferredLocation'] as String)
           : null,
-      needleGauge: json['needleGauge'] as String?,
+      needleGauge: NeedleGauge.fromStringOrNull(json['needleGauge'] as String?),
       medicationName: json['medicationName'] as String?,
       targetDosage: json['targetDosage'] != null
           ? (json['targetDosage'] as num).toDouble()
@@ -133,7 +133,7 @@ class Schedule {
   final FluidLocation? preferredLocation;
 
   /// Needle gauge for fluid therapy
-  final String? needleGauge;
+  final NeedleGauge? needleGauge;
 
   /// Medication name for medication schedules
   final String? medicationName;
@@ -186,7 +186,6 @@ class Schedule {
           targetVolume! > 0 &&
           preferredLocation != null &&
           needleGauge != null &&
-          needleGauge!.isNotEmpty &&
           reminderTimes.isNotEmpty;
     } else if (treatmentType == TreatmentType.medication) {
       return medicationName != null &&
@@ -258,7 +257,7 @@ class Schedule {
         ...baseFields,
         'targetVolume': targetVolume,
         'preferredLocation': preferredLocation?.name,
-        'needleGauge': needleGauge,
+        'needleGauge': needleGauge?.name,
       };
     }
 
@@ -301,7 +300,7 @@ class Schedule {
           : preferredLocation as FluidLocation?,
       needleGauge: needleGauge == _undefined 
           ? this.needleGauge 
-          : needleGauge as String?,
+          : needleGauge as NeedleGauge?,
       medicationName: medicationName == _undefined 
           ? this.medicationName 
           : medicationName as String?,

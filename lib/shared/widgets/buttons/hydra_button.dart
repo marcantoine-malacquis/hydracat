@@ -18,6 +18,7 @@ class HydraButton extends StatelessWidget {
     this.isLoading = false,
     this.isFullWidth = false,
     this.semanticLabel,
+    this.borderColor,
   });
 
   /// Callback function when button is pressed.
@@ -40,6 +41,10 @@ class HydraButton extends StatelessWidget {
 
   /// Semantic label for accessibility.
   final String? semanticLabel;
+
+  /// Optional custom border color for secondary variant.
+  /// If not provided, defaults to [AppColors.primary].
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +83,9 @@ class HydraButton extends StatelessWidget {
     final minHeight = _getMinHeight();
     final buttonPadding = _getButtonPadding();
     final isDisabled = isLoading || onPressed == null;
+    final theme = Theme.of(context);
+    final disabledFill = theme.colorScheme.onSurface.withValues(alpha: 0.12);
+    final disabledText = theme.colorScheme.onSurface.withValues(alpha: 0.38);
 
     Widget button;
     switch (variant) {
@@ -88,10 +96,10 @@ class HydraButton extends StatelessWidget {
           minimumSize: Size(0, minHeight),
           borderRadius: AppBorderRadius.buttonRadius,
           color: AppColors.primary,
-          disabledColor: AppColors.disabled,
+          disabledColor: disabledFill,
           child: DefaultTextStyle(
-            style: const TextStyle(
-              color: AppColors.onPrimary,
+            style: TextStyle(
+              color: isDisabled ? disabledText : AppColors.onPrimary,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
@@ -99,10 +107,11 @@ class HydraButton extends StatelessWidget {
           ),
         );
       case HydraButtonVariant.secondary:
+        final borderColorValue = borderColor ?? AppColors.primary;
         button = Container(
           decoration: BoxDecoration(
             border: Border.all(
-              color: isDisabled ? AppColors.disabled : AppColors.primary,
+              color: isDisabled ? AppColors.disabled : borderColorValue,
             ),
             borderRadius: AppBorderRadius.buttonRadius,
           ),
@@ -115,7 +124,7 @@ class HydraButton extends StatelessWidget {
             disabledColor: Colors.transparent,
             child: DefaultTextStyle(
               style: TextStyle(
-                color: isDisabled ? AppColors.disabled : AppColors.primary,
+                color: isDisabled ? AppColors.disabled : borderColorValue,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -156,6 +165,7 @@ class HydraButton extends StatelessWidget {
     if (isLoading) {
       // Determine loading indicator color based on variant and platform
       Color loadingColor;
+      final borderColorValue = borderColor ?? AppColors.primary;
       if (isCupertino) {
         // For Cupertino, use appropriate color based on variant
         switch (variant) {
@@ -163,16 +173,16 @@ class HydraButton extends StatelessWidget {
             loadingColor = AppColors.onPrimary;
           case HydraButtonVariant.secondary:
           case HydraButtonVariant.text:
-            loadingColor = AppColors.primary;
+            loadingColor = borderColorValue;
         }
       } else {
-        // For Material, use white for primary, primary color for others
+        // For Material, use white for primary, border/primary color for others
         switch (variant) {
           case HydraButtonVariant.primary:
             loadingColor = Colors.white;
           case HydraButtonVariant.secondary:
           case HydraButtonVariant.text:
-            loadingColor = AppColors.primary;
+            loadingColor = borderColorValue;
         }
       }
 
@@ -192,11 +202,16 @@ class HydraButton extends StatelessWidget {
   ButtonStyle _getButtonStyle(BuildContext context) {
     final buttonPadding = _getButtonPadding();
     final minHeight = _getMinHeight();
+    final theme = Theme.of(context);
+    final disabledBg = theme.colorScheme.onSurface.withValues(alpha: 0.12);
+    final disabledFg = theme.colorScheme.onSurface.withValues(alpha: 0.38);
 
     switch (variant) {
       case HydraButtonVariant.primary:
         return ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
+          disabledBackgroundColor: disabledBg,
+          disabledForegroundColor: disabledFg,
           foregroundColor: Colors.white,
           elevation: 2,
           shadowColor: AppColors.primary.withValues(alpha: 0.3),
@@ -211,11 +226,12 @@ class HydraButton extends StatelessWidget {
           ),
         );
       case HydraButtonVariant.secondary:
+        final borderColorValue = borderColor ?? AppColors.primary;
         return ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
-          foregroundColor: AppColors.primary,
+          foregroundColor: borderColorValue,
           elevation: 0,
-          side: const BorderSide(color: AppColors.primary),
+          side: BorderSide(color: borderColorValue),
           padding: buttonPadding,
           minimumSize: Size(0, minHeight),
           shape: RoundedRectangleBorder(

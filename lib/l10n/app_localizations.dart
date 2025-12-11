@@ -184,6 +184,42 @@ abstract class AppLocalizations {
   /// **'Continue'**
   String get continue_;
 
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @previous.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get previous;
+
+  /// No description provided for @next.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get next;
+
+  /// No description provided for @discard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get discard;
+
+  /// No description provided for @discardChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard Changes?'**
+  String get discardChanges;
+
+  /// No description provided for @discardChangesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You have unsaved changes. Are you sure you want to discard them?'**
+  String get discardChangesMessage;
+
   /// No description provided for @loading.
   ///
   /// In en, this message translates to:
@@ -466,6 +502,12 @@ abstract class AppLocalizations {
   /// **'Add Medication'**
   String get addMedication;
 
+  /// No description provided for @editMedication.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Medication'**
+  String get editMedication;
+
   /// No description provided for @medicationInformation.
   ///
   /// In en, this message translates to:
@@ -477,6 +519,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter the name and dosage form of the medication.'**
   String get medicationInformationDesc;
+
+  /// No description provided for @whatMedicationToAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'What medication do you want to add?'**
+  String get whatMedicationToAdd;
 
   /// No description provided for @medicationNameLabel.
   ///
@@ -517,7 +565,7 @@ abstract class AppLocalizations {
   /// No description provided for @strengthUnitLabel.
   ///
   /// In en, this message translates to:
-  /// **'Unit'**
+  /// **'Strenght unit'**
   String get strengthUnitLabel;
 
   /// No description provided for @customStrengthUnitLabel.
@@ -559,7 +607,7 @@ abstract class AppLocalizations {
   /// No description provided for @unitTypeLabel.
   ///
   /// In en, this message translates to:
-  /// **'Unit Type *'**
+  /// **'Dose unit'**
   String get unitTypeLabel;
 
   /// No description provided for @frequencyLabel.
@@ -633,6 +681,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save Medication'**
   String get saveMedication;
+
+  /// No description provided for @medicationNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Medication name is required'**
+  String get medicationNameRequired;
+
+  /// No description provided for @strengthUnitRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a strength unit'**
+  String get strengthUnitRequired;
+
+  /// No description provided for @customStrengthUnitRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please specify the custom unit'**
+  String get customStrengthUnitRequired;
+
+  /// No description provided for @dosageRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Dosage is required'**
+  String get dosageRequired;
+
+  /// No description provided for @dosageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., 1, 1/2, 2.5'**
+  String get dosageHint;
+
+  /// No description provided for @dosageDescriptionPart1.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the '**
+  String get dosageDescriptionPart1;
+
+  /// No description provided for @dosageDescriptionPart2.
+  ///
+  /// In en, this message translates to:
+  /// **'amount per administration'**
+  String get dosageDescriptionPart2;
+
+  /// No description provided for @dosageDescriptionPart3.
+  ///
+  /// In en, this message translates to:
+  /// **' and select the medication unit.'**
+  String get dosageDescriptionPart3;
+
+  /// No description provided for @frequencyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'How often should this medication be given?'**
+  String get frequencyDescription;
+
+  /// No description provided for @reminderTimesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Set the times when you want to be reminded to give this medication.'**
+  String get reminderTimesDescription;
+
+  /// Error when not all reminder times are set
+  ///
+  /// In en, this message translates to:
+  /// **'Please set all {count} reminder times'**
+  String reminderTimesIncomplete(int count);
+
+  /// No description provided for @errorSavingMedication.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save medication. Please check all fields and try again.'**
+  String get errorSavingMedication;
 
   /// No description provided for @fluidTherapySetupTitle.
   ///
@@ -1371,6 +1491,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No notes'**
   String get duplicateDialogNoNotes;
+
+  /// No description provided for @dosageAdjustLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust dose'**
+  String get dosageAdjustLink;
+
+  /// No description provided for @dosageCollapseLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse'**
+  String get dosageCollapseLink;
+
+  /// No description provided for @dosageGivenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dosage given:'**
+  String get dosageGivenLabel;
+
+  /// No description provided for @dosagePresetFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Full'**
+  String get dosagePresetFull;
+
+  /// No description provided for @dosagePresetHalf.
+  ///
+  /// In en, this message translates to:
+  /// **'Half'**
+  String get dosagePresetHalf;
+
+  /// No description provided for @dosagePresetSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get dosagePresetSkip;
+
+  /// No description provided for @dosageBadgeMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get dosageBadgeMissed;
+
+  /// No description provided for @dosageBadgePartial.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% of scheduled'**
+  String dosageBadgePartial(int percent);
+
+  /// No description provided for @dosageBadgeExtra.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% of scheduled'**
+  String dosageBadgeExtra(int percent);
 
   /// No description provided for @quickLogTreatmentSingular.
   ///

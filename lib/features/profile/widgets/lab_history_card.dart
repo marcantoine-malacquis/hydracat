@@ -109,6 +109,12 @@ class LabHistoryCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                  const SizedBox(width: AppSpacing.xs),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20,
+                    color: AppColors.textTertiary,
+                  ),
                 ],
               ),
 

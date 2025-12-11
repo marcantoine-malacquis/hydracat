@@ -39,7 +39,7 @@ void main() {
         final dto = ScheduleDto.fluid(
           targetVolume: 150,
           preferredLocation: FluidLocation.shoulderBladeLeft,
-          needleGauge: '18G',
+          needleGauge: NeedleGauge.gauge18,
           frequency: TreatmentFrequency.onceDaily,
           reminderTimes: [DateTime(2024, 1, 15, 19)],
         );
@@ -49,7 +49,7 @@ void main() {
         expect(json['treatmentType'], equals('fluid'));
         expect(json['targetVolume'], equals(150));
         expect(json['preferredLocation'], equals('shoulderBladeLeft'));
-        expect(json['needleGauge'], equals('18G'));
+        expect(json['needleGauge'], equals('gauge18'));
         expect(json['frequency'], equals('onceDaily'));
       });
 
@@ -145,7 +145,7 @@ void main() {
           id: 'test-schedule-id',
           targetVolume: 200,
           preferredLocation: FluidLocation.hipBonesLeft,
-          needleGauge: '20G',
+          needleGauge: NeedleGauge.gauge20,
           frequency: TreatmentFrequency.onceDaily,
           reminderTimes: [DateTime(2024, 1, 15, 19)],
         );

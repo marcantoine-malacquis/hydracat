@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:hydracat/core/theme/app_spacing.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
+import 'package:hydracat/core/icons/icon_provider.dart';
+import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/core/utils/dosage_text_utils.dart';
+import 'package:hydracat/features/logging/widgets/dosage_adjuster.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 
 /// A selectable card displaying medication name, strength, and dosage.
 ///
@@ -9,15 +14,21 @@ import 'package:hydracat/features/profile/models/schedule.dart';
 /// medications they want to log. Provides visual feedback for selection
 /// state with animated border and background changes.
 ///
-/// Design follows a single-line horizontal layout:
+/// Design follows a single-line horizontal layout when collapsed:
 /// - Left: Icon + Medication name + Strength (e.g., "Dede, 2 mg")
 /// - Right: Dosage (e.g., "1 pill")
+///
+/// When selected and expanded, shows inline dosage adjustment controls.
 class MedicationSelectionCard extends StatelessWidget {
   /// Creates a [MedicationSelectionCard].
   const MedicationSelectionCard({
     required this.medication,
     required this.isSelected,
+    required this.isExpanded,
+    required this.currentDosage,
     required this.onTap,
+    required this.onExpandToggle,
+    required this.onDosageChanged,
     super.key,
   });
 
@@ -27,13 +38,34 @@ class MedicationSelectionCard extends StatelessWidget {
   /// Whether this medication is currently selected
   final bool isSelected;
 
+  /// Whether the dosage adjuster is expanded
+  final bool isExpanded;
+
+  /// Current custom dosage (may differ from scheduled)
+  final double currentDosage;
+
   /// Callback when the card is tapped
   final VoidCallback onTap;
+
+  /// Callback when expand/collapse is toggled
+  final VoidCallback onExpandToggle;
+
+  /// Callback when dosage is adjusted
+  final ValueChanged<double> onDosageChanged;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dosageText = _getFormattedDosage();
+    final l10n = AppLocalizations.of(context)!;
+    final isCupertino =
+        theme.platform == TargetPlatform.iOS ||
+        theme.platform == TargetPlatform.macOS;
+    final medIcon = IconProvider.resolveIconData(
+      AppIcons.medication,
+      isCupertino: isCupertino,
+    );
+    final medIconAsset = IconProvider.resolveCustomAsset(AppIcons.medication);
+    final dosageText = _getFormattedDosage(currentDosage);
     final strengthText = medication.formattedStrength;
     final dosageSuffix = dosageText != null ? ', $dosageText' : '';
     final strengthSuffix = strengthText != null ? ', $strengthText' : '';
@@ -48,103 +80,195 @@ class MedicationSelectionCard extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-        constraints: const BoxConstraints(
-          minHeight: 56, // Single line height
-        ),
         decoration: BoxDecoration(
           border: Border.all(
             color: isSelected
                 ? theme.colorScheme.primary
-                : theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
-            width: isSelected ? 2 : 1,
+                : theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+            width: isSelected ? 1.5 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
-          color: isSelected
-              ? theme.colorScheme.primary.withValues(alpha: 0.1)
-              : theme.colorScheme.surface,
+          color: theme.colorScheme.surface,
         ),
         child: Material(
           type: MaterialType.transparency,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Row(
-                children: [
-                  // Medication icon
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? theme.colorScheme.primary.withValues(alpha: 0.2)
-                          : theme.colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      _getMedicationIcon(),
-                      color: theme.colorScheme.primary,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-
-                  // Left side: Medication name and strength
-                  Expanded(
-                    child: RichText(
-                      text: TextSpan(
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Main card content
+              InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Row(
+                    children: [
+                      // Medication icon (platform-specific)
+                      SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: Center(
+                          child: medIconAsset != null
+                              ? SvgPicture.asset(
+                                  medIconAsset,
+                                  width: 32,
+                                  height: 32,
+                                  colorFilter: const ColorFilter.mode(
+                                    AppColors.primary,
+                                    BlendMode.srcIn,
+                                  ),
+                                )
+                              : Icon(
+                                  medIcon ?? Icons.medication,
+                                  size: 32,
+                                  color: AppColors.primary,
+                                ),
                         ),
-                        children: [
-                          // Medication name
-                          TextSpan(text: medication.medicationName ?? ''),
-                          // Strength (if available)
-                          if (medication.formattedStrength != null)
-                            TextSpan(
-                              text: ', ${medication.formattedStrength}',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.normal,
-                                color: theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.6,
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+
+                      // Left side: Medication name and strength
+                      Expanded(
+                        child: RichText(
+                          text: TextSpan(
+                            children: [
+                              // Medication name (same style as home screen)
+                              TextSpan(
+                                text: medication.medicationName ?? '',
+                                style: AppTextStyles.h2.copyWith(
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
-                            ),
-                        ],
+                              // Strength (same style as home screen)
+                              if (medication.formattedStrength != null)
+                                TextSpan(
+                                  text: ' ${medication.formattedStrength}',
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
                       ),
+
+                      // Right side: Dosage (hidden when expanded)
+                      if (!isExpanded && dosageText != null) ...[
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(
+                          dosageText,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w500,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+
+                      // Selection indicator
+                      const SizedBox(width: AppSpacing.sm),
+                      if (isSelected)
+                        Icon(
+                          Icons.check_circle,
+                          color: theme.colorScheme.primary,
+                          size: 24,
+                        )
+                      else
+                        Icon(
+                          Icons.radio_button_unchecked,
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.3,
+                          ),
+                          size: 24,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // "Adjust dose" link (only when selected and not expanded)
+              if (isSelected && !isExpanded) ...[
+                InkWell(
+                  onTap: onExpandToggle,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      left: AppSpacing.md,
+                      right: AppSpacing.md,
+                      bottom: AppSpacing.sm,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.tune,
+                          size: 16,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          l10n.dosageAdjustLink,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                ),
+              ],
 
-                  // Right side: Dosage
-                  if (dosageText != null) ...[
-                    const SizedBox(width: AppSpacing.sm),
-                    Text(
-                      dosageText,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: theme.colorScheme.primary,
-                      ),
+              // Dosage adjuster (when expanded)
+              if (isExpanded) ...[
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: AppSpacing.md,
+                    right: AppSpacing.md,
+                    bottom: AppSpacing.md,
+                  ),
+                  child: DosageAdjuster(
+                    currentDosage: currentDosage,
+                    scheduledDosage: medication.targetDosage ?? 1.0,
+                    unit: _getShortUnit(medication.medicationUnit ?? 'pills'),
+                    onDosageChanged: onDosageChanged,
+                  ),
+                ),
+                // Collapse button
+                InkWell(
+                  onTap: onExpandToggle,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      bottom: AppSpacing.sm,
                     ),
-                  ],
-
-                  // Selection indicator
-                  const SizedBox(width: AppSpacing.sm),
-                  if (isSelected)
-                    Icon(
-                      Icons.check_circle,
-                      color: theme.colorScheme.primary,
-                      size: 24,
-                    )
-                  else
-                    Icon(
-                      Icons.radio_button_unchecked,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
-                      size: 24,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.expand_less,
+                          size: 20,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          l10n.dosageCollapseLink,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
-                ],
-              ),
-            ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),
@@ -152,11 +276,10 @@ class MedicationSelectionCard extends StatelessWidget {
   }
 
   /// Get formatted dosage text (e.g., "half a pill", "1 portion")
-  String? _getFormattedDosage() {
-    final dosage = medication.targetDosage;
+  String? _getFormattedDosage(double dosage) {
     final unit = medication.medicationUnit;
 
-    if (dosage == null || unit == null) return null;
+    if (unit == null) return null;
 
     final shortUnit = _getShortUnit(unit);
     return DosageTextUtils.formatDosageWithUnit(dosage, shortUnit);
@@ -178,25 +301,6 @@ class MedicationSelectionCard extends StatelessWidget {
       'tablespoon' => 'tbsp',
       'teaspoon' => 'tsp',
       _ => unit,
-    };
-  }
-
-  /// Get appropriate icon based on medication unit
-  IconData _getMedicationIcon() {
-    if (medication.medicationUnit == null) return Icons.medication;
-
-    return switch (medication.medicationUnit) {
-      'pills' => Icons.medication,
-      'capsules' => Icons.medication,
-      'drops' => Icons.water_drop,
-      'injections' => Icons.colorize,
-      'milliliters' => Icons.local_drink,
-      'tablespoon' => Icons.restaurant,
-      'teaspoon' => Icons.restaurant,
-      'portions' => Icons.restaurant,
-      'sachets' => Icons.inventory_2,
-      'ampoules' => Icons.science,
-      _ => Icons.medication,
     };
   }
 }

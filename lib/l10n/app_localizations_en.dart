@@ -55,6 +55,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get continue_ => 'Continue';
 
   @override
+  String get close => 'Close';
+
+  @override
+  String get previous => 'Previous';
+
+  @override
+  String get next => 'Next';
+
+  @override
+  String get discard => 'Discard';
+
+  @override
+  String get discardChanges => 'Discard Changes?';
+
+  @override
+  String get discardChangesMessage =>
+      'You have unsaved changes. Are you sure you want to discard them?';
+
+  @override
   String get loading => 'Loading...';
 
   @override
@@ -205,11 +224,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addMedication => 'Add Medication';
 
   @override
+  String get editMedication => 'Edit Medication';
+
+  @override
   String get medicationInformation => 'Medication Information';
 
   @override
   String get medicationInformationDesc =>
       'Enter the name and dosage form of the medication.';
+
+  @override
+  String get whatMedicationToAdd => 'What medication do you want to add?';
 
   @override
   String get medicationNameLabel => 'Medication Name *';
@@ -231,7 +256,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get strengthAmountHint => 'e.g., 2.5, 1/2, 10';
 
   @override
-  String get strengthUnitLabel => 'Unit';
+  String get strengthUnitLabel => 'Strenght unit';
 
   @override
   String get customStrengthUnitLabel => 'Custom Unit';
@@ -252,7 +277,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dosageAmountRequired => 'Required: amount per administration';
 
   @override
-  String get unitTypeLabel => 'Unit Type *';
+  String get unitTypeLabel => 'Dose unit';
 
   @override
   String get frequencyLabel => 'Frequency';
@@ -294,6 +319,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get saveMedication => 'Save Medication';
+
+  @override
+  String get medicationNameRequired => 'Medication name is required';
+
+  @override
+  String get strengthUnitRequired => 'Please select a strength unit';
+
+  @override
+  String get customStrengthUnitRequired => 'Please specify the custom unit';
+
+  @override
+  String get dosageRequired => 'Dosage is required';
+
+  @override
+  String get dosageHint => 'e.g., 1, 1/2, 2.5';
+
+  @override
+  String get dosageDescriptionPart1 => 'Enter the ';
+
+  @override
+  String get dosageDescriptionPart2 => 'amount per administration';
+
+  @override
+  String get dosageDescriptionPart3 => ' and select the medication unit.';
+
+  @override
+  String get frequencyDescription =>
+      'How often should this medication be given?';
+
+  @override
+  String get reminderTimesDescription =>
+      'Set the times when you want to be reminded to give this medication.';
+
+  @override
+  String reminderTimesIncomplete(int count) {
+    return 'Please set all $count reminder times';
+  }
+
+  @override
+  String get errorSavingMedication =>
+      'Failed to save medication. Please check all fields and try again.';
 
   @override
   String get fluidTherapySetupTitle => 'Fluid Therapy Setup';
@@ -703,6 +769,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get duplicateDialogNoNotes => 'No notes';
+
+  @override
+  String get dosageAdjustLink => 'Adjust dose';
+
+  @override
+  String get dosageCollapseLink => 'Collapse';
+
+  @override
+  String get dosageGivenLabel => 'Dosage given:';
+
+  @override
+  String get dosagePresetFull => 'Full';
+
+  @override
+  String get dosagePresetHalf => 'Half';
+
+  @override
+  String get dosagePresetSkip => 'Skip';
+
+  @override
+  String get dosageBadgeMissed => 'Skipped';
+
+  @override
+  String dosageBadgePartial(int percent) {
+    return '$percent% of scheduled';
+  }
+
+  @override
+  String dosageBadgeExtra(int percent) {
+    return '$percent% of scheduled';
+  }
 
   @override
   String get quickLogTreatmentSingular => 'treatment';

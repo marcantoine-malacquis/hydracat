@@ -26,7 +26,7 @@ import 'package:hydracat/shared/widgets/widgets.dart';
 /// Features:
 /// - Multi-select medication cards showing name, strength, and dosage
 /// - "Select All" button for convenience
-/// - Fixed dosage from schedule (no adjustment in this flow)
+/// - Expandable inline dosage adjustment with presets (full/half/skip)
 /// - Notes field (max 5 lines, 500 characters)
 /// - Loading overlay during batch write
 /// - Success animation with haptic feedback
@@ -73,6 +73,12 @@ class _MedicationLoggingScreenState
     extends ConsumerState<MedicationLoggingScreen> {
   // Selection state
   final Set<String> _selectedMedicationIds = {};
+
+  // Dosage state - maps medication ID to custom dosage (defaults to scheduled)
+  final Map<String, double> _customDosages = {};
+
+  // Expansion state - tracks which medication card is expanded
+  String? _expandedMedicationId;
 
   // Notes controller and focus
   final TextEditingController _notesController = TextEditingController();
@@ -134,11 +140,20 @@ class _MedicationLoggingScreenState
 
   /// Toggle medication selection
   void _toggleMedication(String medicationId) {
+    final schedules = ref.read(todaysMedicationSchedulesProvider);
+    final schedule = schedules.firstWhere((s) => s.id == medicationId);
+
     setState(() {
       if (_selectedMedicationIds.contains(medicationId)) {
         _selectedMedicationIds.remove(medicationId);
+        // Collapse if this was the expanded card
+        if (_expandedMedicationId == medicationId) {
+          _expandedMedicationId = null;
+        }
       } else {
         _selectedMedicationIds.add(medicationId);
+        // Initialize custom dosage to scheduled dose
+        _customDosages[medicationId] = schedule.targetDosage ?? 1.0;
         // Selection haptic feedback
         HapticFeedback.selectionClick();
       }
@@ -156,11 +171,14 @@ class _MedicationLoggingScreenState
       if (_selectedMedicationIds.length == totalCount) {
         // Deselect all
         _selectedMedicationIds.clear();
+        _expandedMedicationId = null; // Collapse any expanded card
       } else {
         // Select all
         _selectedMedicationIds.clear();
         for (final schedule in schedules) {
           _selectedMedicationIds.add(schedule.id);
+          // Initialize custom dosage to scheduled dose
+          _customDosages[schedule.id] = schedule.targetDosage ?? 1.0;
         }
         HapticFeedback.selectionClick();
       }
@@ -214,31 +232,44 @@ class _MedicationLoggingScreenState
           scheduledTime = widget.dashboardContext!.scheduledTime;
         } else {
           // Fallback to existing logic for notification/FAB flows
+          // Use the CLOSEST reminder time to now (not just first) so that
+          // the logged session matches the dashboard's expectation
           final now = DateTime.now();
           final todaysReminderTimes = schedule
               .todaysReminderTimes(now)
               .toList();
-          scheduledTime = todaysReminderTimes.isNotEmpty
-              ? todaysReminderTimes.first
-              : now;
+          if (todaysReminderTimes.isNotEmpty) {
+            // Find the closest reminder time to now
+            scheduledTime = todaysReminderTimes.reduce((a, b) {
+              final diffA = a.difference(now).abs();
+              final diffB = b.difference(now).abs();
+              return diffA < diffB ? a : b;
+            });
+          } else {
+            scheduledTime = now;
+          }
         }
 
-        // Create medication session with fixed schedule dosage
+        // Get custom dosage or default to scheduled dosage
+        final dosageGiven =
+            _customDosages[medicationId] ?? schedule.targetDosage!;
+
+        // Create medication session with custom or scheduled dosage
         final session = MedicationSession.create(
           petId: pet.id,
           userId: user.id,
           dateTime: DateTime.now(),
           medicationName: schedule.medicationName!,
-          dosageGiven: schedule.targetDosage!, // Use schedule's target dosage
+          dosageGiven: dosageGiven,
           dosageScheduled: schedule.targetDosage!,
           medicationUnit: schedule.medicationUnit!,
           medicationStrengthAmount: schedule.medicationStrengthAmount,
           medicationStrengthUnit: schedule.medicationStrengthUnit,
           customMedicationStrengthUnit: schedule.customMedicationStrengthUnit,
-          completed: true, // Always true for manual logging
+          completed: dosageGiven > 0, // Completed if dosage > 0, missed if 0
           notes: notes,
           scheduleId: schedule.id,
-          scheduledTime: scheduledTime, // ✅ Now properly set!
+          scheduledTime: scheduledTime,
         );
 
         // Log the session
@@ -353,11 +384,18 @@ class _MedicationLoggingScreenState
         .todaysReminderTimes(now)
         .toList();
 
-    // Use the first reminder time for today as the scheduled time
+    // Use the CLOSEST reminder time to now (not just first)
     // If no reminder time for today, use current time as fallback
-    final scheduledTime = todaysReminderTimes.isNotEmpty
-        ? todaysReminderTimes.first
-        : now;
+    final DateTime scheduledTime;
+    if (todaysReminderTimes.isNotEmpty) {
+      scheduledTime = todaysReminderTimes.reduce((a, b) {
+        final diffA = a.difference(now).abs();
+        final diffB = b.difference(now).abs();
+        return diffA < diffB ? a : b;
+      });
+    } else {
+      scheduledTime = now;
+    }
 
     // Create a mock existing session (this will be replaced with actual
     // data from the exception in Phase 5)
@@ -531,16 +569,35 @@ class _MedicationLoggingScreenState
               )
             else
               ...schedules.map((schedule) {
+                final isSelected = _selectedMedicationIds.contains(schedule.id);
+                final isExpanded = _expandedMedicationId == schedule.id;
+                final currentDosage =
+                    _customDosages[schedule.id] ?? schedule.targetDosage ?? 1.0;
+
                 return Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                   child: MedicationSelectionCard(
                     medication: schedule,
-                    isSelected: _selectedMedicationIds.contains(
-                      schedule.id,
-                    ),
+                    isSelected: isSelected,
+                    isExpanded: isExpanded,
+                    currentDosage: currentDosage,
                     onTap: _loadingState != LoadingOverlayState.none
                         ? () {}
                         : () => _toggleMedication(schedule.id),
+                    onExpandToggle: () {
+                      setState(() {
+                        if (_expandedMedicationId == schedule.id) {
+                          _expandedMedicationId = null;
+                        } else {
+                          _expandedMedicationId = schedule.id;
+                        }
+                      });
+                    },
+                    onDosageChanged: (double newDosage) {
+                      setState(() {
+                        _customDosages[schedule.id] = newDosage;
+                      });
+                    },
                   ),
                 );
               }),

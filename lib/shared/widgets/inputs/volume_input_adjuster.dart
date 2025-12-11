@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
-import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A reusable volume input widget with increment/decrement buttons.
 ///
@@ -179,7 +178,7 @@ class _VolumeInputAdjusterState extends State<VolumeInputAdjuster> {
           Expanded(
             child: Column(
               children: [
-                HydraTextField(
+                TextField(
                   controller: _controller,
                   focusNode: _focusNode,
                   keyboardType: const TextInputType.numberWithOptions(
@@ -191,16 +190,10 @@ class _VolumeInputAdjusterState extends State<VolumeInputAdjuster> {
                     fontSize: widget.fontSize,
                   ),
                   inputFormatters: [
-                    // The library directive may trigger
-                    // deprecated_member_use warnings
-                    // in some Dart versions.
-                    // ignore: deprecated_member_use
                     FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
                     LengthLimitingTextInputFormatter(5),
                   ],
                   decoration: InputDecoration(
-                    filled: true,
-                    fillColor: AppColors.background,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.sm,
                       vertical: AppSpacing.xs,
@@ -231,7 +224,6 @@ class _VolumeInputAdjusterState extends State<VolumeInputAdjuster> {
                   widget.unit,
                   style: AppTextStyles.caption.copyWith(
                     color: AppColors.textSecondary,
-                    decoration: TextDecoration.none,
                   ),
                 ),
               ],

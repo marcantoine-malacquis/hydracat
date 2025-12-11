@@ -53,6 +53,8 @@ class _HydraFabState extends State<HydraFab>
   Timer? _longPressTimer;
   late AnimationController _longPressAnimationController;
   late Animation<double> _scaleAnimation;
+  static const int _minPressDurationMs = 80;
+  DateTime? _pressStart;
 
   @override
   void initState() {
@@ -84,38 +86,54 @@ class _HydraFabState extends State<HydraFab>
     super.dispose();
   }
 
+  Future<void> _ensureMinPressDuration() async {
+    if (_pressStart == null) return;
+    final elapsed = DateTime.now().difference(_pressStart!).inMilliseconds;
+    if (elapsed < _minPressDurationMs) {
+      await Future<void>.delayed(
+        Duration(milliseconds: _minPressDurationMs - elapsed),
+      );
+    }
+  }
+
   void _onTapDown(TapDownDetails details) {
-    // Trigger haptic feedback immediately on touch down
+    if (widget.isLoading) return;
+
+    _pressStart = DateTime.now();
+    // Trigger haptic feedback immediately on touch down for all taps
     HapticFeedback.selectionClick();
 
-    if (widget.onLongPress != null && !widget.isLoading) {
-      // Start visual feedback animation
-      _longPressAnimationController.forward();
+    // Start visual feedback animation
+    _longPressAnimationController.forward();
 
+    if (widget.onLongPress != null) {
+      _longPressTimer?.cancel();
       _longPressTimer = Timer(const Duration(milliseconds: 500), () {
         // Long-press detected - trigger action
-        widget.onLongPress!();
+        widget.onLongPress?.call();
         // Animation will stay at end state until user lifts finger,
         // then _onTapUp will reverse it back to normal
       });
     }
   }
 
-  void _onTapUp(TapUpDetails details) {
+  Future<void> _onTapUp(TapUpDetails details) async {
     _longPressTimer?.cancel();
+    await _ensureMinPressDuration();
     // Reverse animation if long-press wasn't completed
     if (_longPressAnimationController.isAnimating ||
         _longPressAnimationController.value > 0) {
-      _longPressAnimationController.reverse();
+      await _longPressAnimationController.reverse();
     }
   }
 
-  void _onTapCancel() {
+  Future<void> _onTapCancel() async {
     _longPressTimer?.cancel();
+    await _ensureMinPressDuration();
     // Reverse animation if long-press was cancelled
     if (_longPressAnimationController.isAnimating ||
         _longPressAnimationController.value > 0) {
-      _longPressAnimationController.reverse();
+      await _longPressAnimationController.reverse();
     }
   }
 
@@ -131,74 +149,50 @@ class _HydraFabState extends State<HydraFab>
   }
 
   Widget _buildMaterialFab(BuildContext context) {
-    // If we have a long press handler, create a custom FAB that handles
-    // gestures properly
-    if (widget.onLongPress != null) {
-      return AnimatedBuilder(
-        animation: _scaleAnimation,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: Material(
-              shape: const CircleBorder(
-                side: BorderSide(
-                  color: AppColors.border,
-                ),
+    // Use a single custom FAB path to guarantee tap-down haptics/animation
+    return AnimatedBuilder(
+      animation: _scaleAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Material(
+            shape: const CircleBorder(
+              side: BorderSide(
+                color: AppColors.border,
               ),
-              color: AppColors.surface,
-              child: InkWell(
-                onTap: widget.isLoading ? null : widget.onPressed,
-                // Use InkWell's native long-press to avoid conflicts
-                onLongPress: widget.isLoading
-                    ? null
-                    : () {
-                        widget.onLongPress?.call();
-                      },
-                // Keep these for safety,
-                // but long-press above is the primary path
-                onTapDown: _onTapDown,
-                onTapUp: _onTapUp,
-                onTapCancel: _onTapCancel,
-                customBorder: const CircleBorder(),
-                child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                  ),
-                  // IMPORTANT: Do NOT wrap in Tooltip here; Tooltip captures
-                  // long-press gestures on mobile and prevents our handler
-                  child: Icon(
-                    widget.icon,
-                    size: 32,
-                    color: AppColors.primary,
-                  ),
+            ),
+            color: AppColors.surface,
+            child: InkWell(
+              onTap: widget.isLoading ? null : widget.onPressed,
+              // Use InkWell's native long-press to avoid conflicts
+              onLongPress: widget.isLoading
+                  ? null
+                  : () {
+                      widget.onLongPress?.call();
+                    },
+              // Always handle tap down/up to show feedback on very short taps
+              onTapDown: widget.isLoading ? null : _onTapDown,
+              onTapUp: widget.isLoading ? null : _onTapUp,
+              onTapCancel: widget.isLoading ? null : _onTapCancel,
+              customBorder: const CircleBorder(),
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                ),
+                // IMPORTANT: Do NOT wrap in Tooltip here; Tooltip captures
+                // long-press gestures on mobile and prevents our handler
+                child: Icon(
+                  widget.icon,
+                  size: 32,
+                  color: AppColors.primary,
                 ),
               ),
             ),
-          );
-        },
-      );
-    }
-
-    // Fallback to standard FloatingActionButton for simple press-only case
-    return FloatingActionButton(
-      onPressed: widget.isLoading
-          ? null
-          : () {
-              HapticFeedback.selectionClick();
-              widget.onPressed?.call();
-            },
-      tooltip: widget.tooltip,
-      backgroundColor: AppColors.surface, // White background
-      foregroundColor: AppColors.primary, // Teal droplet
-      elevation: 0,
-      shape: const CircleBorder(
-        side: BorderSide(
-          color: AppColors.border,
-        ),
-      ),
-      child: _buildFabContent(),
+          ),
+        );
+      },
     );
   }
 
@@ -243,16 +237,15 @@ class _HydraFabState extends State<HydraFab>
       onLongPress: widget.isLoading
           ? null
           : widget.onLongPress != null
-          ? () {
-              HapticFeedback.selectionClick();
-              widget.onLongPress?.call();
-            }
-          : null,
-      onTapDown: widget.onLongPress != null && !widget.isLoading
-          ? _onTapDown
-          : null,
-      onTapUp: widget.onLongPress != null ? _onTapUp : null,
-      onTapCancel: widget.onLongPress != null ? _onTapCancel : null,
+              ? () {
+                  HapticFeedback.selectionClick();
+                  widget.onLongPress?.call();
+                }
+              : null,
+      // Always handle tap down/up to keep feedback on quick taps
+      onTapDown: widget.isLoading ? null : _onTapDown,
+      onTapUp: widget.isLoading ? null : _onTapUp,
+      onTapCancel: widget.isLoading ? null : _onTapCancel,
       child: fabContent,
     );
   }

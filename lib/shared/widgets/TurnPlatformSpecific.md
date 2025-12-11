@@ -168,6 +168,11 @@ This avoids multiple `Theme.of(context)` lookups during the same build cycle, wh
     - `progress_week_calendar.dart` (replaced `_SlidingSegmentedControl`)
     - `weight_screen.dart` (replaced `SegmentedButton` granularity selector)
 
+- **`HydraList`** (`lib/shared/widgets/lists/hydra_list.dart`) - ✅ Done
+  - Wraps `ListView/ListTile` (Material) / `CupertinoListSection/CupertinoListTile` (iOS/macOS)
+  - Supports header/footer, inset grouped styling, optional dividers, and per-item destructive/chevron flags
+  - Provides `HydraListItem` data model and `HydraListTile` widget for standalone use
+
 - **`HydraButton`** (`lib/shared/widgets/buttons/hydra_button.dart`) - ✅ Done
   - Wraps `ElevatedButton` (Material) / `CupertinoButton` (iOS/macOS)
   - Platform-adaptive button with variants (primary, secondary, text) and sizing support

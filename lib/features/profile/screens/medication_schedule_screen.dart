@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/theme/theme.dart';
-import 'package:hydracat/features/logging/services/overlay_service.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
-import 'package:hydracat/features/onboarding/widgets/medication_overlay_wrapper.dart';
+import 'package:hydracat/features/onboarding/screens/add_medication_bottom_sheet.dart';
 import 'package:hydracat/features/onboarding/widgets/medication_summary_card.dart';
 import 'package:hydracat/features/onboarding/widgets/treatment_popup_wrapper.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
@@ -88,35 +87,21 @@ class _MedicationScheduleScreenState
     );
   }
 
-  /// Show medication overlay with blur background
-  Future<MedicationData?> _showMedicationOverlay({
+  /// Show medication bottom sheet
+  Future<MedicationData?> _showMedicationBottomSheet({
     MedicationData? initialMedication,
     bool isEditing = false,
   }) async {
-    final completer = Completer<MedicationData?>();
-
-    OverlayService.showFullScreenPopup(
+    return showAddMedicationBottomSheet(
       context: context,
-      child: MedicationOverlayWrapper(
-        initialMedication: initialMedication,
-        isEditing: isEditing,
-        onSave: (medication) {
-          completer.complete(medication);
-          OverlayService.hide();
-        },
-        onCancel: () {
-          completer.complete(null);
-          OverlayService.hide();
-        },
-      ),
+      initialMedication: initialMedication,
+      isEditing: isEditing,
     );
-
-    return completer.future;
   }
 
   /// Add a new medication
   Future<void> _onAddMedication() async {
-    final result = await _showMedicationOverlay();
+    final result = await _showMedicationBottomSheet();
 
     if (result != null) {
       setState(() {
@@ -160,7 +145,7 @@ class _MedicationScheduleScreenState
   Future<void> _onEditMedication(Schedule schedule) async {
     final medicationData = _scheduleToMedicationData(schedule);
 
-    final result = await _showMedicationOverlay(
+    final result = await _showMedicationBottomSheet(
       initialMedication: medicationData,
       isEditing: true,
     );
@@ -279,21 +264,37 @@ class _MedicationScheduleScreenState
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenPadding,
+                vertical: AppSpacing.lg,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Header section
-                  _buildHeader(context),
+                  // Add medication button (top CTA)
+                  HydraButton(
+                    onPressed: _isLoading ? null : _onAddMedication,
+                    isFullWidth: true,
+                    size: HydraButtonSize.large,
+                    isLoading: _isLoading,
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add),
+                        SizedBox(width: AppSpacing.xs),
+                        Text('Add Medication'),
+                      ],
+                    ),
+                  ),
 
-                  const SizedBox(height: AppSpacing.xl),
+                  const SizedBox(height: AppSpacing.mdLg),
 
                   // Content sections
                   if (isScheduleLoading && medicationSchedules == null) ...[
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(AppSpacing.xl),
-                        child: CircularProgressIndicator(),
+                    const Padding(
+                      padding: EdgeInsets.all(AppSpacing.xl),
+                      child: Center(
+                        child: HydraProgressIndicator(),
                       ),
                     ),
                   ] else if (medicationSchedules == null ||
@@ -307,61 +308,12 @@ class _MedicationScheduleScreenState
 
                   // Error message
                   if (_saveError != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: AppColors.errorLight.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.errorLight),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            color: AppColors.error,
-                            size: 20,
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: Text(
-                              _saveError!,
-                              style: AppTextStyles.body.copyWith(
-                                color: AppColors.error,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    HydraInfoCard(
+                      type: HydraInfoType.error,
+                      message: _saveError!,
                     ),
                     const SizedBox(height: AppSpacing.lg),
                   ],
-
-                  // Add medication button (only show when list is not empty)
-                  if (medicationSchedules != null &&
-                      medicationSchedules.isNotEmpty)
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: _isLoading ? null : _onAddMedication,
-                        icon: _isLoading
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.add),
-                        label: const Text('Add Medication'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          side: BorderSide(
-                            color: Theme.of(context).colorScheme.primary,
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -371,63 +323,9 @@ class _MedicationScheduleScreenState
     );
   }
 
-  /// Build header section
-  Widget _buildHeader(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Manage your medications and reminder schedules. '
-            'Tap any medication to edit its details.',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: theme.colorScheme.primary.withValues(alpha: 0.2),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  color: theme.colorScheme.primary,
-                  size: 20,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    'Changes are automatically saved to your profile',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   /// Build state when no medications are available
   Widget _buildNoMedicationsState() {
-    return Container(
+    return HydraCard(
       padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         children: [
@@ -456,21 +354,17 @@ class _MedicationScheduleScreenState
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.lg),
-          ElevatedButton.icon(
+          HydraButton(
             onPressed: _isLoading ? null : _onAddMedication,
-            icon: _isLoading
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.add),
-            label: const Text('Add First Medication'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 12,
-              ),
+            isFullWidth: true,
+            isLoading: _isLoading,
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.add),
+                SizedBox(width: AppSpacing.xs),
+                Text('Add First Medication'),
+              ],
             ),
           ),
         ],
@@ -483,7 +377,7 @@ class _MedicationScheduleScreenState
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.zero,
       itemCount: schedules.length,
       itemBuilder: (context, index) {
         final schedule = schedules[index];

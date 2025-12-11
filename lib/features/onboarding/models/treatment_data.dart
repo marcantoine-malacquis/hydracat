@@ -155,18 +155,18 @@ enum MedicationUnit {
 
   /// User-friendly display name for the unit
   String get displayName => switch (this) {
-    MedicationUnit.ampoules => 'Ampoules',
-    MedicationUnit.capsules => 'Capsules',
-    MedicationUnit.drops => 'Drops',
-    MedicationUnit.injections => 'Injections',
-    MedicationUnit.micrograms => 'Micrograms',
-    MedicationUnit.milligrams => 'Milligrams',
-    MedicationUnit.milliliters => 'Milliliters',
-    MedicationUnit.pills => 'Pills',
-    MedicationUnit.portions => 'Portions',
-    MedicationUnit.sachets => 'Sachets',
-    MedicationUnit.tablespoon => 'Tablespoon',
-    MedicationUnit.teaspoon => 'Teaspoon',
+    MedicationUnit.ampoules => 'Ampoule(s)',
+    MedicationUnit.capsules => 'Capsule(s)',
+    MedicationUnit.drops => 'Drop(s)',
+    MedicationUnit.injections => 'Injection(s)',
+    MedicationUnit.micrograms => 'Microgram(s)',
+    MedicationUnit.milligrams => 'Milligram(s)',
+    MedicationUnit.milliliters => 'Milliliter(s)',
+    MedicationUnit.pills => 'Pill(s)',
+    MedicationUnit.portions => 'Portion(s)',
+    MedicationUnit.sachets => 'Sachet(s)',
+    MedicationUnit.tablespoon => 'Tablespoon(s)',
+    MedicationUnit.teaspoon => 'Teaspoon(s)',
   };
 
   /// Short form of the unit for display in summaries
@@ -225,7 +225,7 @@ enum FluidLocation {
     return switch (this) {
       FluidLocation.shoulderBladeLeft => l10n.injectionSiteShoulderBladeLeft,
       FluidLocation.shoulderBladeMiddle =>
-          l10n.injectionSiteShoulderBladeMiddle,
+        l10n.injectionSiteShoulderBladeMiddle,
       FluidLocation.shoulderBladeRight => l10n.injectionSiteShoulderBladeRight,
       FluidLocation.hipBonesLeft => l10n.injectionSiteHipBonesLeft,
       FluidLocation.hipBonesRight => l10n.injectionSiteHipBonesRight,
@@ -237,6 +237,53 @@ enum FluidLocation {
     return FluidLocation.values
         .where((location) => location.name == value)
         .firstOrNull;
+  }
+}
+
+/// Enumeration of needle gauge sizes for fluid therapy
+enum NeedleGauge {
+  /// 18 gauge needle
+  gauge18,
+
+  /// 20 gauge needle
+  gauge20,
+
+  /// 22 gauge needle
+  gauge22,
+
+  /// 25 gauge needle
+  gauge25;
+
+  /// User-friendly display name for the needle gauge
+  String get displayName => switch (this) {
+    NeedleGauge.gauge18 => '18G',
+    NeedleGauge.gauge20 => '20G',
+    NeedleGauge.gauge22 => '22G',
+    NeedleGauge.gauge25 => '25G',
+  };
+
+  /// Creates a NeedleGauge from a string value
+  ///
+  /// Accepts both enum name (e.g., "gauge20") and display name (e.g., "20G")
+  static NeedleGauge? fromString(String value) {
+    // First try to match by enum name
+    final byName = NeedleGauge.values
+        .where((gauge) => gauge.name == value)
+        .firstOrNull;
+    if (byName != null) return byName;
+
+    // Then try to match by display name
+    return NeedleGauge.values
+        .where((gauge) => gauge.displayName == value)
+        .firstOrNull;
+  }
+
+  /// Creates a NeedleGauge from a nullable string value
+  ///
+  /// Returns null if the input is null or cannot be parsed
+  static NeedleGauge? fromStringOrNull(String? value) {
+    if (value == null || value.isEmpty) return null;
+    return fromString(value);
   }
 }
 
@@ -398,14 +445,14 @@ class MedicationData {
       frequency: frequency ?? this.frequency,
       reminderTimes: reminderTimes ?? this.reminderTimes,
       dosage: dosage == _undefined ? this.dosage : dosage as double?,
-      strengthAmount: strengthAmount == _undefined 
-          ? this.strengthAmount 
+      strengthAmount: strengthAmount == _undefined
+          ? this.strengthAmount
           : strengthAmount as String?,
-      strengthUnit: strengthUnit == _undefined 
-          ? this.strengthUnit 
+      strengthUnit: strengthUnit == _undefined
+          ? this.strengthUnit
           : strengthUnit as MedicationStrengthUnit?,
-      customStrengthUnit: customStrengthUnit == _undefined 
-          ? this.customStrengthUnit 
+      customStrengthUnit: customStrengthUnit == _undefined
+          ? this.customStrengthUnit
           : customStrengthUnit as String?,
     );
   }
@@ -476,7 +523,9 @@ class FluidTherapyData {
       preferredLocation:
           FluidLocation.fromString(json['preferredLocation'] as String) ??
           FluidLocation.shoulderBladeMiddle,
-      needleGauge: json['needleGauge'] as String,
+      needleGauge:
+          NeedleGauge.fromString(json['needleGauge'] as String) ??
+          NeedleGauge.gauge20,
     );
   }
 
@@ -490,7 +539,7 @@ class FluidTherapyData {
   final FluidLocation preferredLocation;
 
   /// Needle gauge preference
-  final String needleGauge;
+  final NeedleGauge needleGauge;
 
   /// Generate a human-readable summary of fluid therapy setup
   String get summary {
@@ -501,7 +550,7 @@ class FluidTherapyData {
 
   /// Whether this fluid therapy data has valid information
   bool get isValid {
-    return volumePerAdministration > 0 && needleGauge.isNotEmpty;
+    return volumePerAdministration > 0;
   }
 
   /// Converts [FluidTherapyData] to JSON data
@@ -510,7 +559,7 @@ class FluidTherapyData {
       'frequency': frequency.name,
       'volumePerAdministration': volumePerAdministration,
       'preferredLocation': preferredLocation.name,
-      'needleGauge': needleGauge,
+      'needleGauge': needleGauge.name,
     };
   }
 
@@ -519,7 +568,7 @@ class FluidTherapyData {
     TreatmentFrequency? frequency,
     double? volumePerAdministration,
     FluidLocation? preferredLocation,
-    String? needleGauge,
+    NeedleGauge? needleGauge,
   }) {
     return FluidTherapyData(
       frequency: frequency ?? this.frequency,

@@ -112,10 +112,11 @@ class _LabResultDetailPopupState extends ConsumerState<LabResultDetailPopup> {
         values: updatedValues,
         metadata: result['vetNotes'] != null
             ? _currentLabResult.metadata?.copyWith(
-                vetNotes: result['vetNotes'] as String,
-              ) ?? LabResultMetadata(
-                vetNotes: result['vetNotes'] as String,
-              )
+                    vetNotes: result['vetNotes'] as String,
+                  ) ??
+                  LabResultMetadata(
+                    vetNotes: result['vetNotes'] as String,
+                  )
             : _currentLabResult.metadata,
         updatedAt: DateTime.now(),
       );
@@ -130,27 +131,35 @@ class _LabResultDetailPopupState extends ConsumerState<LabResultDetailPopup> {
   }
 
   Widget _buildDateSelector() {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.calendar_today, size: 18),
-          const SizedBox(width: AppSpacing.sm),
-          Text(
-            _formatDate(_currentLabResult.testDate),
-            style: AppTextStyles.body.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+    return Align(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 180),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
           ),
-        ],
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.calendar_today, size: 18),
+              const SizedBox(width: AppSpacing.sm),
+              Flexible(
+                child: Text(
+                  _formatDate(_currentLabResult.testDate),
+                  style: AppTextStyles.body.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

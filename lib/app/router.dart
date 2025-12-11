@@ -277,29 +277,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               child: ComponentDemoScreen(),
             ),
           ),
+          // Settings routes - inside ShellRoute to show bottom nav bar
+          // Use bidirectional slide transitions and manage their own Scaffold
+          GoRoute(
+            path: '/profile/settings',
+            name: 'profile-settings',
+            pageBuilder: (context, state) =>
+                AppPageTransitions.bidirectionalSlide(
+              child: const SettingsScreen(),
+              key: state.pageKey,
+            ),
+            routes: [
+              GoRoute(
+                path: 'notifications',
+                name: 'notification-settings',
+                pageBuilder: (context, state) =>
+                    AppPageTransitions.bidirectionalSlide(
+                      child: const NotificationSettingsScreen(),
+                      key: state.pageKey,
+                    ),
+              ),
+            ],
+          ),
         ],
       ),
       // Profile detail routes (outside the ShellRoute)
       // Use bidirectional slide transitions and manage their own Scaffold
-      GoRoute(
-        path: '/profile/settings',
-        name: 'profile-settings',
-        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
-          child: const SettingsScreen(),
-          key: state.pageKey,
-        ),
-        routes: [
-          GoRoute(
-            path: 'notifications',
-            name: 'notification-settings',
-            pageBuilder: (context, state) =>
-                AppPageTransitions.bidirectionalSlide(
-                  child: const NotificationSettingsScreen(),
-                  key: state.pageKey,
-                ),
-          ),
-        ],
-      ),
       GoRoute(
         path: '/profile/ckd',
         name: 'profile-ckd',

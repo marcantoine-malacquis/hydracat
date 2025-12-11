@@ -142,6 +142,18 @@ class AppIcons {
   /// Location on (for injection sites)
   static const String locationOn = 'location_on';
 
+  /// Treatment frequency (clock icon)
+  static const String frequency = 'frequency';
+
+  /// Fluid volume per session (drink/glass icon)
+  static const String volume = 'volume';
+
+  /// Needle gauge selection (syringe/needle icon)
+  static const String needleGauge = 'needle_gauge';
+
+  /// Reminder time (clock/time icon)
+  static const String reminderTime = 'reminder_time';
+
   /// Refresh
   static const String refresh = 'refresh';
 

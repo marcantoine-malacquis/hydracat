@@ -801,7 +801,12 @@ class _ProgressDayDetailPopupState
               ),
               const SizedBox(height: AppSpacing.xs),
               _maybeSummaryCard(context, ref),
-              if (fluidReminders.isNotEmpty &&
+              const SizedBox(height: AppSpacing.sm),
+              // Show logged sessions
+              ..._buildFluidSessionsList(context, ref, fluidSessions),
+              // Show scheduled but unlogged reminders
+              if (fluidSessions.isEmpty &&
+                  fluidReminders.isNotEmpty &&
                   fluidHistoricalSchedule != null) ...[
                 const SizedBox(height: AppSpacing.xs),
                 ...fluidReminders.map(
@@ -981,7 +986,12 @@ class _ProgressDayDetailPopupState
               ),
               const SizedBox(height: AppSpacing.xs),
               _maybeSummaryCard(context, ref),
-              if (fluidReminders.isNotEmpty &&
+              const SizedBox(height: AppSpacing.sm),
+              // Show logged sessions
+              ..._buildFluidSessionsList(context, ref, fluidSessions),
+              // Show scheduled but unlogged reminders
+              if (fluidSessions.isEmpty &&
+                  fluidReminders.isNotEmpty &&
                   fluidHistoricalSchedule != null) ...[
                 const SizedBox(height: AppSpacing.xs),
                 ...fluidReminders.map(

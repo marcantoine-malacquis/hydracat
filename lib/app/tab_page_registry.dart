@@ -122,11 +122,11 @@ class TabPageRegistry {
         location == '/forgot-password' ||
         location == '/email-verification' ||
         location == '/demo' ||
+        // Settings routes that should show bottom nav
+        location.startsWith('/profile/settings') ||
         // Profile detail routes that should
         // be full-screen with slide transitions
         [
-          '/profile/settings',
-          '/profile/settings/notifications',
           '/profile/ckd',
           '/profile/fluid',
           '/profile/fluid/create',
@@ -140,6 +140,17 @@ class TabPageRegistry {
           '/progress/weight',
           '/progress/symptoms',
         ].contains(location);
+  }
+
+  /// Checks if a non-tab route should still show the bottom navigation bar.
+  ///
+  /// Some routes (like settings) render their own Scaffold but should still
+  /// display the bottom navigation bar for easy access to main tabs.
+  ///
+  /// Returns true for:
+  /// - Settings routes (/profile/settings/*)
+  static bool shouldShowBottomNavForNonTabRoute(String location) {
+    return location.startsWith('/profile/settings');
   }
 
   static bool _isHomeRoute(String location) {

@@ -79,7 +79,7 @@ class ScheduleHistoryEntry {
           json['customMedicationStrengthUnit'] as String?,
       targetVolume: (json['targetVolume'] as num?)?.toDouble(),
       preferredLocation: json['preferredLocation'] as String?,
-      needleGauge: json['needleGauge'] as String?,
+      needleGauge: NeedleGauge.fromStringOrNull(json['needleGauge'] as String?),
     );
   }
 
@@ -129,7 +129,7 @@ class ScheduleHistoryEntry {
   final String? preferredLocation;
 
   /// Needle gauge for fluid therapy
-  final String? needleGauge;
+  final NeedleGauge? needleGauge;
 
   /// Converts this entry to JSON for Firestore
   Map<String, dynamic> toJson() {
@@ -148,7 +148,7 @@ class ScheduleHistoryEntry {
       'customMedicationStrengthUnit': customMedicationStrengthUnit,
       'targetVolume': targetVolume,
       'preferredLocation': preferredLocation,
-      'needleGauge': needleGauge,
+      'needleGauge': needleGauge?.name,
     };
   }
 

@@ -50,7 +50,14 @@ class _NotificationSettingsScreenState
         appBar: HydraAppBar(
           title: Text(l10n.notificationSettingsTitle),
           leading: HydraBackButton(
-            onPressed: () => context.pop(),
+            onPressed: () {
+              // Check if we can pop, otherwise navigate back to settings
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/profile/settings');
+              }
+            },
           ),
         ),
         body: const Center(
@@ -70,7 +77,14 @@ class _NotificationSettingsScreenState
       appBar: HydraAppBar(
         title: Text(l10n.notificationSettingsTitle),
         leading: HydraBackButton(
-          onPressed: () => context.pop(),
+          onPressed: () {
+            // Check if we can pop, otherwise navigate back to settings
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/profile/settings');
+            }
+          },
         ),
       ),
       body: ListView(

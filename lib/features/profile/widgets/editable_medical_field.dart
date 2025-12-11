@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/core/theme/theme.dart';
+import 'package:hydracat/shared/widgets/icons/hydra_icon.dart';
 
 /// A reusable widget for displaying and editing medical information fields
 /// Provides consistent styling and behavior across all medical data editing
@@ -23,8 +25,8 @@ class EditableMedicalField extends StatelessWidget {
   /// Whether this field has no information
   final bool isEmpty;
 
-  /// Optional icon for the field
-  final IconData? icon;
+  /// Optional icon name for the field (from AppIcons)
+  final String? icon;
 
   /// Callback when the edit button is pressed
   final VoidCallback onEdit;
@@ -53,10 +55,12 @@ class EditableMedicalField extends StatelessWidget {
                     : AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Icon(
-                icon,
-                size: 16,
-                color: isEmpty ? AppColors.textTertiary : AppColors.primary,
+              child: Center(
+                child: HydraIcon(
+                  icon: icon!,
+                  size: 16,
+                  color: isEmpty ? AppColors.textTertiary : AppColors.primary,
+                ),
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
@@ -98,8 +102,8 @@ class EditableMedicalField extends StatelessWidget {
             ),
             child: IconButton(
               onPressed: onEdit,
-              icon: const Icon(
-                Icons.edit,
+              icon: const HydraIcon(
+                icon: AppIcons.edit,
                 size: 16,
                 color: AppColors.primary,
               ),
@@ -134,8 +138,8 @@ class EditableDateField extends StatelessWidget {
   /// The current date value (null if empty)
   final DateTime? date;
 
-  /// Optional icon for the field
-  final IconData? icon;
+  /// Optional icon name for the field (from AppIcons)
+  final String? icon;
 
   /// Callback when the edit button is pressed
   final VoidCallback onEdit;
@@ -178,8 +182,8 @@ class EditableLabValueField extends StatelessWidget {
   /// The unit of measurement
   final String unit;
 
-  /// Optional icon for the field
-  final IconData? icon;
+  /// Optional icon name for the field (from AppIcons)
+  final String? icon;
 
   /// Callback when the edit button is pressed
   final VoidCallback onEdit;

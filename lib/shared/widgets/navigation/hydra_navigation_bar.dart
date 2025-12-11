@@ -233,7 +233,7 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
                 child: HydraFab(
                   onPressed: widget.onFabPressed,
                   onLongPress: widget.onFabLongPress,
-                  icon: _getIconData(AppIcons.logSession),
+                  icon: _getIconData(AppIcons.logSession, isCupertino),
                   isLoading: widget.isFabLoading,
                 ),
               ),
@@ -423,12 +423,12 @@ class _HydraNavigationBarState extends State<HydraNavigationBar> {
     );
   }
 
-  IconData _getIconData(String iconName) {
+  IconData _getIconData(String iconName, bool isCupertino) {
     switch (iconName) {
       case AppIcons.logSession:
-        return Icons.water_drop;
+        return isCupertino ? CupertinoIcons.drop_fill : Icons.water_drop;
       default:
-        return Icons.help_outline;
+        return isCupertino ? CupertinoIcons.question : Icons.help_outline;
     }
   }
 }

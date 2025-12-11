@@ -721,7 +721,7 @@ Schedule _createFluidSchedule({
     updatedAt: createdAt,
     targetVolume: 100,
     preferredLocation: FluidLocation.shoulderBladeLeft,
-    needleGauge: '18G',
+    needleGauge: NeedleGauge.gauge18,
   );
 }
 

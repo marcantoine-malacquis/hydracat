@@ -68,6 +68,16 @@ lib/
 - **Standard Dart Classes**: Manual data classes with optional JSON serialization
 - **Code Generation**: Run `dart run build_runner build` after model changes
 
+### Localization
+- **All user-facing text must be localized**: Never use hardcoded strings for text displayed to users. All labels, titles, messages, buttons, placeholders, and error messages must use localization keys from `lib/l10n/app_en.arb`.
+- **Access localization**: Use `AppLocalizations.of(context)!` or `context.l10n` extension to access localized strings.
+- **Add new keys**: When adding new text, add the key-value pair to `lib/l10n/app_en.arb` following existing naming conventions (e.g., `medicationLoggingTitle`, `errorSavingMedicalInfo`).
+- **Key naming**: Use descriptive, context-specific names (e.g., `medicationLoggingTitle` not `title1`).
+- **Placeholders**: Use Flutter's ARB format for parameterized strings (e.g., `"message": "Hello {name}"` with `@message` metadata).
+- **Example**:
+  - ❌ `Text('Medication')`
+  - ✅ `Text(l10n.medicationLoggingTitle)`
+
 ### Flutter Performance Best Practices
 - **Widget Classes Over Methods**: Extract widget-returning methods into dedicated widget classes (StatelessWidget/StatefulWidget). This allows Flutter's reconciliation algorithm to optimize rebuilds and enables const constructors.
   - ❌ `Widget _buildHeader() => Container(...)`
@@ -130,7 +140,7 @@ features/[feature]/
 - **Security**: API keys stored in Firebase configuration files
 - **Entry Points**: Development (`main_development.dart`), Production (`main_production.dart`), Default (`main.dart` → development)
 - **iOS Setup**: Requires manual Xcode configuration for build schemes
-- **Internationalization**: Use l10n in `lib/l10n`
+- **Internationalization**: All user-facing text must be localized using `lib/l10n/app_en.arb`. See Code Standards > Localization for best practices.
 
 ## Important Instruction Reminders
 - Do what has been asked; nothing more, nothing less.

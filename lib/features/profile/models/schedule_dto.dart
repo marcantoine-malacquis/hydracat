@@ -69,7 +69,7 @@ class ScheduleDto {
     required double targetVolume,
     required TreatmentFrequency frequency,
     required FluidLocation preferredLocation,
-    required String needleGauge,
+    required NeedleGauge needleGauge,
     required List<DateTime> reminderTimes,
     String? id,
     bool isActive = true,
@@ -130,7 +130,7 @@ class ScheduleDto {
   final FluidLocation? preferredLocation;
 
   /// Needle gauge preference (fluid therapy only)
-  final String? needleGauge;
+  final NeedleGauge? needleGauge;
 
   /// Converts the DTO to a JSON-compatible map for Firestore
   ///
@@ -161,7 +161,7 @@ class ScheduleDto {
     if (treatmentType == TreatmentType.fluid) {
       json['targetVolume'] = targetVolume;
       json['preferredLocation'] = preferredLocation?.name;
-      json['needleGauge'] = needleGauge;
+      json['needleGauge'] = needleGauge?.name;
     }
 
     return json;

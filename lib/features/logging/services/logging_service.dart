@@ -1316,9 +1316,17 @@ class LoggingService {
 
           // Create single catch-up session for remaining volume
           final reminderTimes = schedule.todaysReminderTimes(now).toList();
-          final scheduledTime = reminderTimes.isNotEmpty
-              ? reminderTimes.first
-              : now;
+          final DateTime scheduledTime;
+          if (reminderTimes.isNotEmpty) {
+            // Use the CLOSEST reminder time to now (not just first)
+            scheduledTime = reminderTimes.reduce((a, b) {
+              final diffA = a.difference(now).abs();
+              final diffB = b.difference(now).abs();
+              return diffA < diffB ? a : b;
+            });
+          } else {
+            scheduledTime = now;
+          }
 
           if (kDebugMode) {
             debugPrint(

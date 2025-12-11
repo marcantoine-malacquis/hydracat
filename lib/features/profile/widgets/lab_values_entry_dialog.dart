@@ -239,15 +239,16 @@ class _LabValuesEntryDialogState extends ConsumerState<LabValuesEntryDialog> {
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.calendar_today, size: 20),
+            const Icon(Icons.calendar_today, size: 18),
             const SizedBox(width: AppSpacing.sm),
             Text(
               DateFormat('MMM dd, yyyy').format(_selectedDate),
               style: AppTextStyles.body,
             ),
-            const Spacer(),
-            const Icon(Icons.arrow_drop_down),
+            const SizedBox(width: AppSpacing.xs),
+            const Icon(Icons.arrow_drop_down, size: 20),
           ],
         ),
       ),
@@ -256,9 +257,8 @@ class _LabValuesEntryDialogState extends ConsumerState<LabValuesEntryDialog> {
 
   Widget _buildHeaderDateSelector() {
     return Align(
-      alignment: Alignment.centerLeft,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 260),
+        constraints: const BoxConstraints(maxWidth: 220),
         child: _buildDateSelector(),
       ),
     );
@@ -630,6 +630,7 @@ class _LabValuesEntryDialogState extends ConsumerState<LabValuesEntryDialog> {
             HydraButton(
               onPressed: _handleDelete,
               variant: HydraButtonVariant.secondary,
+              borderColor: AppColors.error,
               isFullWidth: true,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,

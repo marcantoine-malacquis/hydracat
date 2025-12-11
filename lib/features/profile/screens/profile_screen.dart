@@ -430,7 +430,7 @@ class _ProfileScreenContent {
               return NavigationCard(
                 title: 'Fluid Schedule',
                 icon: IconProvider.resolveIconData(
-                  AppIcons.fluidTherapy,
+                  AppIcons.waterDropOutlined,
                   isCupertino: isCupertino,
                 ),
                 showBackgroundCircle: false,

@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
-import 'package:hydracat/features/onboarding/widgets/rotating_wheel_picker.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/features/profile/widgets/editable_medical_field.dart';
+import 'package:hydracat/features/profile/widgets/fluid_schedule/frequency_edit_bottom_sheet.dart';
+import 'package:hydracat/features/profile/widgets/fluid_schedule/location_edit_bottom_sheet.dart';
+import 'package:hydracat/features/profile/widgets/fluid_schedule/needle_gauge_edit_bottom_sheet.dart';
+import 'package:hydracat/features/profile/widgets/fluid_schedule/volume_edit_bottom_sheet.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
@@ -26,7 +30,7 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
   TreatmentFrequency? _editingFrequency;
   double? _editingVolume;
   FluidLocation? _editingLocation;
-  String _editingNeedleGauge = '';
+  NeedleGauge? _editingNeedleGauge;
   DateTime? _editingReminderTime;
 
   // Track what's been modified
@@ -35,13 +39,6 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
 
   // Error state
   String? _saveError;
-
-  // Edit mode tracking
-  bool _isEditingFrequency = false;
-  bool _isEditingVolume = false;
-  bool _isEditingLocation = false;
-  bool _isEditingNeedleGauge = false;
-  bool _isEditingReminderTime = false;
 
   @override
   void initState() {
@@ -66,7 +63,7 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
       _editingFrequency = schedule.frequency;
       _editingVolume = schedule.targetVolume;
       _editingLocation = schedule.preferredLocation;
-      _editingNeedleGauge = schedule.needleGauge ?? '';
+      _editingNeedleGauge = schedule.needleGauge;
       _editingReminderTime = schedule.reminderTimes.isNotEmpty
           ? schedule.reminderTimes.first
           : null;
@@ -99,9 +96,7 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
         targetVolume: _editingVolume ?? currentSchedule.targetVolume,
         preferredLocation:
             _editingLocation ?? currentSchedule.preferredLocation,
-        needleGauge: _editingNeedleGauge.trim().isEmpty
-            ? currentSchedule.needleGauge
-            : _editingNeedleGauge.trim(),
+        needleGauge: _editingNeedleGauge ?? currentSchedule.needleGauge,
         reminderTimes: _editingReminderTime != null
             ? [_editingReminderTime!]
             : currentSchedule.reminderTimes,
@@ -119,14 +114,9 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
           .updateFluidSchedule(updatedSchedule);
 
       if (success) {
-        // Reset edit mode states
+        // Reset changes state
         setState(() {
           _hasChanges = false;
-          _isEditingFrequency = false;
-          _isEditingVolume = false;
-          _isEditingLocation = false;
-          _isEditingNeedleGauge = false;
-          _isEditingReminderTime = false;
         });
 
         // Show success feedback
@@ -157,6 +147,137 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
+  }
+
+  /// Show frequency edit bottom sheet
+  Future<void> _showFrequencyEditBottomSheet() async {
+    final currentSchedule = ref.read(fluidScheduleProvider);
+    final initialValue = _editingFrequency ?? currentSchedule?.frequency;
+
+    final result = await showHydraBottomSheet<TreatmentFrequency?>(
+      context: context,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      backgroundColor: AppColors.background,
+      builder: (context) => HydraBottomSheet(
+        backgroundColor: AppColors.background,
+        child: FrequencyEditBottomSheet(initialValue: initialValue),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _editingFrequency = result;
+        _markAsChanged();
+      });
+    }
+  }
+
+  /// Show volume edit bottom sheet
+  Future<void> _showVolumeEditBottomSheet() async {
+    final currentSchedule = ref.read(fluidScheduleProvider);
+    final initialValue = _editingVolume ?? currentSchedule?.targetVolume;
+
+    final result = await showHydraBottomSheet<double?>(
+      context: context,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      backgroundColor: AppColors.background,
+      builder: (context) => HydraBottomSheet(
+        backgroundColor: AppColors.background,
+        child: VolumeEditBottomSheet(initialValue: initialValue),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _editingVolume = result;
+        _markAsChanged();
+      });
+    }
+  }
+
+  /// Show location edit bottom sheet
+  Future<void> _showLocationEditBottomSheet() async {
+    final currentSchedule = ref.read(fluidScheduleProvider);
+    final initialValue = _editingLocation ?? currentSchedule?.preferredLocation;
+
+    final result = await showHydraBottomSheet<FluidLocation?>(
+      context: context,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      backgroundColor: AppColors.background,
+      builder: (context) => HydraBottomSheet(
+        backgroundColor: AppColors.background,
+        child: LocationEditBottomSheet(initialValue: initialValue),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _editingLocation = result;
+        _markAsChanged();
+      });
+    }
+  }
+
+  /// Show needle gauge edit bottom sheet
+  Future<void> _showNeedleGaugeEditBottomSheet() async {
+    final currentSchedule = ref.read(fluidScheduleProvider);
+    final initialValue = _editingNeedleGauge ?? currentSchedule?.needleGauge;
+
+    final result = await showHydraBottomSheet<NeedleGauge?>(
+      context: context,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      backgroundColor: AppColors.background,
+      builder: (context) => HydraBottomSheet(
+        backgroundColor: AppColors.background,
+        child: NeedleGaugeEditBottomSheet(initialValue: initialValue),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _editingNeedleGauge = result;
+        _markAsChanged();
+      });
+    }
+  }
+
+  /// Show reminder time picker directly
+  Future<void> _showReminderTimeEditBottomSheet() async {
+    final currentSchedule = ref.read(fluidScheduleProvider);
+    final initialValue =
+        _editingReminderTime ??
+        (currentSchedule?.reminderTimes.isNotEmpty ?? false
+            ? currentSchedule!.reminderTimes.first
+            : null);
+
+    final initialTime = initialValue != null
+        ? TimeOfDay.fromDateTime(initialValue)
+        : const TimeOfDay(hour: 9, minute: 0);
+
+    final selectedTime = await HydraTimePicker.show(
+      context: context,
+      initialTime: initialTime,
+    );
+
+    if (selectedTime != null && mounted) {
+      final now = DateTime.now();
+      final newTime = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        selectedTime.hour,
+        selectedTime.minute,
+      );
+
+      setState(() {
+        _editingReminderTime = newTime;
+        _markAsChanged();
+      });
+    }
   }
 
   /// Show unsaved changes dialog when user tries to navigate back
@@ -243,22 +364,22 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
                       // Frequency Section
                       _buildFrequencySection(),
 
-                      const SizedBox(height: AppSpacing.xl),
+                      const SizedBox(height: AppSpacing.sm),
 
                       // Volume Section
                       _buildVolumeSection(),
 
-                      const SizedBox(height: AppSpacing.xl),
+                      const SizedBox(height: AppSpacing.sm),
 
                       // Location Section
                       _buildLocationSection(),
 
-                      const SizedBox(height: AppSpacing.xl),
+                      const SizedBox(height: AppSpacing.sm),
 
                       // Needle Gauge Section
                       _buildNeedleGaugeSection(),
 
-                      const SizedBox(height: AppSpacing.xl),
+                      const SizedBox(height: AppSpacing.sm),
 
                       // Reminder Time Section
                       _buildReminderTimeSection(),
@@ -365,92 +486,12 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
 
   /// Build frequency section
   Widget _buildFrequencySection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Administration Frequency',
-          style: AppTextStyles.h3.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-
-        if (_isEditingFrequency) ...[
-          // Editing mode
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Theme.of(
-                  context,
-                ).colorScheme.outline.withValues(alpha: 0.3),
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: RotatingWheelPicker<TreatmentFrequency>(
-              items: TreatmentFrequency.values,
-              initialIndex: TreatmentFrequency.values.indexOf(
-                _editingFrequency ?? TreatmentFrequency.onceDaily,
-              ),
-              onSelectedItemChanged: (index) {
-                setState(() {
-                  _editingFrequency = TreatmentFrequency.values[index];
-                  _markAsChanged();
-                });
-              },
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEditingFrequency = false;
-                      // Reset to original value
-                      final schedule = ref.read(fluidScheduleProvider);
-                      if (schedule != null) {
-                        _editingFrequency = schedule.frequency;
-                      }
-                    });
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    side: const BorderSide(color: AppColors.error),
-                  ),
-                  child: const Text('Cancel'),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEditingFrequency = false;
-                    });
-                  },
-                  child: const Text('Done'),
-                ),
-              ),
-            ],
-          ),
-        ] else ...[
-          // Display mode
-          EditableMedicalField(
-            label: 'Frequency',
-            value: _editingFrequency?.displayName ?? 'No information',
-            isEmpty: _editingFrequency == null,
-            icon: Icons.schedule,
-            onEdit: () {
-              setState(() {
-                _isEditingFrequency = true;
-              });
-            },
-          ),
-        ],
-      ],
+    return EditableMedicalField(
+      label: 'Fluid session frequency',
+      value: _editingFrequency?.displayName ?? 'No information',
+      isEmpty: _editingFrequency == null,
+      icon: AppIcons.frequency,
+      onEdit: _showFrequencyEditBottomSheet,
     );
   }
 
@@ -469,449 +510,60 @@ class _FluidScheduleScreenState extends ConsumerState<FluidScheduleScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Volume per session (mL)',
-          style: AppTextStyles.h3.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
+        EditableMedicalField(
+          label: 'Volume per session',
+          value: _editingVolume != null
+              ? '${_editingVolume!.toInt()} mL'
+              : 'No information',
+          isEmpty: _editingVolume == null,
+          icon: AppIcons.volume,
+          onEdit: _showVolumeEditBottomSheet,
         ),
-        const SizedBox(height: AppSpacing.md),
-
-        if (_isEditingVolume) ...[
-          // Editing mode
-          TextFormField(
-            initialValue: _editingVolume?.toString() ?? '',
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            onChanged: (value) {
-              setState(() {
-                _editingVolume = double.tryParse(value) ?? 0;
-                _markAsChanged();
-              });
-            },
-            decoration: InputDecoration(
-              labelText: 'Volume (ml)',
-              hintText: '100.0',
-              suffixText: 'ml',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              prefixIcon: const Icon(Icons.local_drink),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEditingVolume = false;
-                      // Reset to original value
-                      final schedule = ref.read(fluidScheduleProvider);
-                      if (schedule != null) {
-                        _editingVolume = schedule.targetVolume;
-                      }
-                    });
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    side: const BorderSide(color: AppColors.error),
-                  ),
-                  child: const Text('Cancel'),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEditingVolume = false;
-                    });
-                  },
-                  child: const Text('Done'),
-                ),
-              ),
-            ],
-          ),
-        ] else ...[
-          // Display mode
-          EditableMedicalField(
-            label: 'Volume per session (mL)',
-            value: _editingVolume != null
-                ? '${_editingVolume!.toInt()}ml'
-                : 'No information',
-            isEmpty: _editingVolume == null,
-            icon: Icons.local_drink,
-            onEdit: () {
-              setState(() {
-                _isEditingVolume = true;
-              });
-            },
-          ),
-        ],
-        const SizedBox(height: AppSpacing.sm),
-        if (totalPlannedToday > 0)
+        if (totalPlannedToday > 0) ...[
+          const SizedBox(height: AppSpacing.sm),
           Text(
             l10n.totalPlannedToday(totalPlannedToday),
             style: AppTextStyles.body.copyWith(
               color: AppColors.textSecondary,
             ),
           ),
+        ],
       ],
     );
   }
 
   /// Build location section
   Widget _buildLocationSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Preferred Administration Location',
-          style: AppTextStyles.h3.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-
-        if (_isEditingLocation) ...[
-          // Editing mode
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Theme.of(
-                  context,
-                ).colorScheme.outline.withValues(alpha: 0.3),
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: RotatingWheelPicker<FluidLocation>(
-              items: FluidLocation.values,
-              initialIndex: FluidLocation.values.indexOf(
-                _editingLocation ?? FluidLocation.shoulderBladeMiddle,
-              ),
-              onSelectedItemChanged: (index) {
-                setState(() {
-                  _editingLocation = FluidLocation.values[index];
-                  _markAsChanged();
-                });
-              },
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEditingLocation = false;
-                      // Reset to original value
-                      final schedule = ref.read(fluidScheduleProvider);
-                      if (schedule != null) {
-                        _editingLocation = schedule.preferredLocation;
-                      }
-                    });
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    side: const BorderSide(color: AppColors.error),
-                  ),
-                  child: const Text('Cancel'),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEditingLocation = false;
-                    });
-                  },
-                  child: const Text('Done'),
-                ),
-              ),
-            ],
-          ),
-        ] else ...[
-          // Display mode
-          EditableMedicalField(
-            label: 'Preferred Location',
-            value: _editingLocation?.displayName ?? 'No information',
-            isEmpty: _editingLocation == null,
-            icon: Icons.place,
-            onEdit: () {
-              setState(() {
-                _isEditingLocation = true;
-              });
-            },
-          ),
-        ],
-      ],
+    return EditableMedicalField(
+      label: 'Preferred Location',
+      value: _editingLocation?.displayName ?? 'No information',
+      isEmpty: _editingLocation == null,
+      icon: AppIcons.locationOn,
+      onEdit: _showLocationEditBottomSheet,
     );
   }
 
   /// Build needle gauge section
   Widget _buildNeedleGaugeSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Needle Gauge',
-          style: AppTextStyles.h3.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-
-        if (_isEditingNeedleGauge) ...[
-          // Editing mode
-          TextFormField(
-            initialValue: _editingNeedleGauge,
-            onChanged: (value) {
-              setState(() {
-                _editingNeedleGauge = value.trim();
-                _markAsChanged();
-              });
-            },
-            decoration: InputDecoration(
-              labelText: 'Needle Gauge',
-              hintText: '20G, 22G, 25G',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              prefixIcon: const Icon(Icons.colorize),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: [
-              '18G',
-              '20G',
-              '22G',
-              '25G',
-            ].map(_buildGaugeChip).toList(),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEditingNeedleGauge = false;
-                      // Reset to original value
-                      final schedule = ref.read(fluidScheduleProvider);
-                      if (schedule != null) {
-                        _editingNeedleGauge = schedule.needleGauge ?? '';
-                      }
-                    });
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    side: const BorderSide(color: AppColors.error),
-                  ),
-                  child: const Text('Cancel'),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEditingNeedleGauge = false;
-                    });
-                  },
-                  child: const Text('Done'),
-                ),
-              ),
-            ],
-          ),
-        ] else ...[
-          // Display mode
-          EditableMedicalField(
-            label: 'Needle Gauge',
-            value: _editingNeedleGauge.isNotEmpty
-                ? _editingNeedleGauge
-                : 'No information',
-            isEmpty: _editingNeedleGauge.isEmpty,
-            icon: Icons.colorize,
-            onEdit: () {
-              setState(() {
-                _isEditingNeedleGauge = true;
-              });
-            },
-          ),
-        ],
-      ],
+    return EditableMedicalField(
+      label: 'Needle Gauge',
+      value: _editingNeedleGauge?.displayName ?? 'No information',
+      isEmpty: _editingNeedleGauge == null,
+      icon: AppIcons.needleGauge,
+      onEdit: _showNeedleGaugeEditBottomSheet,
     );
   }
 
   /// Build reminder time section
   Widget _buildReminderTimeSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Reminder Time',
-          style: AppTextStyles.h3.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-
-        if (_isEditingReminderTime) ...[
-          // Editing mode
-          GestureDetector(
-            onTap: () async {
-              final selectedTime = await HydraTimePicker.show(
-                context: context,
-                initialTime: _editingReminderTime != null
-                    ? TimeOfDay.fromDateTime(_editingReminderTime!)
-                    : const TimeOfDay(hour: 9, minute: 0),
-              );
-
-              if (selectedTime != null) {
-                final now = DateTime.now();
-                final newTime = DateTime(
-                  now.year,
-                  now.month,
-                  now.day,
-                  selectedTime.hour,
-                  selectedTime.minute,
-                );
-
-                setState(() {
-                  _editingReminderTime = newTime;
-                  _markAsChanged();
-                });
-              }
-            },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.border),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.access_time,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Text(
-                    _editingReminderTime != null
-                        ? _formatTime(_editingReminderTime!)
-                        : 'Select reminder time',
-                    style: AppTextStyles.body.copyWith(
-                      color: _editingReminderTime != null
-                          ? AppColors.textPrimary
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEditingReminderTime = false;
-                      // Reset to original value
-                      final schedule = ref.read(fluidScheduleProvider);
-                      if (schedule != null &&
-                          schedule.reminderTimes.isNotEmpty) {
-                        _editingReminderTime = schedule.reminderTimes.first;
-                      }
-                    });
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    side: const BorderSide(color: AppColors.error),
-                  ),
-                  child: const Text('Cancel'),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEditingReminderTime = false;
-                    });
-                  },
-                  child: const Text('Done'),
-                ),
-              ),
-            ],
-          ),
-        ] else ...[
-          // Display mode
-          EditableMedicalField(
-            label: 'Reminder Time',
-            value: _editingReminderTime != null
-                ? _formatTime(_editingReminderTime!)
-                : 'No information',
-            isEmpty: _editingReminderTime == null,
-            icon: Icons.access_time,
-            onEdit: () {
-              setState(() {
-                _isEditingReminderTime = true;
-              });
-            },
-          ),
-        ],
-      ],
-    );
-  }
-
-  /// Build gauge chip for quick selection
-  Widget _buildGaugeChip(String gauge) {
-    final isSelected = _editingNeedleGauge == gauge;
-
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _editingNeedleGauge = gauge;
-          _markAsChanged();
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.surface,
-          border: Border.all(
-            color: isSelected
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(
-          gauge,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: isSelected
-                ? Theme.of(context).colorScheme.onPrimary
-                : Theme.of(context).colorScheme.onSurface,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
+    return EditableMedicalField(
+      label: 'Reminder Time',
+      value: _editingReminderTime != null
+          ? _formatTime(_editingReminderTime!)
+          : 'No information',
+      isEmpty: _editingReminderTime == null,
+      icon: AppIcons.reminderTime,
+      onEdit: _showReminderTimeEditBottomSheet,
     );
   }
 }
