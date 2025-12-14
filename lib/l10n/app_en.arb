@@ -276,6 +276,22 @@
     }
   },
   "reminderTimesLabel": "Reminder Times",
+  "noTimeSet": "No time set",
+  "@noTimeSet": {
+    "description": "Displayed when a medication has no specific reminder time"
+  },
+  "setReminder": "Set reminder",
+  "@setReminder": {
+    "description": "Toggle label to enable/disable reminder times"
+  },
+  "setReminderSubtitle": "Receive notifications at scheduled times",
+  "@setReminderSubtitle": {
+    "description": "Subtitle for set reminder toggle explaining what it does"
+  },
+  "noReminderInfo": "This medication will appear in your list but won't send notifications. You can log it anytime throughout the day.",
+  "@noReminderInfo": {
+    "description": "Info message shown when reminder is disabled"
+  },
   "frequencyOnceDaily": "Set a time for the daily administration",
   "frequencyTwiceDaily": "Set times for morning and evening administration (12 hours apart recommended)",
   "frequencyThreeTimesDaily": "Set times for morning, afternoon, and evening administration (8 hours apart recommended)",

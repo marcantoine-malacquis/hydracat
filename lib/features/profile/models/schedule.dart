@@ -180,6 +180,10 @@ class Schedule {
   // Unit short-form logic centralized in MedicationUnitUtils
 
   /// Whether this schedule has valid data
+  ///
+  /// Medication schedules can have empty [reminderTimes] for flexible
+  /// scheduling (no specific reminder times, user logs whenever needed).
+  /// Fluid schedules still require at least one reminder time.
   bool get isValid {
     if (treatmentType == TreatmentType.fluid) {
       return targetVolume != null &&
@@ -193,8 +197,8 @@ class Schedule {
           targetDosage != null &&
           targetDosage! > 0 &&
           medicationUnit != null &&
-          medicationUnit!.isNotEmpty &&
-          reminderTimes.isNotEmpty;
+          medicationUnit!.isNotEmpty;
+          // reminderTimes can now be empty for flexible scheduling
     }
     return false;
   }

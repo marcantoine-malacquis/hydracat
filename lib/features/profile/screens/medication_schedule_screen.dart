@@ -80,9 +80,9 @@ class _MedicationScheduleScreenState
       updatedAt: now,
       medicationName: medication.name,
       targetDosage: medication.dosage ?? 1,
-      medicationUnit: medication.unit.displayName,
+      medicationUnit: medication.unit.name,
       medicationStrengthAmount: medication.strengthAmount,
-      medicationStrengthUnit: medication.strengthUnit?.displayName,
+      medicationStrengthUnit: medication.strengthUnit?.name,
       customMedicationStrengthUnit: medication.customStrengthUnit,
     );
   }

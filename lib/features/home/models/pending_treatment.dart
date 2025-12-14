@@ -33,8 +33,22 @@ class PendingTreatment {
     MedicationUnitUtils.shortForm(schedule.medicationUnit!),
   );
 
-  /// Display time (HH:mm by default)
-  String get displayTime => AppDateUtils.formatTime(scheduledTime);
+  /// Whether this is a flexible medication (no specific reminder time)
+  ///
+  /// Flexible medications appear in the pending list but without a specific
+  /// time, allowing users to log them whenever needed throughout the day.
+  bool get isFlexible => schedule.reminderTimes.isEmpty;
+
+  /// Display time (HH:mm by default, or null for flexible medications)
+  ///
+  /// Returns null for flexible medications (those with no reminder times).
+  /// UI should display localized "No time set" text when null.
+  String? get displayTime {
+    if (isFlexible) {
+      return null; // UI will show localized "No time set"
+    }
+    return AppDateUtils.formatTime(scheduledTime);
+  }
 
   /// Optional medication strength text (e.g., "2.5 mg")
   String? get displayStrength => schedule.formattedStrength;

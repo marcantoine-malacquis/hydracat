@@ -856,6 +856,30 @@ abstract class AppLocalizations {
   /// **'Reminder Times'**
   String get reminderTimesLabel;
 
+  /// Displayed when a medication has no specific reminder time
+  ///
+  /// In en, this message translates to:
+  /// **'No time set'**
+  String get noTimeSet;
+
+  /// Toggle label to enable/disable reminder times
+  ///
+  /// In en, this message translates to:
+  /// **'Set reminder'**
+  String get setReminder;
+
+  /// Subtitle for set reminder toggle explaining what it does
+  ///
+  /// In en, this message translates to:
+  /// **'Receive notifications at scheduled times'**
+  String get setReminderSubtitle;
+
+  /// Info message shown when reminder is disabled
+  ///
+  /// In en, this message translates to:
+  /// **'This medication will appear in your list but won\'t send notifications. You can log it anytime throughout the day.'**
+  String get noReminderInfo;
+
   /// No description provided for @frequencyOnceDaily.
   ///
   /// In en, this message translates to:

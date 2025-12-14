@@ -421,6 +421,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reminderTimesLabel => 'Reminder Times';
 
   @override
+  String get noTimeSet => 'No time set';
+
+  @override
+  String get setReminder => 'Set reminder';
+
+  @override
+  String get setReminderSubtitle => 'Receive notifications at scheduled times';
+
+  @override
+  String get noReminderInfo =>
+      'This medication will appear in your list but won\'t send notifications. You can log it anytime throughout the day.';
+
+  @override
   String get frequencyOnceDaily => 'Set a time for the daily administration';
 
   @override

@@ -85,6 +85,8 @@ class _AddMedicationBottomSheetState extends State<AddMedicationBottomSheet> {
   String _strengthAmount = '';
   MedicationStrengthUnit _strengthUnit = MedicationStrengthUnit.mg;
   String _customStrengthUnit = '';
+  // Flexible scheduling - default ON (user wants reminders by default)
+  bool _shouldSetReminder = true;
 
   @override
   void initState() {
@@ -128,6 +130,8 @@ class _AddMedicationBottomSheetState extends State<AddMedicationBottomSheet> {
       _strengthUnit = medication.strengthUnit ?? MedicationStrengthUnit.mg;
       _customStrengthUnit = medication.customStrengthUnit ?? '';
       _customStrengthUnitController.text = _customStrengthUnit;
+      // Initialize reminder toggle based on existing medication
+      _shouldSetReminder = medication.reminderTimes.isNotEmpty;
     } else {
       _reminderTimes = AppDateUtils.generateDefaultReminderTimes(
         _selectedFrequency.administrationsPerDay,
@@ -630,17 +634,61 @@ class _AddMedicationBottomSheetState extends State<AddMedicationBottomSheet> {
         ),
         const SizedBox(height: AppSpacing.lg),
 
-        // Time picker group
-        TimePickerGroup(
-          frequency: _selectedFrequency,
-          initialTimes: _reminderTimes,
-          onTimesChanged: (times) {
-            setState(() {
-              _reminderTimes = times;
-              _hasUnsavedChanges = true;
-            });
-          },
+        // Set Reminder Toggle (UI Guidelines: ListTile with Switch)
+        HydraCard(
+          padding: EdgeInsets.zero,
+          child: SwitchListTile(
+            title: Text(
+              l10n.setReminder,
+              style: AppTextStyles.body,
+            ),
+            subtitle: Text(
+              l10n.setReminderSubtitle,
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            value: _shouldSetReminder,
+            onChanged: (value) {
+              setState(() {
+                _shouldSetReminder = value;
+                _hasUnsavedChanges = true;
+                if (!value) {
+                  // Clear reminder times when disabled
+                  _reminderTimes = [];
+                } else {
+                  // Generate default times when enabled
+                  _reminderTimes = AppDateUtils.generateDefaultReminderTimes(
+                    _selectedFrequency.administrationsPerDay,
+                  );
+                }
+              });
+            },
+          ),
         ),
+
+        const SizedBox(height: AppSpacing.lg),
+
+        // Conditional content based on toggle state
+        if (_shouldSetReminder) ...[
+          // Time picker group (existing)
+          TimePickerGroup(
+            frequency: _selectedFrequency,
+            initialTimes: _reminderTimes,
+            onTimesChanged: (times) {
+              setState(() {
+                _reminderTimes = times;
+                _hasUnsavedChanges = true;
+              });
+            },
+          ),
+        ] else ...[
+          // Info card when reminder is OFF (UI Guidelines: HydraInfoCard)
+          HydraInfoCard(
+            message: l10n.noReminderInfo,
+            icon: Icons.info_outline,
+          ),
+        ],
       ],
     );
   }
@@ -949,6 +997,12 @@ class _AddMedicationBottomSheetState extends State<AddMedicationBottomSheet> {
   }
 
   String? _validateStepFour(AppLocalizations l10n) {
+    // If reminder is disabled, skip validation (flexible scheduling)
+    if (!_shouldSetReminder) {
+      return null;
+    }
+
+    // If reminder is enabled, validate that all times are set
     final expectedCount = _selectedFrequency.administrationsPerDay;
     if (_reminderTimes.length != expectedCount) {
       return l10n.reminderTimesIncomplete(expectedCount);

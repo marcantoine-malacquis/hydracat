@@ -2361,20 +2361,27 @@ final todaysFluidVolumeProvider = Provider<double>((ref) {
 // Schedule Filtering Providers
 // ============================================
 
-/// Today's medication schedules (filtered by today's reminder times)
+/// Today's medication schedules (scheduled or flexible)
 ///
-/// Returns only medication schedules that have at least one reminder
-/// time for today. Used for:
+/// Returns medication schedules that either:
+/// - Have at least one reminder time for today (scheduled), OR
+/// - Have no reminder times (flexible scheduling)
+///
+/// Used for:
 /// - Pre-filling medication logging form
 /// - Quick-log medication creation
+/// - Dashboard pending medication display
 final todaysMedicationSchedulesProvider = Provider<List<Schedule>>((ref) {
   final allSchedules = ref.watch(medicationSchedulesProvider) ?? [];
   final now = DateTime.now();
 
-  // Filter schedules that have reminder times for today
+  // Filter schedules that either:
+  // 1. Have reminder times for today (scheduled), OR
+  // 2. Have no reminder times at all (flexible scheduling)
   // Uses the ScheduleDateHelpers extension from Schedule model
   return allSchedules.where((schedule) {
-    return schedule.hasReminderTimeToday(now);
+    return schedule.hasReminderTimeToday(now) ||
+           schedule.reminderTimes.isEmpty;
   }).toList();
 });
 

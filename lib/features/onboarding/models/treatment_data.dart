@@ -108,9 +108,19 @@ enum MedicationStrengthUnit {
   };
 
   /// Creates a MedicationStrengthUnit from a string value
+  ///
+  /// Accepts both enum name (e.g., "mgPerMl") and display name
+  /// (e.g., "mg/mL") for backward compatibility with existing data.
   static MedicationStrengthUnit? fromString(String value) {
-    return MedicationStrengthUnit.values
+    // First try to match by enum name (preferred format)
+    final byName = MedicationStrengthUnit.values
         .where((unit) => unit.name == value)
+        .firstOrNull;
+    if (byName != null) return byName;
+
+    // Then try to match by display name (for backward compatibility)
+    return MedicationStrengthUnit.values
+        .where((unit) => unit.displayName == value)
         .firstOrNull;
   }
 }
@@ -186,9 +196,19 @@ enum MedicationUnit {
   };
 
   /// Creates a MedicationUnit from a string value
+  ///
+  /// Accepts both enum name (e.g., "sachets") and display name
+  /// (e.g., "Sachet(s)") for backward compatibility with existing data.
   static MedicationUnit? fromString(String value) {
-    return MedicationUnit.values
+    // First try to match by enum name (preferred format)
+    final byName = MedicationUnit.values
         .where((unit) => unit.name == value)
+        .firstOrNull;
+    if (byName != null) return byName;
+
+    // Then try to match by display name (for backward compatibility)
+    return MedicationUnit.values
+        .where((unit) => unit.displayName == value)
         .firstOrNull;
   }
 }

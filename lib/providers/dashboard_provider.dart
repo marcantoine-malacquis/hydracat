@@ -76,10 +76,14 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
         activeSchedules.add(profileState.fluidSchedule!);
       }
 
-      // Add medication schedules if active and have reminder today
+      // Add medication schedules if active and either:
+      // - Have reminder time for today (scheduled), OR
+      // - Have no reminder times (flexible scheduling)
       if (profileState.medicationSchedules != null) {
         for (final schedule in profileState.medicationSchedules!) {
-          if (schedule.isActive && schedule.hasReminderTimeToday(now)) {
+          if (schedule.isActive &&
+              (schedule.hasReminderTimeToday(now) ||
+                  schedule.reminderTimes.isEmpty)) {
             activeSchedules.add(schedule);
           }
         }
@@ -89,16 +93,32 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
       final pendingMeds = <PendingTreatment>[];
       for (final schedule in activeSchedules) {
         if (schedule.isMedication) {
-          // For each medication, check each reminder time for today
-          for (final reminderTime in schedule.todaysReminderTimes(now)) {
-            if (!_isMedicationCompleted(schedule, reminderTime, cache)) {
+          if (schedule.reminderTimes.isEmpty) {
+            // Flexible medication (no specific time)
+            // Product Decision #1: Show until first log of the day
+            // Product Decision #3: Never marked as overdue
+            if (!_isMedicationCompletedForDate(schedule, cache)) {
               pendingMeds.add(
                 PendingTreatment(
                   schedule: schedule,
-                  scheduledTime: reminderTime,
-                  isOverdue: _isOverdue(reminderTime, now),
+                  scheduledTime: DateTime(now.year, now.month, now.day),
+                  isOverdue: false, // Never overdue for flexible medications
                 ),
               );
+            }
+          } else {
+            // Scheduled medication (has reminder times)
+            // For each medication, check each reminder time for today
+            for (final reminderTime in schedule.todaysReminderTimes(now)) {
+              if (!_isMedicationCompleted(schedule, reminderTime, cache)) {
+                pendingMeds.add(
+                  PendingTreatment(
+                    schedule: schedule,
+                    scheduledTime: reminderTime,
+                    isOverdue: _isOverdue(reminderTime, now),
+                  ),
+                );
+              }
             }
           }
         }
@@ -160,6 +180,32 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
       schedule.medicationName!,
       reminderTime,
     );
+  }
+
+  /// Check if a flexible medication has been logged today (date-only)
+  ///
+  /// Implements Product Decision #1: Flexible medications are marked complete
+  /// after first log of the day. Unlike time-based medications, these only
+  /// need to be logged once per day at any time. Completion is tracked by
+  /// medication name (date-only comparison, no time window).
+  ///
+  /// Product Decision #4: User can still log additional instances via manual
+  /// logging - this only affects whether the medication appears in the
+  /// pending list.
+  ///
+  /// Note: This checks by medication name only. If user has multiple schedules
+  /// for the same medication (different dosages), all will be marked complete
+  /// when any is logged. This is acceptable since flexible medications are
+  /// for variable timing/dosing.
+  bool _isMedicationCompletedForDate(
+    Schedule schedule,
+    DailySummaryCache? cache,
+  ) {
+    if (cache == null) return false;
+
+    // Check if this medication name was logged at all today
+    // medicationNames contains all medications logged today
+    return cache.medicationNames.contains(schedule.medicationName);
   }
 
   /// Calculate remaining fluid volume for today

@@ -158,15 +158,17 @@ class TreatmentConfirmationPopup extends ConsumerWidget {
   /// Build summary section with read-only treatment details
   Widget _buildSummary(BuildContext context, ThemeData theme) {
     if (_isMedication) {
-      return _buildMedicationSummary(theme);
+      return _buildMedicationSummary(context, theme);
     } else {
       return _buildFluidSummary(theme);
     }
   }
 
   /// Build medication summary (name, strength, dosage, time)
-  Widget _buildMedicationSummary(ThemeData theme) {
+  Widget _buildMedicationSummary(BuildContext context, ThemeData theme) {
     final med = medication!;
+    final l10n = AppLocalizations.of(context)!;
+    final scheduledText = med.displayTime ?? l10n.noTimeSet;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,7 +195,7 @@ class TreatmentConfirmationPopup extends ConsumerWidget {
         _buildSummaryRow(
           theme: theme,
           label: 'Scheduled',
-          value: med.displayTime,
+          value: scheduledText,
           isOverdue: med.isOverdue,
         ),
       ],

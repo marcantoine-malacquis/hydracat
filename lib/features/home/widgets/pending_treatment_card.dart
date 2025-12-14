@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hydracat/core/constants/app_icons.dart';
+import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/icons/icon_provider.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/home/models/pending_treatment.dart';
@@ -27,6 +28,7 @@ class PendingTreatmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final isCupertino =
         theme.platform == TargetPlatform.iOS ||
@@ -50,11 +52,17 @@ class PendingTreatmentCard extends StatelessWidget {
       AppColors.surface,
     );
 
+    // Determine time text for display and accessibility
+    final timeText = treatment.displayTime ?? l10n.noTimeSet;
+    final timeDescription = treatment.isFlexible
+        ? l10n.noTimeSet
+        : 'scheduled at ${treatment.displayTime}';
+
     return Semantics(
       label:
           'Medication: ${treatment.displayName}$strengthText, '
           '${treatment.displayDosage}, '
-          'scheduled at ${treatment.displayTime}'
+          '$timeDescription'
           '${treatment.isOverdue ? ", overdue" : ""}',
       hint: 'Tap to confirm or skip this medication',
       button: true,
@@ -138,16 +146,23 @@ class PendingTreatmentCard extends StatelessWidget {
 
             const SizedBox(width: AppSpacing.md),
 
-            // Time
+            // Time (or "No time set" for flexible medications)
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  treatment.displayTime,
+                  timeText,
                   style: AppTextStyles.caption.copyWith(
-                    color: treatment.isOverdue
-                        ? AppColors.success
-                        : AppColors.textSecondary,
+                    // UI Guidelines: Use textTertiary for placeholder text
+                    color: treatment.isFlexible
+                        ? AppColors.textTertiary
+                        : (treatment.isOverdue
+                            ? AppColors.success
+                            : AppColors.textSecondary),
+                    // UI Guidelines: Italic for "not set" differentiation
+                    fontStyle: treatment.isFlexible
+                        ? FontStyle.italic
+                        : FontStyle.normal,
                   ),
                 ),
               ],
