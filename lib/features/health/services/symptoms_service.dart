@@ -247,6 +247,8 @@ class SymptomsService {
       updates['symptomScoreAverage'] = newEntry.symptomScoreAverage;
     }
     updates['hasSymptoms'] = newEntry.hasSymptoms ?? false;
+    // Always set to true when symptoms are logged, regardless of severity
+    updates['hasSymptomLogEntry'] = true;
 
     // Set createdAt if this is a new entry (oldEntry is null)
     if (oldEntry == null) {
@@ -329,6 +331,16 @@ class SymptomsService {
       deltas['daysWithAnySymptoms'] = FieldValue.increment(1);
     } else if (oldHasSymptoms == true && newHasSymptoms == false) {
       deltas['daysWithAnySymptoms'] = FieldValue.increment(-1);
+    }
+
+    // Handle daysWithSymptomLogEntries delta
+    // (based on hasSymptomLogEntry boolean)
+    final oldHasLogEntry = oldDaily?.hasSymptomLogEntry ?? false;
+    final newHasLogEntry = newDaily.hasSymptomLogEntry;
+    if (oldHasLogEntry == false && newHasLogEntry == true) {
+      deltas['daysWithSymptomLogEntries'] = FieldValue.increment(1);
+    } else if (oldHasLogEntry == true && newHasLogEntry == false) {
+      deltas['daysWithSymptomLogEntries'] = FieldValue.increment(-1);
     }
 
     // Handle symptomScoreTotal delta

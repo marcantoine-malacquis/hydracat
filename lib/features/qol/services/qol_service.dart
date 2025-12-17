@@ -472,7 +472,10 @@ class QolService {
       await batch.commit();
 
       // Track analytics
-      await _trackAssessmentDeleted(AppDateUtils.formatDateForSummary(date));
+      await _trackAssessmentDeleted(
+        AppDateUtils.formatDateForSummary(date),
+        petId,
+      );
     } catch (e) {
       throw QolServiceException('Failed to delete QoL assessment: $e');
     }
@@ -486,28 +489,32 @@ class QolService {
   Future<void> _trackAssessmentCompleted(QolAssessment assessment) async {
     if (_analyticsService == null) return;
 
-    // TODO(analytics): Add trackQolAssessmentCompleted method to
-    // AnalyticsService
-    // Parameters: overall_score, completion_duration_seconds,
-    // answered_count, has_low_confidence_domain
-    // See: .cursor/reference/analytics_list.md
+    await _analyticsService.trackQolAssessmentCompleted(
+      overallScore: assessment.overallScore?.round() ?? 0,
+      completionDurationSeconds: assessment.completionDurationSeconds,
+      answeredCount: assessment.answeredCount,
+      hasLowConfidenceDomain: assessment.hasLowConfidenceDomain,
+      petId: assessment.petId,
+    );
   }
 
   /// Tracks assessment update event.
   Future<void> _trackAssessmentUpdated(QolAssessment assessment) async {
     if (_analyticsService == null) return;
 
-    // TODO(analytics): Add trackQolAssessmentUpdated method to AnalyticsService
-    // Parameters: assessment_date
-    // See: .cursor/reference/analytics_list.md
+    await _analyticsService.trackQolAssessmentUpdated(
+      assessmentDate: assessment.documentId,
+      petId: assessment.petId,
+    );
   }
 
   /// Tracks assessment deletion event.
-  Future<void> _trackAssessmentDeleted(String date) async {
+  Future<void> _trackAssessmentDeleted(String date, String petId) async {
     if (_analyticsService == null) return;
 
-    // TODO(analytics): Add trackQolAssessmentDeleted method to AnalyticsService
-    // Parameters: assessment_date
-    // See: .cursor/reference/analytics_list.md
+    await _analyticsService.trackQolAssessmentDeleted(
+      assessmentDate: date,
+      petId: petId,
+    );
   }
 }

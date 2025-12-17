@@ -54,6 +54,7 @@ class DailySummary extends TreatmentSummaryBase {
     this.symptomScoreTotal,
     this.symptomScoreAverage,
     this.hasSymptoms = false,
+    this.hasSymptomLogEntry = false,
     this.qolOverallScore,
     this.qolVitalityScore,
     this.qolComfortScore,
@@ -155,6 +156,7 @@ class DailySummary extends TreatmentSummaryBase {
       symptomScoreTotal: (json['symptomScoreTotal'] as num?)?.toInt(),
       symptomScoreAverage: (json['symptomScoreAverage'] as num?)?.toDouble(),
       hasSymptoms: asBool(json['hasSymptoms']),
+      hasSymptomLogEntry: asBool(json['hasSymptomLogEntry']),
       qolOverallScore: (json['qolOverallScore'] as num?)?.toDouble(),
       qolVitalityScore: (json['qolVitalityScore'] as num?)?.toDouble(),
       qolComfortScore: (json['qolComfortScore'] as num?)?.toDouble(),
@@ -266,6 +268,15 @@ class DailySummary extends TreatmentSummaryBase {
   /// Whether any symptom score > 0
   final bool hasSymptoms;
 
+  /// Whether symptom data was logged for this day (regardless of severity)
+  ///
+  /// True when user explicitly logs symptom status, even if all symptoms
+  /// are "normal" (severity 0). Used to distinguish between:
+  /// - No data logged (false)
+  /// - Data logged but all normal (true, hasSymptoms=false)
+  /// - Data logged with symptoms (true, hasSymptoms=true)
+  final bool hasSymptomLogEntry;
+
   // Quality of Life tracking fields
 
   /// Overall QoL score (0-100 scale), null if no assessment
@@ -342,6 +353,7 @@ class DailySummary extends TreatmentSummaryBase {
       if (symptomScoreAverage != null)
         'symptomScoreAverage': symptomScoreAverage,
       'hasSymptoms': hasSymptoms,
+      'hasSymptomLogEntry': hasSymptomLogEntry,
       if (qolOverallScore != null) 'qolOverallScore': qolOverallScore,
       if (qolVitalityScore != null) 'qolVitalityScore': qolVitalityScore,
       if (qolComfortScore != null) 'qolComfortScore': qolComfortScore,
@@ -413,6 +425,7 @@ class DailySummary extends TreatmentSummaryBase {
     Object? symptomScoreTotal = _undefined,
     Object? symptomScoreAverage = _undefined,
     bool? hasSymptoms,
+    bool? hasSymptomLogEntry,
     Object? qolOverallScore = _undefined,
     Object? qolVitalityScore = _undefined,
     Object? qolComfortScore = _undefined,
@@ -493,6 +506,7 @@ class DailySummary extends TreatmentSummaryBase {
           ? this.symptomScoreAverage
           : symptomScoreAverage as double?,
       hasSymptoms: hasSymptoms ?? this.hasSymptoms,
+      hasSymptomLogEntry: hasSymptomLogEntry ?? this.hasSymptomLogEntry,
       qolOverallScore: qolOverallScore == _undefined
           ? this.qolOverallScore
           : qolOverallScore as double?,
@@ -544,6 +558,7 @@ class DailySummary extends TreatmentSummaryBase {
         other.symptomScoreTotal == symptomScoreTotal &&
         other.symptomScoreAverage == symptomScoreAverage &&
         other.hasSymptoms == hasSymptoms &&
+        other.hasSymptomLogEntry == hasSymptomLogEntry &&
         other.qolOverallScore == qolOverallScore &&
         other.qolVitalityScore == qolVitalityScore &&
         other.qolComfortScore == qolComfortScore &&
@@ -582,6 +597,7 @@ class DailySummary extends TreatmentSummaryBase {
       symptomScoreTotal,
       symptomScoreAverage,
       hasSymptoms,
+      hasSymptomLogEntry,
       qolOverallScore,
       qolVitalityScore,
       qolComfortScore,
@@ -628,6 +644,7 @@ class DailySummary extends TreatmentSummaryBase {
         'symptomScoreTotal: $symptomScoreTotal, '
         'symptomScoreAverage: $symptomScoreAverage, '
         'hasSymptoms: $hasSymptoms, '
+        'hasSymptomLogEntry: $hasSymptomLogEntry, '
         'qolOverallScore: $qolOverallScore, '
         'qolVitalityScore: $qolVitalityScore, '
         'qolComfortScore: $qolComfortScore, '

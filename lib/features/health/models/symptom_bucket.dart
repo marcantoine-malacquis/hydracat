@@ -26,11 +26,14 @@ class SymptomBucket {
   ///   where score > 0
   /// - [daysWithAnySymptoms]: Number of days in the bucket where any symptom
   ///   was present
+  /// - [daysWithLoggedEntries]: Number of days in the bucket where symptom
+  ///   data was logged (regardless of severity)
   SymptomBucket({
     required this.start,
     required this.end,
     required Map<String, int> daysWithSymptom,
     required this.daysWithAnySymptoms,
+    required this.daysWithLoggedEntries,
     Map<String, dynamic>? rawValues,
   })  : _daysWithSymptom = Map.unmodifiable(daysWithSymptom),
         _rawValues =
@@ -59,6 +62,7 @@ class SymptomBucket {
       end: normalizedEnd,
       daysWithSymptom: const {},
       daysWithAnySymptoms: 0,
+      daysWithLoggedEntries: 0,
     );
   }
 
@@ -80,6 +84,7 @@ class SymptomBucket {
       end: normalizedDate,
       daysWithSymptom: const {},
       daysWithAnySymptoms: 0,
+      daysWithLoggedEntries: 0,
     );
   }
 
@@ -104,6 +109,16 @@ class SymptomBucket {
   /// This is the count of days where `hasSymptoms == true` within the bucket's
   /// date range.
   final int daysWithAnySymptoms;
+
+  /// Number of days in the bucket where symptom data was logged
+  ///
+  /// This is the count of days where `hasSymptomLogEntry == true` within
+  /// the bucket's date range, regardless of whether symptoms were actually
+  /// present (severity > 0). Used to distinguish between:
+  /// - No data logged (0)
+  /// - Data logged but all normal (>0, daysWithAnySymptoms=0)
+  /// - Data logged with symptoms (>0, daysWithAnySymptoms>0)
+  final int daysWithLoggedEntries;
 
   /// Raw values for symptoms in this bucket (single-day buckets only)
   ///
@@ -133,6 +148,7 @@ class SymptomBucket {
     DateTime? end,
     Map<String, int>? daysWithSymptom,
     int? daysWithAnySymptoms,
+    int? daysWithLoggedEntries,
     Map<String, dynamic>? rawValues,
   }) {
     return SymptomBucket(
@@ -140,6 +156,8 @@ class SymptomBucket {
       end: end ?? this.end,
       daysWithSymptom: daysWithSymptom ?? _daysWithSymptom,
       daysWithAnySymptoms: daysWithAnySymptoms ?? this.daysWithAnySymptoms,
+      daysWithLoggedEntries:
+          daysWithLoggedEntries ?? this.daysWithLoggedEntries,
       rawValues: rawValues ?? _rawValues,
     );
   }
@@ -151,6 +169,7 @@ class SymptomBucket {
         'end: $end, '
         'daysWithSymptom: $_daysWithSymptom, '
         'daysWithAnySymptoms: $daysWithAnySymptoms, '
+        'daysWithLoggedEntries: $daysWithLoggedEntries, '
         'rawValues: $_rawValues'
         ')';
   }
@@ -164,6 +183,7 @@ class SymptomBucket {
         other.end == end &&
         _mapEquals(other._daysWithSymptom, _daysWithSymptom) &&
         other.daysWithAnySymptoms == daysWithAnySymptoms &&
+        other.daysWithLoggedEntries == daysWithLoggedEntries &&
         _rawValuesEquals(other._rawValues, _rawValues);
   }
 
@@ -174,6 +194,7 @@ class SymptomBucket {
       end,
       _mapHashCode(_daysWithSymptom),
       daysWithAnySymptoms,
+      daysWithLoggedEntries,
       _rawValuesHashCode(_rawValues),
     );
   }

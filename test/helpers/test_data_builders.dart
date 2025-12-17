@@ -6,10 +6,14 @@
 
 library;
 
+import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/logging/models/fluid_session.dart';
 import 'package:hydracat/features/logging/models/medication_session.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
+import 'package:hydracat/features/qol/models/qol_assessment.dart';
+import 'package:hydracat/features/qol/models/qol_question.dart';
+import 'package:hydracat/features/qol/models/qol_response.dart';
 
 // Global counter to ensure unique IDs even in same millisecond
 int _globalIdCounter = 0;
@@ -689,5 +693,134 @@ class DailySummaryBuilder {
       'createdAt': _createdAt,
       'updatedAt': _updatedAt,
     };
+  }
+}
+
+/// Builder for creating [QolAssessment] test instances
+class QolAssessmentBuilder {
+  /// Creates a QoL assessment builder with sensible defaults
+  QolAssessmentBuilder() {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    _id = 'test-qol-assessment-$timestamp-${_globalIdCounter++}';
+    _userId = 'test-user-id';
+    _petId = 'test-pet-id';
+    _date = DateTime(2025, 1, 15);
+    _responses = [];
+    _createdAt = DateTime(2025, 1, 15, 10);
+    _updatedAt = null;
+    _completionDurationSeconds = null;
+  }
+
+  /// Creates a complete assessment with all 14 questions answered
+  factory QolAssessmentBuilder.complete() {
+    return QolAssessmentBuilder()..withAllResponses();
+  }
+
+  /// Creates an empty assessment with no responses
+  factory QolAssessmentBuilder.empty() {
+    return QolAssessmentBuilder();
+  }
+
+  late String _id;
+  late String _userId;
+  late String _petId;
+  late DateTime _date;
+  late List<QolResponse> _responses;
+  late DateTime _createdAt;
+  DateTime? _updatedAt;
+  int? _completionDurationSeconds;
+
+  /// Sets the assessment ID
+  QolAssessmentBuilder withId(String id) {
+    _id = id;
+    return this;
+  }
+
+  /// Sets the user ID
+  QolAssessmentBuilder withUserId(String userId) {
+    _userId = userId;
+    return this;
+  }
+
+  /// Sets the pet ID
+  QolAssessmentBuilder withPetId(String petId) {
+    _petId = petId;
+    return this;
+  }
+
+  /// Sets the assessment date
+  QolAssessmentBuilder withDate(DateTime date) {
+    _date = AppDateUtils.startOfDay(date);
+    return this;
+  }
+
+  /// Sets all responses
+  QolAssessmentBuilder withResponses(List<QolResponse> responses) {
+    _responses = responses;
+    return this;
+  }
+
+  /// Sets all 14 responses with default scores (3 for each question)
+  QolAssessmentBuilder withAllResponses({int defaultScore = 3}) {
+    _responses = QolQuestion.all
+        .map((q) => QolResponse(questionId: q.id, score: defaultScore))
+        .toList();
+    return this;
+  }
+
+  /// Sets responses to achieve a specific overall score
+  ///
+  /// Automatically generates responses that will result in approximately
+  /// the target overall score (0-100).
+  QolAssessmentBuilder withOverallScore(int targetScore) {
+    // Convert target score (0-100) to average response score (0-4)
+    final averageScore = (targetScore / 100.0 * 4.0).round().clamp(0, 4);
+    
+    _responses = QolQuestion.all
+        .map((q) => QolResponse(questionId: q.id, score: averageScore))
+        .toList();
+    return this;
+  }
+
+  /// Sets responses with maximum scores (100% QoL)
+  QolAssessmentBuilder withMaximumScores() {
+    return withAllResponses(defaultScore: 4);
+  }
+
+  /// Sets responses with minimum scores (0% QoL)
+  QolAssessmentBuilder withMinimumScores() {
+    return withAllResponses(defaultScore: 0);
+  }
+
+  /// Sets created at timestamp
+  QolAssessmentBuilder withCreatedAt(DateTime createdAt) {
+    _createdAt = createdAt;
+    return this;
+  }
+
+  /// Sets updated at timestamp
+  QolAssessmentBuilder withUpdatedAt(DateTime? updatedAt) {
+    _updatedAt = updatedAt;
+    return this;
+  }
+
+  /// Sets completion duration in seconds
+  QolAssessmentBuilder withCompletionDuration(int? seconds) {
+    _completionDurationSeconds = seconds;
+    return this;
+  }
+
+  /// Builds the QoL assessment
+  QolAssessment build() {
+    return QolAssessment(
+      id: _id,
+      userId: _userId,
+      petId: _petId,
+      date: _date,
+      responses: _responses,
+      createdAt: _createdAt,
+      updatedAt: _updatedAt,
+      completionDurationSeconds: _completionDurationSeconds,
+    );
   }
 }

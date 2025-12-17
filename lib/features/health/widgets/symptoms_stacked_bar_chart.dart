@@ -135,10 +135,10 @@ class _SymptomsStackedBarChartState
       );
     }
 
-    // Empty state: no buckets or all zero
+    // Empty state: no buckets or no logged entries
     if (viewModel.buckets.isEmpty ||
         viewModel.buckets.every(
-          (bucket) => bucket.totalSymptomDays == 0,
+          (bucket) => bucket.daysWithLoggedEntries == 0,
         )) {
       return Padding(
         padding: const EdgeInsets.only(top: 12),

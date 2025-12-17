@@ -43,6 +43,7 @@ void main() {
             (ref) => Future.value(
               MonthlySummary.empty(DateTime.now()).copyWith(
                 daysWithAnySymptoms: 5,
+          daysWithSymptomLogEntries: 5,
                 daysWithVomiting: 2,
                 daysWithDiarrhea: 1,
                 daysWithEnergy: 1,
@@ -202,6 +203,7 @@ void main() {
             (ref) => Future.value(
               MonthlySummary.empty(DateTime.now()).copyWith(
                 daysWithAnySymptoms: 5,
+          daysWithSymptomLogEntries: 5,
                 daysWithVomiting: 2,
                 daysWithDiarrhea: 1,
                 daysWithEnergy: 1,
@@ -519,6 +521,7 @@ void main() {
             (ref) => Future.value(
               MonthlySummary.empty(DateTime.now()).copyWith(
                 daysWithAnySymptoms: 5,
+          daysWithSymptomLogEntries: 5,
                 daysWithVomiting: 2,
                 daysWithDiarrhea: 1,
                 daysWithEnergy: 1,
@@ -750,6 +753,7 @@ void main() {
             end: DateTime(2025),
             daysWithSymptom: const {SymptomType.vomiting: 1},
             daysWithAnySymptoms: 1,
+            daysWithLoggedEntries: 1,
           ),
         ],
         visibleSymptoms: const [SymptomType.vomiting],
@@ -781,6 +785,7 @@ void main() {
               hasHistory
                   ? MonthlySummary.empty(DateTime.now()).copyWith(
                       daysWithAnySymptoms: 5,
+          daysWithSymptomLogEntries: 5,
                     )
                   : MonthlySummary.empty(DateTime.now()),
             ),
@@ -989,6 +994,7 @@ void main() {
             (ref) => Future.value(
               MonthlySummary.empty(DateTime.now()).copyWith(
                 daysWithAnySymptoms: 1,
+          daysWithSymptomLogEntries: 1,
               ),
             ),
           ),
@@ -1038,6 +1044,7 @@ void main() {
               (ref) => Future.value(
                 MonthlySummary.empty(DateTime.now()).copyWith(
                   daysWithAnySymptoms: 5,
+          daysWithSymptomLogEntries: 5,
                 ),
               ),
             ),
@@ -1125,6 +1132,7 @@ void main() {
             (ref) => Future.value(
               MonthlySummary.empty(DateTime.now()).copyWith(
                 daysWithAnySymptoms: 5,
+          daysWithSymptomLogEntries: 5,
                 daysWithVomiting: 2,
                 daysWithDiarrhea: 1,
                 daysWithEnergy: 1,

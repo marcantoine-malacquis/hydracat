@@ -8,6 +8,7 @@ import 'package:hydracat/features/qol/models/qol_assessment.dart';
 import 'package:hydracat/features/qol/models/qol_question.dart';
 import 'package:hydracat/features/qol/models/qol_response.dart';
 import 'package:hydracat/features/qol/widgets/qol_question_card.dart';
+import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/qol_provider.dart';
@@ -58,6 +59,14 @@ class _QolQuestionnaireScreenState
     _pageController = PageController();
     _selectedDate = DateTime.now();
     _startTime = DateTime.now();
+
+    // Track assessment started
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final petId = ref.read(primaryPetProvider)?.id;
+      ref.read(analyticsServiceDirectProvider).trackQolAssessmentStarted(
+            petId: petId,
+          );
+    });
 
     // Load existing assessment if editing
     if (widget.assessmentId != null) {
@@ -110,6 +119,16 @@ class _QolQuestionnaireScreenState
 
     // Haptic feedback
     HapticFeedback.selectionClick();
+
+    // Track question answered
+    final question = QolQuestion.all.firstWhere((q) => q.id == questionId);
+    final petId = ref.read(primaryPetProvider)?.id;
+    ref.read(analyticsServiceDirectProvider).trackQolQuestionAnswered(
+          questionId: questionId,
+          domain: question.domain,
+          score: score,
+          petId: petId,
+        );
 
     // Auto-advance after 300ms (unless last question)
     if (_currentQuestionIndex < 13) {

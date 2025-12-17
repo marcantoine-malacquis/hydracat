@@ -435,10 +435,14 @@ List<SymptomBucket> buildWeeklySymptomBuckets({
       // Set daysWithAnySymptoms based on hasSymptoms flag
       final daysWithAnySymptoms = summary.hasSymptoms ? 1 : 0;
 
+      // Set daysWithLoggedEntries based on hasSymptomLogEntry flag
+      final daysWithLoggedEntries = summary.hasSymptomLogEntry ? 1 : 0;
+
       // Update bucket with symptom data
       bucket = bucket.copyWith(
         daysWithSymptom: daysWithSymptom,
         daysWithAnySymptoms: daysWithAnySymptoms,
+        daysWithLoggedEntries: daysWithLoggedEntries,
         rawValues: rawValues.isNotEmpty ? rawValues : null,
       );
     }
@@ -616,10 +620,14 @@ List<SymptomBucket> buildMonthlySymptomBuckets({
         // Set daysWithAnySymptoms based on hasSymptoms flag
         final daysWithAnySymptoms = summary.hasSymptoms ? 1 : 0;
 
+        // Set daysWithLoggedEntries based on hasSymptomLogEntry flag
+        final daysWithLoggedEntries = summary.hasSymptomLogEntry ? 1 : 0;
+
         // Update bucket with symptom data
         bucket = bucket.copyWith(
           daysWithSymptom: daysWithSymptom,
           daysWithAnySymptoms: daysWithAnySymptoms,
+          daysWithLoggedEntries: daysWithLoggedEntries,
           rawValues: rawValues.isNotEmpty ? rawValues : null,
         );
       }
@@ -834,6 +842,7 @@ List<SymptomBucket> buildYearlySymptomBuckets({
         end: summary.endDate ?? monthEnd,
         daysWithSymptom: daysWithSymptom,
         daysWithAnySymptoms: summary.daysWithAnySymptoms,
+        daysWithLoggedEntries: summary.daysWithSymptomLogEntries,
       );
       buckets.add(bucket);
     } else {

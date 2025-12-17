@@ -2950,6 +2950,24 @@ abstract class AppLocalizations {
   /// **'Insufficient data'**
   String get qolInsufficientData;
 
+  /// No description provided for @qolIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Incomplete'**
+  String get qolIncomplete;
+
+  /// No description provided for @qolHistorySectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Assessments'**
+  String get qolHistorySectionTitle;
+
+  /// No description provided for @qolNeedMoreData.
+  ///
+  /// In en, this message translates to:
+  /// **'Need at least 2 assessments to see trends'**
+  String get qolNeedMoreData;
+
   /// No description provided for @qolDomainVitalityShort.
   ///
   /// In en, this message translates to:
@@ -3028,6 +3046,12 @@ abstract class AppLocalizations {
   /// **'Assessed on {date}'**
   String qolAssessedOn(String date);
 
+  /// No description provided for @qolComparedToLast.
+  ///
+  /// In en, this message translates to:
+  /// **'vs. last assessment'**
+  String get qolComparedToLast;
+
   /// No description provided for @qolLowConfidenceExplanation.
   ///
   /// In en, this message translates to:
@@ -3046,11 +3070,47 @@ abstract class AppLocalizations {
   /// **'Edit Assessment'**
   String get qolQuestionnaireEditTitle;
 
+  /// No description provided for @qolHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quality of Life'**
+  String get qolHistoryTitle;
+
+  /// No description provided for @qolTrendChartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'QoL Trends'**
+  String get qolTrendChartTitle;
+
   /// No description provided for @qolComplete.
   ///
   /// In en, this message translates to:
   /// **'Complete'**
   String get qolComplete;
+
+  /// No description provided for @qolStartAssessment.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Assessment'**
+  String get qolStartAssessment;
+
+  /// No description provided for @qolStartFirstAssessment.
+  ///
+  /// In en, this message translates to:
+  /// **'Start First Assessment'**
+  String get qolStartFirstAssessment;
+
+  /// No description provided for @qolContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get qolContinue;
+
+  /// No description provided for @qolSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get qolSave;
 
   /// No description provided for @qolDiscardTitle.
   ///
@@ -3075,6 +3135,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to save assessment. Please try again.'**
   String get qolSaveError;
+
+  /// No description provided for @qolLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load assessments. Check your connection.'**
+  String get qolLoadError;
+
+  /// No description provided for @qolResultsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'QoL Results'**
+  String get qolResultsTitle;
+
+  /// No description provided for @qolDomainScoresTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Domain Scores'**
+  String get qolDomainScoresTitle;
+
+  /// No description provided for @viewHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'View History'**
+  String get viewHistory;
+
+  /// No description provided for @qolEmptyStateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track Your Cat\'s Quality of Life'**
+  String get qolEmptyStateTitle;
+
+  /// No description provided for @qolEmptyStateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete assessments weekly to identify trends and share insights with your vet.'**
+  String get qolEmptyStateMessage;
+
+  /// No description provided for @qolHistoryEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No assessments yet. Start your first one to begin tracking.'**
+  String get qolHistoryEmptyMessage;
+
+  /// No description provided for @qolHomeCardEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Track your cat\'s wellbeing over time'**
+  String get qolHomeCardEmptyMessage;
+
+  /// No description provided for @qolFirstAssessmentMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This is your baseline. Complete another in 7 days to see trends.'**
+  String get qolFirstAssessmentMessage;
+
+  /// No description provided for @qolDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Assessment?'**
+  String get qolDeleteConfirmTitle;
+
+  /// No description provided for @qolDeleteConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This will permanently delete the assessment from {date}.'**
+  String qolDeleteConfirmMessage(String date);
+
+  /// No description provided for @qolDeleteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Assessment deleted successfully'**
+  String get qolDeleteSuccess;
+
+  /// No description provided for @qolDeleteError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete assessment. Please try again.'**
+  String get qolDeleteError;
+
+  /// No description provided for @qolNeedMoreAssessments.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete another assessment to see trends and comparisons.'**
+  String get qolNeedMoreAssessments;
+
+  /// No description provided for @qolInsufficientDataForInterpretation.
+  ///
+  /// In en, this message translates to:
+  /// **'Insufficient data to provide trend interpretation. Complete more questions in your next assessment.'**
+  String get qolInsufficientDataForInterpretation;
+
+  /// No description provided for @qolInterpretationStable.
+  ///
+  /// In en, this message translates to:
+  /// **'Your cat\'s quality of life has remained stable since the last assessment.'**
+  String get qolInterpretationStable;
+
+  /// No description provided for @qolInterpretationImproving.
+  ///
+  /// In en, this message translates to:
+  /// **'Quality of life scores have improved. Great progress!'**
+  String get qolInterpretationImproving;
+
+  /// No description provided for @qolInterpretationDeclining.
+  ///
+  /// In en, this message translates to:
+  /// **'Quality of life scores are lower than the last assessment. Consider discussing recent changes with your veterinarian.'**
+  String get qolInterpretationDeclining;
+
+  /// No description provided for @qolInterpretationNotableDropComfort.
+  ///
+  /// In en, this message translates to:
+  /// **'Comfort scores have dropped notably. You may want to discuss pain management with your vet.'**
+  String get qolInterpretationNotableDropComfort;
+
+  /// No description provided for @qolInterpretationNotableDropAppetite.
+  ///
+  /// In en, this message translates to:
+  /// **'Appetite scores are significantly lower. Monitor eating habits closely and consult your vet.'**
+  String get qolInterpretationNotableDropAppetite;
+
+  /// No description provided for @qolInterpretationNotableDropVitality.
+  ///
+  /// In en, this message translates to:
+  /// **'Vitality scores have decreased notably. Your cat may be experiencing lower energy levels.'**
+  String get qolInterpretationNotableDropVitality;
+
+  /// No description provided for @qolInterpretationNotableDropEmotional.
+  ///
+  /// In en, this message translates to:
+  /// **'Emotional wellbeing scores have dropped significantly. Your cat may be experiencing stress or discomfort.'**
+  String get qolInterpretationNotableDropEmotional;
+
+  /// No description provided for @qolInterpretationNotableDropTreatmentBurden.
+  ///
+  /// In en, this message translates to:
+  /// **'Treatment burden scores indicate increased stress from CKD care. Consider discussing ways to make treatments easier.'**
+  String get qolInterpretationNotableDropTreatmentBurden;
+
+  /// No description provided for @qolTrendDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'These trends are observational only. Always consult your veterinarian for medical decisions.'**
+  String get qolTrendDisclaimer;
+
+  /// No description provided for @qolDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'This tool tracks quality of life trends over time for your reference. It is not a diagnostic instrument and does not replace veterinary care. Always consult your veterinarian for medical decisions.'**
+  String get qolDisclaimer;
+
+  /// No description provided for @qolScientificAttribution.
+  ///
+  /// In en, this message translates to:
+  /// **'HydraCAT\'s Quality of Life assessment is informed by published psychometric research on feline health-related quality of life, including studies by Bijsmans et al. (2016), Lorbach et al. (2022), and Wright et al. (2025). This tool is independently developed and is not affiliated with or endorsed by the authors of these studies.'**
+  String get qolScientificAttribution;
 }
 
 class _AppLocalizationsDelegate

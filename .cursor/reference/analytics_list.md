@@ -23,10 +23,10 @@ This document provides a comprehensive reference for all Google Analytics (Fireb
 
 ### Key Metrics
 
-- **Total Event Types:** 53
+- **Total Event Types:** 61
 - **Total User Properties:** 2
-- **Total Parameters:** 30+
-- **Files with Analytics Calls:** 13
+- **Total Parameters:** 40+
+- **Files with Analytics Calls:** 17
 - **Implementation Status:**  Production-ready
 
 ---
@@ -92,7 +92,11 @@ Events tracking notification permissions, scheduling, and user interactions.
 
 Events for weekly fluid therapy goal tracking and achievements.
 
-### 6. Caching & Performance (5 events)
+### 6. Quality of Life (QoL) Tracking (8 events)
+
+Events tracking quality of life assessments and trend analysis.
+
+### 7. Caching & Performance (5 events)
 
 Events monitoring cache performance and optimization.
 
@@ -771,6 +775,108 @@ Generic error tracking for notification operations:
 **Trigger:** User taps weekly progress card
 **Parameters:** Not defined
 **Status:** Future enhancement, not implemented
+
+---
+
+### 6. Quality of Life (QoL) Tracking
+
+#### `qol_assessment_started`
+**Trigger:** User opens QoL questionnaire screen
+**Parameters:**
+- `pet_id` (string): Pet identifier (optional)
+
+**Implementation:** `qol_questionnaire_screen.dart:64-68` + `analytics_provider.dart:1646-1661`
+
+**Description:** Tracks when a user begins a new QoL assessment or opens the questionnaire screen to edit an existing one. Helps measure engagement with the QoL feature.
+
+---
+
+#### `qol_assessment_completed`
+**Trigger:** User completes and saves a QoL assessment
+**Parameters:**
+- `overall_score` (int): Overall QoL score (0-100, rounded)
+- `completion_duration_seconds` (int, optional): Time taken to complete
+- `answered_count` (int): Number of questions answered (0-14)
+- `has_low_confidence_domain` (bool): True if any domain has <50% questions answered
+- `pet_id` (string): Pet identifier (optional)
+
+**Implementation:** `qol_service.dart:489-495` + `analytics_provider.dart:1673-1699`
+
+**Description:** Tracks successful completion of QoL assessments with detailed metrics about score, completion time, and data quality. Critical for understanding assessment adoption and completion rates.
+
+---
+
+#### `qol_assessment_updated`
+**Trigger:** User edits an existing QoL assessment
+**Parameters:**
+- `assessment_date` (string): Date of the assessment (YYYY-MM-DD format)
+- `pet_id` (string): Pet identifier (optional)
+
+**Implementation:** `qol_service.dart:502-505` + `analytics_provider.dart:1708-1727`
+
+**Description:** Tracks when users modify previously completed assessments. Helps understand user behavior around data correction and accuracy.
+
+---
+
+#### `qol_assessment_deleted`
+**Trigger:** User deletes a QoL assessment
+**Parameters:**
+- `assessment_date` (string): Date of the deleted assessment (YYYY-MM-DD format)
+- `pet_id` (string): Pet identifier (optional)
+
+**Implementation:** `qol_service.dart:475-477` + `analytics_provider.dart:1736-1755`
+
+**Description:** Tracks assessment deletions. Useful for understanding data cleanup patterns and potential user issues with the feature.
+
+---
+
+#### `qol_history_viewed`
+**Trigger:** QoL history screen opens
+**Parameters:**
+- `assessment_count` (int): Number of assessments in the list
+- `pet_id` (string): Pet identifier (optional)
+
+**Implementation:** `qol_history_screen.dart:51-56` + `analytics_provider.dart:1764-1783`
+
+**Description:** Tracks views of the QoL history screen with count of available assessments. Helps measure feature engagement and understand how users interact with historical data.
+
+---
+
+#### `qol_detail_viewed`
+**Trigger:** QoL detail screen opens for a specific assessment
+**Parameters:**
+- `assessment_date` (string): Date of the viewed assessment (YYYY-MM-DD format)
+- `pet_id` (string): Pet identifier (optional)
+
+**Implementation:** `qol_detail_screen.dart:61-65` + `analytics_provider.dart:1792-1811`
+
+**Description:** Tracks views of individual assessment details. Helps understand user interest in reviewing past assessments and interpreting results.
+
+---
+
+#### `qol_trends_viewed`
+**Trigger:** QoL trend chart is displayed (when ≥2 assessments exist)
+**Parameters:**
+- `assessment_count` (int): Number of assessments shown in the trend
+- `pet_id` (string): Pet identifier (optional)
+
+**Implementation:** `qol_trend_line_chart.dart:48-53` + `analytics_provider.dart:1820-1839`
+
+**Description:** Tracks when users view trend analysis charts. Only fires when sufficient data exists (≥2 assessments). Measures engagement with longitudinal QoL tracking.
+
+---
+
+#### `qol_question_answered`
+**Trigger:** User selects a response to a question (fires on selection, before page advance)
+**Parameters:**
+- `question_id` (string): Question identifier (e.g., "vitality_1")
+- `domain` (string): Domain name (vitality, comfort, emotional, appetite, treatmentBurden)
+- `score` (int or 'null'): Response score (0-4, or 'null' for "Not sure")
+- `pet_id` (string): Pet identifier (optional)
+
+**Implementation:** `qol_questionnaire_screen.dart:123-131` + `analytics_provider.dart:1850-1873`
+
+**Description:** Tracks each question response during assessment completion. Provides granular insights into question-level engagement, "Not sure" frequency, and potential question clarity issues.
 
 ---
 

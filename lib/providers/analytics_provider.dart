@@ -219,6 +219,31 @@ class AnalyticsEvents {
 
   /// Weekly progress card tapped event name (future enhancement)
   static const String weeklyCardTapped = 'weekly_card_tapped';
+
+  // Quality of Life (QoL) tracking events
+  /// QoL assessment started event name
+  static const String qolAssessmentStarted = 'qol_assessment_started';
+
+  /// QoL assessment completed event name
+  static const String qolAssessmentCompleted = 'qol_assessment_completed';
+
+  /// QoL assessment updated event name
+  static const String qolAssessmentUpdated = 'qol_assessment_updated';
+
+  /// QoL assessment deleted event name
+  static const String qolAssessmentDeleted = 'qol_assessment_deleted';
+
+  /// QoL history viewed event name
+  static const String qolHistoryViewed = 'qol_history_viewed';
+
+  /// QoL detail viewed event name
+  static const String qolDetailViewed = 'qol_detail_viewed';
+
+  /// QoL trends viewed event name
+  static const String qolTrendsViewed = 'qol_trends_viewed';
+
+  /// QoL question answered event name
+  static const String qolQuestionAnswered = 'qol_question_answered';
 }
 
 /// Analytics parameters
@@ -373,6 +398,34 @@ class AnalyticsParams {
 
   /// Last injection site parameter
   static const String lastInjectionSite = 'last_injection_site';
+
+  // Quality of Life (QoL) tracking params
+  /// Overall QoL score parameter (0-100)
+  static const String overallScore = 'overall_score';
+
+  /// Completion duration in seconds
+  static const String completionDurationSeconds = 'completion_duration_seconds';
+
+  /// Number of questions answered
+  static const String answeredCount = 'answered_count';
+
+  /// Whether any domain has low confidence (< 50% answered)
+  static const String hasLowConfidenceDomain = 'has_low_confidence_domain';
+
+  /// Assessment date (YYYY-MM-DD format)
+  static const String assessmentDate = 'assessment_date';
+
+  /// Number of assessments in trend
+  static const String assessmentCount = 'assessment_count';
+
+  /// Question ID (e.g., vitality_1)
+  static const String questionId = 'question_id';
+
+  /// Domain name (vitality, comfort, emotional, appetite, treatmentBurden)
+  static const String domain = 'domain';
+
+  /// Question response score (0-4 or null)
+  static const String score = 'score';
 }
 
 /// Standardized error type constants for analytics tracking
@@ -1579,6 +1632,243 @@ class AnalyticsService {
     } on Exception catch (e) {
       if (kDebugMode) {
         debugPrint('[Analytics] Failed to track weekly goal achieved: $e');
+      }
+    }
+  }
+
+  // ============================================
+  // QUALITY OF LIFE (QoL) TRACKING
+  // ============================================
+
+  /// Track QoL assessment started
+  ///
+  /// Fires when the questionnaire screen opens.
+  Future<void> trackQolAssessmentStarted({String? petId}) async {
+    if (!_isEnabled) return;
+
+    try {
+      await _analytics.logEvent(
+        name: AnalyticsEvents.qolAssessmentStarted,
+        parameters: {
+          if (petId != null) AnalyticsParams.petId: petId,
+        },
+      );
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Analytics] Failed to track QoL assessment started: $e');
+      }
+    }
+  }
+
+  /// Track QoL assessment completed
+  ///
+  /// Fires when user completes and saves an assessment.
+  ///
+  /// Parameters:
+  /// - [overallScore]: Overall QoL score (0-100, rounded to int)
+  /// - [completionDurationSeconds]: Time taken to complete (optional)
+  /// - [answeredCount]: Number of questions answered (0-14)
+  /// - [hasLowConfidenceDomain]: True if any domain has <50% answered
+  /// - [petId]: Pet identifier (optional)
+  Future<void> trackQolAssessmentCompleted({
+    required int overallScore,
+    required int answeredCount,
+    required bool hasLowConfidenceDomain,
+    int? completionDurationSeconds,
+    String? petId,
+  }) async {
+    if (!_isEnabled) return;
+
+    try {
+      await _analytics.logEvent(
+        name: AnalyticsEvents.qolAssessmentCompleted,
+        parameters: {
+          AnalyticsParams.overallScore: overallScore,
+          if (completionDurationSeconds != null)
+            AnalyticsParams.completionDurationSeconds:
+                completionDurationSeconds,
+          AnalyticsParams.answeredCount: answeredCount,
+          AnalyticsParams.hasLowConfidenceDomain: hasLowConfidenceDomain,
+          if (petId != null) AnalyticsParams.petId: petId,
+        },
+      );
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Analytics] Failed to track QoL assessment completed: $e');
+      }
+    }
+  }
+
+  /// Track QoL assessment updated
+  ///
+  /// Fires when user edits an existing assessment.
+  ///
+  /// Parameters:
+  /// - [assessmentDate]: Date of the assessment (YYYY-MM-DD format)
+  /// - [petId]: Pet identifier (optional)
+  Future<void> trackQolAssessmentUpdated({
+    required String assessmentDate,
+    String? petId,
+  }) async {
+    if (!_isEnabled) return;
+
+    try {
+      await _analytics.logEvent(
+        name: AnalyticsEvents.qolAssessmentUpdated,
+        parameters: {
+          AnalyticsParams.assessmentDate: assessmentDate,
+          if (petId != null) AnalyticsParams.petId: petId,
+        },
+      );
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Analytics] Failed to track QoL assessment updated: $e');
+      }
+    }
+  }
+
+  /// Track QoL assessment deleted
+  ///
+  /// Fires when user deletes an assessment.
+  ///
+  /// Parameters:
+  /// - [assessmentDate]: Date of the deleted assessment (YYYY-MM-DD format)
+  /// - [petId]: Pet identifier (optional)
+  Future<void> trackQolAssessmentDeleted({
+    required String assessmentDate,
+    String? petId,
+  }) async {
+    if (!_isEnabled) return;
+
+    try {
+      await _analytics.logEvent(
+        name: AnalyticsEvents.qolAssessmentDeleted,
+        parameters: {
+          AnalyticsParams.assessmentDate: assessmentDate,
+          if (petId != null) AnalyticsParams.petId: petId,
+        },
+      );
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Analytics] Failed to track QoL assessment deleted: $e');
+      }
+    }
+  }
+
+  /// Track QoL history screen viewed
+  ///
+  /// Fires when the history screen opens.
+  ///
+  /// Parameters:
+  /// - [assessmentCount]: Number of assessments in the list
+  /// - [petId]: Pet identifier (optional)
+  Future<void> trackQolHistoryViewed({
+    required int assessmentCount,
+    String? petId,
+  }) async {
+    if (!_isEnabled) return;
+
+    try {
+      await _analytics.logEvent(
+        name: AnalyticsEvents.qolHistoryViewed,
+        parameters: {
+          AnalyticsParams.assessmentCount: assessmentCount,
+          if (petId != null) AnalyticsParams.petId: petId,
+        },
+      );
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Analytics] Failed to track QoL history viewed: $e');
+      }
+    }
+  }
+
+  /// Track QoL detail screen viewed
+  ///
+  /// Fires when the detail screen opens.
+  ///
+  /// Parameters:
+  /// - [assessmentDate]: Date of the viewed assessment (YYYY-MM-DD format)
+  /// - [petId]: Pet identifier (optional)
+  Future<void> trackQolDetailViewed({
+    required String assessmentDate,
+    String? petId,
+  }) async {
+    if (!_isEnabled) return;
+
+    try {
+      await _analytics.logEvent(
+        name: AnalyticsEvents.qolDetailViewed,
+        parameters: {
+          AnalyticsParams.assessmentDate: assessmentDate,
+          if (petId != null) AnalyticsParams.petId: petId,
+        },
+      );
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Analytics] Failed to track QoL detail viewed: $e');
+      }
+    }
+  }
+
+  /// Track QoL trends viewed
+  ///
+  /// Fires when the trend chart is displayed.
+  ///
+  /// Parameters:
+  /// - [assessmentCount]: Number of assessments shown in the trend
+  /// - [petId]: Pet identifier (optional)
+  Future<void> trackQolTrendsViewed({
+    required int assessmentCount,
+    String? petId,
+  }) async {
+    if (!_isEnabled) return;
+
+    try {
+      await _analytics.logEvent(
+        name: AnalyticsEvents.qolTrendsViewed,
+        parameters: {
+          AnalyticsParams.assessmentCount: assessmentCount,
+          if (petId != null) AnalyticsParams.petId: petId,
+        },
+      );
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Analytics] Failed to track QoL trends viewed: $e');
+      }
+    }
+  }
+
+  /// Track QoL question answered
+  ///
+  /// Fires on page advance (not every slider drag).
+  ///
+  /// Parameters:
+  /// - [questionId]: Question identifier (e.g., "vitality_1")
+  /// - [domain]: Domain name (e.g., "vitality", "comfort")
+  /// - [score]: Response score (0-4 or null for "Not sure")
+  /// - [petId]: Pet identifier (optional)
+  Future<void> trackQolQuestionAnswered({
+    required String questionId,
+    required String domain,
+    required int? score,
+    String? petId,
+  }) async {
+    if (!_isEnabled) return;
+
+    try {
+      await _analytics.logEvent(
+        name: AnalyticsEvents.qolQuestionAnswered,
+        parameters: {
+          AnalyticsParams.questionId: questionId,
+          AnalyticsParams.domain: domain,
+          AnalyticsParams.score: score ?? 'null',
+          if (petId != null) AnalyticsParams.petId: petId,
+        },
+      );
+    } on Exception catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Analytics] Failed to track QoL question answered: $e');
       }
     }
   }

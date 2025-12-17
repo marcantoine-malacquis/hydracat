@@ -366,3 +366,143 @@ Future<void> assertMonthlySummaryExists(
     reason: 'Monthly summary does not exist for month: $monthId',
   );
 }
+
+// ============================================
+// QoL Assessment Assertion Helpers
+// ============================================
+
+/// Verify QoL assessment document exists and has expected structure
+Future<void> assertQolAssessmentExists(
+  FakeFirebaseFirestore firestore,
+  String userId,
+  String petId,
+  DateTime date, {
+  int? expectedResponseCount,
+  String? expectedUserId,
+  String? expectedPetId,
+}) async {
+  final docId = AppDateUtils.formatDateForSummary(date);
+  final doc = await firestore
+      .collection('users')
+      .doc(userId)
+      .collection('pets')
+      .doc(petId)
+      .collection('qolAssessments')
+      .doc(docId)
+      .get();
+
+  expect(
+    doc.exists,
+    isTrue,
+    reason: 'QoL assessment does not exist for date: $docId',
+  );
+
+  final data = doc.data();
+  expect(data, isNotNull, reason: 'QoL assessment data is null');
+
+  if (expectedResponseCount != null) {
+    final responses = data!['responses'] as List<dynamic>? ?? [];
+    expect(
+      responses.length,
+      equals(expectedResponseCount),
+      reason: 'Response count mismatch',
+    );
+  }
+
+  if (expectedUserId != null) {
+    expect(
+      data!['userId'],
+      equals(expectedUserId),
+      reason: 'User ID mismatch',
+    );
+  }
+
+  if (expectedPetId != null) {
+    expect(
+      data!['petId'],
+      equals(expectedPetId),
+      reason: 'Pet ID mismatch',
+    );
+  }
+}
+
+/// Verify QoL summary fields are updated in daily summary
+Future<void> assertQolSummaryUpdated(
+  FakeFirebaseFirestore firestore,
+  String userId,
+  String petId,
+  DateTime date, {
+  bool? expectedHasQolAssessment,
+  int? expectedOverallScore,
+}) async {
+  final docId = AppDateUtils.formatDateForSummary(date);
+  final doc = await firestore
+      .collection('users')
+      .doc(userId)
+      .collection('pets')
+      .doc(petId)
+      .collection('treatmentSummaries')
+      .doc('daily')
+      .collection('summaries')
+      .doc(docId)
+      .get();
+
+  expect(
+    doc.exists,
+    isTrue,
+    reason: 'Daily summary does not exist for date: $docId',
+  );
+
+  final data = doc.data();
+  expect(data, isNotNull, reason: 'Daily summary data is null');
+
+  if (expectedHasQolAssessment != null) {
+    expect(
+      data!['hasQolAssessment'],
+      equals(expectedHasQolAssessment),
+      reason: 'hasQolAssessment flag mismatch',
+    );
+  }
+
+  if (expectedOverallScore != null) {
+    expect(
+      data!['qolOverallScore'],
+      equals(expectedOverallScore),
+      reason: 'Overall score mismatch',
+    );
+  }
+
+  // Verify all QoL domain scores exist if hasQolAssessment is true
+  if (data!['hasQolAssessment'] == true) {
+    expect(
+      data['qolOverallScore'],
+      isNotNull,
+      reason: 'Overall score should not be null',
+    );
+    expect(
+      data['qolVitalityScore'],
+      isNotNull,
+      reason: 'Vitality score should not be null',
+    );
+    expect(
+      data['qolComfortScore'],
+      isNotNull,
+      reason: 'Comfort score should not be null',
+    );
+    expect(
+      data['qolEmotionalScore'],
+      isNotNull,
+      reason: 'Emotional score should not be null',
+    );
+    expect(
+      data['qolAppetiteScore'],
+      isNotNull,
+      reason: 'Appetite score should not be null',
+    );
+    expect(
+      data['qolTreatmentBurdenScore'],
+      isNotNull,
+      reason: 'Treatment burden score should not be null',
+    );
+  }
+}

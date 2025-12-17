@@ -1700,6 +1700,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get qolInsufficientData => 'Insufficient data';
 
   @override
+  String get qolIncomplete => 'Incomplete';
+
+  @override
+  String get qolHistorySectionTitle => 'Recent Assessments';
+
+  @override
+  String get qolNeedMoreData => 'Need at least 2 assessments to see trends';
+
+  @override
   String get qolDomainVitalityShort => 'Vital.';
 
   @override
@@ -1745,6 +1754,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get qolComparedToLast => 'vs. last assessment';
+
+  @override
   String get qolLowConfidenceExplanation =>
       'This domain has less than 50% of questions answered, so the score may not be reliable.';
 
@@ -1755,7 +1767,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get qolQuestionnaireEditTitle => 'Edit Assessment';
 
   @override
+  String get qolHistoryTitle => 'Quality of Life';
+
+  @override
+  String get qolTrendChartTitle => 'QoL Trends';
+
+  @override
   String get qolComplete => 'Complete';
+
+  @override
+  String get qolStartAssessment => 'Start Assessment';
+
+  @override
+  String get qolStartFirstAssessment => 'Start First Assessment';
+
+  @override
+  String get qolContinue => 'Continue';
+
+  @override
+  String get qolSave => 'Save';
 
   @override
   String get qolDiscardTitle => 'Discard progress?';
@@ -1770,4 +1800,101 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get qolSaveError => 'Failed to save assessment. Please try again.';
+
+  @override
+  String get qolLoadError =>
+      'Unable to load assessments. Check your connection.';
+
+  @override
+  String get qolResultsTitle => 'QoL Results';
+
+  @override
+  String get qolDomainScoresTitle => 'Domain Scores';
+
+  @override
+  String get viewHistory => 'View History';
+
+  @override
+  String get qolEmptyStateTitle => 'Track Your Cat\'s Quality of Life';
+
+  @override
+  String get qolEmptyStateMessage =>
+      'Complete assessments weekly to identify trends and share insights with your vet.';
+
+  @override
+  String get qolHistoryEmptyMessage =>
+      'No assessments yet. Start your first one to begin tracking.';
+
+  @override
+  String get qolHomeCardEmptyMessage => 'Track your cat\'s wellbeing over time';
+
+  @override
+  String get qolFirstAssessmentMessage =>
+      'This is your baseline. Complete another in 7 days to see trends.';
+
+  @override
+  String get qolDeleteConfirmTitle => 'Delete Assessment?';
+
+  @override
+  String qolDeleteConfirmMessage(String date) {
+    return 'This will permanently delete the assessment from $date.';
+  }
+
+  @override
+  String get qolDeleteSuccess => 'Assessment deleted successfully';
+
+  @override
+  String get qolDeleteError => 'Failed to delete assessment. Please try again.';
+
+  @override
+  String get qolNeedMoreAssessments =>
+      'Complete another assessment to see trends and comparisons.';
+
+  @override
+  String get qolInsufficientDataForInterpretation =>
+      'Insufficient data to provide trend interpretation. Complete more questions in your next assessment.';
+
+  @override
+  String get qolInterpretationStable =>
+      'Your cat\'s quality of life has remained stable since the last assessment.';
+
+  @override
+  String get qolInterpretationImproving =>
+      'Quality of life scores have improved. Great progress!';
+
+  @override
+  String get qolInterpretationDeclining =>
+      'Quality of life scores are lower than the last assessment. Consider discussing recent changes with your veterinarian.';
+
+  @override
+  String get qolInterpretationNotableDropComfort =>
+      'Comfort scores have dropped notably. You may want to discuss pain management with your vet.';
+
+  @override
+  String get qolInterpretationNotableDropAppetite =>
+      'Appetite scores are significantly lower. Monitor eating habits closely and consult your vet.';
+
+  @override
+  String get qolInterpretationNotableDropVitality =>
+      'Vitality scores have decreased notably. Your cat may be experiencing lower energy levels.';
+
+  @override
+  String get qolInterpretationNotableDropEmotional =>
+      'Emotional wellbeing scores have dropped significantly. Your cat may be experiencing stress or discomfort.';
+
+  @override
+  String get qolInterpretationNotableDropTreatmentBurden =>
+      'Treatment burden scores indicate increased stress from CKD care. Consider discussing ways to make treatments easier.';
+
+  @override
+  String get qolTrendDisclaimer =>
+      'These trends are observational only. Always consult your veterinarian for medical decisions.';
+
+  @override
+  String get qolDisclaimer =>
+      'This tool tracks quality of life trends over time for your reference. It is not a diagnostic instrument and does not replace veterinary care. Always consult your veterinarian for medical decisions.';
+
+  @override
+  String get qolScientificAttribution =>
+      'HydraCAT\'s Quality of Life assessment is informed by published psychometric research on feline health-related quality of life, including studies by Bijsmans et al. (2016), Lorbach et al. (2022), and Wright et al. (2025). This tool is independently developed and is not affiliated with or endorsed by the authors of these studies.';
 }

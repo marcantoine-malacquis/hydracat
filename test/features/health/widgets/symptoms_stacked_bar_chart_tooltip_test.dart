@@ -137,6 +137,7 @@ void main() {
               SymptomType.diarrhea: 1,
             },
             daysWithAnySymptoms: 1,
+          daysWithLoggedEntries: 1,
           ),
           ...List.generate(
             6,
@@ -180,6 +181,7 @@ void main() {
               SymptomType.energy: 1,
             },
             daysWithAnySymptoms: 1,
+          daysWithLoggedEntries: 1,
           ),
           ...List.generate(
             6,
@@ -220,6 +222,7 @@ void main() {
           SymptomBucket.empty(weekStart).copyWith(
             daysWithSymptom: {SymptomType.vomiting: 1},
             daysWithAnySymptoms: 1,
+          daysWithLoggedEntries: 1,
           ),
           ...List.generate(
             6,
@@ -252,6 +255,7 @@ void main() {
             end: day, // Single day bucket
             daysWithSymptom: const {SymptomType.vomiting: 1},
             daysWithAnySymptoms: 1,
+          daysWithLoggedEntries: 1,
           ),
         ];
 
@@ -282,6 +286,7 @@ void main() {
             end: DateTime(2025, 3, 31),
             daysWithSymptom: const {SymptomType.vomiting: 5},
             daysWithAnySymptoms: 5,
+          daysWithLoggedEntries: 5,
           ),
         ];
 
@@ -313,6 +318,7 @@ void main() {
               SymptomType.energy: 1,
             },
             daysWithAnySymptoms: 1,
+          daysWithLoggedEntries: 1,
           ),
           ...List.generate(
             6,
@@ -358,6 +364,7 @@ void main() {
               SymptomType.suppressedAppetite: 1, // Not in visibleSymptoms
             },
             daysWithAnySymptoms: 1,
+          daysWithLoggedEntries: 1,
           ),
           ...List.generate(
             6,
@@ -401,6 +408,7 @@ void main() {
               SymptomType.energy: 1,
             },
             daysWithAnySymptoms: 1,
+          daysWithLoggedEntries: 1,
           ),
           ...List.generate(
             6,
@@ -439,6 +447,7 @@ void main() {
           SymptomBucket.empty(weekStart.add(const Duration(days: 1))).copyWith(
             daysWithSymptom: {SymptomType.vomiting: 1},
             daysWithAnySymptoms: 1,
+          daysWithLoggedEntries: 1,
           ),
           ...List.generate(
             5,
@@ -479,12 +488,14 @@ void main() {
                 SymptomType.diarrhea: 1, // Different symptom
               },
               daysWithAnySymptoms: 1,
+          daysWithLoggedEntries: 1,
             ),
             SymptomBucket.empty(
               weekStart.add(const Duration(days: 1)),
             ).copyWith(
               daysWithSymptom: {SymptomType.vomiting: 1},
               daysWithAnySymptoms: 1,
+          daysWithLoggedEntries: 1,
             ),
             ...List.generate(
               5,
@@ -524,6 +535,7 @@ void main() {
           (i) => SymptomBucket.empty(weekStart.add(Duration(days: i))).copyWith(
             daysWithSymptom: {SymptomType.vomiting: 1},
             daysWithAnySymptoms: 1,
+          daysWithLoggedEntries: 1,
           ),
         );
 
@@ -555,6 +567,7 @@ void main() {
           (i) => SymptomBucket.empty(weekStart.add(Duration(days: i))).copyWith(
             daysWithSymptom: {SymptomType.vomiting: 1},
             daysWithAnySymptoms: 1,
+          daysWithLoggedEntries: 1,
           ),
         );
 

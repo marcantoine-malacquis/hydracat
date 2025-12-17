@@ -65,6 +65,7 @@ class MonthlySummary extends TreatmentSummaryBase {
     this.daysWithSuppressedAppetite = 0,
     this.daysWithInjectionSiteReaction = 0,
     this.daysWithAnySymptoms = 0,
+    this.daysWithSymptomLogEntries = 0,
     this.symptomScoreTotal,
     this.symptomScoreAverage,
     this.symptomScoreMax,
@@ -220,6 +221,8 @@ class MonthlySummary extends TreatmentSummaryBase {
       daysWithInjectionSiteReaction:
           (json['daysWithInjectionSiteReaction'] as num?)?.toInt() ?? 0,
       daysWithAnySymptoms: (json['daysWithAnySymptoms'] as num?)?.toInt() ?? 0,
+      daysWithSymptomLogEntries:
+          (json['daysWithSymptomLogEntries'] as num?)?.toInt() ?? 0,
       symptomScoreTotal: (json['symptomScoreTotal'] as num?)?.toInt(),
       symptomScoreAverage: (json['symptomScoreAverage'] as num?)?.toDouble(),
       symptomScoreMax: (json['symptomScoreMax'] as num?)?.toInt(),
@@ -403,6 +406,15 @@ class MonthlySummary extends TreatmentSummaryBase {
   /// Number of days with any symptoms present (hasSymptoms == true)
   final int daysWithAnySymptoms;
 
+  /// Number of days where symptom data was logged (hasSymptomLogEntry == true)
+  ///
+  /// Tracks engagement/logging activity regardless of symptom presence.
+  /// Used to distinguish between:
+  /// - No data logged (0)
+  /// - Data logged but all normal (>0, daysWithAnySymptoms=0)
+  /// - Data logged with symptoms (>0, daysWithAnySymptoms>0)
+  final int daysWithSymptomLogEntries;
+
   /// Sum of daily symptomScoreTotal over the month (0-558 for 31 days with
   /// max 18 each)
   final int? symptomScoreTotal;
@@ -498,6 +510,7 @@ class MonthlySummary extends TreatmentSummaryBase {
       'daysWithSuppressedAppetite': daysWithSuppressedAppetite,
       'daysWithInjectionSiteReaction': daysWithInjectionSiteReaction,
       'daysWithAnySymptoms': daysWithAnySymptoms,
+      'daysWithSymptomLogEntries': daysWithSymptomLogEntries,
       if (symptomScoreTotal != null) 'symptomScoreTotal': symptomScoreTotal,
       if (symptomScoreAverage != null)
         'symptomScoreAverage': symptomScoreAverage,
@@ -737,6 +750,7 @@ class MonthlySummary extends TreatmentSummaryBase {
     int? daysWithSuppressedAppetite,
     int? daysWithInjectionSiteReaction,
     int? daysWithAnySymptoms,
+    int? daysWithSymptomLogEntries,
     Object? symptomScoreTotal = _undefined,
     Object? symptomScoreAverage = _undefined,
     Object? symptomScoreMax = _undefined,
@@ -816,6 +830,8 @@ class MonthlySummary extends TreatmentSummaryBase {
       daysWithInjectionSiteReaction:
           daysWithInjectionSiteReaction ?? this.daysWithInjectionSiteReaction,
       daysWithAnySymptoms: daysWithAnySymptoms ?? this.daysWithAnySymptoms,
+      daysWithSymptomLogEntries:
+          daysWithSymptomLogEntries ?? this.daysWithSymptomLogEntries,
       symptomScoreTotal: symptomScoreTotal == _undefined
           ? this.symptomScoreTotal
           : symptomScoreTotal as int?,
@@ -903,6 +919,7 @@ class MonthlySummary extends TreatmentSummaryBase {
         other.daysWithSuppressedAppetite == daysWithSuppressedAppetite &&
         other.daysWithInjectionSiteReaction == daysWithInjectionSiteReaction &&
         other.daysWithAnySymptoms == daysWithAnySymptoms &&
+        other.daysWithSymptomLogEntries == daysWithSymptomLogEntries &&
         other.symptomScoreTotal == symptomScoreTotal &&
         other.symptomScoreAverage == symptomScoreAverage &&
         other.symptomScoreMax == symptomScoreMax &&
@@ -948,6 +965,7 @@ class MonthlySummary extends TreatmentSummaryBase {
       daysWithSuppressedAppetite,
       daysWithInjectionSiteReaction,
       daysWithAnySymptoms,
+      daysWithSymptomLogEntries,
       symptomScoreTotal,
       symptomScoreAverage,
       symptomScoreMax,
@@ -1001,6 +1019,7 @@ class MonthlySummary extends TreatmentSummaryBase {
         'daysWithSuppressedAppetite: $daysWithSuppressedAppetite, '
         'daysWithInjectionSiteReaction: $daysWithInjectionSiteReaction, '
         'daysWithAnySymptoms: $daysWithAnySymptoms, '
+        'daysWithSymptomLogEntries: $daysWithSymptomLogEntries, '
         'symptomScoreTotal: $symptomScoreTotal, '
         'symptomScoreAverage: $symptomScoreAverage, '
         'symptomScoreMax: $symptomScoreMax'

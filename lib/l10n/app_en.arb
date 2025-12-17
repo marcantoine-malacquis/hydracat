@@ -1257,6 +1257,9 @@
   "qolNotSure": "Not sure / Unable to observe this week",
   "qolRadarChartTitle": "Quality of Life Profile",
   "qolInsufficientData": "Insufficient data",
+  "qolIncomplete": "Incomplete",
+  "qolHistorySectionTitle": "Recent Assessments",
+  "qolNeedMoreData": "Need at least 2 assessments to see trends",
   "qolDomainVitalityShort": "Vital.",
   "qolDomainComfortShort": "Comf.",
   "qolDomainEmotionalShort": "Emot.",
@@ -1294,14 +1297,21 @@
       }
     }
   },
+  "qolComparedToLast": "vs. last assessment",
   "qolLowConfidenceExplanation": "This domain has less than 50% of questions answered, so the score may not be reliable.",
 
   "@_QOL_SCREEN_TITLES": {},
   "qolQuestionnaireTitle": "QoL Assessment",
   "qolQuestionnaireEditTitle": "Edit Assessment",
+  "qolHistoryTitle": "Quality of Life",
+  "qolTrendChartTitle": "QoL Trends",
 
   "@_QOL_ACTIONS": {},
   "qolComplete": "Complete",
+  "qolStartAssessment": "Start Assessment",
+  "qolStartFirstAssessment": "Start First Assessment",
+  "qolContinue": "Continue",
+  "qolSave": "Save",
   "qolDiscardTitle": "Discard progress?",
   "qolDiscardMessage": "You've answered {answered} of 14 questions. Exit without saving?",
   "@qolDiscardMessage": {
@@ -1312,5 +1322,48 @@
     }
   },
   "qolKeepEditing": "Keep editing",
-  "qolSaveError": "Failed to save assessment. Please try again."
+  "qolSaveError": "Failed to save assessment. Please try again.",
+  "qolLoadError": "Unable to load assessments. Check your connection.",
+
+  "@_QOL_SCREENS": {},
+  "qolResultsTitle": "QoL Results",
+  "qolDomainScoresTitle": "Domain Scores",
+  "viewHistory": "View History",
+
+  "@_QOL_EMPTY_STATES": {},
+  "qolEmptyStateTitle": "Track Your Cat's Quality of Life",
+  "qolEmptyStateMessage": "Complete assessments weekly to identify trends and share insights with your vet.",
+  "qolHistoryEmptyMessage": "No assessments yet. Start your first one to begin tracking.",
+  "qolHomeCardEmptyMessage": "Track your cat's wellbeing over time",
+  "qolFirstAssessmentMessage": "This is your baseline. Complete another in 7 days to see trends.",
+
+  "@_QOL_DELETE": {},
+  "qolDeleteConfirmTitle": "Delete Assessment?",
+  "qolDeleteConfirmMessage": "This will permanently delete the assessment from {date}.",
+  "@qolDeleteConfirmMessage": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "qolDeleteSuccess": "Assessment deleted successfully",
+  "qolDeleteError": "Failed to delete assessment. Please try again.",
+
+  "@_QOL_INTERPRETATION": {},
+  "qolNeedMoreAssessments": "Complete another assessment to see trends and comparisons.",
+  "qolInsufficientDataForInterpretation": "Insufficient data to provide trend interpretation. Complete more questions in your next assessment.",
+  "qolInterpretationStable": "Your cat's quality of life has remained stable since the last assessment.",
+  "qolInterpretationImproving": "Quality of life scores have improved. Great progress!",
+  "qolInterpretationDeclining": "Quality of life scores are lower than the last assessment. Consider discussing recent changes with your veterinarian.",
+  "qolInterpretationNotableDropComfort": "Comfort scores have dropped notably. You may want to discuss pain management with your vet.",
+  "qolInterpretationNotableDropAppetite": "Appetite scores are significantly lower. Monitor eating habits closely and consult your vet.",
+  "qolInterpretationNotableDropVitality": "Vitality scores have decreased notably. Your cat may be experiencing lower energy levels.",
+  "qolInterpretationNotableDropEmotional": "Emotional wellbeing scores have dropped significantly. Your cat may be experiencing stress or discomfort.",
+  "qolInterpretationNotableDropTreatmentBurden": "Treatment burden scores indicate increased stress from CKD care. Consider discussing ways to make treatments easier.",
+  "qolTrendDisclaimer": "These trends are observational only. Always consult your veterinarian for medical decisions.",
+
+  "@_QOL_DISCLAIMERS": {},
+  "qolDisclaimer": "This tool tracks quality of life trends over time for your reference. It is not a diagnostic instrument and does not replace veterinary care. Always consult your veterinarian for medical decisions.",
+  "qolScientificAttribution": "HydraCAT's Quality of Life assessment is informed by published psychometric research on feline health-related quality of life, including studies by Bijsmans et al. (2016), Lorbach et al. (2022), and Wright et al. (2025). This tool is independently developed and is not affiliated with or endorsed by the authors of these studies."
 }

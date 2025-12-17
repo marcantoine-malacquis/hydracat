@@ -23,11 +23,57 @@
       ]
     },
     {
-      "collectionGroup": "labResults",
+      "collectionGroup": "healthParameters",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "testDate",
+          "fieldPath": "hasWeight",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "healthParameters",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "hasWeight",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "summaries",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "weightEntriesCount",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startDate",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "qolAssessments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "petId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
           "order": "DESCENDING"
         }
       ]

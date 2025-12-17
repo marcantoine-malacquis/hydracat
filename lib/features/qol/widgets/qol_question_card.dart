@@ -33,31 +33,33 @@ class QolQuestionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Domain badge
-        _buildDomainBadge(l10n),
-        const SizedBox(height: AppSpacing.lg),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Domain badge
+          _buildDomainBadge(l10n),
+          const SizedBox(height: AppSpacing.lg),
 
-        // Question text
-        _buildQuestionText(l10n),
-        const SizedBox(height: AppSpacing.sm),
+          // Question text
+          _buildQuestionText(l10n),
+          const SizedBox(height: AppSpacing.sm),
 
-        // Recall period reminder
-        _buildRecallPeriod(l10n),
-        const SizedBox(height: AppSpacing.xl),
+          // Recall period reminder
+          _buildRecallPeriod(l10n),
+          const SizedBox(height: AppSpacing.xl),
 
-        // Response options (5 cards for scores 4→0)
-        ..._buildResponseOptions(l10n),
-        const SizedBox(height: AppSpacing.md),
+          // Response options (5 cards for scores 4→0)
+          ..._buildResponseOptions(l10n),
+          const SizedBox(height: AppSpacing.md),
 
-        // "Not sure" option
-        _buildNotSureOption(l10n),
+          // "Not sure" option
+          _buildNotSureOption(l10n),
 
-        // Spacer at bottom
-        const Spacer(),
-      ],
+          // Bottom padding for scrollable content
+          const SizedBox(height: AppSpacing.lg),
+        ],
+      ),
     );
   }
 

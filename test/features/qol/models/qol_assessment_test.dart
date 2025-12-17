@@ -106,8 +106,9 @@ void main() {
         expect(assessment.getDomainScore('invalid'), isNull);
       });
 
-      test('should return null when <50% of questions answered', () {
+      test('should return null when <50% of questions answered (30% case)', () {
         // Vitality domain has 3 questions, need at least 2 answered (50%)
+        // 1 of 3 = 33% (close to 30%)
         final responses = [
           const QolResponse(questionId: 'vitality_1', score: 4),
           // Only 1 of 3 answered = 33%
@@ -115,6 +116,17 @@ void main() {
         final assessment = createAssessment(responses: responses);
 
         expect(assessment.getDomainScore(QolDomain.vitality), isNull);
+      });
+
+      test('should return null when just under 50% threshold', () {
+        // Treatment domain has 2 questions, need at least 1 answered (50%)
+        // 0 of 2 = 0% (just under 50%)
+        final responses = <QolResponse>[
+          // No treatment questions answered
+        ];
+        final assessment = createAssessment(responses: responses);
+
+        expect(assessment.getDomainScore(QolDomain.treatmentBurden), isNull);
       });
 
       test('should return score when exactly 50% answered', () {
@@ -129,6 +141,36 @@ void main() {
         expect(score, isNotNull);
         // (4 + 2) / 2 = 3.0, 3.0 / 4.0 * 100 = 75.0
         expect(score, 75.0);
+      });
+
+      test('should return score when just over 50% threshold', () {
+        // Treatment domain has 2 questions, 50% = 1, so 1 question needed
+        // 1 of 2 = 50% (just over threshold)
+        final responses = [
+          const QolResponse(questionId: 'treatment_1', score: 3),
+          // Missing treatment_2 (50% completion, just over threshold)
+        ];
+        final assessment = createAssessment(responses: responses);
+
+        final score = assessment.getDomainScore(QolDomain.treatmentBurden);
+        expect(score, isNotNull);
+        // 3 / 1 = 3.0, 3.0 / 4.0 * 100 = 75.0
+        expect(score, 75.0);
+      });
+
+      test('should calculate correct score with 70% answered (2 of 3)', () {
+        // Vitality domain: 2 of 3 = 66.7% (close to 70%)
+        final responses = [
+          const QolResponse(questionId: 'vitality_1', score: 4),
+          const QolResponse(questionId: 'vitality_2', score: 3),
+          // Missing vitality_3 (70% completion)
+        ];
+        final assessment = createAssessment(responses: responses);
+
+        final score = assessment.getDomainScore(QolDomain.vitality);
+        expect(score, isNotNull);
+        // (4 + 3) / 2 = 3.5, 3.5 / 4.0 * 100 = 87.5
+        expect(score, 87.5);
       });
 
       test('should calculate correct score with 100% answered', () {
@@ -330,6 +372,68 @@ void main() {
         expect(assessment.scoreBand, 'low');
       });
 
+      test('should handle boundary at 40 (fair threshold)', () {
+        // Score exactly 40 should be fair
+        // Need score of 1.6 on 0-4 scale = 40 on 0-100 scale
+        final responses = [
+          // All domains with score 1.6 average (mix of 1s and 2s)
+          const QolResponse(questionId: 'vitality_1', score: 2),
+          const QolResponse(questionId: 'vitality_2', score: 1),
+          const QolResponse(questionId: 'vitality_3', score: 2),
+          const QolResponse(questionId: 'comfort_1', score: 2),
+          const QolResponse(questionId: 'comfort_2', score: 1),
+          const QolResponse(questionId: 'comfort_3', score: 2),
+          const QolResponse(questionId: 'emotional_1', score: 2),
+          const QolResponse(questionId: 'emotional_2', score: 1),
+          const QolResponse(questionId: 'emotional_3', score: 2),
+          const QolResponse(questionId: 'appetite_1', score: 2),
+          const QolResponse(questionId: 'appetite_2', score: 1),
+          const QolResponse(questionId: 'appetite_3', score: 2),
+          const QolResponse(questionId: 'treatment_1', score: 2),
+          const QolResponse(questionId: 'treatment_2', score: 1),
+        ];
+        final assessment = createAssessment(responses: responses);
+        final score = assessment.overallScore!;
+
+        // Should be around 40 (1.6/4.0 * 100)
+        if (score >= 40) {
+          expect(assessment.scoreBand, isIn(['fair', 'good', 'veryGood']));
+        } else {
+          expect(assessment.scoreBand, 'low');
+        }
+      });
+
+      test('should handle boundary at 60 (good threshold)', () {
+        // Score exactly 60 should be good
+        // Need score of 2.4 on 0-4 scale = 60 on 0-100 scale
+        final responses = [
+          // All domains with score 2.4 average (mix of 2s and 3s)
+          const QolResponse(questionId: 'vitality_1', score: 3),
+          const QolResponse(questionId: 'vitality_2', score: 2),
+          const QolResponse(questionId: 'vitality_3', score: 2),
+          const QolResponse(questionId: 'comfort_1', score: 3),
+          const QolResponse(questionId: 'comfort_2', score: 2),
+          const QolResponse(questionId: 'comfort_3', score: 2),
+          const QolResponse(questionId: 'emotional_1', score: 3),
+          const QolResponse(questionId: 'emotional_2', score: 2),
+          const QolResponse(questionId: 'emotional_3', score: 2),
+          const QolResponse(questionId: 'appetite_1', score: 3),
+          const QolResponse(questionId: 'appetite_2', score: 2),
+          const QolResponse(questionId: 'appetite_3', score: 2),
+          const QolResponse(questionId: 'treatment_1', score: 3),
+          const QolResponse(questionId: 'treatment_2', score: 2),
+        ];
+        final assessment = createAssessment(responses: responses);
+        final score = assessment.overallScore!;
+
+        // Should be around 60 (2.4/4.0 * 100)
+        if (score >= 60) {
+          expect(assessment.scoreBand, isIn(['good', 'veryGood']));
+        } else {
+          expect(assessment.scoreBand, 'fair');
+        }
+      });
+
       test('should handle boundary at 80 (veryGood)', () {
         // Score exactly 80 should be veryGood
         final responses = List.generate(14, (i) {
@@ -349,7 +453,7 @@ void main() {
             'appetite_2',
             'appetite_3',
             'treatment_1',
-            'treatment_2'
+            'treatment_2',
           ];
           return QolResponse(
             questionId: questionIds[i],

@@ -5,6 +5,7 @@ import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/features/home/models/pending_fluid_treatment.dart';
 import 'package:hydracat/features/home/models/pending_treatment.dart';
+import 'package:hydracat/features/home/widgets/qol_home_card.dart';
 import 'package:hydracat/features/home/widgets/widgets.dart';
 import 'package:hydracat/features/logging/models/dashboard_logging_context.dart';
 import 'package:hydracat/features/logging/screens/fluid_logging_screen.dart';
@@ -408,6 +409,10 @@ class _Dashboard extends ConsumerWidget {
             const WaterDropProgressCard(),
             const SizedBox(height: AppSpacing.lg),
           ],
+
+          // Quality of Life tracking card
+          const QolHomeCard(),
+          const SizedBox(height: AppSpacing.lg),
 
           // Progressive disclosure CTAs
           if (!hasMedication || !hasFluid) ...[

@@ -38,6 +38,7 @@ This document provides a comprehensive index of all test files in the HydraCat p
 - [Onboarding Tests](#onboarding-tests)
 - [Profile Feature Tests](#profile-feature-tests)
 - [Progress Feature Tests](#progress-feature-tests)
+- [QoL Feature Tests](#qol-feature-tests)
 - [Provider Tests](#provider-tests)
 - [Shared Model Tests](#shared-model-tests)
 - [Shared Widget Tests](#shared-widget-tests)
@@ -827,6 +828,330 @@ This document provides a comprehensive index of all test files in the HydraCat p
 - Provides accessibility semantics
 
 **Status**: Future implementation - test file pending
+
+---
+
+## QoL Feature Tests
+
+### Model Tests
+
+#### `test/features/qol/models/qol_domain_test.dart` ✅
+
+**Type**: Unit Test
+**Purpose**: Tests QolDomain constants and helper methods
+**Stats**: Tests domain constants, validation, and helper methods
+
+**Coverage**:
+- Domain string constants (vitality, comfort, emotional, appetite, treatmentBurden)
+- Display name and description mappings
+- Question counts per domain
+- Domain validation
+
+**Tests**:
+- ✅ QolDomain constants and validation tests
+
+---
+
+#### `test/features/qol/models/qol_question_test.dart` ✅
+
+**Type**: Unit Test
+**Purpose**: Tests QolQuestion model with all 14 questions
+**Stats**: Tests question definitions, IDs, domains, and response labels
+
+**Coverage**:
+- All 14 questions defined correctly
+- Unique question IDs
+- Valid domain assignments
+- Sequential order (0-13)
+- Response label keys for 0-4 scales
+
+**Tests**:
+- ✅ QolQuestion definition and validation tests
+
+---
+
+#### `test/features/qol/models/qol_response_test.dart` ✅
+
+**Type**: Unit Test
+**Purpose**: Tests QolResponse model
+**Stats**: Tests response serialization, equality, and null handling
+
+**Coverage**:
+- Response creation with score (0-4) or null ("Not sure")
+- `isAnswered` getter logic
+- JSON serialization/deserialization
+- Equality and hashCode
+
+**Tests**:
+- ✅ QolResponse constructor with score
+- ✅ QolResponse constructor with null score (Not sure)
+- ✅ QolResponse isAnswered returns true when score is 0
+- ✅ QolResponse isAnswered returns true when score is between 1-4
+- ✅ QolResponse isAnswered returns false when score is null
+- ✅ QolResponse JSON serialization tests
+
+---
+
+#### `test/features/qol/models/qol_assessment_test.dart` ✅
+
+**Type**: Unit Test
+**Purpose**: Tests QolAssessment model with scoring logic
+**Stats**: Comprehensive tests for assessment model and domain scoring
+
+**Coverage**:
+- Empty factory constructor
+- Date normalization to midnight
+- Domain score calculation with various completion percentages (30%, 50%, 70%, 100%)
+- Low confidence detection (<50% threshold)
+- Overall score calculation (requires all 5 domains valid)
+- Score band classification (veryGood, good, fair, low)
+- Validation (future dates, invalid scores, duplicate responses)
+- JSON serialization round-trip
+- Document ID generation (YYYY-MM-DD format)
+
+**Tests**:
+- ✅ QolAssessment empty factory and date normalization
+- ✅ QolAssessment domain score calculation with partial responses
+- ✅ QolAssessment low confidence detection (<50% threshold)
+- ✅ QolAssessment overall score requires all domains valid
+- ✅ QolAssessment score band classification
+- ✅ QolAssessment validation edge cases
+- ✅ QolAssessment JSON serialization
+
+---
+
+#### `test/features/qol/models/qol_trend_summary_test.dart` ✅
+
+**Type**: Unit Test
+**Purpose**: Tests QolTrendSummary model for chart consumption
+**Stats**: Tests trend summary creation and delta calculations
+
+**Coverage**:
+- Trend summary creation from assessments
+- Delta calculations (overall and domain-specific)
+- Equality and hashCode
+
+**Tests**:
+- ✅ QolTrendSummary creation and delta calculations
+
+---
+
+### Service Tests
+
+#### `test/features/qol/services/qol_scoring_service_test.dart` ✅
+
+**Type**: Unit Test
+**Purpose**: Tests QolScoringService pure business logic
+**Stats**: Tests scoring calculations and trend analysis
+
+**Coverage**:
+- Domain score calculation with partial responses
+- Overall score calculation with missing domains
+- Trend stability calculation (improving/declining/stable)
+- Notable change detection (≥15 point drop, sustained ≥2 assessments)
+- Interpretation message generation
+
+**Tests**:
+- ✅ QolScoringService calculateDomainScore with partial responses
+- ✅ QolScoringService calculateOverallScore with missing domains
+- ✅ QolScoringService trend stability calculation
+- ✅ QolScoringService notable change detection
+- ✅ QolScoringService interpretation message generation
+
+---
+
+#### `test/features/qol/services/qol_service_test.dart` ✅
+
+**Type**: Unit Test
+**Purpose**: Tests QolService Firebase CRUD operations
+**Stats**: Tests Firestore operations with mocked Firestore
+
+**Coverage**:
+- Batch writes include all 4 documents (assessment + 3 summaries)
+- Save assessment with atomic batch write
+- Get assessment by date
+- Get recent assessments with pagination
+- Update assessment
+- Delete assessment
+- Error handling throws QolServiceException
+- Analytics events fired at correct times
+
+**Tests**:
+- ✅ QolService saveAssessment with batch writes
+- ✅ QolService getAssessment by date
+- ✅ QolService getRecentAssessments with pagination
+- ✅ QolService updateAssessment
+- ✅ QolService deleteAssessment
+- ✅ QolService error handling
+- ✅ QolService analytics integration
+
+---
+
+### Provider Tests
+
+#### `test/features/qol/providers/qol_provider_test.dart` ✅
+
+**Type**: Provider Test
+**Purpose**: Tests QolProvider state management
+**Stats**: Tests cache lifecycle, optimistic updates, and state transitions
+
+**Coverage**:
+- Cache lifecycle (TTL, force refresh)
+- Load recent assessments with caching
+- Optimistic updates (save/update/delete)
+- State transitions during loading/saving
+- Error handling
+- Trend data generation from cached assessments
+
+**Tests**:
+- ✅ QolProvider loadRecentAssessments loads and updates state
+- ✅ QolProvider loadRecentAssessments uses cached data if fresh (<5 minutes)
+- ✅ QolProvider loadRecentAssessments force refresh when forceRefresh=true
+- ✅ QolProvider saveAssessment with optimistic updates
+- ✅ QolProvider updateAssessment replaces in list
+- ✅ QolProvider deleteAssessment removes from state
+- ✅ QolProvider getTrendData filters to valid scores
+- ✅ QolProvider error handling
+
+---
+
+### Widget Tests
+
+#### `test/features/qol/widgets/qol_question_card_test.dart` ✅
+
+**Type**: Widget Test
+**Purpose**: Tests QolQuestionCard widget
+**Stats**: Tests question card rendering and interactions
+
+**Coverage**:
+- Renders all 5 response options + "Not sure"
+- Selection state updates correctly
+- Callback fires with correct score
+- Uses question-specific labels (not generic)
+- Domain badge display
+
+**Tests**:
+- ✅ QolQuestionCard renders all response options
+- ✅ QolQuestionCard selection state updates
+- ✅ QolQuestionCard callback fires with correct score
+- ✅ QolQuestionCard uses question-specific labels
+
+---
+
+#### `test/features/qol/widgets/qol_radar_chart_test.dart` ✅
+
+**Type**: Widget Test
+**Purpose**: Tests QolRadarChart widget
+**Stats**: Tests radar chart rendering and variants
+
+**Coverage**:
+- Renders 5 domains on radar chart
+- Empty state for all null responses
+- Compact variant has abbreviated labels
+- Low confidence domains have dotted lines
+- Score band color coding
+
+**Tests**:
+- ✅ QolRadarChart renders 5 domains
+- ✅ QolRadarChart empty state for all null responses
+- ✅ QolRadarChart compact variant with abbreviated labels
+- ✅ QolRadarChart low confidence domains with dotted lines
+
+---
+
+#### `test/features/qol/widgets/qol_score_summary_card_test.dart` ✅
+
+**Type**: Widget Test
+**Purpose**: Tests QolScoreSummaryCard widget
+**Stats**: Tests score summary card rendering
+
+**Coverage**:
+- Large overall score display with color coding
+- Score band label display
+- Low confidence badge ("Based on X/5 domains")
+- Assessment date display
+- Incomplete assessment indicator
+
+**Tests**:
+- ✅ QolScoreSummaryCard renders overall score
+- ✅ QolScoreSummaryCard displays score band
+- ✅ QolScoreSummaryCard shows low confidence badge
+- ✅ QolScoreSummaryCard displays assessment date
+
+---
+
+#### `test/features/qol/widgets/qol_home_card_test.dart` ✅
+
+**Type**: Widget Test
+**Purpose**: Tests QolHomeCard widget for home screen
+**Stats**: Tests home card empty and populated states
+
+**Coverage**:
+- Empty state shows CTA button
+- Populated state shows radar chart
+- Tap navigates to detail screen
+- Latest assessment display
+- Compact radar chart variant
+
+**Tests**:
+- ✅ QolHomeCard empty state shows CTA
+- ✅ QolHomeCard populated state shows radar chart
+- ✅ QolHomeCard tap navigates to detail screen
+- ✅ QolHomeCard displays latest assessment
+
+---
+
+### Exception Tests
+
+#### `test/features/qol/exceptions/qol_exceptions_test.dart` ✅
+
+**Type**: Unit Test
+**Purpose**: Tests QoL custom exception classes
+**Stats**: Tests exception instantiation and messages
+
+**Coverage**:
+- QolException base class
+- QolValidationException for validation errors
+- QolServiceException for Firestore operation errors
+
+**Tests**:
+- ✅ QolException instantiation and messages
+
+---
+
+### Integration Tests
+
+#### `test/features/qol/integration/qol_flow_test.dart` ✅
+
+**Type**: Integration Test
+**Purpose**: Tests complete QoL user flows end-to-end
+**Stats**: Tests end-to-end service flows with provider integration
+
+**Coverage**:
+- Complete full 14-question assessment from start to finish
+- Edit existing assessment and verify changes saved
+- View history screen with multiple assessments
+- View detail screen with radar chart and interpretation
+- Home screen card displays latest assessment
+- Delete assessment and verify removed from history
+- Edge cases (all maximum scores, all minimum scores, partial completion)
+
+**Tests**:
+- ✅ Complete Assessment Flow: complete full 14-question assessment from start to finish
+- ✅ Complete Assessment Flow: assessment with missing responses (partial completion)
+- ✅ Edit Assessment Flow: edit existing assessment and verify changes saved
+- ✅ Edit Assessment Flow: assessment on same date should update existing
+- ✅ History View Flow: view history screen with multiple assessments
+- ✅ History View Flow: pagination works correctly
+- ✅ Detail Screen Flow: view detail screen with radar chart and interpretation
+- ✅ Detail Screen Flow: trend data with previous assessment exists
+- ✅ Home Card Display Flow: home screen card displays latest assessment
+- ✅ Home Card Display Flow: empty state when no assessments exist
+- ✅ Home Card Display Flow: latest assessment is most recent when multiple exist
+- ✅ Delete Assessment Flow: delete assessment and verify removed from history
+- ✅ Delete Assessment Flow: delete non-existent assessment handles gracefully
+- ✅ Edge Cases: assessment with all maximum scores (100%)
+- ✅ Edge Cases: assessment with all minimum scores (0%)
 
 ---
 

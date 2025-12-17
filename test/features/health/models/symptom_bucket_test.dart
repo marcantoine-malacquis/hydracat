@@ -18,6 +18,7 @@ void main() {
             SymptomType.diarrhea: 1,
           },
           daysWithAnySymptoms: 3,
+          daysWithLoggedEntries: 3,
         );
 
         expect(bucket.start, testStart);
@@ -33,6 +34,7 @@ void main() {
           end: testDate,
           daysWithSymptom: const {SymptomType.energy: 1},
           daysWithAnySymptoms: 1,
+          daysWithLoggedEntries: 1,
         );
 
         expect(bucket.start, bucket.end);
@@ -45,6 +47,7 @@ void main() {
           end: testEnd,
           daysWithSymptom: const {SymptomType.vomiting: 2},
           daysWithAnySymptoms: 2,
+          daysWithLoggedEntries: 2,
         );
 
         expect(
@@ -61,6 +64,7 @@ void main() {
           end: testEnd,
           daysWithSymptom: const {},
           daysWithAnySymptoms: 0,
+          daysWithLoggedEntries: 0,
         );
 
         expect(bucket.totalSymptomDays, 0);
@@ -76,6 +80,7 @@ void main() {
             SymptomType.energy: 1,
           },
           daysWithAnySymptoms: 4,
+          daysWithLoggedEntries: 4,
         );
 
         expect(bucket.totalSymptomDays, 6);
@@ -87,6 +92,7 @@ void main() {
           end: testEnd,
           daysWithSymptom: const {SymptomType.constipation: 5},
           daysWithAnySymptoms: 5,
+          daysWithLoggedEntries: 5,
         );
 
         expect(bucket.totalSymptomDays, 5);
@@ -147,6 +153,7 @@ void main() {
           end: testEnd,
           daysWithSymptom: const {SymptomType.vomiting: 2},
           daysWithAnySymptoms: 2,
+          daysWithLoggedEntries: 2,
         );
 
         final updated = original.copyWith(
@@ -165,6 +172,7 @@ void main() {
           end: testEnd,
           daysWithSymptom: const {SymptomType.vomiting: 2},
           daysWithAnySymptoms: 2,
+          daysWithLoggedEntries: 2,
         );
 
         final updated = original.copyWith(
@@ -183,6 +191,7 @@ void main() {
           end: testEnd,
           daysWithSymptom: const {SymptomType.vomiting: 2},
           daysWithAnySymptoms: 2,
+          daysWithLoggedEntries: 2,
         );
 
         final updated = original.copyWith(
@@ -205,10 +214,12 @@ void main() {
           end: testEnd,
           daysWithSymptom: const {SymptomType.vomiting: 2},
           daysWithAnySymptoms: 2,
+          daysWithLoggedEntries: 2,
         );
 
         final updated = original.copyWith(
           daysWithAnySymptoms: 3,
+          daysWithLoggedEntries: 3,
         );
 
         expect(updated.start, testStart);
@@ -223,12 +234,14 @@ void main() {
           end: testEnd,
           daysWithSymptom: const {SymptomType.vomiting: 2},
           daysWithAnySymptoms: 2,
+          daysWithLoggedEntries: 2,
         );
 
         final updated = original.copyWith(
           start: DateTime(2025, 10, 2),
           daysWithSymptom: {SymptomType.energy: 1},
           daysWithAnySymptoms: 1,
+          daysWithLoggedEntries: 1,
         );
 
         expect(updated.start, DateTime(2025, 10, 2));
@@ -243,6 +256,7 @@ void main() {
           end: testEnd,
           daysWithSymptom: const {SymptomType.vomiting: 2},
           daysWithAnySymptoms: 2,
+          daysWithLoggedEntries: 2,
         );
 
         final copied = original.copyWith();
@@ -264,6 +278,7 @@ void main() {
             SymptomType.diarrhea: 1,
           },
           daysWithAnySymptoms: 3,
+          daysWithLoggedEntries: 3,
         );
 
         final bucket2 = SymptomBucket(
@@ -274,6 +289,7 @@ void main() {
             SymptomType.diarrhea: 1,
           },
           daysWithAnySymptoms: 3,
+          daysWithLoggedEntries: 3,
         );
 
         expect(bucket1, equals(bucket2));
@@ -286,6 +302,7 @@ void main() {
           end: testEnd,
           daysWithSymptom: const {SymptomType.vomiting: 2},
           daysWithAnySymptoms: 2,
+          daysWithLoggedEntries: 2,
         );
 
         final bucket2 = SymptomBucket(
@@ -293,6 +310,7 @@ void main() {
           end: testEnd,
           daysWithSymptom: const {SymptomType.vomiting: 2},
           daysWithAnySymptoms: 2,
+          daysWithLoggedEntries: 2,
         );
 
         expect(bucket1, isNot(equals(bucket2)));
@@ -304,6 +322,7 @@ void main() {
           end: testEnd,
           daysWithSymptom: const {SymptomType.vomiting: 2},
           daysWithAnySymptoms: 2,
+          daysWithLoggedEntries: 2,
         );
 
         final bucket2 = SymptomBucket(
@@ -311,6 +330,7 @@ void main() {
           end: DateTime(2025, 10, 8),
           daysWithSymptom: const {SymptomType.vomiting: 2},
           daysWithAnySymptoms: 2,
+          daysWithLoggedEntries: 2,
         );
 
         expect(bucket1, isNot(equals(bucket2)));
@@ -322,6 +342,7 @@ void main() {
           end: testEnd,
           daysWithSymptom: const {SymptomType.vomiting: 2},
           daysWithAnySymptoms: 2,
+          daysWithLoggedEntries: 2,
         );
 
         final bucket2 = SymptomBucket(
@@ -329,6 +350,7 @@ void main() {
           end: testEnd,
           daysWithSymptom: const {SymptomType.vomiting: 3},
           daysWithAnySymptoms: 2,
+          daysWithLoggedEntries: 2,
         );
 
         expect(bucket1, isNot(equals(bucket2)));
@@ -340,6 +362,7 @@ void main() {
           end: testEnd,
           daysWithSymptom: const {SymptomType.vomiting: 2},
           daysWithAnySymptoms: 2,
+          daysWithLoggedEntries: 2,
         );
 
         final bucket2 = SymptomBucket(
@@ -347,6 +370,7 @@ void main() {
           end: testEnd,
           daysWithSymptom: const {SymptomType.vomiting: 2},
           daysWithAnySymptoms: 3,
+          daysWithLoggedEntries: 3,
         );
 
         expect(bucket1, isNot(equals(bucket2)));
@@ -361,6 +385,7 @@ void main() {
             SymptomType.diarrhea: 1,
           },
           daysWithAnySymptoms: 3,
+          daysWithLoggedEntries: 3,
         );
 
         final bucket2 = SymptomBucket(
@@ -371,6 +396,7 @@ void main() {
             SymptomType.vomiting: 2,
           },
           daysWithAnySymptoms: 3,
+          daysWithLoggedEntries: 3,
         );
 
         // Maps with same key-value pairs should be equal regardless
@@ -384,6 +410,7 @@ void main() {
           end: testEnd,
           daysWithSymptom: const {},
           daysWithAnySymptoms: 0,
+          daysWithLoggedEntries: 0,
         );
 
         final bucket2 = SymptomBucket(
@@ -391,6 +418,7 @@ void main() {
           end: testEnd,
           daysWithSymptom: const {},
           daysWithAnySymptoms: 0,
+          daysWithLoggedEntries: 0,
         );
 
         expect(bucket1, equals(bucket2));
@@ -407,6 +435,7 @@ void main() {
             SymptomType.diarrhea: 1,
           },
           daysWithAnySymptoms: 3,
+          daysWithLoggedEntries: 3,
         );
 
         final str = bucket.toString();
