@@ -19,6 +19,13 @@ This schema supports comprehensive CKD management while maintaining strict cost 
 - `labResults` - Bloodwork and lab test tracking (models, services, UI, Firestore rules, and indexes implemented)
 - `fluidInventory` - Fluid volume tracking with automatic deduction, threshold notifications, and refill history (Phase 0-5 complete)
 
+🚧 **In Progress:**
+- `qolAssessments` - Quality of Life tracking (14-question assessment, 5-domain scoring, trend visualization)
+  - Phase 2.1 (Core Models): ✅ Complete
+  - Phase 2.2 (Daily Summary Integration): ✅ Complete
+  - Phase 2.3 (Schema Documentation): ✅ Complete
+  - Phase 3+ (Services, UI, Analytics): 🔄 In Progress
+
 🚧 **Planned/Not Yet Implemented:**
 - `crossPetSummaries` - Premium multi-pet analytics
 
@@ -52,6 +59,31 @@ This approach provides:
 - **Medically Accurate Inputs**: Tailored inputs per symptom (episodes, stool quality, appetite fraction, etc.)
 - **Unified Analytics**: All symptoms use the same 0-3 severity scale for charts and summaries
 - **Data Preservation**: Raw values stored for future analysis and vet reports
+
+### Quality of Life (QoL) Cost Optimization
+QoL assessments use a denormalization strategy to minimize Firestore reads:
+
+**Storage Pattern:**
+- **Source of Truth**: `qolAssessments/{YYYY-MM-DD}` stores complete 14-question assessment
+- **Denormalized Scores**: Daily summaries include 6 computed scores (overall + 5 domains) + boolean flag
+- **One Document per Day**: Document ID = date ensures single assessment per day
+
+**Cost Benefits:**
+- **Zero-read home screen**: QoL scores displayed from cached daily summary (no subcollection query)
+- **Zero-read trend charts**: Uses cached recent assessments from provider (loaded on startup)
+- **Batch writes**: Each QoL save updates 4 documents atomically:
+  1. `qolAssessments/{YYYY-MM-DD}` - full assessment
+  2. Daily summary - denormalized scores
+  3. Weekly summary - (future aggregation)
+  4. Monthly summary - (future aggregation)
+
+**Query Patterns:**
+- Home screen QoL card: 0 reads (uses cached latest assessment from startup load)
+- History screen: 20 reads (paginated `.limit(20)`, cached for 5 min)
+- Detail screen: 0 reads (uses cached assessment from history)
+- Cache TTL: 5 minutes with pull-to-refresh force invalidation
+
+This approach reduces reads from ~2 per home screen view (daily summary + assessment) to 0.
 
 ### Monthly Summary Daily Arrays Optimization
 Monthly summaries include per-day arrays for efficient month-view rendering without requiring 28-31 daily summary reads:
@@ -266,6 +298,20 @@ users/
                   │           ├── createdAt: Timestamp
                   │           └── updatedAt: Timestamp
                   │
+                  ├── qolAssessments (subcollection) - Quality of Life tracking
+                  │     │
+                  │     └── {YYYY-MM-DD} (date-based document ID)
+                  │           ├── id: string                      # UUID v4
+                  │           ├── userId: string                  # owner who completed assessment
+                  │           ├── petId: string                   # pet this assessment is for
+                  │           ├── date: Timestamp                 # date of assessment (normalized to midnight)
+                  │           ├── responses: array<map>           # 14 question responses
+                  │           │     ├── questionId: string        # e.g., "vitality_1"
+                  │           │     └── score: number | null      # 0-4 or null for "Not sure"
+                  │           ├── createdAt: Timestamp            # when assessment was created
+                  │           ├── updatedAt: Timestamp            # optional, when last edited
+                  │           └── completionDurationSeconds: number # optional, time to complete (null if edited)
+                  │
                   ├── labResults (subcollection) - **APPEND-ONLY**: Historical bloodwork tracking
                   │     │
                   │     └── {labId} (auto-generated)
@@ -375,6 +421,15 @@ users/
                   │     │                 ├── symptomScoreTotal: number         # sum of all present severity scores (0-18, optional)
                   │     │                 ├── symptomScoreAverage: number       # average of present severity scores (0-3, optional)
                   │     │                 ├── hasSymptoms: boolean              # true if any symptom severityScore > 0
+                  │     │                 │
+                  │     │                 # Quality of Life Summary (denormalized from qolAssessments)
+                  │     │                 ├── qolOverallScore: number           # overall QoL score (0-100 scale, optional)
+                  │     │                 ├── qolVitalityScore: number          # vitality domain score (0-100 scale, optional)
+                  │     │                 ├── qolComfortScore: number           # comfort domain score (0-100 scale, optional)
+                  │     │                 ├── qolEmotionalScore: number         # emotional domain score (0-100 scale, optional)
+                  │     │                 ├── qolAppetiteScore: number          # appetite domain score (0-100 scale, optional)
+                  │     │                 ├── qolTreatmentBurdenScore: number   # treatment burden domain score (0-100 scale, optional)
+                  │     │                 ├── hasQolAssessment: boolean         # true if QoL assessment exists for this day
                   │     │                 │
                   │     │                 ├── createdAt: Timestamp
                   │     │                 └── updatedAt: Timestamp
@@ -961,6 +1016,8 @@ firebase deploy --only firestore:indexes
 ## Data Aggregation Strategy
 
 ### Daily Summary Updates
+
+#### Treatment Session Logging
 When a session is logged:
 1. Write to session collection (`fluidSessions`, `medicationSessions`)
 2. Update daily summary (`treatmentSummaries/daily/summaries/{YYYY-MM-DD}`)
@@ -974,6 +1031,17 @@ When a session is logged:
    - Only applies if session logged after `inventoryEnabledAt` timestamp
    - Atomic operation prevents race conditions
 7. Update cross-pet summaries for premium users (future)
+
+#### QoL Assessment Submission
+When a QoL assessment is saved:
+1. Write to `qolAssessments/{YYYY-MM-DD}` - full assessment document
+2. Update daily summary with denormalized scores:
+   - `qolOverallScore`, `qolVitalityScore`, `qolComfortScore`, `qolEmotionalScore`
+   - `qolAppetiteScore`, `qolTreatmentBurdenScore`, `hasQolAssessment`
+3. Update weekly summary (future aggregation)
+4. Update monthly summary (future aggregation)
+
+**Total: 4 writes per QoL save** (assessment + 3 summaries via batch operation)
 
 ### Cost-Efficient Batch Operations
 ```dart
@@ -1043,6 +1111,61 @@ if (inventoryEnabled && sessionDateTime >= inventoryEnabledAt) {
 
 await batch.commit();
 // Total: 4-5 writes (session + 3 summaries + [pet doc + optional inventory])
+```
+
+#### QoL Assessment Batch Write
+```dart
+WriteBatch batch = FirebaseFirestore.instance.batch();
+
+// Write QoL assessment to subcollection
+final assessmentRef = pet
+  .collection('qolAssessments')
+  .doc(dateString); // YYYY-MM-DD format
+
+batch.set(assessmentRef, assessmentData);
+
+// Update daily summary with denormalized scores
+final dailyRef = pet
+  .collection('treatmentSummaries')
+  .doc('daily')
+  .collection('summaries')
+  .doc(dateString);
+
+batch.set(dailyRef, {
+  'qolOverallScore': assessment.overallScore,
+  'qolVitalityScore': assessment.domainScores[QolDomain.vitality],
+  'qolComfortScore': assessment.domainScores[QolDomain.comfort],
+  'qolEmotionalScore': assessment.domainScores[QolDomain.emotional],
+  'qolAppetiteScore': assessment.domainScores[QolDomain.appetite],
+  'qolTreatmentBurdenScore': assessment.domainScores[QolDomain.treatmentBurden],
+  'hasQolAssessment': true,
+  'updatedAt': FieldValue.serverTimestamp(),
+}, SetOptions(merge: true));
+
+// Update weekly summary (placeholder for future)
+final weeklyRef = pet
+  .collection('treatmentSummaries')
+  .doc('weekly')
+  .collection('summaries')
+  .doc(weekString);
+
+batch.set(weeklyRef, {
+  'updatedAt': FieldValue.serverTimestamp(),
+}, SetOptions(merge: true));
+
+// Update monthly summary (placeholder for future)
+final monthlyRef = pet
+  .collection('treatmentSummaries')
+  .doc('monthly')
+  .collection('summaries')
+  .doc(monthString);
+
+batch.set(monthlyRef, {
+  'updatedAt': FieldValue.serverTimestamp(),
+}, SetOptions(merge: true));
+
+await batch.commit();
+// Total: 4 writes (assessment + 3 summaries)
 ```
 
 

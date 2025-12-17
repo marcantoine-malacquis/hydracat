@@ -28,6 +28,9 @@ import 'package:hydracat/features/profile/screens/medication_schedule_screen.dar
 import 'package:hydracat/features/profile/screens/profile_screen.dart';
 import 'package:hydracat/features/progress/screens/injection_sites_analytics_screen.dart';
 import 'package:hydracat/features/progress/screens/progress_screen.dart';
+import 'package:hydracat/features/qol/screens/qol_detail_screen.dart';
+import 'package:hydracat/features/qol/screens/qol_history_screen.dart';
+import 'package:hydracat/features/qol/screens/qol_questionnaire_screen.dart';
 import 'package:hydracat/features/settings/screens/notification_settings_screen.dart';
 import 'package:hydracat/features/settings/screens/settings_screen.dart';
 import 'package:hydracat/providers/auth_provider.dart';
@@ -353,6 +356,48 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           child: const InventoryScreen(),
           key: state.pageKey,
         ),
+      ),
+      // QoL routes
+      GoRoute(
+        path: '/profile/qol',
+        name: 'profile-qol',
+        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
+          child: const QolHistoryScreen(),
+          key: state.pageKey,
+        ),
+        routes: [
+          GoRoute(
+            path: 'new',
+            name: 'profile-qol-new',
+            pageBuilder: (context, state) =>
+                AppPageTransitions.bidirectionalSlide(
+              child: const QolQuestionnaireScreen(),
+              key: state.pageKey,
+            ),
+          ),
+          GoRoute(
+            path: 'edit/:assessmentId',
+            name: 'profile-qol-edit',
+            pageBuilder: (context, state) {
+              final assessmentId = state.pathParameters['assessmentId']!;
+              return AppPageTransitions.bidirectionalSlide(
+                child: QolQuestionnaireScreen(assessmentId: assessmentId),
+                key: state.pageKey,
+              );
+            },
+          ),
+          GoRoute(
+            path: 'detail/:assessmentId',
+            name: 'profile-qol-detail',
+            pageBuilder: (context, state) {
+              final assessmentId = state.pathParameters['assessmentId']!;
+              return AppPageTransitions.bidirectionalSlide(
+                child: QolDetailScreen(assessmentId: assessmentId),
+                key: state.pageKey,
+              );
+            },
+          ),
+        ],
       ),
       // Progress detail routes (outside the ShellRoute)
       GoRoute(

@@ -54,6 +54,13 @@ class DailySummary extends TreatmentSummaryBase {
     this.symptomScoreTotal,
     this.symptomScoreAverage,
     this.hasSymptoms = false,
+    this.qolOverallScore,
+    this.qolVitalityScore,
+    this.qolComfortScore,
+    this.qolEmotionalScore,
+    this.qolAppetiteScore,
+    this.qolTreatmentBurdenScore,
+    this.hasQolAssessment = false,
   });
 
   /// Factory constructor to create an empty daily summary
@@ -148,6 +155,14 @@ class DailySummary extends TreatmentSummaryBase {
       symptomScoreTotal: (json['symptomScoreTotal'] as num?)?.toInt(),
       symptomScoreAverage: (json['symptomScoreAverage'] as num?)?.toDouble(),
       hasSymptoms: asBool(json['hasSymptoms']),
+      qolOverallScore: (json['qolOverallScore'] as num?)?.toDouble(),
+      qolVitalityScore: (json['qolVitalityScore'] as num?)?.toDouble(),
+      qolComfortScore: (json['qolComfortScore'] as num?)?.toDouble(),
+      qolEmotionalScore: (json['qolEmotionalScore'] as num?)?.toDouble(),
+      qolAppetiteScore: (json['qolAppetiteScore'] as num?)?.toDouble(),
+      qolTreatmentBurdenScore:
+          (json['qolTreatmentBurdenScore'] as num?)?.toDouble(),
+      hasQolAssessment: asBool(json['hasQolAssessment']),
     );
   }
 
@@ -251,6 +266,29 @@ class DailySummary extends TreatmentSummaryBase {
   /// Whether any symptom score > 0
   final bool hasSymptoms;
 
+  // Quality of Life tracking fields
+
+  /// Overall QoL score (0-100 scale), null if no assessment
+  final double? qolOverallScore;
+
+  /// Vitality domain score (0-100 scale), null if no assessment
+  final double? qolVitalityScore;
+
+  /// Comfort domain score (0-100 scale), null if no assessment
+  final double? qolComfortScore;
+
+  /// Emotional domain score (0-100 scale), null if no assessment
+  final double? qolEmotionalScore;
+
+  /// Appetite domain score (0-100 scale), null if no assessment
+  final double? qolAppetiteScore;
+
+  /// Treatment Burden domain score (0-100 scale), null if no assessment
+  final double? qolTreatmentBurdenScore;
+
+  /// Whether a QoL assessment exists for this day
+  final bool hasQolAssessment;
+
   @override
   String get documentId => AppDateUtils.formatDateForSummary(date);
 
@@ -304,6 +342,14 @@ class DailySummary extends TreatmentSummaryBase {
       if (symptomScoreAverage != null)
         'symptomScoreAverage': symptomScoreAverage,
       'hasSymptoms': hasSymptoms,
+      if (qolOverallScore != null) 'qolOverallScore': qolOverallScore,
+      if (qolVitalityScore != null) 'qolVitalityScore': qolVitalityScore,
+      if (qolComfortScore != null) 'qolComfortScore': qolComfortScore,
+      if (qolEmotionalScore != null) 'qolEmotionalScore': qolEmotionalScore,
+      if (qolAppetiteScore != null) 'qolAppetiteScore': qolAppetiteScore,
+      if (qolTreatmentBurdenScore != null)
+        'qolTreatmentBurdenScore': qolTreatmentBurdenScore,
+      'hasQolAssessment': hasQolAssessment,
     };
   }
 
@@ -367,6 +413,13 @@ class DailySummary extends TreatmentSummaryBase {
     Object? symptomScoreTotal = _undefined,
     Object? symptomScoreAverage = _undefined,
     bool? hasSymptoms,
+    Object? qolOverallScore = _undefined,
+    Object? qolVitalityScore = _undefined,
+    Object? qolComfortScore = _undefined,
+    Object? qolEmotionalScore = _undefined,
+    Object? qolAppetiteScore = _undefined,
+    Object? qolTreatmentBurdenScore = _undefined,
+    bool? hasQolAssessment,
   }) {
     return DailySummary(
       date: date ?? this.date,
@@ -440,6 +493,25 @@ class DailySummary extends TreatmentSummaryBase {
           ? this.symptomScoreAverage
           : symptomScoreAverage as double?,
       hasSymptoms: hasSymptoms ?? this.hasSymptoms,
+      qolOverallScore: qolOverallScore == _undefined
+          ? this.qolOverallScore
+          : qolOverallScore as double?,
+      qolVitalityScore: qolVitalityScore == _undefined
+          ? this.qolVitalityScore
+          : qolVitalityScore as double?,
+      qolComfortScore: qolComfortScore == _undefined
+          ? this.qolComfortScore
+          : qolComfortScore as double?,
+      qolEmotionalScore: qolEmotionalScore == _undefined
+          ? this.qolEmotionalScore
+          : qolEmotionalScore as double?,
+      qolAppetiteScore: qolAppetiteScore == _undefined
+          ? this.qolAppetiteScore
+          : qolAppetiteScore as double?,
+      qolTreatmentBurdenScore: qolTreatmentBurdenScore == _undefined
+          ? this.qolTreatmentBurdenScore
+          : qolTreatmentBurdenScore as double?,
+      hasQolAssessment: hasQolAssessment ?? this.hasQolAssessment,
     );
   }
 
@@ -472,6 +544,13 @@ class DailySummary extends TreatmentSummaryBase {
         other.symptomScoreTotal == symptomScoreTotal &&
         other.symptomScoreAverage == symptomScoreAverage &&
         other.hasSymptoms == hasSymptoms &&
+        other.qolOverallScore == qolOverallScore &&
+        other.qolVitalityScore == qolVitalityScore &&
+        other.qolComfortScore == qolComfortScore &&
+        other.qolEmotionalScore == qolEmotionalScore &&
+        other.qolAppetiteScore == qolAppetiteScore &&
+        other.qolTreatmentBurdenScore == qolTreatmentBurdenScore &&
+        other.hasQolAssessment == hasQolAssessment &&
         super == other;
   }
 
@@ -503,6 +582,13 @@ class DailySummary extends TreatmentSummaryBase {
       symptomScoreTotal,
       symptomScoreAverage,
       hasSymptoms,
+      qolOverallScore,
+      qolVitalityScore,
+      qolComfortScore,
+      qolEmotionalScore,
+      qolAppetiteScore,
+      qolTreatmentBurdenScore,
+      hasQolAssessment,
     ]);
   }
 
@@ -541,7 +627,14 @@ class DailySummary extends TreatmentSummaryBase {
         'injectionSiteReactionRawValue: $injectionSiteReactionRawValue, '
         'symptomScoreTotal: $symptomScoreTotal, '
         'symptomScoreAverage: $symptomScoreAverage, '
-        'hasSymptoms: $hasSymptoms'
+        'hasSymptoms: $hasSymptoms, '
+        'qolOverallScore: $qolOverallScore, '
+        'qolVitalityScore: $qolVitalityScore, '
+        'qolComfortScore: $qolComfortScore, '
+        'qolEmotionalScore: $qolEmotionalScore, '
+        'qolAppetiteScore: $qolAppetiteScore, '
+        'qolTreatmentBurdenScore: $qolTreatmentBurdenScore, '
+        'hasQolAssessment: $hasQolAssessment'
         ')';
   }
 }

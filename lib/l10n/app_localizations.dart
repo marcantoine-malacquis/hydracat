@@ -2349,6 +2349,732 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Privacy & data'**
   String get a11ySettingsHeaderPrivacyAndData;
+
+  /// No description provided for @qolNavigationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quality of Life'**
+  String get qolNavigationTitle;
+
+  /// No description provided for @qolNavigationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track your cat\'s wellbeing over time'**
+  String get qolNavigationSubtitle;
+
+  /// No description provided for @qolDomainVitality.
+  ///
+  /// In en, this message translates to:
+  /// **'Vitality'**
+  String get qolDomainVitality;
+
+  /// No description provided for @qolDomainVitalityDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Energy and activity levels'**
+  String get qolDomainVitalityDesc;
+
+  /// No description provided for @qolDomainComfort.
+  ///
+  /// In en, this message translates to:
+  /// **'Comfort'**
+  String get qolDomainComfort;
+
+  /// No description provided for @qolDomainComfortDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Physical comfort and mobility'**
+  String get qolDomainComfortDesc;
+
+  /// No description provided for @qolDomainEmotional.
+  ///
+  /// In en, this message translates to:
+  /// **'Emotional Wellbeing'**
+  String get qolDomainEmotional;
+
+  /// No description provided for @qolDomainEmotionalDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Mood and social behavior'**
+  String get qolDomainEmotionalDesc;
+
+  /// No description provided for @qolDomainAppetite.
+  ///
+  /// In en, this message translates to:
+  /// **'Appetite'**
+  String get qolDomainAppetite;
+
+  /// No description provided for @qolDomainAppetiteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Interest in food and eating'**
+  String get qolDomainAppetiteDesc;
+
+  /// No description provided for @qolDomainTreatmentBurden.
+  ///
+  /// In en, this message translates to:
+  /// **'Treatment Burden'**
+  String get qolDomainTreatmentBurden;
+
+  /// No description provided for @qolDomainTreatmentBurdenDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Stress from CKD care'**
+  String get qolDomainTreatmentBurdenDesc;
+
+  /// No description provided for @qolQuestionVitality1.
+  ///
+  /// In en, this message translates to:
+  /// **'In the past 7 days, how would you describe your cat\'s overall energy level compared to their usual self?'**
+  String get qolQuestionVitality1;
+
+  /// No description provided for @qolQuestionVitality2.
+  ///
+  /// In en, this message translates to:
+  /// **'In the past 7 days, how often did your cat get up, walk around, or explore on their own instead of staying in one place?'**
+  String get qolQuestionVitality2;
+
+  /// No description provided for @qolQuestionVitality3.
+  ///
+  /// In en, this message translates to:
+  /// **'In the past 7 days, how often did your cat show interest in play, toys, or interacting with objects around them?'**
+  String get qolQuestionVitality3;
+
+  /// No description provided for @qolQuestionComfort1.
+  ///
+  /// In en, this message translates to:
+  /// **'In the past 7 days, how comfortable did your cat seem when moving, jumping, or changing position?'**
+  String get qolQuestionComfort1;
+
+  /// No description provided for @qolQuestionComfort2.
+  ///
+  /// In en, this message translates to:
+  /// **'In the past 7 days, how often did you notice signs like stiffness, limping, or hesitation to jump up or down?'**
+  String get qolQuestionComfort2;
+
+  /// No description provided for @qolQuestionComfort3.
+  ///
+  /// In en, this message translates to:
+  /// **'In the past 7 days, did your cat show signs of discomfort when using the litter box (straining, vocalizing, or spending a long time)?'**
+  String get qolQuestionComfort3;
+
+  /// No description provided for @qolQuestionEmotional1.
+  ///
+  /// In en, this message translates to:
+  /// **'In the past 7 days, how would you describe your cat\'s overall mood?'**
+  String get qolQuestionEmotional1;
+
+  /// No description provided for @qolQuestionEmotional2.
+  ///
+  /// In en, this message translates to:
+  /// **'In the past 7 days, how often did your cat seek contact with you (coming to you, asking for attention, or being near you)?'**
+  String get qolQuestionEmotional2;
+
+  /// No description provided for @qolQuestionEmotional3.
+  ///
+  /// In en, this message translates to:
+  /// **'In the past 7 days, how often did your cat hide away or seem more withdrawn than usual?'**
+  String get qolQuestionEmotional3;
+
+  /// No description provided for @qolQuestionAppetite1.
+  ///
+  /// In en, this message translates to:
+  /// **'In the past 7 days, how would you describe your cat\'s appetite overall?'**
+  String get qolQuestionAppetite1;
+
+  /// No description provided for @qolQuestionAppetite2.
+  ///
+  /// In en, this message translates to:
+  /// **'In the past 7 days, how often did your cat finish most of their main meals?'**
+  String get qolQuestionAppetite2;
+
+  /// No description provided for @qolQuestionAppetite3.
+  ///
+  /// In en, this message translates to:
+  /// **'In the past 7 days, how interested was your cat in treats or favorite foods?'**
+  String get qolQuestionAppetite3;
+
+  /// No description provided for @qolQuestionTreatment1.
+  ///
+  /// In en, this message translates to:
+  /// **'In the past 7 days, how easy or difficult was it to give your cat their CKD treatments (subcutaneous fluids, pills, liquid medications, etc.)?'**
+  String get qolQuestionTreatment1;
+
+  /// No description provided for @qolQuestionTreatment2.
+  ///
+  /// In en, this message translates to:
+  /// **'In the past 7 days, how stressed did your cat seem about treatments or being handled for their CKD care?'**
+  String get qolQuestionTreatment2;
+
+  /// No description provided for @qolVitality1Label0.
+  ///
+  /// In en, this message translates to:
+  /// **'Much lower than usual (very sleepy, hardly active)'**
+  String get qolVitality1Label0;
+
+  /// No description provided for @qolVitality1Label1.
+  ///
+  /// In en, this message translates to:
+  /// **'Lower than usual (noticeably less active)'**
+  String get qolVitality1Label1;
+
+  /// No description provided for @qolVitality1Label2.
+  ///
+  /// In en, this message translates to:
+  /// **'About the same as usual'**
+  String get qolVitality1Label2;
+
+  /// No description provided for @qolVitality1Label3.
+  ///
+  /// In en, this message translates to:
+  /// **'A bit higher than usual'**
+  String get qolVitality1Label3;
+
+  /// No description provided for @qolVitality1Label4.
+  ///
+  /// In en, this message translates to:
+  /// **'Much higher than usual (very lively and active)'**
+  String get qolVitality1Label4;
+
+  /// No description provided for @qolVitality2Label0.
+  ///
+  /// In en, this message translates to:
+  /// **'Almost never (stayed in one place most of the time)'**
+  String get qolVitality2Label0;
+
+  /// No description provided for @qolVitality2Label1.
+  ///
+  /// In en, this message translates to:
+  /// **'Rarely (only got up a few times each day)'**
+  String get qolVitality2Label1;
+
+  /// No description provided for @qolVitality2Label2.
+  ///
+  /// In en, this message translates to:
+  /// **'Sometimes (mixed between resting and moving)'**
+  String get qolVitality2Label2;
+
+  /// No description provided for @qolVitality2Label3.
+  ///
+  /// In en, this message translates to:
+  /// **'Often (regularly moved around during the day)'**
+  String get qolVitality2Label3;
+
+  /// No description provided for @qolVitality2Label4.
+  ///
+  /// In en, this message translates to:
+  /// **'Very often (frequently exploring or changing spots)'**
+  String get qolVitality2Label4;
+
+  /// No description provided for @qolVitality3Label0.
+  ///
+  /// In en, this message translates to:
+  /// **'Never (showed no interest at all)'**
+  String get qolVitality3Label0;
+
+  /// No description provided for @qolVitality3Label1.
+  ///
+  /// In en, this message translates to:
+  /// **'Rarely (once or twice all week)'**
+  String get qolVitality3Label1;
+
+  /// No description provided for @qolVitality3Label2.
+  ///
+  /// In en, this message translates to:
+  /// **'Sometimes (a few times during the week)'**
+  String get qolVitality3Label2;
+
+  /// No description provided for @qolVitality3Label3.
+  ///
+  /// In en, this message translates to:
+  /// **'Often (regularly showed interest)'**
+  String get qolVitality3Label3;
+
+  /// No description provided for @qolVitality3Label4.
+  ///
+  /// In en, this message translates to:
+  /// **'Very often (frequently engaged with toys or play)'**
+  String get qolVitality3Label4;
+
+  /// No description provided for @qolComfort1Label0.
+  ///
+  /// In en, this message translates to:
+  /// **'Very uncomfortable (often struggled or seemed in pain)'**
+  String get qolComfort1Label0;
+
+  /// No description provided for @qolComfort1Label1.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncomfortable (noticeable difficulty or stiffness)'**
+  String get qolComfort1Label1;
+
+  /// No description provided for @qolComfort1Label2.
+  ///
+  /// In en, this message translates to:
+  /// **'Somewhat comfortable (a little stiff but mostly coping)'**
+  String get qolComfort1Label2;
+
+  /// No description provided for @qolComfort1Label3.
+  ///
+  /// In en, this message translates to:
+  /// **'Comfortable (moves well with only mild issues)'**
+  String get qolComfort1Label3;
+
+  /// No description provided for @qolComfort1Label4.
+  ///
+  /// In en, this message translates to:
+  /// **'Very comfortable (moves freely with no visible problems)'**
+  String get qolComfort1Label4;
+
+  /// No description provided for @qolComfort2Label0.
+  ///
+  /// In en, this message translates to:
+  /// **'Every day or almost every day'**
+  String get qolComfort2Label0;
+
+  /// No description provided for @qolComfort2Label1.
+  ///
+  /// In en, this message translates to:
+  /// **'Several times this week'**
+  String get qolComfort2Label1;
+
+  /// No description provided for @qolComfort2Label2.
+  ///
+  /// In en, this message translates to:
+  /// **'Once or twice this week'**
+  String get qolComfort2Label2;
+
+  /// No description provided for @qolComfort2Label3.
+  ///
+  /// In en, this message translates to:
+  /// **'Rarely (only once or twice this month)'**
+  String get qolComfort2Label3;
+
+  /// No description provided for @qolComfort2Label4.
+  ///
+  /// In en, this message translates to:
+  /// **'Not at all in the past 7 days'**
+  String get qolComfort2Label4;
+
+  /// No description provided for @qolComfort3Label0.
+  ///
+  /// In en, this message translates to:
+  /// **'Very often (showed clear discomfort most times)'**
+  String get qolComfort3Label0;
+
+  /// No description provided for @qolComfort3Label1.
+  ///
+  /// In en, this message translates to:
+  /// **'Often (frequently showed signs of discomfort)'**
+  String get qolComfort3Label1;
+
+  /// No description provided for @qolComfort3Label2.
+  ///
+  /// In en, this message translates to:
+  /// **'Sometimes (occasional signs of discomfort)'**
+  String get qolComfort3Label2;
+
+  /// No description provided for @qolComfort3Label3.
+  ///
+  /// In en, this message translates to:
+  /// **'Rarely (only once or twice this week)'**
+  String get qolComfort3Label3;
+
+  /// No description provided for @qolComfort3Label4.
+  ///
+  /// In en, this message translates to:
+  /// **'Not at all (used litter box comfortably all week)'**
+  String get qolComfort3Label4;
+
+  /// No description provided for @qolEmotional1Label0.
+  ///
+  /// In en, this message translates to:
+  /// **'Very low (seemed miserable or very unhappy most of the time)'**
+  String get qolEmotional1Label0;
+
+  /// No description provided for @qolEmotional1Label1.
+  ///
+  /// In en, this message translates to:
+  /// **'Low (often seemed unhappy or dull)'**
+  String get qolEmotional1Label1;
+
+  /// No description provided for @qolEmotional1Label2.
+  ///
+  /// In en, this message translates to:
+  /// **'Neutral (neither especially unhappy nor especially happy)'**
+  String get qolEmotional1Label2;
+
+  /// No description provided for @qolEmotional1Label3.
+  ///
+  /// In en, this message translates to:
+  /// **'Generally happy (seemed content most of the time)'**
+  String get qolEmotional1Label3;
+
+  /// No description provided for @qolEmotional1Label4.
+  ///
+  /// In en, this message translates to:
+  /// **'Very happy (bright, cheerful, and engaged most of the time)'**
+  String get qolEmotional1Label4;
+
+  /// No description provided for @qolEmotional2Label0.
+  ///
+  /// In en, this message translates to:
+  /// **'Never (did not seek contact at all)'**
+  String get qolEmotional2Label0;
+
+  /// No description provided for @qolEmotional2Label1.
+  ///
+  /// In en, this message translates to:
+  /// **'Rarely (once a day or less)'**
+  String get qolEmotional2Label1;
+
+  /// No description provided for @qolEmotional2Label2.
+  ///
+  /// In en, this message translates to:
+  /// **'Sometimes (a few times a day)'**
+  String get qolEmotional2Label2;
+
+  /// No description provided for @qolEmotional2Label3.
+  ///
+  /// In en, this message translates to:
+  /// **'Often (regularly during the day)'**
+  String get qolEmotional2Label3;
+
+  /// No description provided for @qolEmotional2Label4.
+  ///
+  /// In en, this message translates to:
+  /// **'Very often (actively seeks you out many times a day)'**
+  String get qolEmotional2Label4;
+
+  /// No description provided for @qolEmotional3Label0.
+  ///
+  /// In en, this message translates to:
+  /// **'Much more than usual (hid or stayed away most of the time)'**
+  String get qolEmotional3Label0;
+
+  /// No description provided for @qolEmotional3Label1.
+  ///
+  /// In en, this message translates to:
+  /// **'More than usual (clearly hiding or withdrawn)'**
+  String get qolEmotional3Label1;
+
+  /// No description provided for @qolEmotional3Label2.
+  ///
+  /// In en, this message translates to:
+  /// **'About the same as usual'**
+  String get qolEmotional3Label2;
+
+  /// No description provided for @qolEmotional3Label3.
+  ///
+  /// In en, this message translates to:
+  /// **'Less than usual (slightly more visible and present)'**
+  String get qolEmotional3Label3;
+
+  /// No description provided for @qolEmotional3Label4.
+  ///
+  /// In en, this message translates to:
+  /// **'Much less than usual (very rarely hiding or withdrawn)'**
+  String get qolEmotional3Label4;
+
+  /// No description provided for @qolAppetite1Label0.
+  ///
+  /// In en, this message translates to:
+  /// **'Almost no appetite (hardly eating anything)'**
+  String get qolAppetite1Label0;
+
+  /// No description provided for @qolAppetite1Label1.
+  ///
+  /// In en, this message translates to:
+  /// **'Very poor appetite (eating much less than usual)'**
+  String get qolAppetite1Label1;
+
+  /// No description provided for @qolAppetite1Label2.
+  ///
+  /// In en, this message translates to:
+  /// **'Reduced appetite (eating somewhat less than usual)'**
+  String get qolAppetite1Label2;
+
+  /// No description provided for @qolAppetite1Label3.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal appetite (eating about their usual amount)'**
+  String get qolAppetite1Label3;
+
+  /// No description provided for @qolAppetite1Label4.
+  ///
+  /// In en, this message translates to:
+  /// **'Very good appetite (keen to eat, may ask for more)'**
+  String get qolAppetite1Label4;
+
+  /// No description provided for @qolAppetite2Label0.
+  ///
+  /// In en, this message translates to:
+  /// **'Almost never (left most of each meal)'**
+  String get qolAppetite2Label0;
+
+  /// No description provided for @qolAppetite2Label1.
+  ///
+  /// In en, this message translates to:
+  /// **'Rarely (finished less than half of meals)'**
+  String get qolAppetite2Label1;
+
+  /// No description provided for @qolAppetite2Label2.
+  ///
+  /// In en, this message translates to:
+  /// **'Sometimes (finished about half of meals)'**
+  String get qolAppetite2Label2;
+
+  /// No description provided for @qolAppetite2Label3.
+  ///
+  /// In en, this message translates to:
+  /// **'Often (finished most meals)'**
+  String get qolAppetite2Label3;
+
+  /// No description provided for @qolAppetite2Label4.
+  ///
+  /// In en, this message translates to:
+  /// **'Almost always (finished nearly every meal)'**
+  String get qolAppetite2Label4;
+
+  /// No description provided for @qolAppetite3Label0.
+  ///
+  /// In en, this message translates to:
+  /// **'Not interested at all (refused or ignored them)'**
+  String get qolAppetite3Label0;
+
+  /// No description provided for @qolAppetite3Label1.
+  ///
+  /// In en, this message translates to:
+  /// **'Slightly interested (occasionally accepted, often refused)'**
+  String get qolAppetite3Label1;
+
+  /// No description provided for @qolAppetite3Label2.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderately interested (accepted some, refused some)'**
+  String get qolAppetite3Label2;
+
+  /// No description provided for @qolAppetite3Label3.
+  ///
+  /// In en, this message translates to:
+  /// **'Very interested (usually keen to take them)'**
+  String get qolAppetite3Label3;
+
+  /// No description provided for @qolAppetite3Label4.
+  ///
+  /// In en, this message translates to:
+  /// **'Extremely interested (actively asks for or searches for them)'**
+  String get qolAppetite3Label4;
+
+  /// No description provided for @qolTreatment1Label0.
+  ///
+  /// In en, this message translates to:
+  /// **'Extremely difficult (usually failed or very stressful for both)'**
+  String get qolTreatment1Label0;
+
+  /// No description provided for @qolTreatment1Label1.
+  ///
+  /// In en, this message translates to:
+  /// **'Difficult (needed a lot of effort or caused clear distress)'**
+  String get qolTreatment1Label1;
+
+  /// No description provided for @qolTreatment1Label2.
+  ///
+  /// In en, this message translates to:
+  /// **'Manageable (sometimes a struggle but usually possible)'**
+  String get qolTreatment1Label2;
+
+  /// No description provided for @qolTreatment1Label3.
+  ///
+  /// In en, this message translates to:
+  /// **'Easy (minor resistance but generally straightforward)'**
+  String get qolTreatment1Label3;
+
+  /// No description provided for @qolTreatment1Label4.
+  ///
+  /// In en, this message translates to:
+  /// **'Very easy (your cat accepts treatments calmly)'**
+  String get qolTreatment1Label4;
+
+  /// No description provided for @qolTreatment2Label0.
+  ///
+  /// In en, this message translates to:
+  /// **'Extremely stressed (panics, fights, or freezes every time)'**
+  String get qolTreatment2Label0;
+
+  /// No description provided for @qolTreatment2Label1.
+  ///
+  /// In en, this message translates to:
+  /// **'Very stressed (clearly upset most times)'**
+  String get qolTreatment2Label1;
+
+  /// No description provided for @qolTreatment2Label2.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderately stressed (shows some stress but copes)'**
+  String get qolTreatment2Label2;
+
+  /// No description provided for @qolTreatment2Label3.
+  ///
+  /// In en, this message translates to:
+  /// **'Slightly stressed (a bit tense but settles quickly)'**
+  String get qolTreatment2Label3;
+
+  /// No description provided for @qolTreatment2Label4.
+  ///
+  /// In en, this message translates to:
+  /// **'Not at all stressed (relaxed or only minimally bothered)'**
+  String get qolTreatment2Label4;
+
+  /// No description provided for @qolRecallPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'In the past 7 days...'**
+  String get qolRecallPeriod;
+
+  /// No description provided for @qolNotSure.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sure / Unable to observe this week'**
+  String get qolNotSure;
+
+  /// No description provided for @qolRadarChartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quality of Life Profile'**
+  String get qolRadarChartTitle;
+
+  /// No description provided for @qolInsufficientData.
+  ///
+  /// In en, this message translates to:
+  /// **'Insufficient data'**
+  String get qolInsufficientData;
+
+  /// No description provided for @qolDomainVitalityShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Vital.'**
+  String get qolDomainVitalityShort;
+
+  /// No description provided for @qolDomainComfortShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Comf.'**
+  String get qolDomainComfortShort;
+
+  /// No description provided for @qolDomainEmotionalShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Emot.'**
+  String get qolDomainEmotionalShort;
+
+  /// No description provided for @qolDomainAppetiteShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Appe.'**
+  String get qolDomainAppetiteShort;
+
+  /// No description provided for @qolDomainTreatmentBurdenShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Treat.'**
+  String get qolDomainTreatmentBurdenShort;
+
+  /// No description provided for @qolOverallScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall Score'**
+  String get qolOverallScore;
+
+  /// No description provided for @qolScoreBandVeryGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Very Good'**
+  String get qolScoreBandVeryGood;
+
+  /// No description provided for @qolScoreBandGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Good'**
+  String get qolScoreBandGood;
+
+  /// No description provided for @qolScoreBandFair.
+  ///
+  /// In en, this message translates to:
+  /// **'Fair'**
+  String get qolScoreBandFair;
+
+  /// No description provided for @qolScoreBandLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get qolScoreBandLow;
+
+  /// No description provided for @qolBasedOnDomains.
+  ///
+  /// In en, this message translates to:
+  /// **'Based on {count} of 5 domains'**
+  String qolBasedOnDomains(int count);
+
+  /// No description provided for @qolQuestionsAnswered.
+  ///
+  /// In en, this message translates to:
+  /// **'{answered} of {total} questions answered'**
+  String qolQuestionsAnswered(int answered, int total);
+
+  /// No description provided for @qolAssessedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Assessed on {date}'**
+  String qolAssessedOn(String date);
+
+  /// No description provided for @qolLowConfidenceExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'This domain has less than 50% of questions answered, so the score may not be reliable.'**
+  String get qolLowConfidenceExplanation;
+
+  /// No description provided for @qolQuestionnaireTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'QoL Assessment'**
+  String get qolQuestionnaireTitle;
+
+  /// No description provided for @qolQuestionnaireEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Assessment'**
+  String get qolQuestionnaireEditTitle;
+
+  /// No description provided for @qolComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete'**
+  String get qolComplete;
+
+  /// No description provided for @qolDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard progress?'**
+  String get qolDiscardTitle;
+
+  /// No description provided for @qolDiscardMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve answered {answered} of 14 questions. Exit without saving?'**
+  String qolDiscardMessage(int answered);
+
+  /// No description provided for @qolKeepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get qolKeepEditing;
+
+  /// No description provided for @qolSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save assessment. Please try again.'**
+  String get qolSaveError;
 }
 
 class _AppLocalizationsDelegate

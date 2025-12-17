@@ -8,6 +8,7 @@ import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/widgets/debug_panel.dart';
 import 'package:hydracat/features/profile/widgets/pet_info_card.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/shared/widgets/empty_states/onboarding_cta_empty_state.dart';
@@ -513,6 +514,22 @@ class _ProfileScreenContent {
             },
           ),
         ],
+
+        // Quality of Life section
+        const SizedBox(height: AppSpacing.sm),
+        Builder(
+          builder: (context) {
+            final l10n = AppLocalizations.of(context)!;
+            return NavigationCard(
+              title: l10n.qolNavigationTitle,
+              metadata: l10n.qolNavigationSubtitle,
+              icon: Icons.favorite_outline,
+              showBackgroundCircle: false,
+              onTap: () => context.push('/profile/qol'),
+              margin: EdgeInsets.zero,
+            );
+          },
+        ),
 
         // Inventory section (only if user has fluid schedule)
         if (profileState.hasFluidSchedule) ...[

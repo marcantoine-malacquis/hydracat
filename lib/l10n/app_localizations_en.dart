@@ -1341,4 +1341,433 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get a11ySettingsHeaderPrivacyAndData => 'Privacy & data';
+
+  @override
+  String get qolNavigationTitle => 'Quality of Life';
+
+  @override
+  String get qolNavigationSubtitle => 'Track your cat\'s wellbeing over time';
+
+  @override
+  String get qolDomainVitality => 'Vitality';
+
+  @override
+  String get qolDomainVitalityDesc => 'Energy and activity levels';
+
+  @override
+  String get qolDomainComfort => 'Comfort';
+
+  @override
+  String get qolDomainComfortDesc => 'Physical comfort and mobility';
+
+  @override
+  String get qolDomainEmotional => 'Emotional Wellbeing';
+
+  @override
+  String get qolDomainEmotionalDesc => 'Mood and social behavior';
+
+  @override
+  String get qolDomainAppetite => 'Appetite';
+
+  @override
+  String get qolDomainAppetiteDesc => 'Interest in food and eating';
+
+  @override
+  String get qolDomainTreatmentBurden => 'Treatment Burden';
+
+  @override
+  String get qolDomainTreatmentBurdenDesc => 'Stress from CKD care';
+
+  @override
+  String get qolQuestionVitality1 =>
+      'In the past 7 days, how would you describe your cat\'s overall energy level compared to their usual self?';
+
+  @override
+  String get qolQuestionVitality2 =>
+      'In the past 7 days, how often did your cat get up, walk around, or explore on their own instead of staying in one place?';
+
+  @override
+  String get qolQuestionVitality3 =>
+      'In the past 7 days, how often did your cat show interest in play, toys, or interacting with objects around them?';
+
+  @override
+  String get qolQuestionComfort1 =>
+      'In the past 7 days, how comfortable did your cat seem when moving, jumping, or changing position?';
+
+  @override
+  String get qolQuestionComfort2 =>
+      'In the past 7 days, how often did you notice signs like stiffness, limping, or hesitation to jump up or down?';
+
+  @override
+  String get qolQuestionComfort3 =>
+      'In the past 7 days, did your cat show signs of discomfort when using the litter box (straining, vocalizing, or spending a long time)?';
+
+  @override
+  String get qolQuestionEmotional1 =>
+      'In the past 7 days, how would you describe your cat\'s overall mood?';
+
+  @override
+  String get qolQuestionEmotional2 =>
+      'In the past 7 days, how often did your cat seek contact with you (coming to you, asking for attention, or being near you)?';
+
+  @override
+  String get qolQuestionEmotional3 =>
+      'In the past 7 days, how often did your cat hide away or seem more withdrawn than usual?';
+
+  @override
+  String get qolQuestionAppetite1 =>
+      'In the past 7 days, how would you describe your cat\'s appetite overall?';
+
+  @override
+  String get qolQuestionAppetite2 =>
+      'In the past 7 days, how often did your cat finish most of their main meals?';
+
+  @override
+  String get qolQuestionAppetite3 =>
+      'In the past 7 days, how interested was your cat in treats or favorite foods?';
+
+  @override
+  String get qolQuestionTreatment1 =>
+      'In the past 7 days, how easy or difficult was it to give your cat their CKD treatments (subcutaneous fluids, pills, liquid medications, etc.)?';
+
+  @override
+  String get qolQuestionTreatment2 =>
+      'In the past 7 days, how stressed did your cat seem about treatments or being handled for their CKD care?';
+
+  @override
+  String get qolVitality1Label0 =>
+      'Much lower than usual (very sleepy, hardly active)';
+
+  @override
+  String get qolVitality1Label1 => 'Lower than usual (noticeably less active)';
+
+  @override
+  String get qolVitality1Label2 => 'About the same as usual';
+
+  @override
+  String get qolVitality1Label3 => 'A bit higher than usual';
+
+  @override
+  String get qolVitality1Label4 =>
+      'Much higher than usual (very lively and active)';
+
+  @override
+  String get qolVitality2Label0 =>
+      'Almost never (stayed in one place most of the time)';
+
+  @override
+  String get qolVitality2Label1 => 'Rarely (only got up a few times each day)';
+
+  @override
+  String get qolVitality2Label2 =>
+      'Sometimes (mixed between resting and moving)';
+
+  @override
+  String get qolVitality2Label3 =>
+      'Often (regularly moved around during the day)';
+
+  @override
+  String get qolVitality2Label4 =>
+      'Very often (frequently exploring or changing spots)';
+
+  @override
+  String get qolVitality3Label0 => 'Never (showed no interest at all)';
+
+  @override
+  String get qolVitality3Label1 => 'Rarely (once or twice all week)';
+
+  @override
+  String get qolVitality3Label2 => 'Sometimes (a few times during the week)';
+
+  @override
+  String get qolVitality3Label3 => 'Often (regularly showed interest)';
+
+  @override
+  String get qolVitality3Label4 =>
+      'Very often (frequently engaged with toys or play)';
+
+  @override
+  String get qolComfort1Label0 =>
+      'Very uncomfortable (often struggled or seemed in pain)';
+
+  @override
+  String get qolComfort1Label1 =>
+      'Uncomfortable (noticeable difficulty or stiffness)';
+
+  @override
+  String get qolComfort1Label2 =>
+      'Somewhat comfortable (a little stiff but mostly coping)';
+
+  @override
+  String get qolComfort1Label3 =>
+      'Comfortable (moves well with only mild issues)';
+
+  @override
+  String get qolComfort1Label4 =>
+      'Very comfortable (moves freely with no visible problems)';
+
+  @override
+  String get qolComfort2Label0 => 'Every day or almost every day';
+
+  @override
+  String get qolComfort2Label1 => 'Several times this week';
+
+  @override
+  String get qolComfort2Label2 => 'Once or twice this week';
+
+  @override
+  String get qolComfort2Label3 => 'Rarely (only once or twice this month)';
+
+  @override
+  String get qolComfort2Label4 => 'Not at all in the past 7 days';
+
+  @override
+  String get qolComfort3Label0 =>
+      'Very often (showed clear discomfort most times)';
+
+  @override
+  String get qolComfort3Label1 =>
+      'Often (frequently showed signs of discomfort)';
+
+  @override
+  String get qolComfort3Label2 => 'Sometimes (occasional signs of discomfort)';
+
+  @override
+  String get qolComfort3Label3 => 'Rarely (only once or twice this week)';
+
+  @override
+  String get qolComfort3Label4 =>
+      'Not at all (used litter box comfortably all week)';
+
+  @override
+  String get qolEmotional1Label0 =>
+      'Very low (seemed miserable or very unhappy most of the time)';
+
+  @override
+  String get qolEmotional1Label1 => 'Low (often seemed unhappy or dull)';
+
+  @override
+  String get qolEmotional1Label2 =>
+      'Neutral (neither especially unhappy nor especially happy)';
+
+  @override
+  String get qolEmotional1Label3 =>
+      'Generally happy (seemed content most of the time)';
+
+  @override
+  String get qolEmotional1Label4 =>
+      'Very happy (bright, cheerful, and engaged most of the time)';
+
+  @override
+  String get qolEmotional2Label0 => 'Never (did not seek contact at all)';
+
+  @override
+  String get qolEmotional2Label1 => 'Rarely (once a day or less)';
+
+  @override
+  String get qolEmotional2Label2 => 'Sometimes (a few times a day)';
+
+  @override
+  String get qolEmotional2Label3 => 'Often (regularly during the day)';
+
+  @override
+  String get qolEmotional2Label4 =>
+      'Very often (actively seeks you out many times a day)';
+
+  @override
+  String get qolEmotional3Label0 =>
+      'Much more than usual (hid or stayed away most of the time)';
+
+  @override
+  String get qolEmotional3Label1 =>
+      'More than usual (clearly hiding or withdrawn)';
+
+  @override
+  String get qolEmotional3Label2 => 'About the same as usual';
+
+  @override
+  String get qolEmotional3Label3 =>
+      'Less than usual (slightly more visible and present)';
+
+  @override
+  String get qolEmotional3Label4 =>
+      'Much less than usual (very rarely hiding or withdrawn)';
+
+  @override
+  String get qolAppetite1Label0 =>
+      'Almost no appetite (hardly eating anything)';
+
+  @override
+  String get qolAppetite1Label1 =>
+      'Very poor appetite (eating much less than usual)';
+
+  @override
+  String get qolAppetite1Label2 =>
+      'Reduced appetite (eating somewhat less than usual)';
+
+  @override
+  String get qolAppetite1Label3 =>
+      'Normal appetite (eating about their usual amount)';
+
+  @override
+  String get qolAppetite1Label4 =>
+      'Very good appetite (keen to eat, may ask for more)';
+
+  @override
+  String get qolAppetite2Label0 => 'Almost never (left most of each meal)';
+
+  @override
+  String get qolAppetite2Label1 => 'Rarely (finished less than half of meals)';
+
+  @override
+  String get qolAppetite2Label2 => 'Sometimes (finished about half of meals)';
+
+  @override
+  String get qolAppetite2Label3 => 'Often (finished most meals)';
+
+  @override
+  String get qolAppetite2Label4 => 'Almost always (finished nearly every meal)';
+
+  @override
+  String get qolAppetite3Label0 =>
+      'Not interested at all (refused or ignored them)';
+
+  @override
+  String get qolAppetite3Label1 =>
+      'Slightly interested (occasionally accepted, often refused)';
+
+  @override
+  String get qolAppetite3Label2 =>
+      'Moderately interested (accepted some, refused some)';
+
+  @override
+  String get qolAppetite3Label3 =>
+      'Very interested (usually keen to take them)';
+
+  @override
+  String get qolAppetite3Label4 =>
+      'Extremely interested (actively asks for or searches for them)';
+
+  @override
+  String get qolTreatment1Label0 =>
+      'Extremely difficult (usually failed or very stressful for both)';
+
+  @override
+  String get qolTreatment1Label1 =>
+      'Difficult (needed a lot of effort or caused clear distress)';
+
+  @override
+  String get qolTreatment1Label2 =>
+      'Manageable (sometimes a struggle but usually possible)';
+
+  @override
+  String get qolTreatment1Label3 =>
+      'Easy (minor resistance but generally straightforward)';
+
+  @override
+  String get qolTreatment1Label4 =>
+      'Very easy (your cat accepts treatments calmly)';
+
+  @override
+  String get qolTreatment2Label0 =>
+      'Extremely stressed (panics, fights, or freezes every time)';
+
+  @override
+  String get qolTreatment2Label1 => 'Very stressed (clearly upset most times)';
+
+  @override
+  String get qolTreatment2Label2 =>
+      'Moderately stressed (shows some stress but copes)';
+
+  @override
+  String get qolTreatment2Label3 =>
+      'Slightly stressed (a bit tense but settles quickly)';
+
+  @override
+  String get qolTreatment2Label4 =>
+      'Not at all stressed (relaxed or only minimally bothered)';
+
+  @override
+  String get qolRecallPeriod => 'In the past 7 days...';
+
+  @override
+  String get qolNotSure => 'Not sure / Unable to observe this week';
+
+  @override
+  String get qolRadarChartTitle => 'Quality of Life Profile';
+
+  @override
+  String get qolInsufficientData => 'Insufficient data';
+
+  @override
+  String get qolDomainVitalityShort => 'Vital.';
+
+  @override
+  String get qolDomainComfortShort => 'Comf.';
+
+  @override
+  String get qolDomainEmotionalShort => 'Emot.';
+
+  @override
+  String get qolDomainAppetiteShort => 'Appe.';
+
+  @override
+  String get qolDomainTreatmentBurdenShort => 'Treat.';
+
+  @override
+  String get qolOverallScore => 'Overall Score';
+
+  @override
+  String get qolScoreBandVeryGood => 'Very Good';
+
+  @override
+  String get qolScoreBandGood => 'Good';
+
+  @override
+  String get qolScoreBandFair => 'Fair';
+
+  @override
+  String get qolScoreBandLow => 'Low';
+
+  @override
+  String qolBasedOnDomains(int count) {
+    return 'Based on $count of 5 domains';
+  }
+
+  @override
+  String qolQuestionsAnswered(int answered, int total) {
+    return '$answered of $total questions answered';
+  }
+
+  @override
+  String qolAssessedOn(String date) {
+    return 'Assessed on $date';
+  }
+
+  @override
+  String get qolLowConfidenceExplanation =>
+      'This domain has less than 50% of questions answered, so the score may not be reliable.';
+
+  @override
+  String get qolQuestionnaireTitle => 'QoL Assessment';
+
+  @override
+  String get qolQuestionnaireEditTitle => 'Edit Assessment';
+
+  @override
+  String get qolComplete => 'Complete';
+
+  @override
+  String get qolDiscardTitle => 'Discard progress?';
+
+  @override
+  String qolDiscardMessage(int answered) {
+    return 'You\'ve answered $answered of 14 questions. Exit without saving?';
+  }
+
+  @override
+  String get qolKeepEditing => 'Keep editing';
+
+  @override
+  String get qolSaveError => 'Failed to save assessment. Please try again.';
 }
