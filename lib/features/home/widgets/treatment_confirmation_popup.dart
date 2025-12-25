@@ -173,11 +173,11 @@ class TreatmentConfirmationPopup extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Dosage
+        // Dosage (localized with proper pluralization)
         _buildSummaryRow(
           theme: theme,
           label: 'Dosage',
-          value: med.displayDosage,
+          value: med.getLocalizedDosage(context),
         ),
 
         // Strength (if available)

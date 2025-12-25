@@ -4,6 +4,7 @@ import 'package:hydracat/core/constants/app_icons.dart';
 import 'package:hydracat/core/icons/icon_provider.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/core/utils/dosage_text_utils.dart';
+import 'package:hydracat/core/utils/medication_unit_utils.dart';
 import 'package:hydracat/features/logging/widgets/dosage_adjuster.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
@@ -65,7 +66,7 @@ class MedicationSelectionCard extends StatelessWidget {
       isCupertino: isCupertino,
     );
     final medIconAsset = IconProvider.resolveCustomAsset(AppIcons.medication);
-    final dosageText = _getFormattedDosage(currentDosage);
+    final dosageText = _getFormattedDosage(context, currentDosage);
     final strengthText = medication.formattedStrength;
     final dosageSuffix = dosageText != null ? ', $dosageText' : '';
     final strengthSuffix = strengthText != null ? ', $strengthText' : '';
@@ -232,7 +233,9 @@ class MedicationSelectionCard extends StatelessWidget {
                   child: DosageAdjuster(
                     currentDosage: currentDosage,
                     scheduledDosage: medication.targetDosage ?? 1.0,
-                    unit: _getShortUnit(medication.medicationUnit ?? 'pills'),
+                    unit: MedicationUnitUtils.shortForm(
+                      medication.medicationUnit ?? 'pills',
+                    ),
                     onDosageChanged: onDosageChanged,
                   ),
                 ),
@@ -275,32 +278,17 @@ class MedicationSelectionCard extends StatelessWidget {
     );
   }
 
-  /// Get formatted dosage text (e.g., "half a pill", "1 portion")
-  String? _getFormattedDosage(double dosage) {
+  /// Get formatted dosage text with localized pluralization.
+  ///
+  /// Uses ICU message format for proper internationalization:
+  /// - 1 + "pills" → "1 pill"
+  /// - 2 + "sachets" → "2 Sachets"
+  String? _getFormattedDosage(BuildContext context, double dosage) {
     final unit = medication.medicationUnit;
 
     if (unit == null) return null;
 
-    final shortUnit = _getShortUnit(unit);
-    return DosageTextUtils.formatDosageWithUnit(dosage, shortUnit);
-  }
-
-  /// Get short form of medication unit
-  String _getShortUnit(String unit) {
-    return switch (unit) {
-      'pills' => 'pill',
-      'capsules' => 'capsule',
-      'drops' => 'drop',
-      'injections' => 'injection',
-      'micrograms' => 'mcg',
-      'milligrams' => 'mg',
-      'milliliters' => 'ml',
-      'portions' => 'portion',
-      'sachets' => 'sachet',
-      'ampoules' => 'ampoule',
-      'tablespoon' => 'tbsp',
-      'teaspoon' => 'tsp',
-      _ => unit,
-    };
+    final shortUnit = MedicationUnitUtils.shortForm(unit);
+    return DosageTextUtils.formatDosageWithContext(context, dosage, shortUnit);
   }
 }

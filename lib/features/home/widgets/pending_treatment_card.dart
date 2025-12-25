@@ -57,10 +57,13 @@ class PendingTreatmentCard extends StatelessWidget {
         ? l10n.noTimeSet
         : 'scheduled at ${treatment.displayTime}';
 
+    // Get localized dosage with proper pluralization
+    final localizedDosage = treatment.getLocalizedDosage(context);
+
     return Semantics(
       label:
           'Medication: ${treatment.displayName}$strengthText, '
-          '${treatment.displayDosage}, '
+          '$localizedDosage, '
           '$timeDescription'
           '${treatment.isOverdue ? ", overdue" : ""}',
       hint: 'Tap to confirm or skip this medication',
@@ -132,9 +135,9 @@ class PendingTreatmentCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.xs),
 
-                  // Dosage
+                  // Dosage (localized with proper pluralization)
                   Text(
-                    treatment.displayDosage,
+                    localizedDosage,
                     style: AppTextStyles.body.copyWith(
                       color: AppColors.textSecondary,
                     ),

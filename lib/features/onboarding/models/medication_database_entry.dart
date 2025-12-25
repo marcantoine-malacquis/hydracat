@@ -125,12 +125,12 @@ class MedicationDatabaseEntry {
   /// Primary brand is the most commonly recognized/used brand.
   /// Returns null if no brands exist or all brands are placeholders.
   String? get primaryBrandName {
-    try {
-      return realBrands.firstWhere((b) => b.primary).name;
-    } on StateError {
-      // No primary brand found, return first real brand if available
-      return realBrands.isNotEmpty ? realBrands.first.name : null;
+    final primaryBrand = realBrands.where((b) => b.primary).firstOrNull;
+    if (primaryBrand != null) {
+      return primaryBrand.name;
     }
+    // No primary brand found, return first real brand if available
+    return realBrands.isNotEmpty ? realBrands.first.name : null;
   }
 
   /// Returns true if this medication has variable strength

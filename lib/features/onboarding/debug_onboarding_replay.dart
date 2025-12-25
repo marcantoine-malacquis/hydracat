@@ -9,7 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/app/router.dart';
-import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
+import 'package:hydracat/features/onboarding/flow/onboarding_flow.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step_id.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/onboarding_provider.dart';
 
@@ -89,7 +90,11 @@ Future<void> startOnboardingReplay(
 
     // Step 5: Navigate to onboarding welcome screen
     if (context.mounted) {
-      context.go(OnboardingStepType.welcome.routeName);
+      final flow = getOnboardingFlow();
+      final welcomeRoute = flow.getStep(OnboardingSteps.welcome)?.route;
+      if (welcomeRoute != null) {
+        context.go(welcomeRoute);
+      }
     }
 
     debugPrint(

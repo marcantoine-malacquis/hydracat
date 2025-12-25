@@ -9,7 +9,7 @@ import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/core/utils/weight_utils.dart';
 import 'package:hydracat/core/validation/models/validation_result.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
-import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step_id.dart';
 import 'package:hydracat/features/onboarding/services/onboarding_validation_service.dart';
 import 'package:hydracat/features/onboarding/widgets/gender_selector.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.dart';
@@ -188,7 +188,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
       // Perform validation using the unified service
       final validationResult = OnboardingValidationService.validateCurrentStep(
         updatedData,
-        OnboardingStepType.petBasics,
+        OnboardingSteps.petBasics,
       );
 
       if (!validationResult.isValid) {
@@ -262,12 +262,12 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
     final l10n = context.l10n;
 
     return OnboardingScreenWrapper(
-      currentStep: OnboardingStepType.petBasics.stepIndex,
-      totalSteps: OnboardingStepType.totalSteps,
+      currentStep: OnboardingSteps.all.indexOf(OnboardingSteps.petBasics),
+      totalSteps: OnboardingSteps.all.length,
       title: l10n.petBasicsTitle,
       onBackPressed: _goBack,
       showNextButton: false,
-      stepType: OnboardingStepType.petBasics,
+      stepId: OnboardingSteps.petBasics,
       showProgressInAppBar: true,
       child: Form(
         key: _formKey,

@@ -111,7 +111,7 @@ class DosageAdjuster extends StatelessWidget {
           ),
         ),
 
-        // Dosage display
+        // Dosage display (localized with proper pluralization)
         Expanded(
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
@@ -120,7 +120,11 @@ class DosageAdjuster extends StatelessWidget {
             ),
             alignment: Alignment.center,
             child: Text(
-              DosageTextUtils.formatDosageWithUnit(currentDosage, unit),
+              DosageTextUtils.formatDosageWithContext(
+                context,
+                currentDosage,
+                unit,
+              ),
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: theme.colorScheme.primary,

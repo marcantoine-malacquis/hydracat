@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step_id.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_progress_indicator.dart';
 
 void main() {
@@ -13,7 +13,7 @@ void main() {
             home: Scaffold(
               body: OnboardingProgressIndicator(
                 currentStep: 2,
-                totalSteps: OnboardingStepType.totalSteps,
+                totalSteps: OnboardingSteps.all.length,
               ),
             ),
           ),
@@ -29,11 +29,10 @@ void main() {
     );
 
     testWidgets(
-      'OnboardingStepType enum has correct total steps',
+      'OnboardingSteps has correct total steps',
       (WidgetTester tester) async {
-        // Test that totalSteps returns the correct number (should be 6 now)
-        expect(OnboardingStepType.totalSteps, 6);
-        expect(OnboardingStepType.values.length, 6);
+        // Test that total steps returns the correct number (should be 4)
+        expect(OnboardingSteps.all.length, 4);
       },
     );
 
@@ -46,7 +45,7 @@ void main() {
             home: Scaffold(
               body: OnboardingProgressIndicator(
                 currentStep: 0,
-                totalSteps: OnboardingStepType.totalSteps,
+                totalSteps: OnboardingSteps.all.length,
               ),
             ),
           ),
@@ -61,7 +60,7 @@ void main() {
             home: Scaffold(
               body: OnboardingProgressIndicator(
                 currentStep: 1,
-                totalSteps: OnboardingStepType.totalSteps,
+                totalSteps: OnboardingSteps.all.length,
               ),
             ),
           ),

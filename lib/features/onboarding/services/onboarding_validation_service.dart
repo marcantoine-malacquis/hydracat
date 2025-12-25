@@ -1,7 +1,7 @@
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/core/validation/models/validation_result.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
-import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step_id.dart';
 
 /// Centralized validation service for onboarding flow
 ///
@@ -20,22 +20,19 @@ class OnboardingValidationService {
   /// [currentStep] - The step being validated
   static ValidationResult validateCurrentStep(
     OnboardingData data,
-    OnboardingStepType currentStep,
+    OnboardingStepId currentStep,
   ) {
     final errors = <ValidationError>[];
 
-    switch (currentStep) {
-      case OnboardingStepType.welcome:
+    // Use runtime type checking instead of switch
+    if (currentStep == OnboardingSteps.welcome) {
       // No validation required for welcome step
-
-      case OnboardingStepType.petBasics:
-        errors.addAll(_validatePetBasics(data));
-
-      case OnboardingStepType.ckdMedicalInfo:
+    } else if (currentStep == OnboardingSteps.petBasics) {
+      errors.addAll(_validatePetBasics(data));
+    } else if (currentStep == OnboardingSteps.medicalInfo) {
       // Medical info is optional, no validation required
-
-      case OnboardingStepType.completion:
-        errors.addAll(_validateCompletion(data));
+    } else if (currentStep == OnboardingSteps.completion) {
+      errors.addAll(_validateCompletion(data));
     }
 
     return errors.isEmpty

@@ -10,9 +10,10 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hydracat/features/onboarding/debug_onboarding_replay.dart';
 import 'package:hydracat/features/onboarding/exceptions/onboarding_exceptions.dart';
+import 'package:hydracat/features/onboarding/flow/onboarding_flow.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_progress.dart';
-import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step_id.dart';
 import 'package:hydracat/features/profile/models/cat_profile.dart';
 import 'package:hydracat/features/profile/models/lab_measurement.dart';
 import 'package:hydracat/features/profile/models/lab_result.dart';
@@ -59,12 +60,20 @@ class OnboardingFailure extends OnboardingResult {
 /// - Pet profile creation
 /// - Offline support
 class OnboardingService {
-  /// Factory constructor to get the singleton instance
-  factory OnboardingService() => _instance ??= OnboardingService._();
+  /// Factory constructor with optional flow injection
+  factory OnboardingService({OnboardingFlow? flow}) {
+    _instance ??= OnboardingService._(flow: flow);
+    return _instance!;
+  }
 
   /// Private constructor
-  OnboardingService._();
+  OnboardingService._({OnboardingFlow? flow})
+      : _flow = flow ?? getOnboardingFlow();
+
   static OnboardingService? _instance;
+
+  /// Onboarding flow configuration
+  final OnboardingFlow _flow;
 
   /// Pet service for profile operations
   final PetService _petService = PetService();
@@ -219,7 +228,7 @@ class OnboardingService {
       // Track analytics
       await _trackAnalyticsEvent('onboarding_resumed', {
         'user_id': userId,
-        'current_step': progress.currentStep.name,
+        'current_step': progress.currentStepId.id,
         'progress_percentage': progress.progressPercentage,
       });
 
@@ -264,7 +273,8 @@ class OnboardingService {
       );
 
       // Auto-save at checkpoint steps
-      if (_currentProgress!.isCurrentStepCheckpoint) {
+      final currentConfig = _flow.getStep(_currentProgress!.currentStepId);
+      if (currentConfig?.isCheckpoint ?? false) {
         await _saveCheckpoint();
       }
 
@@ -290,36 +300,52 @@ class OnboardingService {
         );
       }
 
-      // Check if current step can progress
-      if (!_currentProgress!.canProgressFromCurrentStep) {
-        // Get specific missing fields for better error message
-        final missingFields = _getMissingFieldsForCurrentStep(_currentData!);
-        if (missingFields.isNotEmpty) {
-          return OnboardingFailure(
-            OnboardingValidationException(missingFields),
-          );
-        }
-        // Fallback to generic error if no specific fields identified
+      // Use flow navigation resolver to get next step
+      final nextStepId = _flow.navigationResolver.getNextStep(
+        _currentProgress!.currentStepId,
+        _currentData!,
+      );
+
+      if (nextStepId == null) {
         return const OnboardingFailure(
-          OnboardingIncompleteDataException(),
+          OnboardingNavigationException('No next step available'),
         );
       }
 
-      final previousStep = _currentProgress!.currentStep;
+      // Validate current step using flow config
+      final currentConfig = _flow.getStep(_currentProgress!.currentStepId);
+      if (currentConfig == null) {
+        return const OnboardingFailure(
+          OnboardingServiceException('Current step configuration not found'),
+        );
+      }
+
+      if (!currentConfig.isValid(_currentData!)) {
+        final missingFields = currentConfig.getMissingFields(_currentData!);
+        return OnboardingFailure(
+          OnboardingValidationException(missingFields),
+        );
+      }
+
+      final previousStepId = _currentProgress!.currentStepId;
 
       // Move to next step
-      _currentProgress = _currentProgress!.moveToNextStep();
+      _currentProgress = _currentProgress!.moveToStep(nextStepId);
 
       // Track step completion analytics
       await _trackAnalyticsEvent('onboarding_step_completed', {
         'user_id': _currentData!.userId,
-        'step': previousStep.name,
-        'next_step': _currentProgress!.currentStep.name,
-        'progress_percentage': _currentProgress!.progressPercentage,
+        'step': previousStepId.id,
+        'next_step': nextStepId.id,
+        'progress_percentage': _flow.navigationResolver.calculateProgress(
+          nextStepId,
+          _currentData!,
+        ),
       });
 
       // Auto-save if new step is a checkpoint
-      if (_currentProgress!.isCurrentStepCheckpoint) {
+      final nextConfig = _flow.getStep(nextStepId);
+      if (nextConfig!.isCheckpoint) {
         await _saveCheckpoint();
       }
 
@@ -330,7 +356,7 @@ class OnboardingService {
     } on Exception {
       return OnboardingFailure(
         OnboardingNavigationException(
-          _currentProgress?.currentStep.name ?? 'unknown',
+          _currentProgress?.currentStepId.id ?? 'unknown',
         ),
       );
     }
@@ -341,21 +367,27 @@ class OnboardingService {
   /// Only allows backward navigation when permitted by step configuration.
   Future<OnboardingResult> moveToPreviousStep() async {
     try {
-      if (_currentProgress == null) {
+      if (_currentProgress == null || _currentData == null) {
         return const OnboardingFailure(
           OnboardingServiceException('No active onboarding session'),
         );
       }
 
-      if (!_currentProgress!.canGoBack) {
+      // Use flow navigation resolver to get previous step
+      final previousStepId = _flow.navigationResolver.getPreviousStep(
+        _currentProgress!.currentStepId,
+        _currentData!,
+      );
+
+      if (previousStepId == null) {
         return OnboardingFailure(
           OnboardingNavigationException(
-            'back from ${_currentProgress!.currentStep.name}',
+            'Cannot go back from ${_currentProgress!.currentStepId.id}',
           ),
         );
       }
 
-      _currentProgress = _currentProgress!.moveToPreviousStep();
+      _currentProgress = _currentProgress!.moveToStep(previousStepId);
 
       // Notify listeners
       _progressController.add(_currentProgress);
@@ -364,7 +396,7 @@ class OnboardingService {
     } on Exception {
       return OnboardingFailure(
         OnboardingNavigationException(
-          'back from ${_currentProgress?.currentStep.name ?? 'unknown'}',
+          'back from ${_currentProgress?.currentStepId.id ?? 'unknown'}',
         ),
       );
     }
@@ -373,7 +405,7 @@ class OnboardingService {
   /// Sets the current step in the onboarding flow
   ///
   /// Used to fix progress mismatches between UI state and onboarding progress.
-  Future<OnboardingResult> setCurrentStep(OnboardingStepType step) async {
+  Future<OnboardingResult> setCurrentStep(OnboardingStepId stepId) async {
     try {
       if (_currentProgress == null) {
         return const OnboardingFailure(
@@ -381,7 +413,7 @@ class OnboardingService {
         );
       }
 
-      _currentProgress = _currentProgress!.moveToStep(step);
+      _currentProgress = _currentProgress!.moveToStep(stepId);
 
       // Notify listeners
       _progressController.add(_currentProgress);
@@ -390,7 +422,7 @@ class OnboardingService {
     } on Exception {
       return OnboardingFailure(
         OnboardingServiceException(
-          'Failed to set current step to ${step.name}',
+          'Failed to set current step to ${stepId.id}',
         ),
       );
     }
@@ -588,44 +620,8 @@ class OnboardingService {
 
   /// Validates if current step has valid data
   bool _isCurrentStepValid(OnboardingData data) {
-    return switch (_currentProgress!.currentStep) {
-      OnboardingStepType.welcome => true,
-      OnboardingStepType.petBasics => data.hasBasicPetInfo,
-      OnboardingStepType.ckdMedicalInfo => true, // Optional step, always valid
-      OnboardingStepType.completion => data.isComplete,
-    };
-  }
-
-  /// Gets list of missing required fields for the current step
-  ///
-  /// Returns human-readable field names that are required for the current
-  /// step but not provided. Used to generate specific error messages.
-  List<String> _getMissingFieldsForCurrentStep(OnboardingData data) {
-    final missing = <String>[];
-
-    switch (_currentProgress!.currentStep) {
-      case OnboardingStepType.welcome:
-        // No required fields
-        break;
-
-      case OnboardingStepType.petBasics:
-        if (data.petName == null || data.petName!.isEmpty) {
-          missing.add('Pet name');
-        }
-        if (data.petAge == null || data.petAge! <= 0) {
-          missing.add('Pet age');
-        }
-
-      case OnboardingStepType.ckdMedicalInfo:
-        // Optional step, no required fields
-        break;
-
-      case OnboardingStepType.completion:
-        // Use the comprehensive validation from OnboardingData
-        missing.addAll(data.getMissingRequiredFields());
-    }
-
-    return missing;
+    final currentConfig = _flow.getStep(_currentProgress!.currentStepId);
+    return currentConfig?.isValid(data) ?? false;
   }
 
   /// Saves current onboarding state to local checkpoint

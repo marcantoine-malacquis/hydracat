@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
-import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step_id.dart';
 import 'package:hydracat/features/onboarding/widgets/iris_stage_selector.dart';
 import 'package:hydracat/features/onboarding/widgets/lab_values_input.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.dart';
@@ -232,12 +232,12 @@ class _CkdMedicalInfoScreenState extends ConsumerState<CkdMedicalInfoScreen> {
     final l10n = context.l10n;
 
     return OnboardingScreenWrapper(
-      currentStep: OnboardingStepType.ckdMedicalInfo.stepIndex,
-      totalSteps: OnboardingStepType.totalSteps,
+      currentStep: OnboardingSteps.all.indexOf(OnboardingSteps.medicalInfo),
+      totalSteps: OnboardingSteps.all.length,
       title: l10n.lastBloodworkResults,
       onBackPressed: _goBack,
       showNextButton: false,
-      stepType: OnboardingStepType.ckdMedicalInfo,
+      stepId: OnboardingSteps.medicalInfo,
       showProgressInAppBar: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

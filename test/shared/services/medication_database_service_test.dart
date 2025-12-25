@@ -225,7 +225,8 @@ void main() {
         await testService.initialize();
 
           final results = testService.searchMedications('bena');
-          expect(results.first.medication.name, 'Benazepril'); // Starts with query
+          // Should match medication starting with query
+          expect(results.first.medication.name, 'Benazepril');
         },
       );
 

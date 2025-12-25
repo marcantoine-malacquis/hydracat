@@ -8,7 +8,7 @@ import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
-import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step_id.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
@@ -26,14 +26,14 @@ class OnboardingWelcomeScreen extends ConsumerWidget {
     final l10n = context.l10n;
 
     return OnboardingScreenWrapper(
-      currentStep: OnboardingStepType.welcome.stepIndex,
-      totalSteps: OnboardingStepType.totalSteps,
+      currentStep: OnboardingSteps.all.indexOf(OnboardingSteps.welcome),
+      totalSteps: OnboardingSteps.all.length,
       title: l10n.welcomeTitle,
       subtitle: l10n.welcomeSubtitle,
       showBackButton: false,
       showNextButton: false,
       showProgressInAppBar: true,
-      stepType: OnboardingStepType.welcome,
+      stepId: OnboardingSteps.welcome,
       appBarActions: [
         Container(
           height: 20, // Match progress indicator height

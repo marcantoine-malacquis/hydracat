@@ -6,7 +6,8 @@ import 'package:hydracat/core/constants/app_colors.dart';
 import 'package:hydracat/core/theme/app_spacing.dart';
 import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/features/onboarding/debug_onboarding_replay.dart';
-import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
+import 'package:hydracat/features/onboarding/flow/onboarding_flow.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step_id.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_progress_indicator.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/onboarding_provider.dart';
@@ -33,8 +34,8 @@ class OnboardingScreenWrapper extends ConsumerStatefulWidget {
     this.nextButtonEnabled = true,
     this.isLoading = false,
     this.skipAction,
-    @Deprecated('Use stepType parameter instead') this.stepName,
-    this.stepType,
+    @Deprecated('Use stepId parameter instead') this.stepName,
+    this.stepId,
     this.showProgressInAppBar = false,
     this.appBarActions,
   });
@@ -82,12 +83,12 @@ class OnboardingScreenWrapper extends ConsumerStatefulWidget {
   final Widget? skipAction;
 
   /// Optional step name for analytics tracking
-  /// (DEPRECATED: use stepType instead)
-  @Deprecated('Use stepType parameter instead')
+  /// (DEPRECATED: use stepId instead)
+  @Deprecated('Use stepId parameter instead')
   final String? stepName;
 
-  /// Step type for type-safe analytics tracking (preferred over stepName)
-  final OnboardingStepType? stepType;
+  /// Step ID for type-safe analytics tracking (preferred over stepName)
+  final OnboardingStepId? stepId;
 
   /// Whether to show the progress indicator in the app bar instead of header
   final bool showProgressInAppBar;
@@ -132,7 +133,11 @@ class _OnboardingScreenWrapperState
         );
 
         if (mounted && context.mounted) {
-          context.go(OnboardingStepType.welcome.routeName);
+          final flow = getOnboardingFlow();
+          final welcomeRoute = flow.getStep(OnboardingSteps.welcome)?.route;
+          if (welcomeRoute != null) {
+            context.go(welcomeRoute);
+          }
         }
       }
     });
@@ -145,10 +150,15 @@ class _OnboardingScreenWrapperState
   }
 
   void _trackScreenView() {
-    // Use stepType.analyticsEventName if available
-    final screenName =
-        widget.stepType?.analyticsEventName ??
-        'onboarding_step_${widget.currentStep}';
+    // Use stepId to get analytics event name from flow config
+    var screenName = 'onboarding_step_${widget.currentStep}';
+    if (widget.stepId != null) {
+      final flow = getOnboardingFlow();
+      final stepConfig = flow.getStep(widget.stepId!);
+      if (stepConfig != null) {
+        screenName = stepConfig.analyticsEventName;
+      }
+    }
 
     _analyticsService?.trackScreenView(
       screenName: screenName,
@@ -160,8 +170,8 @@ class _OnboardingScreenWrapperState
     if (!mounted || _analyticsService == null) return;
 
     final duration = DateTime.now().difference(_screenStartTime);
-    // Use stepType.name if available
-    final stepName = widget.stepType?.name ?? 'step_${widget.currentStep}';
+    // Use stepId toString for step name
+    final stepName = widget.stepId?.toString() ?? 'step_${widget.currentStep}';
 
     // Track as a feature usage with timing data
     _analyticsService!.trackFeatureUsed(

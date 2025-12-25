@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hydracat/features/onboarding/models/brand_name.dart';
 import 'package:hydracat/features/onboarding/models/medication_database_entry.dart';
 
 void main() {
@@ -12,7 +13,7 @@ void main() {
           unit: 'mg',
           route: 'oral',
           category: 'ACE_inhibitor',
-          brandNames: 'Fortekor',
+          brandNames: [BrandName(name: 'Fortekor', primary: true)],
         );
 
         expect(entry.name, 'Benazepril');
@@ -21,7 +22,10 @@ void main() {
         expect(entry.unit, 'mg');
         expect(entry.route, 'oral');
         expect(entry.category, 'ACE_inhibitor');
-        expect(entry.brandNames, 'Fortekor');
+        expect(
+          entry.brandNames,
+          const [BrandName(name: 'Fortekor', primary: true)],
+        );
       });
     });
 
@@ -45,7 +49,9 @@ void main() {
         expect(entry.unit, 'mg');
         expect(entry.route, 'oral');
         expect(entry.category, 'phosphate_binder');
-        expect(entry.brandNames, 'Various generics');
+        expect(entry.brandNames.length, 1);
+        expect(entry.brandNames.first.name, 'Various generics');
+        expect(entry.brandNames.first.primary, true);
       });
 
       test('handles missing optional fields with empty strings', () {
@@ -60,7 +66,7 @@ void main() {
 
         final entry = MedicationDatabaseEntry.fromJson(json);
 
-        expect(entry.brandNames, '');
+        expect(entry.brandNames, isEmpty);
       });
 
       test('handles null values with empty strings', () {
@@ -82,7 +88,7 @@ void main() {
         expect(entry.unit, '');
         expect(entry.route, '');
         expect(entry.category, '');
-        expect(entry.brandNames, '');
+        expect(entry.brandNames, isEmpty);
       });
     });
 
@@ -95,7 +101,7 @@ void main() {
           unit: 'mg',
           route: 'oral',
           category: 'ACE_inhibitor',
-          brandNames: 'Fortekor',
+          brandNames: [BrandName(name: 'Fortekor', primary: true)],
         );
 
         expect(entry.displayName, 'Benazepril 5mg tablet');
@@ -109,7 +115,7 @@ void main() {
           unit: 'mg',
           route: 'oral',
           category: 'phosphate_binder',
-          brandNames: 'Various',
+          brandNames: [BrandName(name: 'Various', primary: true)],
         );
 
         expect(entry.displayName, 'Aluminum hydroxide powder');
@@ -123,7 +129,7 @@ name: 'Test Med',
           unit: 'mg',
           route: 'oral',
           category: 'other',
-          brandNames: '',
+          brandNames: [],
         );
 
         expect(capsuleEntry.displayName, 'Test Med 10mg capsule');
@@ -135,7 +141,7 @@ name: 'Liquid Med',
           unit: 'mg/mL',
           route: 'oral',
           category: 'other',
-          brandNames: '',
+          brandNames: [],
         );
 
         expect(liquidEntry.displayName, 'Liquid Med 2.5mg/mL liquid');
@@ -151,7 +157,7 @@ name: 'Liquid Med',
           unit: 'mg',
           route: 'oral',
           category: 'ACE_inhibitor',
-          brandNames: 'Fortekor',
+          brandNames: [BrandName(name: 'Fortekor', primary: true)],
         );
 
         expect(entry.searchableText, 'benazepril fortekor');
@@ -165,10 +171,10 @@ name: 'Liquid Med',
           unit: 'mg',
           route: 'oral',
           category: 'other',
-          brandNames: '',
+          brandNames: [],
         );
 
-        expect(entry.searchableText, 'testmed ');
+        expect(entry.searchableText, 'testmed');
       });
 
       test('converts mixed case to lowercase', () {
@@ -179,7 +185,7 @@ name: 'Liquid Med',
           unit: 'mg',
           route: 'oral',
           category: 'other',
-          brandNames: 'BrandName',
+          brandNames: [BrandName(name: 'BrandName', primary: true)],
         );
 
         expect(entry.searchableText, 'mymedication brandname');
@@ -195,7 +201,7 @@ name: 'Liquid Med',
           unit: 'mg',
           route: 'oral',
           category: 'other',
-          brandNames: '',
+          brandNames: [],
         );
 
         expect(entry.hasVariableStrength, isTrue);
@@ -209,7 +215,7 @@ name: 'Liquid Med',
           unit: 'mg',
           route: 'oral',
           category: 'other',
-          brandNames: '',
+          brandNames: [],
         );
 
         expect(entry.hasVariableStrength, isTrue);
@@ -223,7 +229,7 @@ name: 'Liquid Med',
           unit: 'mg',
           route: 'oral',
           category: 'other',
-          brandNames: '',
+          brandNames: [],
         );
 
         expect(entry.hasVariableStrength, isFalse);
@@ -239,7 +245,7 @@ name: 'Liquid Med',
           unit: 'mg',
           route: 'oral',
           category: 'ACE_inhibitor',
-          brandNames: 'Fortekor',
+          brandNames: [BrandName(name: 'Fortekor', primary: true)],
         );
 
         final errors = entry.validate();
@@ -254,7 +260,7 @@ name: 'Liquid Med',
           unit: 'mg',
           route: 'oral',
           category: 'other',
-          brandNames: '',
+          brandNames: [],
         );
 
         final errors = entry.validate();
@@ -269,7 +275,7 @@ name: 'Liquid Med',
           unit: 'mg',
           route: 'oral',
           category: 'other',
-          brandNames: '',
+          brandNames: [],
         );
 
         final errors = entry.validate();
@@ -284,7 +290,7 @@ name: 'Liquid Med',
           unit: 'mg',
           route: 'oral',
           category: 'other',
-          brandNames: '',
+          brandNames: [],
         );
 
         final errors = entry.validate();
@@ -299,7 +305,7 @@ name: 'Liquid Med',
           unit: 'mg',
           route: 'oral',
           category: 'other',
-          brandNames: '',
+          brandNames: [],
         );
 
         final errors = entry.validate();
@@ -314,7 +320,7 @@ name: 'Liquid Med',
           unit: 'mg',
           route: 'oral',
           category: 'other',
-          brandNames: '',
+          brandNames: [],
         );
 
         final errors = entry.validate();
@@ -332,7 +338,7 @@ name: 'Liquid Med',
           unit: '',
           route: 'oral',
           category: 'other',
-          brandNames: '',
+          brandNames: [],
         );
 
         final errors = entry.validate();
@@ -347,7 +353,7 @@ name: 'Liquid Med',
           unit: '',
           route: 'oral',
           category: 'other',
-          brandNames: '',
+          brandNames: [],
         );
 
         final errors = entry.validate();
@@ -362,7 +368,7 @@ name: 'Liquid Med',
           unit: 'mg',
           route: 'oral',
           category: 'other',
-          brandNames: '',
+          brandNames: [],
         );
 
         final errors = entry.validate();
@@ -388,7 +394,7 @@ name: 'Liquid Med',
             unit: 'mg',
             route: 'oral',
             category: 'other',
-            brandNames: '',
+            brandNames: const [],
           );
 
           final errors = entry.validate();
@@ -406,7 +412,7 @@ name: 'Liquid Med',
           unit: 'mg',
           route: 'oral',
           category: 'ACE_inhibitor',
-          brandNames: 'Fortekor',
+          brandNames: [BrandName(name: 'Fortekor', primary: true)],
         );
 
         final json = entry.toJson();
@@ -417,7 +423,9 @@ name: 'Liquid Med',
         expect(json['unit'], 'mg');
         expect(json['route'], 'oral');
         expect(json['category'], 'ACE_inhibitor');
-        expect(json['brand_names'], 'Fortekor');
+        expect(json['brand_names'], [
+          {'name': 'Fortekor', 'primary': true},
+        ]);
       });
     });
 
@@ -430,7 +438,7 @@ name: 'Liquid Med',
           unit: 'mg',
           route: 'oral',
           category: 'ACE_inhibitor',
-          brandNames: 'Fortekor',
+          brandNames: [BrandName(name: 'Fortekor', primary: true)],
         );
 
         const entry2 = MedicationDatabaseEntry(
@@ -440,7 +448,7 @@ name: 'Benazepril',
           unit: 'mg',
           route: 'oral',
           category: 'ACE_inhibitor',
-          brandNames: 'Fortekor',
+          brandNames: [BrandName(name: 'Fortekor', primary: true)],
         );
 
         expect(entry1, equals(entry2));
@@ -455,7 +463,7 @@ name: 'Benazepril',
           unit: 'mg',
           route: 'oral',
           category: 'ACE_inhibitor',
-          brandNames: 'Fortekor',
+          brandNames: [BrandName(name: 'Fortekor', primary: true)],
         );
 
         const entry2 = MedicationDatabaseEntry(
@@ -465,7 +473,7 @@ name: 'Benazepril',
           unit: 'mg',
           route: 'oral',
           category: 'ACE_inhibitor',
-          brandNames: 'Fortekor',
+          brandNames: [BrandName(name: 'Fortekor', primary: true)],
         );
 
         expect(entry1, isNot(equals(entry2)));
@@ -481,7 +489,7 @@ name: 'Benazepril',
           unit: 'mg',
           route: 'oral',
           category: 'ACE_inhibitor',
-          brandNames: 'Fortekor',
+          brandNames: [BrandName(name: 'Fortekor', primary: true)],
         );
 
         final string = entry.toString();
@@ -492,7 +500,8 @@ name: 'Benazepril',
         expect(string, contains('unit: mg'));
         expect(string, contains('route: oral'));
         expect(string, contains('category: ACE_inhibitor'));
-        expect(string, contains('brandNames: Fortekor'));
+        expect(string, contains('brandNames:'));
+        expect(string, contains('Fortekor'));
       });
     });
   });

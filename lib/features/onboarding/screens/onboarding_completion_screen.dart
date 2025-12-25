@@ -9,7 +9,7 @@ import 'package:hydracat/core/theme/app_text_styles.dart';
 import 'package:hydracat/core/validation/models/validation_result.dart';
 import 'package:hydracat/features/onboarding/debug_onboarding_replay.dart';
 import 'package:hydracat/features/onboarding/exceptions/onboarding_exceptions.dart';
-import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step_id.dart';
 import 'package:hydracat/features/onboarding/services/onboarding_validation_service.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_screen_wrapper.dart';
 import 'package:hydracat/providers/onboarding_provider.dart';
@@ -41,13 +41,13 @@ class _OnboardingCompletionScreenState
     final isReplayMode = ref.watch(debugOnboardingReplayProvider);
 
     return OnboardingScreenWrapper(
-      currentStep: OnboardingStepType.completion.index,
-      totalSteps: OnboardingStepType.totalSteps,
+      currentStep: OnboardingSteps.all.indexOf(OnboardingSteps.completion),
+      totalSteps: OnboardingSteps.all.length,
       title: l10n.onboardingCompleteTitle,
       subtitle: l10n.readyToStartTracking(petName),
       onBackPressed: _goBack,
       showNextButton: false,
-      stepType: OnboardingStepType.completion,
+      stepId: OnboardingSteps.completion,
       showProgressInAppBar: true,
       child: Column(
         children: [
@@ -262,7 +262,7 @@ class _OnboardingCompletionScreenState
       // Perform comprehensive validation
       final validationResult = OnboardingValidationService.validateCurrentStep(
         onboardingData,
-        OnboardingStepType.completion,
+        OnboardingSteps.completion,
       );
 
       if (!validationResult.isValid) {

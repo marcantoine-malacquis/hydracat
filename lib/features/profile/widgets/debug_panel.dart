@@ -10,7 +10,6 @@ import 'package:hydracat/features/notifications/providers/notification_provider.
 import 'package:hydracat/features/notifications/services/reminder_plugin.dart';
 import 'package:hydracat/features/notifications/utils/notification_id.dart';
 import 'package:hydracat/features/onboarding/debug_onboarding_replay.dart';
-import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/onboarding_provider.dart';
@@ -317,7 +316,7 @@ class DebugPanel extends ConsumerWidget {
       );
 
       // Jump straight to the welcome step after reset
-      context.go(OnboardingStepType.welcome.routeName);
+      context.go('/onboarding/welcome');
     } on Exception catch (e) {
       if (context.mounted) {
         HydraSnackBar.showError(

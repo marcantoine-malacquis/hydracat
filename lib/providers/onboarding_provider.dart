@@ -4,9 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hydracat/features/onboarding/debug_onboarding_replay.dart';
 import 'package:hydracat/features/onboarding/exceptions/onboarding_exceptions.dart';
+import 'package:hydracat/features/onboarding/flow/onboarding_flow.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_data.dart';
 import 'package:hydracat/features/onboarding/models/onboarding_progress.dart';
-import 'package:hydracat/features/onboarding/models/onboarding_step.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step_id.dart';
 import 'package:hydracat/features/onboarding/services/onboarding_service.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 
@@ -60,18 +61,12 @@ class OnboardingState {
   /// Whether onboarding is complete
   bool get isComplete => progress?.isComplete ?? false;
 
-  /// Current step if onboarding is active
-  OnboardingStepType? get currentStep => progress?.currentStep;
+  /// Current step ID if onboarding is active
+  OnboardingStepId? get currentStepId => progress?.currentStepId;
 
   /// Whether can progress from current step
   bool get canProgressFromCurrentStep =>
       progress?.canProgressFromCurrentStep ?? false;
-
-  /// Whether can go back from current step
-  bool get canGoBack => progress?.canGoBack ?? false;
-
-  /// Whether can skip current step
-  bool get canSkipCurrentStep => progress?.canSkipCurrentStep ?? false;
 
   /// Progress percentage (0.0 to 1.0)
   double get progressPercentage => progress?.progressPercentage ?? 0.0;
@@ -320,10 +315,10 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
   }
 
   /// Set the current step in the onboarding flow (for fixing mismatches)
-  Future<bool> setCurrentStep(OnboardingStepType step) async {
+  Future<bool> setCurrentStep(OnboardingStepId stepId) async {
     state = state.withLoading(loading: true);
 
-    final result = await _onboardingService.setCurrentStep(step);
+    final result = await _onboardingService.setCurrentStep(stepId);
 
     switch (result) {
       case OnboardingSuccess():
@@ -424,15 +419,19 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
       return null;
     }
 
-    final currentStep = state.progress!.currentStep;
-    final nextStep = state.progress!.nextStep;
+    final currentStepId = state.progress!.currentStepId;
+    final flow = _ref.read(onboardingFlowProvider);
+    final nextStepId = flow.navigationResolver.getNextStep(
+      currentStepId,
+      state.data ?? const OnboardingData.empty(),
+    );
 
     if (kDebugMode) {
-      debugPrint('[OnboardingNotifier] Current step: $currentStep');
-      debugPrint('[OnboardingNotifier] Next step: $nextStep');
+      debugPrint('[OnboardingNotifier] Current step: $currentStepId');
+      debugPrint('[OnboardingNotifier] Next step: $nextStepId');
     }
 
-    if (nextStep == null) {
+    if (nextStepId == null) {
       if (kDebugMode) {
         debugPrint(
           '[OnboardingNotifier] No next step available - returning null',
@@ -461,7 +460,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     }
 
     // Get route for next step
-    final route = nextStep.routeName;
+    final route = flow.navigationResolver.getRoute(nextStepId);
     if (kDebugMode) {
       debugPrint('[OnboardingNotifier] Returning route: $route');
     }
@@ -473,23 +472,22 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
   /// Returns the previous step's route if backward navigation is allowed,
   /// null otherwise. This is a read-only operation that doesn't change state.
   String? getPreviousRoute() {
-    if (state.progress == null) {
+    if (state.progress == null || state.data == null) {
       return null;
     }
 
-    final previousStep = state.progress!.previousStep;
+    final flow = _ref.read(onboardingFlowProvider);
+    final previousStepId = flow.navigationResolver.getPreviousStep(
+      state.progress!.currentStepId,
+      state.data!,
+    );
 
-    if (previousStep == null) {
-      return null; // At welcome, no previous step
-    }
-
-    // Check if can go back from current step
-    if (!state.progress!.canGoBack) {
-      return null;
+    if (previousStepId == null) {
+      return null; // At welcome, no previous step or can't go back
     }
 
     // Get route for previous step
-    return previousStep.routeName;
+    return flow.navigationResolver.getRoute(previousStepId);
   }
 
   /// Navigate to the next step with validation
@@ -503,7 +501,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
   Future<String?> navigateNext() async {
     if (kDebugMode) {
       debugPrint('[OnboardingNotifier] navigateNext() called');
-      debugPrint('[OnboardingNotifier] Current state: ${state.currentStep}');
+      debugPrint('[OnboardingNotifier] Current state: ${state.currentStepId}');
       debugPrint('[OnboardingNotifier] Progress: ${state.progress}');
       debugPrint(
         '[OnboardingNotifier] Data: ${state.data != null ? "present" : "null"}',
@@ -625,9 +623,15 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
   }
 }
 
+/// Provider for the onboarding flow configuration
+final onboardingFlowProvider = Provider<OnboardingFlow>((ref) {
+  return getOnboardingFlow();
+});
+
 /// Provider for the OnboardingService instance
 final onboardingServiceProvider = Provider<OnboardingService>((ref) {
-  return OnboardingService();
+  final flow = ref.read(onboardingFlowProvider);
+  return OnboardingService(flow: flow);
 });
 
 /// Provider for the onboarding state notifier
@@ -662,9 +666,9 @@ final onboardingErrorProvider = Provider<OnboardingException?>((ref) {
   return ref.watch(onboardingProvider.select((state) => state.error));
 });
 
-/// Optimized provider to get current onboarding step
-final currentOnboardingStepProvider = Provider<OnboardingStepType?>((ref) {
-  return ref.watch(onboardingProvider.select((state) => state.currentStep));
+/// Optimized provider to get current onboarding step ID
+final currentOnboardingStepIdProvider = Provider<OnboardingStepId?>((ref) {
+  return ref.watch(onboardingProvider.select((state) => state.currentStepId));
 });
 
 /// Optimized provider to check if can progress from current step
@@ -672,20 +676,6 @@ final canProgressFromCurrentStepProvider = Provider<bool>((ref) {
   return ref.watch(
     onboardingProvider.select(
       (state) => state.canProgressFromCurrentStep,
-    ),
-  );
-});
-
-/// Optimized provider to check if can go back from current step
-final canGoBackFromCurrentStepProvider = Provider<bool>((ref) {
-  return ref.watch(onboardingProvider.select((state) => state.canGoBack));
-});
-
-/// Optimized provider to check if can skip current step
-final canSkipCurrentStepProvider = Provider<bool>((ref) {
-  return ref.watch(
-    onboardingProvider.select(
-      (state) => state.canSkipCurrentStep,
     ),
   );
 });

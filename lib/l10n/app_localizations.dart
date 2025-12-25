@@ -1102,6 +1102,84 @@ abstract class AppLocalizations {
   /// **'years'**
   String get years;
 
+  /// Plural-aware medication unit for pills
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{pill} other{pills}}'**
+  String medicationUnitPill(num count);
+
+  /// Plural-aware medication unit for sachets
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Sachet} other{Sachets}}'**
+  String medicationUnitSachet(num count);
+
+  /// Plural-aware medication unit for capsules
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Capsule} other{Capsules}}'**
+  String medicationUnitCapsule(num count);
+
+  /// Plural-aware medication unit for tablets
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Tablet} other{Tablets}}'**
+  String medicationUnitTablet(num count);
+
+  /// Plural-aware medication unit for drops
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{drop} other{drops}}'**
+  String medicationUnitDrop(num count);
+
+  /// Plural-aware medication unit for ampoules
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{ampoule} other{ampoules}}'**
+  String medicationUnitAmpoule(num count);
+
+  /// Plural-aware medication unit for injections
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{injection} other{injections}}'**
+  String medicationUnitInjection(num count);
+
+  /// Plural-aware medication unit for portions
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{portion} other{portions}}'**
+  String medicationUnitPortion(num count);
+
+  /// Non-countable medication unit for milligrams
+  ///
+  /// In en, this message translates to:
+  /// **'mg'**
+  String get medicationUnitMg;
+
+  /// Non-countable medication unit for milliliters
+  ///
+  /// In en, this message translates to:
+  /// **'mL'**
+  String get medicationUnitMl;
+
+  /// Non-countable medication unit for micrograms
+  ///
+  /// In en, this message translates to:
+  /// **'mcg'**
+  String get medicationUnitMcg;
+
+  /// Non-countable medication unit for tablespoon
+  ///
+  /// In en, this message translates to:
+  /// **'tbsp'**
+  String get medicationUnitTbsp;
+
+  /// Non-countable medication unit for teaspoon
+  ///
+  /// In en, this message translates to:
+  /// **'tsp'**
+  String get medicationUnitTsp;
+
   /// No description provided for @enterCatName.
   ///
   /// In en, this message translates to:

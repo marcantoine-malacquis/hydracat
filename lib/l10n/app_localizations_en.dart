@@ -552,6 +552,109 @@ class AppLocalizationsEn extends AppLocalizations {
   String get years => 'years';
 
   @override
+  String medicationUnitPill(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'pills',
+      one: 'pill',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medicationUnitSachet(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Sachets',
+      one: 'Sachet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medicationUnitCapsule(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Capsules',
+      one: 'Capsule',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medicationUnitTablet(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tablets',
+      one: 'Tablet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medicationUnitDrop(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'drops',
+      one: 'drop',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medicationUnitAmpoule(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ampoules',
+      one: 'ampoule',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medicationUnitInjection(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'injections',
+      one: 'injection',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String medicationUnitPortion(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'portions',
+      one: 'portion',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get medicationUnitMg => 'mg';
+
+  @override
+  String get medicationUnitMl => 'mL';
+
+  @override
+  String get medicationUnitMcg => 'mcg';
+
+  @override
+  String get medicationUnitTbsp => 'tbsp';
+
+  @override
+  String get medicationUnitTsp => 'tsp';
+
+  @override
   String get enterCatName => 'Enter cat name';
 
   @override

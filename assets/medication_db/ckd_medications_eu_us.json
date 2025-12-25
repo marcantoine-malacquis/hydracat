@@ -279,6 +279,12 @@
         "name": "Kaminox",
         "primary": false
       }
+    ],
+    "search_aliases": [
+      {
+        "text": "renal",
+        "type": "brand"
+      }
     ]
   },
   {
@@ -292,6 +298,16 @@
       {
         "name": "Tumil-K",
         "primary": true
+      },
+      {
+        "name": "Renal K+",
+        "primary": false
+      }
+    ],
+    "search_aliases": [
+      {
+        "text": "renal",
+        "type": "brand"
       }
     ]
   },

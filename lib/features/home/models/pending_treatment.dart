@@ -1,8 +1,9 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/core/utils/dosage_text_utils.dart';
 import 'package:hydracat/core/utils/medication_unit_utils.dart';
 import 'package:hydracat/features/profile/models/schedule.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 
 /// Value object representing a single scheduled medication occurrence
 /// pending for today on the dashboard.
@@ -27,11 +28,34 @@ class PendingTreatment {
   /// Display name for UI (medication name)
   String get displayName => schedule.medicationName!;
 
-  /// Display dosage with human-friendly unit short form
+  /// Display dosage with human-friendly unit short form (legacy fallback).
+  ///
+  /// For localized display, prefer [getLocalizedDosage] which uses ICU
+  /// plural format.
   String get displayDosage => DosageTextUtils.formatDosageWithUnit(
     schedule.targetDosage!,
     MedicationUnitUtils.shortForm(schedule.medicationUnit!),
   );
+
+  /// Returns localized dosage text with proper pluralization.
+  ///
+  /// Uses ICU message format for internationalization:
+  /// - 1 + "sachets" → "1 Sachet"
+  /// - 2 + "sachets" → "2 Sachets"
+  /// - 0.5 + "pills" → "0.5 pills"
+  ///
+  /// Example:
+  /// ```dart
+  /// final dosage = treatment.getLocalizedDosage(context);
+  /// ```
+  String getLocalizedDosage(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return DosageTextUtils.formatDosageWithUnit(
+      schedule.targetDosage!,
+      MedicationUnitUtils.shortForm(schedule.medicationUnit!),
+      l10n: l10n,
+    );
+  }
 
   /// Whether this is a flexible medication (no specific reminder time)
   ///

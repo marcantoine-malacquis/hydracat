@@ -86,9 +86,16 @@ class MedicationDatabaseService {
   /// generic) which determines display format.
   ///
   /// Search intent detection:
-  /// - Brand intent: Query matches brand name but not generic
-  /// - Generic intent: Query matches generic name (even if also matches brand)
-  /// - Ambiguous: Neither clear match
+  /// - Brand intent: Query matches brand name better than generic
+  /// - Generic intent: Query matches generic name better than brand
+  /// - Ambiguous: Query matches both equally (returns both variants)
+  ///
+  /// Ambiguous matches produce multiple results:
+  /// When a query matches both brand and generic names with equal scores
+  /// (e.g., "mir" matches both "Mirataz" and "Mirtazapine" as "starts with"),
+  /// the service returns TWO results for the same medication - one with brand
+  /// intent and one with generic intent. This allows users to see both display
+  /// formats and choose their preferred terminology.
   ///
   /// Relevance scoring (higher = better):
   /// - Exact match: 1000+ points
@@ -101,12 +108,16 @@ class MedicationDatabaseService {
   /// - Query is empty or whitespace only
   /// - No medications match the query
   ///
-  /// Results are limited to [_maxResults] entries.
+  /// Results are limited to [_maxResults] entries (note: ambiguous matches
+  /// count as multiple entries toward this limit).
   ///
   /// Example:
   /// ```dart
-  /// final results = service.searchMedications('cere');
-  /// // Returns: [MedicationSearchResult with brand intent]
+  /// final results = service.searchMedications('mir');
+  /// // Returns: [
+  /// //   MedicationSearchResult(intent: brand, "Mirataz (Mirtazapine)..."),
+  /// //   MedicationSearchResult(intent: generic, "Mirtazapine..."),
+  /// // ]
   /// ```
   List<MedicationSearchResult> searchMedications(String query) {
     if (!_isInitialized || query.trim().isEmpty) {
@@ -120,30 +131,68 @@ class MedicationDatabaseService {
       final score = _calculateRelevance(medication, normalizedQuery);
 
       if (score > 0) {
-        final intent = _detectIntent(medication, normalizedQuery);
-        String? matchedBrand;
+        final isAmbiguous = _isAmbiguousMatch(medication, normalizedQuery);
 
-        // Find which specific brand matched (if brand intent)
-        if (intent == SearchIntent.brand) {
-          matchedBrand = medication.realBrands
+        if (isAmbiguous) {
+          // Ambiguous match: create both brand and generic results
+          // This allows users to see both display formats when the query
+          // matches brand and generic names equally well (e.g., "mir" for
+          // both "Mirataz" and "Mirtazapine")
+
+          // Find which specific brand matched
+          final matchedBrand = medication.realBrands
               .firstWhere(
                 (b) => b.name.toLowerCase().contains(normalizedQuery),
-                orElse: () => medication.realBrands.isNotEmpty
-                    ? medication.realBrands.first
-                    : medication.brandNames.first,
+                orElse: () => medication.realBrands.first,
               )
               .name;
-        }
 
-        results.add(_ScoredResult(
-          result: MedicationSearchResult(
-            medication: medication,
-            intent: intent,
-            matchedBrand: matchedBrand,
-            relevanceScore: score,
-          ),
-          score: score,
-        ));
+          // Add brand version and generic version
+          results
+            ..add(_ScoredResult(
+              result: MedicationSearchResult(
+                medication: medication,
+                intent: SearchIntent.brand,
+                matchedBrand: matchedBrand,
+                relevanceScore: score,
+              ),
+              score: score,
+            ))
+            ..add(_ScoredResult(
+              result: MedicationSearchResult(
+                medication: medication,
+                intent: SearchIntent.generic,
+                relevanceScore: score,
+              ),
+              score: score,
+            ));
+        } else {
+          // Unambiguous match: use detected intent
+          final intent = _detectIntent(medication, normalizedQuery);
+          String? matchedBrand;
+
+          // Find which specific brand matched (if brand intent)
+          if (intent == SearchIntent.brand) {
+            matchedBrand = medication.realBrands
+                .firstWhere(
+                  (b) => b.name.toLowerCase().contains(normalizedQuery),
+                  orElse: () => medication.realBrands.isNotEmpty
+                      ? medication.realBrands.first
+                      : medication.brandNames.first,
+                )
+                .name;
+          }
+
+          results.add(_ScoredResult(
+            result: MedicationSearchResult(
+              medication: medication,
+              intent: intent,
+              matchedBrand: matchedBrand,
+              relevanceScore: score,
+            ),
+            score: score,
+          ));
+        }
       }
     }
 
@@ -218,6 +267,84 @@ class MedicationDatabaseService {
     } else {
       return SearchIntent.generic;
     }
+  }
+
+  /// Detects if a search query produces an ambiguous match
+  ///
+  /// Returns true when both brand and generic names match equally well,
+  /// indicating that both display formats should be shown to the user.
+  ///
+  /// Decision logic:
+  /// 1. Calculates best match score for generic name (including aliases)
+  /// 2. Calculates best match score for brand names (including aliases)
+  /// 3. Returns true if scores are equal and both > 0
+  /// 4. Returns false if brand and generic names are identical
+  /// (no need for both)
+  ///
+  /// Example: "mir" matches both "Mirtazapine" and "Mirataz" equally
+  /// (both start with "mir"), so this is ambiguous.
+  bool _isAmbiguousMatch(
+    MedicationDatabaseEntry medication,
+    String query,
+  ) {
+    // Only check medications that have real brands
+    if (!medication.hasRealBrands) return false;
+
+    // Calculate best score for generic name
+    final genericScore = _calculateMatchScore(medication.name, query);
+
+    // Calculate best score for brand names (only real brands)
+    var bestBrandScore = 0;
+    String? bestMatchingBrand;
+    for (final brand in medication.realBrands) {
+      final score = _calculateMatchScore(brand.name, query);
+      if (score > bestBrandScore) {
+        bestBrandScore = score;
+        bestMatchingBrand = brand.name;
+      }
+    }
+
+    // Calculate best score for aliases and track type
+    var bestBrandAliasScore = 0;
+    var bestGenericAliasScore = 0;
+
+    if (medication.searchAliases != null) {
+      for (final alias in medication.searchAliases!) {
+        final score = _calculateMatchScore(alias.text, query);
+        if (alias.type == 'brand' && score > bestBrandAliasScore) {
+          bestBrandAliasScore = score;
+        } else if (alias.type == 'generic' && score > bestGenericAliasScore) {
+          bestGenericAliasScore = score;
+        }
+      }
+    }
+
+    // Compare best scores for brand vs generic (including aliases)
+    final bestBrandRelatedScore = bestBrandScore > bestBrandAliasScore
+        ? bestBrandScore
+        : bestBrandAliasScore;
+
+    final bestGenericRelatedScore = genericScore > bestGenericAliasScore
+        ? genericScore
+        : bestGenericAliasScore;
+
+    // Not ambiguous if scores are different
+    if (bestBrandRelatedScore != bestGenericRelatedScore) return false;
+
+    // Not ambiguous if either score is 0
+    if (bestBrandRelatedScore == 0 || bestGenericRelatedScore == 0) {
+      return false;
+    }
+
+    // Not ambiguous if the brand name and generic name are the same
+    // (e.g., "Cerenia" as both brand and generic name)
+    if (bestMatchingBrand != null &&
+        bestMatchingBrand.toLowerCase() == medication.name.toLowerCase()) {
+      return false;
+    }
+
+    // Ambiguous: scores are equal, both > 0, and names are different
+    return true;
   }
 
   /// Calculates match score for a specific string against the query

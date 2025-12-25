@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:hydracat/features/onboarding/migration/step_type_migration.dart';
+import 'package:hydracat/features/onboarding/models/onboarding_step_id.dart';
 
 /// Navigation System Overview
 ///
@@ -10,6 +12,10 @@ import 'package:flutter/foundation.dart';
 /// onboarding completes.
 ///
 /// Enumeration of onboarding steps in the flow
+///
+/// **DEPRECATED**: Use [OnboardingStepId] instead. This enum is kept for
+/// backward compatibility with saved checkpoints and will be removed in v2.0.
+@Deprecated('Use OnboardingStepId instead. Will be removed in v2.0.')
 enum OnboardingStepType {
   /// Welcome screen - entry point with skip option
   welcome,
@@ -118,7 +124,7 @@ enum OnboardingStepType {
 class OnboardingStep {
   /// Creates an [OnboardingStep] instance
   const OnboardingStep({
-    required this.type,
+    required this.id,
     required this.isCompleted,
     required this.isValid,
     this.startedAt,
@@ -127,19 +133,29 @@ class OnboardingStep {
   });
 
   /// Creates an initial step that hasn't been started
-  const OnboardingStep.initial(this.type)
+  const OnboardingStep.initial(this.id)
     : isCompleted = false,
       isValid = false,
       startedAt = null,
       completedAt = null,
       validationErrors = const [];
 
-  /// Creates an [OnboardingStep] from JSON data
+  /// Creates an [OnboardingStep] from JSON data with migration support
   factory OnboardingStep.fromJson(Map<String, dynamic> json) {
+    // Support both old 'type' field and new 'id' field
+    final stepData = json['id'] ?? json['type'];
+    OnboardingStepId stepId;
+
+    if (stepData is String) {
+      // Try to parse as new step ID format first
+      stepId = StepTypeMigration.parseStepId(stepData);
+    } else {
+      // Fallback to welcome
+      stepId = OnboardingSteps.welcome;
+    }
+
     return OnboardingStep(
-      type:
-          OnboardingStepType.fromString(json['type'] as String) ??
-          OnboardingStepType.welcome,
+      id: stepId,
       isCompleted: json['isCompleted'] as bool? ?? false,
       isValid: json['isValid'] as bool? ?? false,
       startedAt: json['startedAt'] != null
@@ -156,8 +172,8 @@ class OnboardingStep {
     );
   }
 
-  /// The type of onboarding step
-  final OnboardingStepType type;
+  /// The unique identifier for this onboarding step
+  final OnboardingStepId id;
 
   /// Whether this step has been completed
   final bool isCompleted;
@@ -191,7 +207,7 @@ class OnboardingStep {
   /// Converts [OnboardingStep] to JSON data
   Map<String, dynamic> toJson() {
     return {
-      'type': type.name,
+      'id': id.id, // Store as string ID
       'isCompleted': isCompleted,
       'isValid': isValid,
       'startedAt': startedAt?.toIso8601String(),
@@ -202,7 +218,7 @@ class OnboardingStep {
 
   /// Creates a copy of this [OnboardingStep] with the given fields replaced
   OnboardingStep copyWith({
-    OnboardingStepType? type,
+    OnboardingStepId? id,
     bool? isCompleted,
     bool? isValid,
     DateTime? startedAt,
@@ -210,7 +226,7 @@ class OnboardingStep {
     List<String>? validationErrors,
   }) {
     return OnboardingStep(
-      type: type ?? this.type,
+      id: id ?? this.id,
       isCompleted: isCompleted ?? this.isCompleted,
       isValid: isValid ?? this.isValid,
       startedAt: startedAt ?? this.startedAt,
@@ -252,7 +268,7 @@ class OnboardingStep {
     if (identical(this, other)) return true;
 
     return other is OnboardingStep &&
-        other.type == type &&
+        other.id == id &&
         other.isCompleted == isCompleted &&
         other.isValid == isValid &&
         other.startedAt == startedAt &&
@@ -263,7 +279,7 @@ class OnboardingStep {
   @override
   int get hashCode {
     return Object.hash(
-      type,
+      id,
       isCompleted,
       isValid,
       startedAt,
@@ -275,7 +291,7 @@ class OnboardingStep {
   @override
   String toString() {
     return 'OnboardingStep('
-        'type: $type, '
+        'id: $id, '
         'isCompleted: $isCompleted, '
         'isValid: $isValid, '
         'startedAt: $startedAt, '

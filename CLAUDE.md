@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Code Analysis**: `flutter analyze`
 - **Generate Code**: `dart run build_runner build`
 - **Clean Build**: `flutter clean && flutter pub get`
+- **Internationalization**: `flutter gen-l10n`
 
 ### Build Commands
 - **Build APK**: `flutter build apk --flavor [development|production] -t lib/main_[flavor].dart`
@@ -46,6 +47,33 @@ lib/
 - **Reference Documentation**: `.cursor/reference/analytics_list.md` - **MUST be updated** when adding/modifying/removing analytics events
 - **Service Location**: `lib/providers/analytics_provider.dart`
 - **Privacy**: No PII, sanitize sensitive data
+
+### Onboarding Flow System
+The onboarding uses a **declarative, graph-based flow configuration** that supports conditional navigation and dynamic step visibility.
+
+**Architecture:**
+- **Flow Configuration**: `lib/features/onboarding/flow/onboarding_flow.dart` - Centralized step definitions
+- **Step Identifiers**: Type-safe sealed classes in `lib/features/onboarding/models/onboarding_step_id.dart`
+- **Validators**: Step-specific validators in `lib/features/onboarding/validators/`
+- **Navigation**: Dynamic navigation via `NavigationResolver` - supports both linear and conditional flows
+- **Migration**: Backward compatibility with legacy checkpoints via `step_type_migration.dart`
+
+**Adding New Steps:**
+1. Define a step ID class extending `OnboardingStepId`
+2. Create a validator implementing `StepValidator` (if needed)
+3. Add step config to `defaultOnboardingFlow` in `onboarding_flow.dart`
+4. Create screen widget
+5. Add route to router (if using manual routes)
+6. Update `OnboardingData` model if collecting new data
+
+**Key Benefits:**
+- ✅ No switch expressions to update when adding steps
+- ✅ Support for conditional navigation based on user data
+- ✅ Step visibility conditions (show/hide steps dynamically)
+- ✅ Centralized validation logic
+- ✅ Easy to test navigation flows
+
+**See**: `~PLANNING/onboarding_refactor.md` for detailed architecture documentation
 
 ## Code Standards
 

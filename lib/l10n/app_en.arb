@@ -364,6 +364,100 @@
   "pounds": "lbs",
   "years": "years",
 
+  "@_MEDICATION_UNITS": {},
+  "medicationUnitPill": "{count, plural, =1{pill} other{pills}}",
+  "@medicationUnitPill": {
+    "description": "Plural-aware medication unit for pills",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "medicationUnitSachet": "{count, plural, =1{Sachet} other{Sachets}}",
+  "@medicationUnitSachet": {
+    "description": "Plural-aware medication unit for sachets",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "medicationUnitCapsule": "{count, plural, =1{Capsule} other{Capsules}}",
+  "@medicationUnitCapsule": {
+    "description": "Plural-aware medication unit for capsules",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "medicationUnitTablet": "{count, plural, =1{Tablet} other{Tablets}}",
+  "@medicationUnitTablet": {
+    "description": "Plural-aware medication unit for tablets",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "medicationUnitDrop": "{count, plural, =1{drop} other{drops}}",
+  "@medicationUnitDrop": {
+    "description": "Plural-aware medication unit for drops",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "medicationUnitAmpoule": "{count, plural, =1{ampoule} other{ampoules}}",
+  "@medicationUnitAmpoule": {
+    "description": "Plural-aware medication unit for ampoules",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "medicationUnitInjection": "{count, plural, =1{injection} other{injections}}",
+  "@medicationUnitInjection": {
+    "description": "Plural-aware medication unit for injections",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "medicationUnitPortion": "{count, plural, =1{portion} other{portions}}",
+  "@medicationUnitPortion": {
+    "description": "Plural-aware medication unit for portions",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "medicationUnitMg": "mg",
+  "@medicationUnitMg": {
+    "description": "Non-countable medication unit for milligrams"
+  },
+  "medicationUnitMl": "mL",
+  "@medicationUnitMl": {
+    "description": "Non-countable medication unit for milliliters"
+  },
+  "medicationUnitMcg": "mcg",
+  "@medicationUnitMcg": {
+    "description": "Non-countable medication unit for micrograms"
+  },
+  "medicationUnitTbsp": "tbsp",
+  "@medicationUnitTbsp": {
+    "description": "Non-countable medication unit for tablespoon"
+  },
+  "medicationUnitTsp": "tsp",
+  "@medicationUnitTsp": {
+    "description": "Non-countable medication unit for teaspoon"
+  },
+
   "@_PLACEHOLDERS": {},
   "enterCatName": "Enter cat name",
   "enterWeight": "Enter weight",
