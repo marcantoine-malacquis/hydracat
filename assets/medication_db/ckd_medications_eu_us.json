@@ -1,332 +1,410 @@
 [
   {
-    "region":"EU",
-    "name":"Aluminum hydroxide",
-    "form":"powder",
-    "strength":"variable",
-    "unit":"mg",
-    "route":"oral",
-    "category":"phosphate_binder",
-    "brand_names":"Various generics"
+    "name": "Aluminum hydroxide",
+    "form": "powder",
+    "strength": "variable",
+    "unit": "mg",
+    "route": "oral",
+    "category": "phosphate_binder",
+    "brand_names": [
+      {
+        "name": "Various",
+        "primary": true
+      }
+    ]
   },
   {
-    "region":"US",
-    "name":"Aluminum hydroxide",
-    "form":"powder",
-    "strength":"variable",
-    "unit":"mg",
-    "route":"oral",
-    "category":"phosphate_binder",
-    "brand_names":"Various generics"
+    "name": "Lanthanum carbonate",
+    "form": "tablet",
+    "strength": "500",
+    "unit": "mg",
+    "route": "oral",
+    "category": "phosphate_binder",
+    "brand_names": [
+      {
+        "name": "Renalzin",
+        "primary": true
+      },
+      {
+        "name": "Fosrenol",
+        "primary": false
+      }
+    ]
   },
   {
-    "region":"EU",
-    "name":"Lanthanum carbonate",
-    "form":"tablet",
-    "strength":"500",
-    "unit":"mg",
-    "route":"oral",
-    "category":"phosphate_binder",
-    "brand_names":"Renalzin"
+    "name": "Ipakitine",
+    "form": "powder",
+    "strength": "variable",
+    "unit": "mg",
+    "route": "oral",
+    "category": "phosphate_binder",
+    "brand_names": [
+      {
+        "name": "Ipakitine",
+        "primary": true
+      }
+    ]
   },
   {
-    "region":"US",
-    "name":"Lanthanum carbonate",
-    "form":"tablet",
-    "strength":"500",
-    "unit":"mg",
-    "route":"oral",
-    "category":"phosphate_binder",
-    "brand_names":"Fosrenol (off-label)"
+    "name": "Epakitin",
+    "form": "powder",
+    "strength": "variable",
+    "unit": "mg",
+    "route": "oral",
+    "category": "phosphate_binder",
+    "brand_names": [
+      {
+        "name": "Epakitin",
+        "primary": true
+      }
+    ]
   },
   {
-    "region":"EU",
-    "name":"Epakitin",
-    "form":"powder",
-    "strength":"variable",
-    "unit":"mg",
-    "route":"oral",
-    "category":"phosphate_binder",
-    "brand_names":"Epakitin"
+    "name": "Pronefra",
+    "form": "liquid",
+    "strength": "variable",
+    "unit": "ml",
+    "route": "oral",
+    "category": "phosphate_binder",
+    "brand_names": [
+      {
+        "name": "Pronefra",
+        "primary": true
+      }
+    ]
   },
   {
-    "region":"EU",
-    "name":"Pronefra",
-    "form":"liquid",
-    "strength":"variable",
-    "unit":"ml",
-    "route":"oral",
-    "category":"phosphate_binder",
-    "brand_names":"Pronefra"
+    "name": "Amlodipine",
+    "form": "tablet",
+    "strength": "1.25",
+    "unit": "mg",
+    "route": "oral",
+    "category": "antihypertensive",
+    "brand_names": [
+      {
+        "name": "Compounded",
+        "primary": true
+      }
+    ]
   },
   {
-    "region":"US",
-    "name":"Pronefra",
-    "form":"liquid",
-    "strength":"variable",
-    "unit":"ml",
-    "route":"oral",
-    "category":"phosphate_binder",
-    "brand_names":"Pronefra"
+    "name": "Benazepril",
+    "form": "tablet",
+    "strength": "5",
+    "unit": "mg",
+    "route": "oral",
+    "category": "ACE_inhibitor",
+    "brand_names": [
+      {
+        "name": "Fortekor",
+        "primary": true
+      },
+      {
+        "name": "Lotensin",
+        "primary": false
+      }
+    ]
   },
   {
-    "region":"EU",
-    "name":"Amlodipine",
-    "form":"tablet",
-    "strength":"1.25",
-    "unit":"mg",
-    "route":"oral",
-    "category":"antihypertensive",
-    "brand_names":"Compounded \/ generic"
+    "name": "Telmisartan",
+    "form": "oral_solution",
+    "strength": "4",
+    "unit": "mg/ml",
+    "route": "oral",
+    "category": "antihypertensive",
+    "brand_names": [
+      {
+        "name": "Semintra",
+        "primary": true
+      }
+    ]
   },
   {
-    "region":"US",
-    "name":"Amlodipine",
-    "form":"tablet",
-    "strength":"1.25",
-    "unit":"mg",
-    "route":"oral",
-    "category":"antihypertensive",
-    "brand_names":"Compounded \/ generic"
+    "name": "Telmisartan",
+    "form": "tablet",
+    "strength": "20",
+    "unit": "mg",
+    "route": "oral",
+    "category": "antihypertensive",
+    "brand_names": [
+      {
+        "name": "Generic",
+        "primary": true
+      }
+    ]
   },
   {
-    "region":"EU",
-    "name":"Benazepril",
-    "form":"tablet",
-    "strength":"5",
-    "unit":"mg",
-    "route":"oral",
-    "category":"ACE_inhibitor",
-    "brand_names":"Fortekor"
+    "name": "Maropitant",
+    "form": "tablet",
+    "strength": "16",
+    "unit": "mg",
+    "route": "oral",
+    "category": "antiemetic",
+    "brand_names": [
+      {
+        "name": "Cerenia",
+        "primary": true
+      }
+    ],
+    "search_aliases": [
+      {
+        "text": "cerenia",
+        "type": "brand"
+      },
+      {
+        "text": "serenia",
+        "type": "brand"
+      }
+    ]
   },
   {
-    "region":"US",
-    "name":"Benazepril",
-    "form":"tablet",
-    "strength":"5",
-    "unit":"mg",
-    "route":"oral",
-    "category":"ACE_inhibitor",
-    "brand_names":"Lotensin (off-label)"
+    "name": "Ondansetron",
+    "form": "tablet",
+    "strength": "4",
+    "unit": "mg",
+    "route": "oral",
+    "category": "antiemetic",
+    "brand_names": [
+      {
+        "name": "Generic",
+        "primary": true
+      }
+    ]
   },
   {
-    "region":"EU",
-    "name":"Telmisartan",
-    "form":"oral_solution",
-    "strength":"4",
-    "unit":"mg\/ml",
-    "route":"oral",
-    "category":"antihypertensive",
-    "brand_names":"Semintra"
+    "name": "Mirtazapine",
+    "form": "transdermal",
+    "strength": "1.88",
+    "unit": "mg",
+    "route": "transdermal",
+    "category": "appetite_stimulant",
+    "brand_names": [
+      {
+        "name": "Mirataz",
+        "primary": true
+      }
+    ],
+    "search_aliases": [
+      {
+        "text": "mirataz",
+        "type": "brand"
+      }
+    ]
   },
   {
-    "region":"US",
-    "name":"Telmisartan",
-    "form":"tablet",
-    "strength":"20",
-    "unit":"mg",
-    "route":"oral",
-    "category":"antihypertensive",
-    "brand_names":"Generic (off\u2011label)"
+    "name": "Mirtazapine",
+    "form": "tablet",
+    "strength": "3.75",
+    "unit": "mg",
+    "route": "oral",
+    "category": "appetite_stimulant",
+    "brand_names": [
+      {
+        "name": "Generic",
+        "primary": true
+      },
+      {
+        "name": "Mirataz",
+        "primary": false
+      }
+    ]
   },
   {
-    "region":"EU",
-    "name":"Maropitant",
-    "form":"tablet",
-    "strength":"16",
-    "unit":"mg",
-    "route":"oral",
-    "category":"antiemetic",
-    "brand_names":"Cerenia"
+    "name": "Omeprazole",
+    "form": "capsule",
+    "strength": "10",
+    "unit": "mg",
+    "route": "oral",
+    "category": "GI_protectant",
+    "brand_names": [
+      {
+        "name": "Prilosec",
+        "primary": true
+      },
+      {
+        "name": "Generic",
+        "primary": false
+      }
+    ]
   },
   {
-    "region":"US",
-    "name":"Maropitant",
-    "form":"tablet",
-    "strength":"16",
-    "unit":"mg",
-    "route":"oral",
-    "category":"antiemetic",
-    "brand_names":"Cerenia"
+    "name": "Famotidine",
+    "form": "tablet",
+    "strength": "10",
+    "unit": "mg",
+    "route": "oral",
+    "category": "GI_protectant",
+    "brand_names": [
+      {
+        "name": "Pepcid",
+        "primary": true
+      },
+      {
+        "name": "Generic",
+        "primary": false
+      }
+    ]
   },
   {
-    "region":"EU",
-    "name":"Ondansetron",
-    "form":"tablet",
-    "strength":"4",
-    "unit":"mg",
-    "route":"oral",
-    "category":"antiemetic",
-    "brand_names":"Generic"
+    "name": "Sucralfate",
+    "form": "tablet",
+    "strength": "1",
+    "unit": "g",
+    "route": "oral",
+    "category": "GI_protectant",
+    "brand_names": [
+      {
+        "name": "Carafate",
+        "primary": true
+      },
+      {
+        "name": "Generic",
+        "primary": false
+      }
+    ]
   },
   {
-    "region":"US",
-    "name":"Ondansetron",
-    "form":"tablet",
-    "strength":"4",
-    "unit":"mg",
-    "route":"oral",
-    "category":"antiemetic",
-    "brand_names":"Generic"
+    "name": "Potassium gluconate",
+    "form": "powder",
+    "strength": "variable",
+    "unit": "mg",
+    "route": "oral",
+    "category": "electrolyte_support",
+    "brand_names": [
+      {
+        "name": "Renal K+",
+        "primary": true
+      },
+      {
+        "name": "Kaminox",
+        "primary": false
+      }
+    ]
   },
   {
-    "region":"EU",
-    "name":"Mirtazapine",
-    "form":"transdermal",
-    "strength":"1.88",
-    "unit":"mg",
-    "route":"transdermal",
-    "category":"appetite_stimulant",
-    "brand_names":"Mirataz"
+    "name": "Potassium gluconate",
+    "form": "gel",
+    "strength": "variable",
+    "unit": "mg",
+    "route": "oral",
+    "category": "electrolyte_support",
+    "brand_names": [
+      {
+        "name": "Tumil-K",
+        "primary": true
+      }
+    ]
   },
   {
-    "region":"US",
-    "name":"Mirtazapine",
-    "form":"transdermal",
-    "strength":"1.88",
-    "unit":"mg",
-    "route":"transdermal",
-    "category":"appetite_stimulant",
-    "brand_names":"Mirataz"
+    "name": "Omega-3",
+    "form": "capsule",
+    "strength": "variable",
+    "unit": "mg",
+    "route": "oral",
+    "category": "supplement",
+    "brand_names": [
+      {
+        "name": "Various",
+        "primary": true
+      }
+    ]
   },
   {
-    "region":"EU",
-    "name":"Mirtazapine",
-    "form":"tablet",
-    "strength":"3.75",
-    "unit":"mg",
-    "route":"oral",
-    "category":"appetite_stimulant",
-    "brand_names":"Generic"
+    "name": "B-complex",
+    "form": "tablet",
+    "strength": "variable",
+    "unit": "mg",
+    "route": "oral",
+    "category": "supplement",
+    "brand_names": [
+      {
+        "name": "Generic",
+        "primary": true
+      }
+    ]
   },
   {
-    "region":"US",
-    "name":"Mirtazapine",
-    "form":"tablet",
-    "strength":"3.75",
-    "unit":"mg",
-    "route":"oral",
-    "category":"appetite_stimulant",
-    "brand_names":"Generic"
+    "name": "Porus One",
+    "form": "powder",
+    "strength": "500",
+    "unit": "mg",
+    "route": "oral",
+    "category": "supplement",
+    "brand_names": [
+      {
+        "name": "Porus One",
+        "primary": true
+      }
+    ],
+    "search_aliases": [
+      {
+        "text": "porus",
+        "type": "brand"
+      },
+      {
+        "text": "renaltec",
+        "type": "ingredient"
+      }
+    ]
   },
   {
-    "region":"EU",
-    "name":"Omeprazole",
-    "form":"capsule",
-    "strength":"10",
-    "unit":"mg",
-    "route":"oral",
-    "category":"GI_protectant",
-    "brand_names":"Generic"
+    "name": "Hydra Care",
+    "form": "liquid",
+    "strength": "variable",
+    "unit": "ml",
+    "route": "oral",
+    "category": "supplement",
+    "brand_names": [
+      {
+        "name": "Hydra Care",
+        "primary": true
+      },
+      {
+        "name": "Purina Pro Plan Hydra Care",
+        "primary": false
+      }
+    ],
+    "search_aliases": [
+      {
+        "text": "hydracare",
+        "type": "brand"
+      },
+      {
+        "text": "purina",
+        "type": "brand"
+      }
+    ]
   },
   {
-    "region":"US",
-    "name":"Omeprazole",
-    "form":"capsule",
-    "strength":"10",
-    "unit":"mg",
-    "route":"oral",
-    "category":"GI_protectant",
-    "brand_names":"Prilosec"
-  },
-  {
-    "region":"EU",
-    "name":"Famotidine",
-    "form":"tablet",
-    "strength":"10",
-    "unit":"mg",
-    "route":"oral",
-    "category":"GI_protectant",
-    "brand_names":"Generic"
-  },
-  {
-    "region":"US",
-    "name":"Famotidine",
-    "form":"tablet",
-    "strength":"10",
-    "unit":"mg",
-    "route":"oral",
-    "category":"GI_protectant",
-    "brand_names":"Pepcid"
-  },
-  {
-    "region":"EU",
-    "name":"Sucralfate",
-    "form":"tablet",
-    "strength":"1",
-    "unit":"g",
-    "route":"oral",
-    "category":"GI_protectant",
-    "brand_names":"Generic"
-  },
-  {
-    "region":"US",
-    "name":"Sucralfate",
-    "form":"tablet",
-    "strength":"1",
-    "unit":"g",
-    "route":"oral",
-    "category":"GI_protectant",
-    "brand_names":"Carafate"
-  },
-  {
-    "region":"EU",
-    "name":"Potassium gluconate",
-    "form":"powder",
-    "strength":"variable",
-    "unit":"mg",
-    "route":"oral",
-    "category":"electrolyte_support",
-    "brand_names":"Renal K+, Kaminox"
-  },
-  {
-    "region":"US",
-    "name":"Potassium gluconate",
-    "form":"gel",
-    "strength":"variable",
-    "unit":"mg",
-    "route":"oral",
-    "category":"electrolyte_support",
-    "brand_names":"Tumil-K"
-  },
-  {
-    "region":"EU",
-    "name":"Omega-3",
-    "form":"capsule",
-    "strength":"variable",
-    "unit":"mg",
-    "route":"oral",
-    "category":"supplement",
-    "brand_names":"Various"
-  },
-  {
-    "region":"US",
-    "name":"Omega-3",
-    "form":"capsule",
-    "strength":"variable",
-    "unit":"mg",
-    "route":"oral",
-    "category":"supplement",
-    "brand_names":"Various"
-  },
-  {
-    "region":"EU",
-    "name":"B-complex",
-    "form":"tablet",
-    "strength":"variable",
-    "unit":"mg",
-    "route":"oral",
-    "category":"supplement",
-    "brand_names":"Generic"
-  },
-  {
-    "region":"US",
-    "name":"B-complex",
-    "form":"tablet",
-    "strength":"variable",
-    "unit":"mg",
-    "route":"oral",
-    "category":"supplement",
-    "brand_names":"Generic"
+    "name": "FortiFlora",
+    "form": "powder",
+    "strength": "variable",
+    "unit": "mg",
+    "route": "oral",
+    "category": "supplement",
+    "brand_names": [
+      {
+        "name": "FortiFlora",
+        "primary": true
+      },
+      {
+        "name": "Purina Pro Plan FortiFlora",
+        "primary": false
+      }
+    ],
+    "search_aliases": [
+      {
+        "text": "fortiflora",
+        "type": "brand"
+      },
+      {
+        "text": "purina",
+        "type": "brand"
+      },
+      {
+        "text": "probiotic",
+        "type": "category"
+      }
+    ]
   }
 ]
