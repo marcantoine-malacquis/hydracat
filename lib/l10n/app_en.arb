@@ -26,6 +26,7 @@
   "goBack": "Go Back",
   "continue_": "Continue",
   "close": "Close",
+  "exit": "Exit",
   "previous": "Previous",
   "next": "Next",
   "discard": "Discard",
@@ -159,7 +160,7 @@
   "medicationInformationDesc": "Enter the name and dosage form of the medication.",
   "whatMedicationToAdd": "What medication do you want to add?",
   "medicationNameLabel": "Medication Name *",
-  "medicationNameHint": "e.g., Benazepril, Furosemide",
+  "medicationNameHint": "e.g., Benazepril, Epakitin",
   "medicationStrengthLabel": "Medication Strength (optional)",
   "medicationStrengthDesc": "Enter the concentration or strength of the medication",
   "strengthAmountLabel": "Amount",
@@ -220,6 +221,28 @@
     }
   },
   "errorSavingMedication": "Failed to save medication. Please check all fields and try again.",
+
+  "@_MEDICATION_AUTOCOMPLETE": {},
+  "medicationSearchPlaceholder": "Search medications...",
+  "@medicationSearchPlaceholder": {
+    "description": "Placeholder text for medication search field"
+  },
+  "medicationNotInDatabase": "Medication not found? You can still add it manually.",
+  "@medicationNotInDatabase": {
+    "description": "Info message when medication not in database"
+  },
+  "medicationSuggestionsTitle": "Suggested Medications",
+  "@medicationSuggestionsTitle": {
+    "description": "Title for medication suggestions dropdown"
+  },
+  "medicationDatabaseLoadError": "Could not load medication database. Manual entry is still available.",
+  "@medicationDatabaseLoadError": {
+    "description": "Error message when database fails to load"
+  },
+  "medicationAutocompleteHint": "Start typing to see suggestions",
+  "@medicationAutocompleteHint": {
+    "description": "Hint text for autocomplete field"
+  },
 
   "@_ONBOARDING_FLUID_THERAPY": {},
   "fluidTherapySetupTitle": "Fluid Therapy Setup",
@@ -1305,6 +1328,17 @@
   "qolQuestionnaireEditTitle": "Edit Assessment",
   "qolHistoryTitle": "Quality of Life",
   "qolTrendChartTitle": "QoL Trends",
+  "qolQuestionProgress": "Question {current} of {total}",
+  "@qolQuestionProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
 
   "@_QOL_ACTIONS": {},
   "qolComplete": "Complete",

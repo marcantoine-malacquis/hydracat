@@ -190,6 +190,12 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get close;
 
+  /// No description provided for @exit.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit'**
+  String get exit;
+
   /// No description provided for @previous.
   ///
   /// In en, this message translates to:
@@ -535,7 +541,7 @@ abstract class AppLocalizations {
   /// No description provided for @medicationNameHint.
   ///
   /// In en, this message translates to:
-  /// **'e.g., Benazepril, Furosemide'**
+  /// **'e.g., Benazepril, Epakitin'**
   String get medicationNameHint;
 
   /// No description provided for @medicationStrengthLabel.
@@ -753,6 +759,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to save medication. Please check all fields and try again.'**
   String get errorSavingMedication;
+
+  /// Placeholder text for medication search field
+  ///
+  /// In en, this message translates to:
+  /// **'Search medications...'**
+  String get medicationSearchPlaceholder;
+
+  /// Info message when medication not in database
+  ///
+  /// In en, this message translates to:
+  /// **'Medication not found? You can still add it manually.'**
+  String get medicationNotInDatabase;
+
+  /// Title for medication suggestions dropdown
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested Medications'**
+  String get medicationSuggestionsTitle;
+
+  /// Error message when database fails to load
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load medication database. Manual entry is still available.'**
+  String get medicationDatabaseLoadError;
+
+  /// Hint text for autocomplete field
+  ///
+  /// In en, this message translates to:
+  /// **'Start typing to see suggestions'**
+  String get medicationAutocompleteHint;
 
   /// No description provided for @fluidTherapySetupTitle.
   ///
@@ -3081,6 +3117,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'QoL Trends'**
   String get qolTrendChartTitle;
+
+  /// No description provided for @qolQuestionProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Question {current} of {total}'**
+  String qolQuestionProgress(int current, int total);
 
   /// No description provided for @qolComplete.
   ///

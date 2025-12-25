@@ -108,10 +108,6 @@ class _HomeScreenContent {
     );
   }
 
-
-
-
-
   /// Open medication logging screen from dashboard with pre-selected medication
   static void _openMedicationLoggingFromDashboard(
     BuildContext context,
@@ -371,10 +367,10 @@ class _Dashboard extends ConsumerWidget {
                 treatment: treatment,
                 onTap: () =>
                     _HomeScreenContent._openMedicationLoggingFromDashboard(
-                  context,
-                  ref,
-                  treatment,
-                ),
+                      context,
+                      ref,
+                      treatment,
+                    ),
               ),
             ),
 
@@ -407,7 +403,7 @@ class _Dashboard extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             const WaterDropProgressCard(),
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.md),
           ],
 
           // Quality of Life tracking card

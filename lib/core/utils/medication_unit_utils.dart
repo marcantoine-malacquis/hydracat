@@ -7,7 +7,7 @@ class MedicationUnitUtils {
 
   /// Returns a short, user-friendly form for a given medication unit.
   static String shortForm(String unit) {
-    switch (unit) {
+    switch (unit.toLowerCase()) {
       case 'ampoules':
         return 'ampoule';
       case 'capsules':

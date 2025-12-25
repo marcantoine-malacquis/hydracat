@@ -12,7 +12,6 @@ import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/qol_provider.dart';
-import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
 import 'package:hydracat/shared/widgets/cards/hydra_card.dart';
 import 'package:hydracat/shared/widgets/layout/layout.dart';
 
@@ -23,7 +22,6 @@ import 'package:hydracat/shared/widgets/layout/layout.dart';
 /// - Full radar chart visualization
 /// - Domain breakdown with individual scores
 /// - Trend interpretation (comparison with previous assessment)
-/// - Action buttons (Edit, View History)
 class QolDetailScreen extends ConsumerStatefulWidget {
   /// Creates a [QolDetailScreen].
   ///
@@ -84,11 +82,15 @@ class _QolDetailScreenState extends ConsumerState<QolDetailScreen> {
       title: l10n.qolResultsTitle,
       actions: [
         // Edit button in app bar
-        IconButton(
-          icon: const Icon(Icons.edit_outlined),
+        TextButton(
           onPressed: () =>
               context.push('/profile/qol/edit/${widget.assessmentId}'),
-          tooltip: l10n.edit,
+          child: Text(
+            l10n.edit,
+            style: AppTextStyles.body.copyWith(
+              color: AppColors.primary,
+            ),
+          ),
         ),
       ],
       body: SingleChildScrollView(
@@ -110,10 +112,6 @@ class _QolDetailScreenState extends ConsumerState<QolDetailScreen> {
 
             // Trend interpretation
             QolInterpretationCard(assessment: assessment),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Action buttons row
-            _ActionButtonsRow(assessmentId: widget.assessmentId),
             const SizedBox(height: AppSpacing.xl),
           ],
         ),
@@ -324,41 +322,5 @@ class _DomainScoreCard extends StatelessWidget {
     if (score >= 60) return AppColors.primary;
     if (score >= 40) return AppColors.warning;
     return AppColors.error;
-  }
-}
-
-/// Action buttons row for navigation.
-class _ActionButtonsRow extends StatelessWidget {
-  const _ActionButtonsRow({
-    required this.assessmentId,
-  });
-
-  final String assessmentId;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-
-    return Row(
-      children: [
-        // Edit button (secondary)
-        Expanded(
-          child: HydraButton(
-            onPressed: () => context.push('/profile/qol/edit/$assessmentId'),
-            variant: HydraButtonVariant.secondary,
-            child: Text(l10n.edit),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-
-        // View History button (primary)
-        Expanded(
-          child: HydraButton(
-            onPressed: () => context.push('/profile/qol'),
-            child: Text(l10n.viewHistory),
-          ),
-        ),
-      ],
-    );
   }
 }

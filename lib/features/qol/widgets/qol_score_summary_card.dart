@@ -194,7 +194,7 @@ class QolScoreSummaryCard extends StatelessWidget {
   Color _getScoreBandColor(String? band) {
     switch (band) {
       case 'veryGood':
-        return AppColors.success;
+        return AppColors.primary;
       case 'good':
         return AppColors.primary;
       case 'fair':

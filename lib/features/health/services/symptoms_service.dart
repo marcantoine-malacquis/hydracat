@@ -543,6 +543,7 @@ class SymptomsService {
         symptomScoreTotal: finalEntry.symptomScoreTotal,
         symptomScoreAverage: finalEntry.symptomScoreAverage,
         hasSymptoms: finalEntry.hasSymptoms ?? false,
+        hasSymptomLogEntry: true,
       );
 
       // 5. Fetch weekly and monthly summaries for max score computation

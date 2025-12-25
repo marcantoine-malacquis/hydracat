@@ -37,6 +37,7 @@ class AppScaffold extends StatelessWidget {
     this.extendBodyBehindAppBar = false,
     this.backgroundColor,
     this.appBarStyle = HydraAppBarStyle.default_,
+    this.automaticallyImplyLeading = true,
     super.key,
   });
 
@@ -85,6 +86,11 @@ class AppScaffold extends StatelessWidget {
   /// Defaults to [HydraAppBarStyle.default_].
   final HydraAppBarStyle appBarStyle;
 
+  /// Whether to automatically imply a leading widget if there is none.
+  ///
+  /// Defaults to `true`.
+  final bool automaticallyImplyLeading;
+
   /// Gets the system UI overlay style based on background brightness.
   SystemUiOverlayStyle _getSystemUiOverlayStyle(Color bgColor) {
     // Calculate brightness of background
@@ -108,6 +114,7 @@ class AppScaffold extends StatelessWidget {
             leading: leading,
             actions: actions,
             style: appBarStyle,
+            automaticallyImplyLeading: automaticallyImplyLeading,
           )
         : null;
 

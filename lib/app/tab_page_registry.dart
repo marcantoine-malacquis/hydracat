@@ -101,14 +101,20 @@ class TabPageRegistry {
   /// Non-tab routes are full-screen pages that:
   /// - Use horizontal slide transitions (not tab fade)
   /// - Have their own Scaffold and AppBar
-  /// - Hide the bottom navigation bar
+  /// - Are rendered as-is (not processed through tab page builders)
+  ///
+  /// Note: Non-tab routes can still show the bottom navigation bar
+  /// if they're listed in [shouldShowBottomNavForNonTabRoute].
   ///
   /// Returns true for:
   /// - Auth routes (login, register, forgot-password, email-verification)
   /// - Onboarding routes
   /// - Logging overlay routes
-  /// - Profile detail routes (settings, ckd, fluid, medication, weight)
-  /// - Progress detail routes (injection-sites, weight, symptoms)
+  /// - Settings routes (show bottom nav)
+  /// - QoL routes (show bottom nav)
+  /// - Weight routes (show bottom nav)
+  /// - Progress analytics routes (show bottom nav)
+  /// - Profile detail routes (show bottom nav)
   /// - Demo routes
   static bool isNonTabRoute(String location) {
     return _isNonTabRoute(location);
@@ -124,22 +130,19 @@ class TabPageRegistry {
         location == '/demo' ||
         // Settings routes that should show bottom nav
         location.startsWith('/profile/settings') ||
-        // Profile detail routes that should
-        // be full-screen with slide transitions
-        [
-          '/profile/ckd',
-          '/profile/fluid',
-          '/profile/fluid/create',
-          '/profile/medication',
-          '/profile/weight',
-        ].contains(location) ||
-        // Progress detail routes that should be
-        // full-screen with slide transitions
-        [
-          '/progress/injection-sites',
-          '/progress/weight',
-          '/progress/symptoms',
-        ].contains(location);
+        // QoL routes (all subroutes) - full-screen with slide transitions
+        location.startsWith('/profile/qol') ||
+        // Weight routes - full-screen with slide transitions
+        location == '/profile/weight' ||
+        location == '/progress/weight' ||
+        // Progress analytics routes - full-screen with slide transitions
+        location == '/progress/injection-sites' ||
+        location == '/progress/symptoms' ||
+        // Profile detail routes - full-screen with slide transitions
+        location == '/profile/ckd' ||
+        location.startsWith('/profile/fluid') ||
+        location == '/profile/medication' ||
+        location == '/profile/inventory';
   }
 
   /// Checks if a non-tab route should still show the bottom navigation bar.
@@ -149,8 +152,22 @@ class TabPageRegistry {
   ///
   /// Returns true for:
   /// - Settings routes (/profile/settings/*)
+  /// - Quality of Life routes (/profile/qol/*)
+  /// - Weight routes (/profile/weight, /progress/weight)
+  /// - Progress analytics routes (/progress/injection-sites, /progress/symptoms)
+  /// - Profile detail routes (/profile/ckd, /profile/fluid,
+  ///   /profile/medication, /profile/inventory)
   static bool shouldShowBottomNavForNonTabRoute(String location) {
-    return location.startsWith('/profile/settings');
+    return location.startsWith('/profile/settings') ||
+        location.startsWith('/profile/qol') ||
+        location == '/profile/weight' ||
+        location == '/progress/weight' ||
+        location == '/progress/injection-sites' ||
+        location == '/progress/symptoms' ||
+        location == '/profile/ckd' ||
+        location.startsWith('/profile/fluid') ||
+        location == '/profile/medication' ||
+        location == '/profile/inventory';
   }
 
   static bool _isHomeRoute(String location) {

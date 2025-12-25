@@ -68,7 +68,7 @@ class IconProvider {
       case AppIcons.medication:
         return Icons.medication;
       case AppIcons.symptoms:
-        return Icons.favorite_border;
+        return Icons.thermostat;
       case AppIcons.completed:
         return Icons.check_circle;
       case AppIcons.notCompleted:
@@ -219,7 +219,7 @@ class IconProvider {
         // No pill icon in Cupertino, using square
         return CupertinoIcons.square_fill;
       case AppIcons.symptoms:
-        return CupertinoIcons.heart;
+        return CupertinoIcons.thermometer;
       case AppIcons.completed:
         return CupertinoIcons.check_mark_circled_solid;
       case AppIcons.notCompleted:

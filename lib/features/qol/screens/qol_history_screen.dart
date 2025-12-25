@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/constants/app_colors.dart';
@@ -11,8 +13,7 @@ import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
 import 'package:hydracat/providers/qol_provider.dart';
 import 'package:hydracat/shared/widgets/buttons/buttons.dart';
-import 'package:hydracat/shared/widgets/cards/cards.dart';
-import 'package:hydracat/shared/widgets/layout/layout.dart';
+import 'package:hydracat/shared/widgets/navigation/navigation.dart';
 import 'package:intl/intl.dart' as intl;
 
 /// Displays the history of QoL assessments with trend visualization.
@@ -22,7 +23,7 @@ import 'package:intl/intl.dart' as intl;
 /// - Scrollable list of historical assessments
 /// - Pull-to-refresh
 /// - Empty state for new users
-/// - FAB to add new assessment
+/// - "+ Add" pill button (iOS) or FAB (Android) to add new assessment
 /// - Tap to view details
 /// - Long-press for edit/delete options
 class QolHistoryScreen extends ConsumerStatefulWidget {
@@ -61,11 +62,66 @@ class _QolHistoryScreenState extends ConsumerState<QolHistoryScreen> {
     final l10n = AppLocalizations.of(context)!;
     final assessments = ref.watch(recentQolAssessmentsProvider);
     final isLoading = ref.watch(isLoadingQolProvider);
+    final platform = Theme.of(context).platform;
+    final isIOS =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
 
     return Scaffold(
-      body: AppScaffold(
-        title: l10n.qolHistoryTitle,
-        body: RefreshIndicator(
+      backgroundColor: AppColors.background,
+      appBar: HydraAppBar(
+        title: Text(l10n.qolHistoryTitle),
+        actions: isIOS
+            ? [
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      context.push('/profile/qol/new');
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(999),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            CupertinoIcons.add,
+                            size: 18,
+                            color: AppColors.primaryDark,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Add',
+                            style: TextStyle(
+                              color: AppColors.primaryDark,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ]
+            : null,
+      ),
+      body: SafeArea(
+        child: RefreshIndicator(
           onRefresh: () async {
             await ref
                 .read(qolProvider.notifier)
@@ -74,10 +130,12 @@ class _QolHistoryScreenState extends ConsumerState<QolHistoryScreen> {
           child: _buildBody(context, assessments, isLoading, l10n),
         ),
       ),
-      floatingActionButton: HydraFab(
-        onPressed: () => context.push('/profile/qol/new'),
-        icon: Icons.add,
-      ),
+      floatingActionButton: isIOS
+          ? null
+          : HydraFab(
+              onPressed: () => context.push('/profile/qol/new'),
+              icon: Icons.add,
+            ),
     );
   }
 
@@ -114,31 +172,31 @@ class _QolHistoryScreenState extends ConsumerState<QolHistoryScreen> {
         // History section title
         Text(
           l10n.qolHistorySectionTitle,
-          style: AppTextStyles.h2,
+          style: AppTextStyles.h3,
         ),
         const SizedBox(height: AppSpacing.md),
 
         // Assessment cards
-        ...assessments.asMap().entries.map((entry) {
-          final index = entry.key;
-          final assessment = entry.value;
-          final previousAssessment = index < assessments.length - 1
-              ? assessments[index + 1]
-              : null;
-
-          return _QolHistoryCard(
-            key: ValueKey(assessment.id),
-            assessment: assessment,
-            previousAssessment: previousAssessment,
-            onTap: () => context.push(
-              '/profile/qol/detail/${assessment.documentId}',
-            ),
-            onEdit: () => context.push(
-              '/profile/qol/edit/${assessment.documentId}',
-            ),
-            onDelete: () => _confirmDelete(context, ref, assessment, l10n),
-          );
-        }),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: assessments.length,
+          separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.xs),
+          itemBuilder: (context, index) {
+            final assessment = assessments[index];
+            return _QolHistoryCard(
+              key: ValueKey(assessment.id),
+              assessment: assessment,
+              onTap: () => context.push(
+                '/profile/qol/detail/${assessment.documentId}',
+              ),
+              onEdit: () => context.push(
+                '/profile/qol/edit/${assessment.documentId}',
+              ),
+              onDelete: () => _confirmDelete(context, ref, assessment, l10n),
+            );
+          },
+        ),
       ],
     );
   }
@@ -249,7 +307,6 @@ class _EmptyState extends StatelessWidget {
 class _QolHistoryCard extends StatelessWidget {
   const _QolHistoryCard({
     required this.assessment,
-    required this.previousAssessment,
     required this.onTap,
     required this.onEdit,
     required this.onDelete,
@@ -257,7 +314,6 @@ class _QolHistoryCard extends StatelessWidget {
   });
 
   final QolAssessment assessment;
-  final QolAssessment? previousAssessment;
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -266,65 +322,61 @@ class _QolHistoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: GestureDetector(
-        onLongPress: () => _showContextMenu(context, l10n),
-        child: HydraCard(
-          onTap: onTap,
-          child: Row(
-            children: [
-              // Date column
-              Expanded(
-                flex: 2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+    return GestureDetector(
+      onLongPress: () => _showContextMenu(context, l10n),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            // Date column
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    intl.DateFormat('MMM dd, yyyy').format(assessment.date),
+                    style: AppTextStyles.body,
+                  ),
+                  if (!assessment.isComplete) ...[
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
-                      intl.DateFormat('MMM d').format(assessment.date),
-                      style: AppTextStyles.h2,
-                    ),
-                    Text(
-                      intl.DateFormat('yyyy').format(assessment.date),
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.textSecondary,
+                      l10n.qolIncomplete,
+                      style: AppTextStyles.small.copyWith(
+                        color: AppColors.warning,
                       ),
                     ),
                   ],
-                ),
+                ],
               ),
+            ),
 
-              // Score badge
-              Expanded(
-                flex: 3,
-                child: Column(
-                  children: [
-                    _ScoreBadge(
-                      score: assessment.overallScore,
-                      scoreBand: assessment.scoreBand,
-                    ),
-                    if (!assessment.isComplete) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        l10n.qolIncomplete,
-                        style: AppTextStyles.small.copyWith(
-                          color: AppColors.warning,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
+            // Score badge
+            _ScoreBadge(
+              score: assessment.overallScore,
+              scoreBand: assessment.scoreBand,
+            ),
 
-              // Trend indicator
-              Expanded(
-                child: _TrendIndicator(
-                  assessment: assessment,
-                  previousAssessment: previousAssessment,
-                ),
+            const SizedBox(width: AppSpacing.xs),
+
+            // Edit icon
+            IconButton(
+              icon: const Icon(Icons.edit, size: 18),
+              onPressed: onEdit,
+              tooltip: 'Edit',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: 32,
+                minHeight: 32,
               ),
-            ],
-          ),
+              visualDensity: VisualDensity.compact,
+            ),
+          ],
         ),
       ),
     );
@@ -413,9 +465,12 @@ class _ScoreBadge extends StatelessWidget {
         ),
       ),
       child: Text(
-        score!.toStringAsFixed(0),
-        style: AppTextStyles.h2.copyWith(
+        '${_getScoreBandLabel(context, scoreBand)} '
+        '(${score!.toStringAsFixed(0)}%)',
+        style: AppTextStyles.body.copyWith(
           color: color,
+          fontWeight: FontWeight.bold,
+          fontSize: 13,
         ),
       ),
     );
@@ -424,7 +479,7 @@ class _ScoreBadge extends StatelessWidget {
   Color _getScoreBandColor(String? band) {
     switch (band) {
       case 'veryGood':
-        return AppColors.success;
+        return AppColors.primary;
       case 'good':
         return AppColors.primary;
       case 'fair':
@@ -435,54 +490,20 @@ class _ScoreBadge extends StatelessWidget {
         return AppColors.textSecondary;
     }
   }
-}
 
-/// Trend indicator showing change from previous assessment
-class _TrendIndicator extends StatelessWidget {
-  const _TrendIndicator({
-    required this.assessment,
-    required this.previousAssessment,
-  });
-
-  final QolAssessment assessment;
-  final QolAssessment? previousAssessment;
-
-  @override
-  Widget build(BuildContext context) {
-    // No previous assessment to compare
-    if (previousAssessment == null ||
-        assessment.overallScore == null ||
-        previousAssessment!.overallScore == null) {
-      return const SizedBox.shrink();
+  String _getScoreBandLabel(BuildContext context, String? band) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (band) {
+      case 'veryGood':
+        return l10n.qolScoreBandVeryGood;
+      case 'good':
+        return l10n.qolScoreBandGood;
+      case 'fair':
+        return l10n.qolScoreBandFair;
+      case 'low':
+        return l10n.qolScoreBandLow;
+      default:
+        return '';
     }
-
-    final currentScore = assessment.overallScore!;
-    final previousScore = previousAssessment!.overallScore!;
-    final delta = currentScore - previousScore;
-
-    // Threshold for "stable" (within ±3 points)
-    if (delta.abs() < 3) {
-      return const Icon(
-        Icons.horizontal_rule,
-        color: AppColors.textTertiary,
-        size: 24,
-      );
-    }
-
-    // Improving
-    if (delta > 0) {
-      return const Icon(
-        Icons.arrow_upward,
-        color: AppColors.success,
-        size: 24,
-      );
-    }
-
-    // Declining
-    return const Icon(
-      Icons.arrow_downward,
-      color: AppColors.error,
-      size: 24,
-    );
   }
 }

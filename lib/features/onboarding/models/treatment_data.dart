@@ -320,6 +320,8 @@ class MedicationData {
     this.strengthAmount,
     this.strengthUnit,
     this.customStrengthUnit,
+    this.canonicalGenericName,
+    this.isDatabaseLinked = false,
   });
 
   /// Creates a [MedicationData] from JSON data
@@ -343,6 +345,8 @@ class MedicationData {
           ? MedicationStrengthUnit.fromString(json['strengthUnit'] as String)
           : null,
       customStrengthUnit: json['customStrengthUnit'] as String?,
+      canonicalGenericName: json['canonicalGenericName'] as String?,
+      isDatabaseLinked: json['isDatabaseLinked'] as bool? ?? false,
     );
   }
 
@@ -369,6 +373,18 @@ class MedicationData {
 
   /// Custom strength unit when strengthUnit is 'other'
   final String? customStrengthUnit;
+
+  /// Canonical generic medication name for data integrity
+  ///
+  /// When medication is selected from database, this stores the generic
+  /// (INN) name regardless of whether user entered brand or generic name.
+  /// Null for manually entered medications.
+  final String? canonicalGenericName;
+
+  /// Whether this medication was linked from the medication database
+  ///
+  /// True if selected from autocomplete, false if manually entered.
+  final bool isDatabaseLinked;
 
   /// Generate a human-readable summary of this medication
   String get summary {
@@ -445,6 +461,9 @@ class MedicationData {
       'strengthAmount': strengthAmount,
       'strengthUnit': strengthUnit?.name,
       'customStrengthUnit': customStrengthUnit,
+      if (canonicalGenericName != null)
+        'canonicalGenericName': canonicalGenericName,
+      'isDatabaseLinked': isDatabaseLinked,
     };
   }
 
@@ -458,6 +477,8 @@ class MedicationData {
     Object? strengthAmount = _undefined,
     Object? strengthUnit = _undefined,
     Object? customStrengthUnit = _undefined,
+    Object? canonicalGenericName = _undefined,
+    bool? isDatabaseLinked,
   }) {
     return MedicationData(
       name: name ?? this.name,
@@ -474,6 +495,10 @@ class MedicationData {
       customStrengthUnit: customStrengthUnit == _undefined
           ? this.customStrengthUnit
           : customStrengthUnit as String?,
+      canonicalGenericName: canonicalGenericName == _undefined
+          ? this.canonicalGenericName
+          : canonicalGenericName as String?,
+      isDatabaseLinked: isDatabaseLinked ?? this.isDatabaseLinked,
     );
   }
 
@@ -489,7 +514,9 @@ class MedicationData {
         other.dosage == dosage &&
         other.strengthAmount == strengthAmount &&
         other.strengthUnit == strengthUnit &&
-        other.customStrengthUnit == customStrengthUnit;
+        other.customStrengthUnit == customStrengthUnit &&
+        other.canonicalGenericName == canonicalGenericName &&
+        other.isDatabaseLinked == isDatabaseLinked;
   }
 
   @override
@@ -503,6 +530,8 @@ class MedicationData {
       strengthAmount,
       strengthUnit,
       customStrengthUnit,
+      canonicalGenericName,
+      isDatabaseLinked,
     );
   }
 

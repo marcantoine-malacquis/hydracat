@@ -115,6 +115,7 @@ flutter:
     - assets/fonts/icons/SF_Symboles/
     - assets/legal/
     - assets/branding/
+    - assets/medication_db/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

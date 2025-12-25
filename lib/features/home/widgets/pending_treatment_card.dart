@@ -53,7 +53,6 @@ class PendingTreatmentCard extends StatelessWidget {
     );
 
     // Determine time text for display and accessibility
-    final timeText = treatment.displayTime ?? l10n.noTimeSet;
     final timeDescription = treatment.isFlexible
         ? l10n.noTimeSet
         : 'scheduled at ${treatment.displayTime}';
@@ -146,34 +145,31 @@ class PendingTreatmentCard extends StatelessWidget {
 
             const SizedBox(width: AppSpacing.md),
 
-            // Time (or "No time set" for flexible medications)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  timeText,
-                  style: AppTextStyles.caption.copyWith(
-                    // UI Guidelines: Use textTertiary for placeholder text
-                    color: treatment.isFlexible
-                        ? AppColors.textTertiary
-                        : (treatment.isOverdue
-                            ? AppColors.success
-                            : AppColors.textSecondary),
-                    // UI Guidelines: Italic for "not set" differentiation
-                    fontStyle: treatment.isFlexible
-                        ? FontStyle.italic
-                        : FontStyle.normal,
+            // Time (only displayed when set)
+            if (treatment.displayTime != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    treatment.displayTime!,
+                    style: AppTextStyles.caption.copyWith(
+                      color: treatment.isOverdue
+                          ? AppColors.success
+                          : AppColors.textSecondary,
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
 
             const SizedBox(width: AppSpacing.md),
 
             // Chevron
             Icon(
-              Icons.chevron_right,
-              color: theme.colorScheme.onSurfaceVariant,
+              IconProvider.resolveIconData(
+                AppIcons.chevronRight,
+                isCupertino: isCupertino,
+              ),
+              color: AppColors.textSecondary,
               size: 20,
             ),
           ],

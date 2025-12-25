@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,9 +7,11 @@ import 'package:go_router/go_router.dart';
 import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/qol/models/qol_assessment.dart';
+import 'package:hydracat/features/qol/models/qol_domain.dart';
 import 'package:hydracat/features/qol/models/qol_question.dart';
 import 'package:hydracat/features/qol/models/qol_response.dart';
 import 'package:hydracat/features/qol/widgets/qol_question_card.dart';
+import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/auth_provider.dart';
 import 'package:hydracat/providers/profile_provider.dart';
@@ -15,6 +19,7 @@ import 'package:hydracat/providers/qol_provider.dart';
 import 'package:hydracat/shared/widgets/buttons/hydra_button.dart';
 import 'package:hydracat/shared/widgets/dialogs/hydra_alert_dialog.dart';
 import 'package:hydracat/shared/widgets/feedback/hydra_snack_bar.dart';
+import 'package:hydracat/shared/widgets/hydra_back_button.dart';
 import 'package:hydracat/shared/widgets/layout/layout.dart';
 
 /// Questionnaire screen for QoL assessment.
@@ -239,6 +244,47 @@ class _QolQuestionnaireScreenState
     HydraSnackBar.showError(context, message);
   }
 
+  /// Builds the question info bar (question number + domain).
+  Widget _buildQuestionInfo(AppLocalizations l10n) {
+    final question = QolQuestion.all[_currentQuestionIndex];
+    final domainKey = QolDomain.getDisplayNameKey(question.domain) ?? '';
+    final domainName = _getLocalizedDomainName(l10n, domainKey);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          l10n.qolQuestionProgress(_currentQuestionIndex + 1, 14),
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const Text(
+          ' • ',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        Text(
+          domainName,
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.primary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Gets localized domain name.
+  String _getLocalizedDomainName(AppLocalizations l10n, String key) {
+    if (key == 'qolDomainVitality') return l10n.qolDomainVitality;
+    if (key == 'qolDomainComfort') return l10n.qolDomainComfort;
+    if (key == 'qolDomainEmotional') return l10n.qolDomainEmotional;
+    if (key == 'qolDomainAppetite') return l10n.qolDomainAppetite;
+    if (key == 'qolDomainTreatmentBurden') return l10n.qolDomainTreatmentBurden;
+    return key;
+  }
+
   /// Confirms discard if answers exist.
   Future<bool> _confirmDiscard() async {
     final answeredCount = _responses.values.where((v) => v != null).length;
@@ -281,6 +327,18 @@ class _QolQuestionnaireScreenState
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
 
+        // If not on first question, go to previous question
+        if (_currentQuestionIndex > 0) {
+          unawaited(
+            _pageController.previousPage(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            ),
+          );
+          return;
+        }
+
+        // If on first question, show discard dialog
         final shouldPop = await _confirmDiscard();
         if (shouldPop && context.mounted) {
           context.pop();
@@ -290,25 +348,51 @@ class _QolQuestionnaireScreenState
         title: isEdit
             ? l10n.qolQuestionnaireEditTitle
             : l10n.qolQuestionnaireTitle,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () async {
-            final shouldPop = await _confirmDiscard();
-            if (shouldPop && context.mounted) {
-              context.pop();
-            }
-          },
-        ),
+        leading: _currentQuestionIndex > 0
+            ? HydraBackButton(
+                onPressed: () {
+                  _pageController.previousPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+              )
+            : const SizedBox.shrink(),
+        automaticallyImplyLeading: false,
+        actions: [
+          TextButton(
+            onPressed: () async {
+              final shouldPop = await _confirmDiscard();
+              if (shouldPop && context.mounted) {
+                context.pop();
+              }
+            },
+            child: Text(l10n.exit),
+          ),
+        ],
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : Column(
                 children: [
-                  // Progress indicator
-                  LinearProgressIndicator(
-                    value: (_currentQuestionIndex + 1) / 14,
-                    backgroundColor: AppColors.border,
-                    color: AppColors.primary,
-                    minHeight: 4,
+                  // Progress indicator with question info
+                  Column(
+                    children: [
+                      // Progress bar
+                      LinearProgressIndicator(
+                        value: (_currentQuestionIndex + 1) / 14,
+                        backgroundColor: AppColors.border,
+                        color: AppColors.primary,
+                        minHeight: 3,
+                      ),
+                      // Question info (number + domain)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                          vertical: AppSpacing.sm,
+                        ),
+                        child: _buildQuestionInfo(l10n),
+                      ),
+                    ],
                   ),
 
                   // PageView with questions
@@ -325,7 +409,12 @@ class _QolQuestionnaireScreenState
                       itemBuilder: (context, index) {
                         final question = QolQuestion.all[index];
                         return Padding(
-                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.lg,
+                            AppSpacing.sm,
+                            AppSpacing.lg,
+                            AppSpacing.md,
+                          ),
                           child: QolQuestionCard(
                             question: question,
                             currentResponse: _responses[question.id],
@@ -339,42 +428,18 @@ class _QolQuestionnaireScreenState
                   ),
 
                   // Bottom navigation bar
-                  SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      child: Row(
-                        children: [
-                          // Previous button
-                          if (_currentQuestionIndex > 0)
-                            Expanded(
-                              child: HydraButton(
-                                onPressed: () {
-                                  _pageController.previousPage(
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeInOut,
-                                  );
-                                },
-                                variant: HydraButtonVariant.secondary,
-                                child: Text(l10n.previous),
-                              ),
-                            ),
-
-                          if (_currentQuestionIndex > 0)
-                            const SizedBox(width: AppSpacing.md),
-
-                          // Complete button (on last question)
-                          if (_currentQuestionIndex == 13)
-                            Expanded(
-                              child: HydraButton(
-                                onPressed: isSaving ? null : _saveAssessment,
-                                isLoading: isSaving,
-                                child: Text(l10n.qolComplete),
-                              ),
-                            ),
-                        ],
+                  // (only show Complete button on last question)
+                  if (_currentQuestionIndex == 13)
+                    SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        child: HydraButton(
+                          onPressed: isSaving ? null : _saveAssessment,
+                          isLoading: isSaving,
+                          child: Text(l10n.qolComplete),
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
       ),

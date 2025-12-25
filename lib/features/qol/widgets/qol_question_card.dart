@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/theme/theme.dart';
-import 'package:hydracat/features/qol/models/qol_domain.dart';
 import 'package:hydracat/features/qol/models/qol_question.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/shared/widgets/cards/hydra_card.dart';
@@ -37,76 +36,41 @@ class QolQuestionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Domain badge
+          // Domain badge (removed - shown inline with progress)
           _buildDomainBadge(l10n),
-          const SizedBox(height: AppSpacing.lg),
 
           // Question text
           _buildQuestionText(l10n),
-          const SizedBox(height: AppSpacing.sm),
-
-          // Recall period reminder
-          _buildRecallPeriod(l10n),
-          const SizedBox(height: AppSpacing.xl),
+          const SizedBox(height: AppSpacing.md),
 
           // Response options (5 cards for scores 4→0)
           ..._buildResponseOptions(l10n),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.sm),
 
           // "Not sure" option
           _buildNotSureOption(l10n),
 
           // Bottom padding for scrollable content
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.md),
         ],
       ),
     );
   }
 
-  /// Builds the domain badge chip.
+  /// Builds the domain badge chip (removed - now shown inline with progress).
   Widget _buildDomainBadge(AppLocalizations l10n) {
-    final domainName = _getLocalizedString(
-      l10n,
-      QolDomain.getDisplayNameKey(question.domain) ?? '',
-    );
-
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Chip(
-        label: Text(
-          domainName,
-          style: AppTextStyles.caption.copyWith(
-            color: AppColors.primary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        backgroundColor: AppColors.primaryLight.withValues(alpha: 0.2),
-        side: BorderSide.none,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.xs,
-        ),
-      ),
-    );
+    return const SizedBox.shrink();
   }
 
   /// Builds the question text.
   Widget _buildQuestionText(AppLocalizations l10n) {
     return Text(
       _getLocalizedString(l10n, question.textKey),
-      style: AppTextStyles.h1,
-      textAlign: TextAlign.center,
-    );
-  }
-
-  /// Builds the recall period reminder.
-  Widget _buildRecallPeriod(AppLocalizations l10n) {
-    return Text(
-      l10n.qolRecallPeriod,
-      style: AppTextStyles.caption.copyWith(
-        color: AppColors.textSecondary,
+      style: AppTextStyles.h2.copyWith(
+        fontSize: 17,
+        height: 1.3,
       ),
-      textAlign: TextAlign.center,
+      textAlign: TextAlign.left,
     );
   }
 
@@ -118,13 +82,20 @@ class QolQuestionCard extends StatelessWidget {
       final labelKey = question.responseLabelKeys[score]!;
       final label = _getLocalizedString(l10n, labelKey);
 
+      // Parse label to separate primary and secondary text
+      final parsedLabel = _parseLabelText(label);
+
       return Padding(
         padding: const EdgeInsets.only(bottom: AppSpacing.sm),
         child: HydraCard(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.mdSm,
+          ),
           borderColor: isSelected ? AppColors.primary : AppColors.border,
           onTap: () => onResponseSelected(score),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: 24,
@@ -135,9 +106,7 @@ class QolQuestionCard extends StatelessWidget {
                     color: isSelected ? AppColors.primary : AppColors.border,
                     width: isSelected ? 2 : 1,
                   ),
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.surface,
+                  color: isSelected ? AppColors.primary : AppColors.surface,
                 ),
                 child: isSelected
                     ? const Icon(
@@ -147,13 +116,33 @@ class QolQuestionCard extends StatelessWidget {
                       )
                     : null,
               ),
-              const SizedBox(width: AppSpacing.sm),
+              const SizedBox(width: AppSpacing.mdSm),
               Expanded(
-                child: Text(
-                  label,
-                  style: AppTextStyles.body.copyWith(
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      parsedLabel.primary,
+                      style: AppTextStyles.body.copyWith(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                        height: 1.2,
+                      ),
+                    ),
+                    if (parsedLabel.secondary != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        parsedLabel.secondary!,
+                        style: AppTextStyles.body.copyWith(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.textSecondary,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ],
@@ -168,10 +157,14 @@ class QolQuestionCard extends StatelessWidget {
     final isSelected = currentResponse == null;
 
     return HydraCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.mdSm,
+      ),
       borderColor: isSelected ? AppColors.textSecondary : AppColors.border,
       onTap: () => onResponseSelected(null),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 24,
@@ -179,9 +172,8 @@ class QolQuestionCard extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: isSelected
-                    ? AppColors.textSecondary
-                    : AppColors.border,
+                color:
+                    isSelected ? AppColors.textSecondary : AppColors.border,
                 width: isSelected ? 2 : 1,
               ),
               color: isSelected ? AppColors.textSecondary : AppColors.surface,
@@ -194,19 +186,45 @@ class QolQuestionCard extends StatelessWidget {
                   )
                 : null,
           ),
-          const SizedBox(width: AppSpacing.sm),
+          const SizedBox(width: AppSpacing.mdSm),
           Expanded(
             child: Text(
               l10n.qolNotSure,
               style: AppTextStyles.body.copyWith(
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
                 color: AppColors.textSecondary,
+                height: 1.2,
               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// Parses label text to separate primary and secondary components.
+  ///
+  /// Format: "Primary text (secondary explanation)"
+  /// Returns a record with primary and optional secondary text.
+  ({String primary, String? secondary}) _parseLabelText(String label) {
+    // Find parentheses
+    final startParen = label.indexOf('(');
+    if (startParen == -1) {
+      // No secondary text
+      return (primary: label.trim(), secondary: null);
+    }
+
+    // Extract primary (everything before parenthesis)
+    final primary = label.substring(0, startParen).trim();
+
+    // Extract secondary (everything in parentheses, without the parentheses)
+    final endParen = label.lastIndexOf(')');
+    final secondary = endParen > startParen
+        ? label.substring(startParen + 1, endParen).trim()
+        : null;
+
+    return (primary: primary, secondary: secondary);
   }
 
   /// Helper method to get localized string from a key.

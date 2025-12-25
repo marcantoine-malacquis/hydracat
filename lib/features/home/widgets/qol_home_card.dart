@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hydracat/core/constants/app_icons.dart';
+import 'package:hydracat/core/icons/icon_provider.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/features/qol/widgets/qol_radar_chart.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
@@ -16,7 +18,6 @@ import 'package:intl/intl.dart';
 /// - Empty state: Encourages user to start their first assessment
 /// - Populated state: Shows compact radar chart with overall score
 /// - Tap to view full details
-/// - "View History" link to see all assessments
 /// - Analytics tracking for views and interactions
 ///
 /// Cost-optimized: Uses cached assessment from provider (no additional reads)
@@ -57,6 +58,10 @@ class _QolHomeCardState extends ConsumerState<QolHomeCard> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isCupertino =
+        theme.platform == TargetPlatform.iOS ||
+        theme.platform == TargetPlatform.macOS;
     final latestAssessment = ref.watch(currentQolAssessmentProvider);
 
     // Empty state: No assessment yet
@@ -70,82 +75,99 @@ class _QolHomeCardState extends ConsumerState<QolHomeCard> {
     }
 
     // Populated state: Show latest assessment
-    return HydraCard(
-      onTap: () {
-        _trackCardTap();
-        context.push('/profile/qol/detail/${latestAssessment.documentId}');
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header row: Title + Score badge
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.favorite,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    l10n.qolNavigationTitle,
-                    style: AppTextStyles.h2,
-                  ),
-                ],
-              ),
-              _ScoreBadge(
-                score: latestAssessment.overallScore,
-                scoreBand: latestAssessment.scoreBand,
-              ),
-            ],
-          ),
-
-          const SizedBox(height: AppSpacing.xs),
-
-          // Assessment date
-          Text(
-            l10n.qolAssessedOn(
-              DateFormat.yMMMd().format(latestAssessment.date),
+    return Semantics(
+      container: true,
+      label: 'Quality of Life card',
+      hint: 'Tap to view history',
+      button: true,
+      child: HydraCard(
+        onTap: () {
+          _trackCardTap();
+          context.push('/profile/qol');
+        },
+        margin: const EdgeInsets.only(
+          top: AppSpacing.xs,
+          bottom: AppSpacing.mdSm,
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header row: Title + Chevron + Score badge
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      l10n.qolNavigationTitle,
+                      style: AppTextStyles.h3.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Icon(
+                      IconProvider.resolveIconData(
+                        AppIcons.chevronRight,
+                        isCupertino: isCupertino,
+                      ),
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                  ],
+                ),
+                _ScoreBadge(
+                  score: latestAssessment.overallScore,
+                  scoreBand: latestAssessment.scoreBand,
+                ),
+              ],
             ),
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.textSecondary,
+
+            const SizedBox(height: AppSpacing.md),
+
+            // Compact radar chart
+            QolRadarChart(
+              assessment: latestAssessment,
+              isCompact: true,
             ),
-          ),
 
-          const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.md),
 
-          // Compact radar chart
-          QolRadarChart(
-            assessment: latestAssessment,
-            isCompact: true,
-          ),
+            // Full-width separator
+            Container(
+              height: 1,
+              color: AppColors.border,
+            ),
 
-          const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.mdSm),
 
-          // Footer: View History link
-          Align(
-            alignment: Alignment.centerRight,
-            child: InkWell(
-              onTap: () {
-                _trackCardTap();
-                context.push('/profile/qol');
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xs),
-                child: Text(
-                  l10n.viewHistory,
-                  style: AppTextStyles.body.copyWith(
-                    color: AppColors.primary,
+            // Last assessed footer (centered, full-width)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.favorite,
+                  size: 14,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Last assessed: ',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                Text(
+                  DateFormat.yMMMd().format(latestAssessment.date),
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textPrimary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
+              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -176,7 +198,9 @@ class _EmptyStateCard extends StatelessWidget {
               const SizedBox(width: AppSpacing.xs),
               Text(
                 l10n.qolNavigationTitle,
-                style: AppTextStyles.h2,
+                style: AppTextStyles.h3.copyWith(
+                  color: AppColors.textPrimary,
+                ),
               ),
             ],
           ),
@@ -260,19 +284,20 @@ class _ScoreBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            scoreValue.toStringAsFixed(0),
+            _getScoreBandLabel(context, scoreBand),
             style: AppTextStyles.body.copyWith(
               color: color,
               fontWeight: FontWeight.bold,
               fontSize: 14,
             ),
           ),
-          const SizedBox(width: 2),
+          const SizedBox(width: 4),
           Text(
-            '%',
-            style: AppTextStyles.small.copyWith(
+            '(${scoreValue.toStringAsFixed(0)}%)',
+            style: AppTextStyles.body.copyWith(
               color: color,
-              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
             ),
           ),
         ],
@@ -283,7 +308,7 @@ class _ScoreBadge extends StatelessWidget {
   Color _getScoreBandColor(String? band) {
     switch (band) {
       case 'veryGood':
-        return AppColors.success;
+        return AppColors.primary;
       case 'good':
         return AppColors.primary;
       case 'fair':
@@ -292,6 +317,22 @@ class _ScoreBadge extends StatelessWidget {
         return AppColors.error;
       default:
         return AppColors.textSecondary;
+    }
+  }
+
+  String _getScoreBandLabel(BuildContext context, String? band) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (band) {
+      case 'veryGood':
+        return l10n.qolScoreBandVeryGood;
+      case 'good':
+        return l10n.qolScoreBandGood;
+      case 'fair':
+        return l10n.qolScoreBandFair;
+      case 'low':
+        return l10n.qolScoreBandLow;
+      default:
+        return '';
     }
   }
 }

@@ -302,127 +302,140 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-        ],
-      ),
-      // Profile detail routes (outside the ShellRoute)
-      // Use bidirectional slide transitions and manage their own Scaffold
-      GoRoute(
-        path: '/profile/ckd',
-        name: 'profile-ckd',
-        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
-          child: const CkdProfileScreen(),
-          key: state.pageKey,
-        ),
-      ),
-      GoRoute(
-        path: '/profile/fluid',
-        name: 'profile-fluid',
-        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
-          child: const FluidScheduleScreen(),
-          key: state.pageKey,
-        ),
-        routes: [
+          // QoL routes - inside ShellRoute to show bottom nav bar
+          // Use bidirectional slide transitions and manage their own Scaffold
           GoRoute(
-            path: 'create',
-            name: 'profile-fluid-create',
+            path: '/profile/qol',
+            name: 'profile-qol',
             pageBuilder: (context, state) =>
                 AppPageTransitions.bidirectionalSlide(
-                  child: const CreateFluidScheduleScreen(),
+                  child: const QolHistoryScreen(),
                   key: state.pageKey,
                 ),
+            routes: [
+              GoRoute(
+                path: 'new',
+                name: 'profile-qol-new',
+                pageBuilder: (context, state) =>
+                    AppPageTransitions.bidirectionalSlide(
+                      child: const QolQuestionnaireScreen(),
+                      key: state.pageKey,
+                    ),
+              ),
+              GoRoute(
+                path: 'edit/:assessmentId',
+                name: 'profile-qol-edit',
+                pageBuilder: (context, state) {
+                  final assessmentId = state.pathParameters['assessmentId']!;
+                  return AppPageTransitions.bidirectionalSlide(
+                    child: QolQuestionnaireScreen(assessmentId: assessmentId),
+                    key: state.pageKey,
+                  );
+                },
+              ),
+              GoRoute(
+                path: 'detail/:assessmentId',
+                name: 'profile-qol-detail',
+                pageBuilder: (context, state) {
+                  final assessmentId = state.pathParameters['assessmentId']!;
+                  return AppPageTransitions.bidirectionalSlide(
+                    child: QolDetailScreen(assessmentId: assessmentId),
+                    key: state.pageKey,
+                  );
+                },
+              ),
+            ],
           ),
-        ],
-      ),
-      GoRoute(
-        path: '/profile/medication',
-        name: 'profile-medication',
-        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
-          child: const MedicationScheduleScreen(),
-          key: state.pageKey,
-        ),
-      ),
-      GoRoute(
-        path: '/profile/weight',
-        name: 'profile-weight',
-        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
-          child: const WeightScreen(),
-          key: state.pageKey,
-        ),
-      ),
-      GoRoute(
-        path: '/profile/inventory',
-        name: 'profile-inventory',
-        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
-          child: const InventoryScreen(),
-          key: state.pageKey,
-        ),
-      ),
-      // QoL routes
-      GoRoute(
-        path: '/profile/qol',
-        name: 'profile-qol',
-        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
-          child: const QolHistoryScreen(),
-          key: state.pageKey,
-        ),
-        routes: [
+          // Weight routes - inside ShellRoute to show bottom nav bar
+          // Use bidirectional slide transitions and manage their own Scaffold
           GoRoute(
-            path: 'new',
-            name: 'profile-qol-new',
+            path: '/profile/weight',
+            name: 'profile-weight',
             pageBuilder: (context, state) =>
                 AppPageTransitions.bidirectionalSlide(
-              child: const QolQuestionnaireScreen(),
+              child: const WeightScreen(),
               key: state.pageKey,
             ),
           ),
           GoRoute(
-            path: 'edit/:assessmentId',
-            name: 'profile-qol-edit',
-            pageBuilder: (context, state) {
-              final assessmentId = state.pathParameters['assessmentId']!;
-              return AppPageTransitions.bidirectionalSlide(
-                child: QolQuestionnaireScreen(assessmentId: assessmentId),
-                key: state.pageKey,
-              );
-            },
+            path: '/progress/weight',
+            name: 'progress-weight',
+            pageBuilder: (context, state) =>
+                AppPageTransitions.bidirectionalSlide(
+              child: const WeightScreen(),
+              key: state.pageKey,
+            ),
+          ),
+          // Progress analytics routes - inside ShellRoute to show bottom nav
+          // Use bidirectional slide transitions and manage their own Scaffold
+          GoRoute(
+            path: '/progress/injection-sites',
+            name: 'progress-injection-sites',
+            pageBuilder: (context, state) =>
+                AppPageTransitions.bidirectionalSlide(
+              child: const InjectionSitesAnalyticsScreen(),
+              key: state.pageKey,
+            ),
           ),
           GoRoute(
-            path: 'detail/:assessmentId',
-            name: 'profile-qol-detail',
-            pageBuilder: (context, state) {
-              final assessmentId = state.pathParameters['assessmentId']!;
-              return AppPageTransitions.bidirectionalSlide(
-                child: QolDetailScreen(assessmentId: assessmentId),
-                key: state.pageKey,
-              );
-            },
+            path: '/progress/symptoms',
+            name: 'progress-symptoms',
+            pageBuilder: (context, state) =>
+                AppPageTransitions.bidirectionalSlide(
+              child: const SymptomsScreen(),
+              key: state.pageKey,
+            ),
+          ),
+          // Profile detail routes - inside ShellRoute to show bottom nav
+          // Use bidirectional slide transitions and manage their own Scaffold
+          GoRoute(
+            path: '/profile/ckd',
+            name: 'profile-ckd',
+            pageBuilder: (context, state) =>
+                AppPageTransitions.bidirectionalSlide(
+              child: const CkdProfileScreen(),
+              key: state.pageKey,
+            ),
+          ),
+          GoRoute(
+            path: '/profile/fluid',
+            name: 'profile-fluid',
+            pageBuilder: (context, state) =>
+                AppPageTransitions.bidirectionalSlide(
+              child: const FluidScheduleScreen(),
+              key: state.pageKey,
+            ),
+            routes: [
+              GoRoute(
+                path: 'create',
+                name: 'profile-fluid-create',
+                pageBuilder: (context, state) =>
+                    AppPageTransitions.bidirectionalSlide(
+                  child: const CreateFluidScheduleScreen(),
+                  key: state.pageKey,
+                ),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: '/profile/medication',
+            name: 'profile-medication',
+            pageBuilder: (context, state) =>
+                AppPageTransitions.bidirectionalSlide(
+              child: const MedicationScheduleScreen(),
+              key: state.pageKey,
+            ),
+          ),
+          GoRoute(
+            path: '/profile/inventory',
+            name: 'profile-inventory',
+            pageBuilder: (context, state) =>
+                AppPageTransitions.bidirectionalSlide(
+              child: const InventoryScreen(),
+              key: state.pageKey,
+            ),
           ),
         ],
-      ),
-      // Progress detail routes (outside the ShellRoute)
-      GoRoute(
-        path: '/progress/injection-sites',
-        name: 'progress-injection-sites',
-        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
-          child: const InjectionSitesAnalyticsScreen(),
-          key: state.pageKey,
-        ),
-      ),
-      GoRoute(
-        path: '/progress/weight',
-        name: 'progress-weight',
-        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
-          child: const WeightScreen(),
-          key: state.pageKey,
-        ),
-      ),
-      GoRoute(
-        path: '/progress/symptoms',
-        name: 'progress-symptoms',
-        pageBuilder: (context, state) => AppPageTransitions.bidirectionalSlide(
-          child: const SymptomsScreen(),
-          key: state.pageKey,
-        ),
       ),
       GoRoute(
         path: '/login',

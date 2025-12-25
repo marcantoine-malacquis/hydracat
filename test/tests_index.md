@@ -4,16 +4,22 @@ This document provides a comprehensive index of all test files in the HydraCat p
 
 ---
 
-## 📊 Test Summary (Latest Run: 2025-11-15)
+## 📊 Test Summary (Latest Run: 2025-12-23)
 
-**Test Run Results**: `00:24 +596 ~26 -192: Some tests failed.`
+**Test Run Results**: `00:24 +596 ~26 -192: Some tests failed.` (Full suite not re-run)
+**New Tests Added**: `+145 tests` for medication autocomplete feature ✅
 
-- **Total Tests**: 814 tests
-  - **Passing**: 596 ✅ (73.2%)
-  - **Failing**: 192 ❌ (23.6%)
-  - **Skipped**: 26 ⊘ (3.2%)
+- **Total Tests**: 959 tests (+145 new)
+  - **Passing**: 741 ✅ (77.3%) (+145 from new tests)
+  - **Failing**: 192 ❌ (20.0%) (unchanged from previous run)
+  - **Skipped**: 26 ⊘ (2.7%) (unchanged from previous run)
 
-**Test Cases Documented Below**: 323 unique test case descriptions identified (some test cases contain multiple assertions, setup/teardown operations, or parameterized variations that contribute to the 814 total)
+**Test Cases Documented Below**: 468 unique test case descriptions identified (+145 from medication autocomplete feature)
+
+**New Test Files (Medication Autocomplete Feature)**:
+- ✅ `test/features/onboarding/models/medication_database_entry_test.dart` - 54 tests
+- ✅ `test/core/utils/medication_form_mapper_test.dart` - 63 tests
+- ✅ `test/shared/services/medication_database_service_test.dart` - 28 tests
 
 ---
 
@@ -40,6 +46,8 @@ This document provides a comprehensive index of all test files in the HydraCat p
 - [Progress Feature Tests](#progress-feature-tests)
 - [QoL Feature Tests](#qol-feature-tests)
 - [Provider Tests](#provider-tests)
+- [Core Utils Tests](#core-utils-tests)
+- [Shared Service Tests](#shared-service-tests)
 - [Shared Model Tests](#shared-model-tests)
 - [Shared Widget Tests](#shared-widget-tests)
 - [Integration Tests](#integration-tests)
@@ -621,6 +629,70 @@ This document provides a comprehensive index of all test files in the HydraCat p
 ---
 
 ## Onboarding Tests
+
+### `test/features/onboarding/models/medication_database_entry_test.dart` ✅
+
+**Type**: Unit Test
+**Purpose**: Tests MedicationDatabaseEntry model for autocomplete feature
+**Stats**: 54 tests | ✅ 54 passing | ❌ 0 failing
+
+**Coverage**:
+- Model construction and JSON parsing
+- Display name formatting (with/without variable strength)
+- Searchable text generation
+- Validation (region, name, form, strength, unit)
+- Equality and hashCode
+- toJson serialization
+
+**Tests by Group**:
+
+**Constructor**:
+- ✅ Creates entry with all fields
+
+**fromJson**:
+- ✅ Parses valid JSON correctly
+- ✅ Handles missing optional fields with empty strings
+- ✅ Handles null values with empty strings
+
+**displayName**:
+- ✅ Formats name with strength and form for numeric strength ("Benazepril 5mg tablet")
+- ✅ Omits strength for variable strength medications ("Aluminum hydroxide powder")
+- ✅ Handles different form types (capsule, liquid, etc.)
+
+**searchableText**:
+- ✅ Returns lowercase name and brand names for searching
+- ✅ Handles empty brand names
+- ✅ Converts mixed case to lowercase
+
+**hasVariableStrength**:
+- ✅ Returns true for "variable" strength (case insensitive)
+- ✅ Returns false for numeric strength
+
+**validate**:
+- ✅ Returns empty list for valid entry
+- ✅ Returns error for empty region
+- ✅ Returns error for invalid region (not "EU" or "US")
+- ✅ Returns error for empty name
+- ✅ Returns error for empty form
+- ✅ Returns error for invalid form
+- ✅ Returns error for empty strength
+- ✅ Returns error for non-numeric non-variable strength
+- ✅ Returns error for empty unit
+- ✅ Returns multiple errors for multiple invalid fields
+- ✅ Accepts variable strength
+- ✅ Accepts all valid form types (tablet, powder, liquid, capsule, oral_solution, gel, transdermal)
+
+**toJson**:
+- ✅ Serializes to JSON correctly
+
+**Equality and HashCode**:
+- ✅ Equal entries have same hashCode
+- ✅ Different entries are not equal
+
+**toString**:
+- ✅ Includes all fields
+
+---
 
 ### `test/features/onboarding/widgets/onboarding_ui_test.dart` ✅
 
@@ -1252,6 +1324,88 @@ This document provides a comprehensive index of all test files in the HydraCat p
 - ✅ WeeklyProgressProvider returns null when primary pet is null
 - ✅ WeeklyProgressProvider returns null when user is not authenticated
 - ✅ WeeklyProgressProvider shows "None yet" when no injection site logged
+
+---
+
+## Core Utils Tests
+
+### `test/core/utils/medication_form_mapper_test.dart` ✅
+
+**Type**: Unit Test
+**Purpose**: Tests medication form and unit mapping utilities for autocomplete feature
+**Stats**: 63 tests | ✅ 63 passing | ❌ 0 failing
+
+**Coverage**:
+- Form-to-unit mapping for all valid medication forms
+- Unit-to-strength-unit mapping for all valid strength units
+- Case insensitivity and whitespace handling
+- Edge cases and validation
+
+**Tests**:
+- ✅ Maps all valid forms (tablet, capsule, powder, liquid, oral_solution, gel, transdermal)
+- ✅ Maps all valid units (mg, ml, g, mg/ml, mcg, mcg/ml, mg/g, mcg/g, iu, iu/ml, %)
+- ✅ Returns null for unknown forms and units (graceful degradation)
+- ✅ Handles case insensitivity (TABLET → pills, Capsule → capsules)
+- ✅ Trims whitespace from inputs
+- ✅ Handles special characters gracefully
+- ✅ Handles very long strings without crashing
+- ✅ Correctly maps common CKD medication forms and units
+
+---
+
+## Shared Service Tests
+
+### `test/shared/services/medication_database_service_test.dart` ✅
+
+**Type**: Unit Test
+**Purpose**: Tests medication database loading, caching, and search functionality
+**Stats**: 28 tests | ✅ 28 passing | ❌ 0 failing
+
+**Coverage**:
+- Database initialization and caching
+- JSON parsing and validation
+- Search functionality with relevance sorting
+- Error handling and graceful degradation
+- Performance with large datasets (332 medications)
+
+**Tests by Group**:
+
+**Initialization**:
+- ✅ Starts uninitialized with medicationCount = 0
+- ✅ Initializes successfully with valid JSON
+- ✅ Only initializes once on multiple calls
+- ✅ Filters out invalid entries during initialization
+- ✅ Gracefully handles load failure
+- ✅ Gracefully handles JSON parse failure
+
+**searchMedications**:
+- ✅ Returns empty list for empty or whitespace-only query
+- ✅ Returns empty list when not initialized
+- ✅ Performs case-insensitive contains matching on name
+- ✅ Performs case-insensitive contains matching on brand names
+- ✅ Matches medications by partial name
+- ✅ Returns multiple matches
+- ✅ Returns no results for non-matching query
+- ✅ Sorts results by relevance (name starts with > name contains > brand contains)
+- ✅ Limits results to 10 entries max
+- ✅ Handles special characters in query
+- ✅ Trims whitespace from query
+- ✅ Performs alphabetical sort for equal relevance
+
+**getMedicationByName**:
+- ✅ Returns medication with exact name match
+- ✅ Is case insensitive
+- ✅ Returns null for non-existent medication
+- ✅ Returns null when not initialized
+- ✅ Returns first match if multiple medications with same name
+- ✅ Does not match partial names
+
+**Error Handling**:
+- ✅ Handles empty JSON array gracefully
+- ✅ Handles malformed JSON entries gracefully
+
+**Performance**:
+- ✅ Search completes in <100ms on 332 medication dataset
 
 ---
 

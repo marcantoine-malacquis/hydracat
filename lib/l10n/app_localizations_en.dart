@@ -58,6 +58,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get close => 'Close';
 
   @override
+  String get exit => 'Exit';
+
+  @override
   String get previous => 'Previous';
 
   @override
@@ -240,7 +243,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get medicationNameLabel => 'Medication Name *';
 
   @override
-  String get medicationNameHint => 'e.g., Benazepril, Furosemide';
+  String get medicationNameHint => 'e.g., Benazepril, Epakitin';
 
   @override
   String get medicationStrengthLabel => 'Medication Strength (optional)';
@@ -360,6 +363,23 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get errorSavingMedication =>
       'Failed to save medication. Please check all fields and try again.';
+
+  @override
+  String get medicationSearchPlaceholder => 'Search medications...';
+
+  @override
+  String get medicationNotInDatabase =>
+      'Medication not found? You can still add it manually.';
+
+  @override
+  String get medicationSuggestionsTitle => 'Suggested Medications';
+
+  @override
+  String get medicationDatabaseLoadError =>
+      'Could not load medication database. Manual entry is still available.';
+
+  @override
+  String get medicationAutocompleteHint => 'Start typing to see suggestions';
 
   @override
   String get fluidTherapySetupTitle => 'Fluid Therapy Setup';
@@ -1771,6 +1791,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get qolTrendChartTitle => 'QoL Trends';
+
+  @override
+  String qolQuestionProgress(int current, int total) {
+    return 'Question $current of $total';
+  }
 
   @override
   String get qolComplete => 'Complete';

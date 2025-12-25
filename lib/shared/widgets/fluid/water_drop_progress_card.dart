@@ -126,7 +126,10 @@ class _WaterDropProgressCardState
       container: true,
       label: 'Weekly fluid intake progress card',
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: AppSpacing.mdSm),
+        margin: const EdgeInsets.only(
+          top: AppSpacing.mdSm,
+          bottom: AppSpacing.xs,
+        ),
         padding: widget.padding ?? const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,

@@ -51,7 +51,7 @@ class DosageTextUtils {
   /// Returns the plural form of a unit
   static String _getPluralUnit(String unitShortForm) {
     // Countable units that get pluralized
-    return switch (unitShortForm) {
+    return switch (unitShortForm.toLowerCase()) {
       'pill' => 'pills',
       'capsule' => 'capsules',
       'drop' => 'drops',

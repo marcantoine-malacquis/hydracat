@@ -6,7 +6,10 @@ import 'package:hydracat/core/extensions/build_context_extensions.dart';
 import 'package:hydracat/core/theme/theme.dart';
 import 'package:hydracat/core/utils/date_utils.dart';
 import 'package:hydracat/core/utils/dosage_utils.dart';
+import 'package:hydracat/core/utils/medication_form_mapper.dart';
+import 'package:hydracat/features/onboarding/models/medication_database_entry.dart';
 import 'package:hydracat/features/onboarding/models/treatment_data.dart';
+import 'package:hydracat/features/onboarding/widgets/medication_autocomplete_field.dart';
 import 'package:hydracat/features/onboarding/widgets/time_picker_group.dart';
 import 'package:hydracat/l10n/app_localizations.dart';
 import 'package:hydracat/shared/widgets/accessibility/touch_target_icon_button.dart';
@@ -23,6 +26,7 @@ Future<MedicationData?> showAddMedicationBottomSheet({
   return showHydraBottomSheet<MedicationData>(
     context: context,
     isScrollControlled: true,
+    useRootNavigator: true,
     isDismissible: false, // Handle dismissal manually for unsaved changes
     builder: (context) => AddMedicationBottomSheet(
       initialMedication: initialMedication,
@@ -76,6 +80,10 @@ class _AddMedicationBottomSheetState extends State<AddMedicationBottomSheet> {
 
   // Form data
   String _medicationName = '';
+  // Generic name for data integrity (if from database)
+  String? _canonicalGenericName;
+  // Whether medication was selected from database
+  bool _isDatabaseLinked = false;
   // Start empty so validation blocks progression until user enters a value
   String _dosage = '';
   double? _dosageValue;
@@ -381,8 +389,8 @@ class _AddMedicationBottomSheetState extends State<AddMedicationBottomSheet> {
         ),
         const SizedBox(height: AppSpacing.lg),
 
-        // Medication Name Field with inline label
-        HydraTextFormField(
+        // Medication Name Field with autocomplete
+        MedicationAutocompleteField(
           controller: _nameController,
           decoration: InputDecoration(
             hintText: l10n.medicationNameHint,
@@ -404,10 +412,43 @@ class _AddMedicationBottomSheetState extends State<AddMedicationBottomSheet> {
               ),
             ),
           ),
-          textCapitalization: TextCapitalization.words,
           onChanged: (value) {
             setState(() {
               _medicationName = value.trim();
+              _hasUnsavedChanges = true;
+            });
+          },
+          onMedicationSelected: (MedicationDatabaseEntry medication) {
+            setState(() {
+              // Store canonical generic name for data integrity
+              // Note: _medicationName is already set by autocomplete field's
+              // displayStringForOption (based on search intent)
+              _canonicalGenericName = medication.name;
+              _isDatabaseLinked = true;
+
+              // Auto-fill strength if not variable
+              if (!medication.hasVariableStrength) {
+                _strengthAmount = medication.strength;
+                _strengthAmountController.text = medication.strength;
+              }
+
+              // Auto-fill strength unit
+              final mappedStrengthUnit =
+                  MedicationFormMapper.mapUnitToStrengthUnit(
+                medication.unit,
+              );
+              if (mappedStrengthUnit != null) {
+                _strengthUnit = mappedStrengthUnit;
+              }
+
+              // Auto-fill dosage unit (from form field)
+              final mappedDosageUnit = MedicationFormMapper.mapFormToUnit(
+                medication.form,
+              );
+              if (mappedDosageUnit != null) {
+                _selectedUnit = mappedDosageUnit;
+              }
+
               _hasUnsavedChanges = true;
             });
           },
@@ -1098,6 +1139,8 @@ class _AddMedicationBottomSheetState extends State<AddMedicationBottomSheet> {
         customStrengthUnit: _customStrengthUnit.isEmpty
             ? null
             : _customStrengthUnit,
+        canonicalGenericName: _canonicalGenericName,
+        isDatabaseLinked: _isDatabaseLinked,
       );
 
       // Return medication data

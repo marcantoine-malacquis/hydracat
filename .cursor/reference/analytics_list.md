@@ -1,6 +1,6 @@
 # Hydracat Analytics Implementation Reference
 
-**Last Updated:** 2025-11-19
+**Last Updated:** 2025-12-23
 **Status:**  Verified and Documented
 
 ---
@@ -23,7 +23,7 @@ This document provides a comprehensive reference for all Google Analytics (Fireb
 
 ### Key Metrics
 
-- **Total Event Types:** 61
+- **Total Event Types:** 66
 - **Total User Properties:** 2
 - **Total Parameters:** 40+
 - **Files with Analytics Calls:** 17
@@ -80,9 +80,9 @@ Events related to user authentication, account management, and session lifecycle
 
 Events tracking new user onboarding flow and completion.
 
-### 3. Treatment Logging (13 events)
+### 3. Treatment Logging (18 events)
 
-Events tracking medication and fluid treatment logging operations.
+Events tracking medication and fluid treatment logging operations, including medication autocomplete feature usage.
 
 ### 4. Notifications & Reminders (21 events)
 
@@ -397,6 +397,63 @@ Events monitoring cache performance and optimization.
 
 **Implementation:** Via `trackFeatureUsed()` with feature name `'duplicateDetected'`
 **Usage:** `logging_provider.dart:1372-1385`
+
+---
+
+#### `medication_autocomplete_search`
+**Trigger:** User types in medication search field with autocomplete
+**Parameters:**
+- `query_length` (int): Length of search query
+- `results_count` (int): Number of results returned from database
+
+**Implementation:** Not yet implemented (future enhancement)
+**Note:** Tracks search usage to understand autocomplete adoption and database coverage
+
+---
+
+#### `medication_autocomplete_selected`
+**Trigger:** User selects a medication suggestion from autocomplete dropdown
+**Parameters:**
+- `medication_name` (string): Selected medication name
+- `has_variable_strength` (bool): Whether strength is "variable"
+- `category` (string): Medication category (e.g., "phosphate_binder", "ACE_inhibitor")
+- `region` (string): Medication region ("EU" or "US")
+
+**Implementation:** Not yet implemented (future enhancement)
+**Note:** Tracks which medications are commonly selected to optimize database
+
+---
+
+#### `medication_manual_entry`
+**Trigger:** User proceeds with medication entry without selecting autocomplete suggestion
+**Parameters:**
+- `query_prefix` (string): First 3 characters of typed medication name (privacy-safe)
+- `had_results` (bool): Whether autocomplete showed any results
+
+**Implementation:** Not yet implemented (future enhancement)
+**Note:** Helps identify medication database gaps for future additions
+
+---
+
+#### `medication_database_load_success`
+**Trigger:** Medication database successfully loads from JSON asset
+**Parameters:**
+- `medication_count` (int): Total medications loaded
+- `load_duration_ms` (int): Time taken to load and parse database
+
+**Implementation:** Not yet implemented (future enhancement)
+**Note:** Monitors database loading performance across devices
+
+---
+
+#### `medication_database_load_failure`
+**Trigger:** Medication database fails to load from JSON asset
+**Parameters:**
+- `error_type` (string): Error category (e.g., "parse_error", "file_not_found")
+- `error_message` (string): Error description (sanitized)
+
+**Implementation:** Not yet implemented (future enhancement)
+**Note:** Tracks database loading failures for reliability monitoring
 
 ---
 

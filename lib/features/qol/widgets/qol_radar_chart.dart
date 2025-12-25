@@ -22,8 +22,8 @@ import 'package:hydracat/shared/widgets/cards/hydra_card.dart';
 /// custom painting.
 ///
 /// Supports two variants:
-/// - Full-size: 280px height, full domain names, legend
-/// - Compact: 180px height, abbreviated names, no legend (for home screen)
+/// - Full-size: 280px height, full domain names
+/// - Compact: 180px height, abbreviated names (for home screen)
 class QolRadarChart extends StatelessWidget {
   /// Creates a QoL radar chart.
   const QolRadarChart({
@@ -49,7 +49,7 @@ class QolRadarChart extends StatelessWidget {
     if (allNull) {
       return HydraCard(
         child: SizedBox(
-          height: isCompact ? 180 : 280,
+          height: 280,
           child: Center(
             child: Text(
               l10n.qolInsufficientData,
@@ -62,35 +62,35 @@ class QolRadarChart extends StatelessWidget {
       );
     }
 
-    return HydraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Title (only for full-size)
-          if (!isCompact) ...[
-            Text(
-              l10n.qolRadarChartTitle,
-              style: AppTextStyles.h3,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.md),
-          ],
-
-          // Radar chart
-          SizedBox(
-            height: isCompact ? 180 : 280,
-            child: _buildRadarChart(context, scores),
+    final chartContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Title (only for full-size)
+        if (!isCompact) ...[
+          Text(
+            l10n.qolRadarChartTitle,
+            style: AppTextStyles.h3,
+            textAlign: TextAlign.center,
           ),
-
-          // Legend (only for full-size)
-          if (!isCompact) ...[
-            const SizedBox(height: AppSpacing.md),
-            _buildLegend(context, scores),
-          ],
+          const SizedBox(height: AppSpacing.md),
         ],
-      ),
+
+        // Radar chart
+        SizedBox(
+          height: 280,
+          child: _buildRadarChart(context, scores),
+        ),
+      ],
     );
+
+    // Only wrap in HydraCard when not in compact mode
+    // (compact mode is used in home screen which already has a card)
+    if (isCompact) {
+      return chartContent;
+    }
+
+    return HydraCard(child: chartContent);
   }
 
   /// Builds the radar chart.
@@ -100,12 +100,9 @@ class QolRadarChart extends StatelessWidget {
   ) {
     final l10n = context.l10n;
 
-    // Get domain names
+    // Use full domain names with line breaks for multi-word labels
     final domainLabels = QolDomain.all.map((domain) {
-      if (isCompact) {
-        return _getDomainShortName(l10n, domain);
-      }
-      return _getDomainFullName(l10n, domain);
+      return _getDomainFullNameWithLineBreaks(l10n, domain);
     }).toList();
 
     // Convert scores to radar data (replace null with 0 for visualization)
@@ -136,15 +133,20 @@ class QolRadarChart extends StatelessWidget {
             if (index >= domainLabels.length) {
               return const RadarChartTitle(text: '');
             }
+            // Use angle: 0 to make all labels horizontal for better readability
             return RadarChartTitle(
               text: domainLabels[index],
-              angle: angle,
+              // Increased offset for multi-line text
+              positionPercentageOffset: 0.2,
             );
           },
           titleTextStyle: AppTextStyles.small.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w500,
+            height: 1.2, // Line height for multi-line labels
           ),
+          // Position labels further from chart
+          titlePositionPercentageOffset: 0.2,
           dataSets: [
             RadarDataSet(
               fillColor: AppColors.primary.withValues(alpha: 0.2),
@@ -161,84 +163,25 @@ class QolRadarChart extends StatelessWidget {
     );
   }
 
-  /// Builds the legend showing domain names and scores.
-  Widget _buildLegend(
-    BuildContext context,
-    Map<String, double?> scores,
+  /// Gets the full domain name with line breaks for multi-word labels.
+  /// Used for radar chart labels to improve readability.
+  String _getDomainFullNameWithLineBreaks(
+    AppLocalizations l10n,
+    String domain,
   ) {
-    final l10n = context.l10n;
-
-    return Wrap(
-      spacing: AppSpacing.md,
-      runSpacing: AppSpacing.sm,
-      children: QolDomain.all.map((domain) {
-        final score = scores[domain];
-        final displayName = _getDomainFullName(l10n, domain);
-        final isLowConfidence = score == null;
-
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Color indicator
-            Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isLowConfidence
-                    ? AppColors.textTertiary
-                    : AppColors.primary,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            // Domain name and score
-            Text(
-              isLowConfidence
-                  ? '$displayName: ${l10n.qolInsufficientData}'
-                  : '$displayName: ${score.round()}',
-              style: AppTextStyles.caption.copyWith(
-                color: isLowConfidence
-                    ? AppColors.textSecondary
-                    : AppColors.textPrimary,
-              ),
-            ),
-          ],
-        );
-      }).toList(),
-    );
-  }
-
-  /// Gets the full domain name from localization.
-  String _getDomainFullName(AppLocalizations l10n, String domain) {
     switch (domain) {
       case QolDomain.vitality:
         return l10n.qolDomainVitality;
       case QolDomain.comfort:
         return l10n.qolDomainComfort;
       case QolDomain.emotional:
-        return l10n.qolDomainEmotional;
+        // Split "Emotional Wellbeing" into two lines
+        return 'Emotional\nWellbeing';
       case QolDomain.appetite:
         return l10n.qolDomainAppetite;
       case QolDomain.treatmentBurden:
-        return l10n.qolDomainTreatmentBurden;
-      default:
-        return domain;
-    }
-  }
-
-  /// Gets the abbreviated domain name from localization.
-  String _getDomainShortName(AppLocalizations l10n, String domain) {
-    switch (domain) {
-      case QolDomain.vitality:
-        return l10n.qolDomainVitalityShort;
-      case QolDomain.comfort:
-        return l10n.qolDomainComfortShort;
-      case QolDomain.emotional:
-        return l10n.qolDomainEmotionalShort;
-      case QolDomain.appetite:
-        return l10n.qolDomainAppetiteShort;
-      case QolDomain.treatmentBurden:
-        return l10n.qolDomainTreatmentBurdenShort;
+        // Split "Treatment Burden" into two lines
+        return 'Treatment\nBurden';
       default:
         return domain;
     }
