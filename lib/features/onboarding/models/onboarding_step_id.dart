@@ -49,6 +49,30 @@ class MedicalInfoStepId extends OnboardingStepId {
   const MedicalInfoStepId() : super('medical_info');
 }
 
+/// Pet name and gender step - basic identity information
+class PetNameGenderStepId extends OnboardingStepId {
+  /// Creates a [PetNameGenderStepId]
+  const PetNameGenderStepId() : super('pet_name_gender');
+}
+
+/// Pet date of birth step - age information
+class PetDateOfBirthStepId extends OnboardingStepId {
+  /// Creates a [PetDateOfBirthStepId]
+  const PetDateOfBirthStepId() : super('pet_date_of_birth');
+}
+
+/// Pet breed step - breed information (optional)
+class PetBreedStepId extends OnboardingStepId {
+  /// Creates a [PetBreedStepId]
+  const PetBreedStepId() : super('pet_breed');
+}
+
+/// Pet weight step - weight information (optional)
+class PetWeightStepId extends OnboardingStepId {
+  /// Creates a [PetWeightStepId]
+  const PetWeightStepId() : super('pet_weight');
+}
+
 /// Completion step - success and next steps
 class CompletionStepId extends OnboardingStepId {
   /// Creates a [CompletionStepId]
@@ -63,8 +87,21 @@ class OnboardingSteps {
   /// Welcome step ID
   static const welcome = WelcomeStepId();
 
-  /// Pet basics step ID
+  /// Pet basics step ID (deprecated - replaced by split steps)
+  @Deprecated('Use petNameGender, petDateOfBirth, petBreed, petWeight instead')
   static const petBasics = PetBasicsStepId();
+
+  /// Pet name and gender step ID
+  static const petNameGender = PetNameGenderStepId();
+
+  /// Pet date of birth step ID
+  static const petDateOfBirth = PetDateOfBirthStepId();
+
+  /// Pet breed step ID
+  static const petBreed = PetBreedStepId();
+
+  /// Pet weight step ID
+  static const petWeight = PetWeightStepId();
 
   /// Medical info step ID
   static const medicalInfo = MedicalInfoStepId();
@@ -75,7 +112,10 @@ class OnboardingSteps {
   /// All steps in default order
   static const List<OnboardingStepId> all = [
     welcome,
-    petBasics,
+    petNameGender,
+    petDateOfBirth,
+    petBreed,
+    petWeight,
     medicalInfo,
     completion,
   ];

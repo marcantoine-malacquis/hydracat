@@ -25,6 +25,7 @@
   "getStarted": "Get Started",
   "goBack": "Go Back",
   "continue_": "Continue",
+  "continueButton": "Continue",
   "close": "Close",
   "exit": "Exit",
   "previous": "Previous",
@@ -32,6 +33,7 @@
   "discard": "Discard",
   "discardChanges": "Discard Changes?",
   "discardChangesMessage": "You have unsaved changes. Are you sure you want to discard them?",
+  "optional": "optional",
 
   "@_COMMON_MESSAGES": {},
   "loading": "Loading...",
@@ -71,13 +73,16 @@
   "@petBasicsTitle": {
     "description": "Title for pet basics screen"
   },
-  "petNameLabel": "Pet Name *",
+  "petNameLabel": "What is your cat's name?",
   "petNameHint": "Enter your cat's name",
-  "petDateOfBirthLabel": "Date of Birth *",
+  "petDateOfBirthLabel": "Date of Birth",
   "selectDateOfBirth": "Select date of birth",
-  "petGenderLabel": "Gender *",
+  "petGenderLabel": "Gender",
+  "genderMale": "Male",
+  "genderFemale": "Female",
   "petBreedLabel": "Breed",
   "petBreedHint": "Enter breed (optional)",
+  "petWeightLabel": "Weight",
   "errorSavingPetInfo": "Error saving pet information: {error}",
   "@errorSavingPetInfo": {
     "description": "Error message when saving pet information fails",
@@ -123,6 +128,46 @@
   "petWeightUnrealistic": "Weight seems unrealistic (over 15kg for a cat)",
   "@petWeightUnrealistic": {
     "description": "Error message when weight seems too high for a cat"
+  },
+
+  "@_ONBOARDING_PET_NAME_GENDER": {},
+  "petNameGenderTitle": "Pet Information",
+  "@petNameGenderTitle": {
+    "description": "Title for pet name and gender screen"
+  },
+  "petNameGenderQuestion": "What is your cat's name?",
+  "@petNameGenderQuestion": {
+    "description": "Main question on pet name and gender screen"
+  },
+
+  "@_ONBOARDING_PET_DATE_OF_BIRTH": {},
+  "petDateOfBirthTitle": "Date of Birth",
+  "@petDateOfBirthTitle": {
+    "description": "Title for pet date of birth screen"
+  },
+  "petDateOfBirthQuestion": "When was your cat born?",
+  "@petDateOfBirthQuestion": {
+    "description": "Main question on pet date of birth screen"
+  },
+
+  "@_ONBOARDING_PET_BREED": {},
+  "petBreedTitle": "Breed",
+  "@petBreedTitle": {
+    "description": "Title for pet breed screen"
+  },
+  "petBreedQuestion": "What breed is your cat?",
+  "@petBreedQuestion": {
+    "description": "Main question on pet breed screen"
+  },
+
+  "@_ONBOARDING_PET_WEIGHT": {},
+  "petWeightTitle": "Weight",
+  "@petWeightTitle": {
+    "description": "Title for pet weight screen"
+  },
+  "petWeightQuestion": "How much does your cat weigh?",
+  "@petWeightQuestion": {
+    "description": "Main question on pet weight screen"
   },
 
   "@_ONBOARDING_MEDICAL_INFO": {},

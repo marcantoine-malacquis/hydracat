@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:hydracat/core/theme/theme.dart';
-import 'package:hydracat/shared/widgets/accessibility/hydra_touch_target.dart';
+import 'package:hydracat/shared/widgets/widgets.dart';
 
-/// A gender selection widget with toggle buttons for male/female selection
+/// A gender selection widget with segmented control for male/female selection
 class GenderSelector extends StatelessWidget {
   /// Creates a [GenderSelector]
   const GenderSelector({
     required this.selectedGender,
     required this.onGenderChanged,
     super.key,
+    this.maleLabel = 'Male',
+    this.femaleLabel = 'Female',
     this.errorText,
   });
 
@@ -18,34 +20,39 @@ class GenderSelector extends StatelessWidget {
   /// Callback when gender selection changes
   final ValueChanged<String> onGenderChanged;
 
+  /// Label for male option
+  final String maleLabel;
+
+  /// Label for female option
+  final String femaleLabel;
+
   /// Error text to display
   final String? errorText;
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _GenderButton(
-                label: 'Male',
-                value: 'male',
-                isSelected: selectedGender == 'male',
-                onTap: () => onGenderChanged('male'),
+        // Center the segmented control with reasonable width
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: 280, // Reasonable width for two options
+            ),
+            child: HydraSlidingSegmentedControl<String>(
+              segments: {
+                'male': Text(maleLabel),
+                'female': Text(femaleLabel),
+              },
+              value: selectedGender ?? 'male',
+              onChanged: onGenderChanged,
+              height: 44, // Minimum touch target (WCAG AA)
+              borderRadius: BorderRadius.circular(
+                AppBorderRadius.button,
               ),
             ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: _GenderButton(
-                label: 'Female',
-                value: 'female',
-                isSelected: selectedGender == 'female',
-                onTap: () => onGenderChanged('female'),
-              ),
-            ),
-          ],
+          ),
         ),
         if (errorText != null) ...[
           const SizedBox(height: AppSpacing.sm),
@@ -54,55 +61,10 @@ class GenderSelector extends StatelessWidget {
             style: AppTextStyles.caption.copyWith(
               color: AppColors.error,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ],
-    );
-  }
-}
-
-/// Internal gender button widget
-class _GenderButton extends StatelessWidget {
-  const _GenderButton({
-    required this.label,
-    required this.value,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final String value;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return HydraTouchTarget(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeInOut,
-          height: AppSpacing.minTouchTarget,
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : AppColors.surface,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.border,
-              width: isSelected ? 2 : 1,
-            ),
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: AppTextStyles.body.copyWith(
-                color: isSelected ? Colors.white : AppColors.textPrimary,
-                fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

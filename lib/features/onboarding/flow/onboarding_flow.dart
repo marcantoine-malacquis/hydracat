@@ -59,11 +59,14 @@ class OnboardingFlow implements navigation_resolver.OnboardingFlowInterface {
 
 /// Default onboarding flow configuration
 ///
-/// Defines the standard 4-step onboarding flow:
+/// Defines the standard 7-step onboarding flow:
 /// 1. Welcome - Introduction with skip option
-/// 2. Pet Basics - Required pet information (name, age, gender)
-/// 3. Medical Info - Optional CKD medical information
-/// 4. Completion - Final step before creating pet profile
+/// 2. Pet Name & Gender - Basic identity information (required)
+/// 3. Pet Date of Birth - Age information (required)
+/// 4. Pet Breed - Breed information (optional)
+/// 5. Pet Weight - Weight information (optional)
+/// 6. Medical Info - Optional CKD medical information
+/// 7. Completion - Final step before creating pet profile
 final defaultOnboardingFlow = OnboardingFlow(const [
   // Step 1: Welcome
   OnboardingStepConfig(
@@ -75,17 +78,46 @@ final defaultOnboardingFlow = OnboardingFlow(const [
     canGoBack: false,
   ),
 
-  // Step 2: Pet Basics (Required)
+  // Step 2: Pet Name & Gender (Required)
   OnboardingStepConfig(
-    id: OnboardingSteps.petBasics,
+    id: OnboardingSteps.petNameGender,
     displayName: 'Pet Information',
-    route: '/onboarding/basics',
-    analyticsEventName: 'onboarding_basics_viewed',
-    isCheckpoint: true, // Auto-save after this step
-    validator: PetBasicsValidator(),
+    route: '/onboarding/pet-name-gender',
+    analyticsEventName: 'onboarding_pet_name_gender_viewed',
+    validator: PetNameGenderValidator(),
   ),
 
-  // Step 3: CKD Medical Info (Optional)
+  // Step 3: Pet Date of Birth (Required)
+  OnboardingStepConfig(
+    id: OnboardingSteps.petDateOfBirth,
+    displayName: 'Date of Birth',
+    route: '/onboarding/pet-dob',
+    analyticsEventName: 'onboarding_pet_dob_viewed',
+    validator: PetDobValidator(),
+  ),
+
+  // Step 4: Pet Breed (Optional)
+  OnboardingStepConfig(
+    id: OnboardingSteps.petBreed,
+    displayName: 'Breed',
+    route: '/onboarding/pet-breed',
+    analyticsEventName: 'onboarding_pet_breed_viewed',
+    canSkip: true,
+    validator: PetBreedValidator(),
+  ),
+
+  // Step 5: Pet Weight (Optional)
+  OnboardingStepConfig(
+    id: OnboardingSteps.petWeight,
+    displayName: 'Weight',
+    route: '/onboarding/pet-weight',
+    analyticsEventName: 'onboarding_pet_weight_viewed',
+    canSkip: true,
+    isCheckpoint: true, // Auto-save after all pet basic info collected
+    validator: PetWeightValidator(),
+  ),
+
+  // Step 6: CKD Medical Info (Optional)
   OnboardingStepConfig(
     id: OnboardingSteps.medicalInfo,
     displayName: 'Medical Information',
@@ -94,7 +126,7 @@ final defaultOnboardingFlow = OnboardingFlow(const [
     canSkip: true,
   ),
 
-  // Step 4: Completion
+  // Step 7: Completion
   OnboardingStepConfig(
     id: OnboardingSteps.completion,
     displayName: 'Complete',

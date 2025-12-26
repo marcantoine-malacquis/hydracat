@@ -55,6 +55,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get continue_ => 'Continue';
 
   @override
+  String get continueButton => 'Continue';
+
+  @override
   String get close => 'Close';
 
   @override
@@ -75,6 +78,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get discardChangesMessage =>
       'You have unsaved changes. Are you sure you want to discard them?';
+
+  @override
+  String get optional => 'optional';
 
   @override
   String get loading => 'Loading...';
@@ -119,25 +125,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get petBasicsTitle => 'Tell us about your cat';
 
   @override
-  String get petNameLabel => 'Pet Name *';
+  String get petNameLabel => 'What is your cat\'s name?';
 
   @override
   String get petNameHint => 'Enter your cat\'s name';
 
   @override
-  String get petDateOfBirthLabel => 'Date of Birth *';
+  String get petDateOfBirthLabel => 'Date of Birth';
 
   @override
   String get selectDateOfBirth => 'Select date of birth';
 
   @override
-  String get petGenderLabel => 'Gender *';
+  String get petGenderLabel => 'Gender';
+
+  @override
+  String get genderMale => 'Male';
+
+  @override
+  String get genderFemale => 'Female';
 
   @override
   String get petBreedLabel => 'Breed';
 
   @override
   String get petBreedHint => 'Enter breed (optional)';
+
+  @override
+  String get petWeightLabel => 'Weight';
 
   @override
   String errorSavingPetInfo(String error) {
@@ -171,6 +186,30 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get petWeightUnrealistic =>
       'Weight seems unrealistic (over 15kg for a cat)';
+
+  @override
+  String get petNameGenderTitle => 'Pet Information';
+
+  @override
+  String get petNameGenderQuestion => 'What is your cat\'s name?';
+
+  @override
+  String get petDateOfBirthTitle => 'Date of Birth';
+
+  @override
+  String get petDateOfBirthQuestion => 'When was your cat born?';
+
+  @override
+  String get petBreedTitle => 'Breed';
+
+  @override
+  String get petBreedQuestion => 'What breed is your cat?';
+
+  @override
+  String get petWeightTitle => 'Weight';
+
+  @override
+  String get petWeightQuestion => 'How much does your cat weigh?';
 
   @override
   String get medicalInfoTitle => 'Medical Information';

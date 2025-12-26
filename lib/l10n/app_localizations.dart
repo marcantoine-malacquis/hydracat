@@ -184,6 +184,12 @@ abstract class AppLocalizations {
   /// **'Continue'**
   String get continue_;
 
+  /// No description provided for @continueButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continueButton;
+
   /// No description provided for @close.
   ///
   /// In en, this message translates to:
@@ -225,6 +231,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You have unsaved changes. Are you sure you want to discard them?'**
   String get discardChangesMessage;
+
+  /// No description provided for @optional.
+  ///
+  /// In en, this message translates to:
+  /// **'optional'**
+  String get optional;
 
   /// No description provided for @loading.
   ///
@@ -307,7 +319,7 @@ abstract class AppLocalizations {
   /// No description provided for @petNameLabel.
   ///
   /// In en, this message translates to:
-  /// **'Pet Name *'**
+  /// **'What is your cat\'s name?'**
   String get petNameLabel;
 
   /// No description provided for @petNameHint.
@@ -319,7 +331,7 @@ abstract class AppLocalizations {
   /// No description provided for @petDateOfBirthLabel.
   ///
   /// In en, this message translates to:
-  /// **'Date of Birth *'**
+  /// **'Date of Birth'**
   String get petDateOfBirthLabel;
 
   /// No description provided for @selectDateOfBirth.
@@ -331,8 +343,20 @@ abstract class AppLocalizations {
   /// No description provided for @petGenderLabel.
   ///
   /// In en, this message translates to:
-  /// **'Gender *'**
+  /// **'Gender'**
   String get petGenderLabel;
+
+  /// No description provided for @genderMale.
+  ///
+  /// In en, this message translates to:
+  /// **'Male'**
+  String get genderMale;
+
+  /// No description provided for @genderFemale.
+  ///
+  /// In en, this message translates to:
+  /// **'Female'**
+  String get genderFemale;
 
   /// No description provided for @petBreedLabel.
   ///
@@ -345,6 +369,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter breed (optional)'**
   String get petBreedHint;
+
+  /// No description provided for @petWeightLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get petWeightLabel;
 
   /// Error message when saving pet information fails
   ///
@@ -405,6 +435,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Weight seems unrealistic (over 15kg for a cat)'**
   String get petWeightUnrealistic;
+
+  /// Title for pet name and gender screen
+  ///
+  /// In en, this message translates to:
+  /// **'Pet Information'**
+  String get petNameGenderTitle;
+
+  /// Main question on pet name and gender screen
+  ///
+  /// In en, this message translates to:
+  /// **'What is your cat\'s name?'**
+  String get petNameGenderQuestion;
+
+  /// Title for pet date of birth screen
+  ///
+  /// In en, this message translates to:
+  /// **'Date of Birth'**
+  String get petDateOfBirthTitle;
+
+  /// Main question on pet date of birth screen
+  ///
+  /// In en, this message translates to:
+  /// **'When was your cat born?'**
+  String get petDateOfBirthQuestion;
+
+  /// Title for pet breed screen
+  ///
+  /// In en, this message translates to:
+  /// **'Breed'**
+  String get petBreedTitle;
+
+  /// Main question on pet breed screen
+  ///
+  /// In en, this message translates to:
+  /// **'What breed is your cat?'**
+  String get petBreedQuestion;
+
+  /// Title for pet weight screen
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get petWeightTitle;
+
+  /// Main question on pet weight screen
+  ///
+  /// In en, this message translates to:
+  /// **'How much does your cat weigh?'**
+  String get petWeightQuestion;
 
   /// No description provided for @medicalInfoTitle.
   ///

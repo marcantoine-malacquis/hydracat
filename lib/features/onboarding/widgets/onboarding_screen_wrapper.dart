@@ -11,7 +11,6 @@ import 'package:hydracat/features/onboarding/models/onboarding_step_id.dart';
 import 'package:hydracat/features/onboarding/widgets/onboarding_progress_indicator.dart';
 import 'package:hydracat/providers/analytics_provider.dart';
 import 'package:hydracat/providers/onboarding_provider.dart';
-import 'package:hydracat/shared/widgets/accessibility/touch_target_icon_button.dart';
 import 'package:hydracat/shared/widgets/widgets.dart';
 
 /// A wrapper widget that provides consistent layout and navigation for
@@ -244,13 +243,8 @@ class _OnboardingScreenWrapperState
       elevation: 0,
       automaticallyImplyLeading: false,
       leading: (widget.showBackButton && widget.onBackPressed != null)
-          ? TouchTargetIconButton(
+          ? HydraBackButton(
               onPressed: widget.isLoading ? null : widget.onBackPressed,
-              icon: const Icon(Icons.arrow_back_ios),
-              iconSize: 20,
-              color: AppColors.textSecondary,
-              tooltip: widget.backButtonText,
-              semanticLabel: widget.backButtonText,
             )
           : null,
       title: widget.showProgressInAppBar
@@ -355,16 +349,10 @@ class _OnboardingScreenWrapperState
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          TextButton(
+          HydraButton(
             onPressed: () => exitOnboardingReplay(ref, context),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.xs,
-              ),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
+            variant: HydraButtonVariant.text,
+            size: HydraButtonSize.small,
             child: Text(
               'Return to App',
               style: AppTextStyles.caption.copyWith(

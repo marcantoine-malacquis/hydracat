@@ -277,26 +277,30 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
             // Pet Name (Required)
             _buildSectionLabel(l10n.petNameLabel, isRequired: true),
             const SizedBox(height: AppSpacing.sm),
-            TextFormField(
+            HydraTextFormField(
               controller: _nameController,
               textCapitalization: TextCapitalization.words,
               decoration: InputDecoration(
                 hintText: l10n.petNameHint,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppBorderRadius.inputRadius,
                   borderSide: const BorderSide(color: AppColors.border),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppBorderRadius.inputRadius,
                   borderSide: const BorderSide(color: AppColors.border),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppBorderRadius.inputRadius,
                   borderSide: const BorderSide(color: AppColors.primary),
                 ),
                 errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppBorderRadius.inputRadius,
                   borderSide: const BorderSide(color: AppColors.error),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.md,
                 ),
               ),
               onChanged: (_) {
@@ -389,7 +393,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
             // Breed (Optional)
             _buildSectionLabel(l10n.petBreedLabel, isRequired: false),
             const SizedBox(height: AppSpacing.sm),
-            TextFormField(
+            HydraTextFormField(
               controller: _breedController,
               textCapitalization: TextCapitalization.words,
               inputFormatters: [
@@ -402,16 +406,20 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
               decoration: InputDecoration(
                 hintText: l10n.petBreedHint,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppBorderRadius.inputRadius,
                   borderSide: const BorderSide(color: AppColors.border),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppBorderRadius.inputRadius,
                   borderSide: const BorderSide(color: AppColors.border),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppBorderRadius.inputRadius,
                   borderSide: const BorderSide(color: AppColors.primary),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.md,
                 ),
               ),
             ),
@@ -419,7 +427,7 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
             const SizedBox(height: AppSpacing.lg),
 
             // Weight (Optional)
-            _buildSectionLabel('Weight', isRequired: false),
+            _buildSectionLabel(l10n.petWeightLabel, isRequired: false),
             const SizedBox(height: AppSpacing.sm),
             WeightUnitSelector(
               weight: _weightValue,
@@ -478,10 +486,25 @@ class _PetBasicsScreenState extends ConsumerState<PetBasicsScreen> {
 
   /// Build section label with required indicator
   Widget _buildSectionLabel(String label, {required bool isRequired}) {
-    return Text(
-      label,
-      style: AppTextStyles.h3.copyWith(
-        color: AppColors.textPrimary,
+    return RichText(
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: label,
+            style: AppTextStyles.body.copyWith(
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          if (isRequired)
+            TextSpan(
+              text: ' *',
+              style: AppTextStyles.body.copyWith(
+                fontWeight: FontWeight.w500,
+                color: AppColors.error,
+              ),
+            ),
+        ],
       ),
     );
   }

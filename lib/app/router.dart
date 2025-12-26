@@ -20,6 +20,10 @@ import 'package:hydracat/features/onboarding/debug_onboarding_replay.dart';
 import 'package:hydracat/features/onboarding/screens/ckd_medical_info_screen.dart';
 import 'package:hydracat/features/onboarding/screens/onboarding_completion_screen.dart';
 import 'package:hydracat/features/onboarding/screens/pet_basics_screen.dart';
+import 'package:hydracat/features/onboarding/screens/pet_breed_screen.dart';
+import 'package:hydracat/features/onboarding/screens/pet_date_of_birth_screen.dart';
+import 'package:hydracat/features/onboarding/screens/pet_name_gender_screen.dart';
+import 'package:hydracat/features/onboarding/screens/pet_weight_screen.dart';
 import 'package:hydracat/features/onboarding/screens/welcome_screen.dart';
 import 'package:hydracat/features/profile/screens/ckd_profile_screen.dart';
 import 'package:hydracat/features/profile/screens/create_fluid_schedule_screen.dart';
@@ -505,6 +509,44 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   key: state.pageKey,
                 ),
           ),
+          GoRoute(
+            path: 'pet-name-gender',
+            name: 'onboarding-pet-name-gender',
+            pageBuilder: (context, state) =>
+                AppPageTransitions.bidirectionalSlide(
+                  child: const PetNameGenderScreen(),
+                  key: state.pageKey,
+                ),
+          ),
+          GoRoute(
+            path: 'pet-dob',
+            name: 'onboarding-pet-dob',
+            pageBuilder: (context, state) =>
+                AppPageTransitions.bidirectionalSlide(
+                  child: const PetDateOfBirthScreen(),
+                  key: state.pageKey,
+                ),
+          ),
+          GoRoute(
+            path: 'pet-breed',
+            name: 'onboarding-pet-breed',
+            pageBuilder: (context, state) =>
+                AppPageTransitions.bidirectionalSlide(
+                  child: const PetBreedScreen(),
+                  key: state.pageKey,
+                ),
+          ),
+          GoRoute(
+            path: 'pet-weight',
+            name: 'onboarding-pet-weight',
+            pageBuilder: (context, state) =>
+                AppPageTransitions.bidirectionalSlide(
+                  child: const PetWeightScreen(),
+                  key: state.pageKey,
+                ),
+          ),
+          // DEPRECATED: Old combined pet basics screen
+          // Kept for backward compatibility
           GoRoute(
             path: 'basics',
             name: 'onboarding-basics',

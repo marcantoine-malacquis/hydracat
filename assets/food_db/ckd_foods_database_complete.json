@@ -1,0 +1,3295 @@
+[
+  {
+    "foodId": "weruva-wx-phos-focused-tilapia-chicken-formula-grain-free-puree-can",
+    "brandName": "Weruva Wx Phos Focused",
+    "productName": "Tilapia &",
+    "flavor": "Chicken Formula Grain-free Puree",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 53,
+      "phosphorus_percent_dmb": 0.28,
+      "protein_percent_calories": 38,
+      "protein_percent_dmb": 58,
+      "sodium_mg_per_100kcal": 109,
+      "calcium_phosphorus_ratio": 2.5,
+      "fat_percent_calories": 61,
+      "carbs_percent_calories": null,
+      "energy_kcal_per_kg": 1007,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken",
+      "tilapia"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": true,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "weruva-wx-phos-focused-tilapia-tuna-formula-grain-free-puree-can",
+    "brandName": "Weruva Wx Phos Focused",
+    "productName": "Tilapia &",
+    "flavor": "Tuna Formula Grain-Free Puree",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 63,
+      "phosphorus_percent_dmb": 0.32,
+      "protein_percent_calories": 43,
+      "protein_percent_dmb": 62,
+      "sodium_mg_per_100kcal": 130,
+      "calcium_phosphorus_ratio": 2.2,
+      "fat_percent_calories": 57,
+      "carbs_percent_calories": null,
+      "energy_kcal_per_kg": 926,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "tuna",
+      "tilapia"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": true,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "weruva-wx-phos-focused-chicken-tilapia-formula-in-gravy-can",
+    "brandName": "Weruva Wx Phos Focused",
+    "productName": "Chicken &",
+    "flavor": "Tilapia Formula in Gravy",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 64,
+      "phosphorus_percent_dmb": 0.35,
+      "protein_percent_calories": 45,
+      "protein_percent_dmb": 69,
+      "sodium_mg_per_100kcal": 101,
+      "calcium_phosphorus_ratio": 1.9,
+      "fat_percent_calories": 54,
+      "carbs_percent_calories": null,
+      "energy_kcal_per_kg": 994,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken",
+      "tilapia"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "specific-kidney-support-veterinary-only-uk-can",
+    "brandName": "Specific",
+    "productName": "Kidney Support",
+    "flavor": "(Veterinary Only) UK",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 65,
+      "phosphorus_percent_dmb": 0.32,
+      "protein_percent_calories": 22,
+      "protein_percent_dmb": 33,
+      "sodium_mg_per_100kcal": 92,
+      "calcium_phosphorus_ratio": 2.1,
+      "fat_percent_calories": 63,
+      "carbs_percent_calories": 14,
+      "energy_kcal_per_kg": 1552,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "royal-canin-renal-with-beef-thin-slices-in-gravy-international-can",
+    "brandName": "Royal Canin",
+    "productName": "Renal with",
+    "flavor": "Beef Thin Slices in Gravy (International)",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 72,
+      "phosphorus_percent_dmb": 0.35,
+      "protein_percent_calories": 34,
+      "protein_percent_dmb": 34,
+      "sodium_mg_per_100kcal": 93,
+      "calcium_phosphorus_ratio": 1.9,
+      "fat_percent_calories": 57,
+      "carbs_percent_calories": 18,
+      "energy_kcal_per_kg": 972,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "beef"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "beaphar-kidney-diet-lamb-can",
+    "brandName": "Beaphar Kidney Diet",
+    "productName": "Lamb",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 76,
+      "phosphorus_percent_dmb": 0.4,
+      "protein_percent_calories": 24,
+      "protein_percent_dmb": 36,
+      "sodium_mg_per_100kcal": 76,
+      "calcium_phosphorus_ratio": 1.6,
+      "fat_percent_calories": 65,
+      "carbs_percent_calories": 11,
+      "energy_kcal_per_kg": 1049,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "lamb"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "weruva-wx-phos-focused-chicken-formula-in-gravy-can",
+    "brandName": "Weruva Wx Phos Focused",
+    "productName": "Chicken Formula",
+    "flavor": "in Gravy",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 77,
+      "phosphorus_percent_dmb": 0.42,
+      "protein_percent_calories": 43,
+      "protein_percent_dmb": 68,
+      "sodium_mg_per_100kcal": 79,
+      "calcium_phosphorus_ratio": 1.4,
+      "fat_percent_calories": 56,
+      "carbs_percent_calories": null,
+      "energy_kcal_per_kg": 1009,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "beaphar-kidney-diet-chicken-can",
+    "brandName": "Beaphar Kidney Diet",
+    "productName": "Chicken",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 77,
+      "phosphorus_percent_dmb": 0.4,
+      "protein_percent_calories": 24,
+      "protein_percent_dmb": 36,
+      "sodium_mg_per_100kcal": 77,
+      "calcium_phosphorus_ratio": 1.6,
+      "fat_percent_calories": 65,
+      "carbs_percent_calories": 10,
+      "energy_kcal_per_kg": 1035,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "beaphar-kidney-diet-duck-can",
+    "brandName": "Beaphar Kidney Diet",
+    "productName": "Duck",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 77,
+      "phosphorus_percent_dmb": 0.4,
+      "protein_percent_calories": 24,
+      "protein_percent_dmb": 36,
+      "sodium_mg_per_100kcal": 77,
+      "calcium_phosphorus_ratio": 1.6,
+      "fat_percent_calories": 65,
+      "carbs_percent_calories": 10,
+      "energy_kcal_per_kg": 1035,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "duck"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "beaphar-kidney-diet-pollock-can",
+    "brandName": "Beaphar Kidney Diet",
+    "productName": "Pollock",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 77,
+      "phosphorus_percent_dmb": 0.4,
+      "protein_percent_calories": 24,
+      "protein_percent_dmb": 36,
+      "sodium_mg_per_100kcal": 77,
+      "calcium_phosphorus_ratio": 1.6,
+      "fat_percent_calories": 65,
+      "carbs_percent_calories": 10,
+      "energy_kcal_per_kg": 1035,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "pollock"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "weruva-wx-phos-focused-chicken-formula-grain-free-puree-can",
+    "brandName": "Weruva Wx Phos Focused",
+    "productName": "Chicken Formula",
+    "flavor": "Grain-Free Puree",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 78,
+      "phosphorus_percent_dmb": 0.39,
+      "protein_percent_calories": 43,
+      "protein_percent_dmb": 62,
+      "sodium_mg_per_100kcal": 87,
+      "calcium_phosphorus_ratio": 1.7,
+      "fat_percent_calories": 56,
+      "carbs_percent_calories": 1,
+      "energy_kcal_per_kg": 922,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": true,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "royal-canin-renal-with-chicken-thin-slices-in-gravy-international-can",
+    "brandName": "Royal Canin",
+    "productName": "Renal with",
+    "flavor": "Chicken Thin Slices in Gravy (International)",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 79,
+      "phosphorus_percent_dmb": 0.39,
+      "protein_percent_calories": 34,
+      "protein_percent_dmb": 34,
+      "sodium_mg_per_100kcal": 97,
+      "calcium_phosphorus_ratio": 1.7,
+      "fat_percent_calories": 59,
+      "carbs_percent_calories": 17,
+      "energy_kcal_per_kg": 1140,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "purina-pro-plan-vet-diet-nf-renal-advanced-care-mousse-can",
+    "brandName": "Purina Pro Plan Vet Diet",
+    "productName": "NF Renal",
+    "flavor": "Advanced Care Mousse",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 81,
+      "phosphorus_percent_dmb": 0.43,
+      "protein_percent_calories": 22,
+      "protein_percent_dmb": 33,
+      "sodium_mg_per_100kcal": 54,
+      "calcium_phosphorus_ratio": 2.6,
+      "fat_percent_calories": 69,
+      "carbs_percent_calories": 9,
+      "energy_kcal_per_kg": 1117,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "smilla-veterinary-diet-renal-beef-denmark-can",
+    "brandName": "Smilla Veterinary Diet",
+    "productName": "Renal Beef Denmark",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 81,
+      "phosphorus_percent_dmb": 0.43,
+      "protein_percent_calories": 22,
+      "protein_percent_dmb": 34,
+      "sodium_mg_per_100kcal": 54,
+      "calcium_phosphorus_ratio": 2.6,
+      "fat_percent_calories": 69,
+      "carbs_percent_calories": 9,
+      "energy_kcal_per_kg": 1250,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "beef"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "rawz-reduced-phosphorus-turkey-pate-recipe-can",
+    "brandName": "Rawz Reduced Phosphorus",
+    "productName": "Turkey Pate Recipe",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 89,
+      "phosphorus_percent_dmb": 0.43,
+      "protein_percent_calories": 29,
+      "protein_percent_dmb": 40,
+      "sodium_mg_per_100kcal": 91,
+      "calcium_phosphorus_ratio": 2.3,
+      "fat_percent_calories": 58,
+      "carbs_percent_calories": 13,
+      "energy_kcal_per_kg": 956,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "turkey"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "rawz-reduced-phosphorus-tuna-salmon-pate-recipe-can",
+    "brandName": "Rawz Reduced Phosphorus",
+    "productName": "Tuna &",
+    "flavor": "Salmon Pate Recipe",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 91,
+      "phosphorus_percent_dmb": 0.43,
+      "protein_percent_calories": 30,
+      "protein_percent_dmb": 40,
+      "sodium_mg_per_100kcal": 93,
+      "calcium_phosphorus_ratio": 2.5,
+      "fat_percent_calories": 55,
+      "carbs_percent_calories": 15,
+      "energy_kcal_per_kg": 936,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "salmon",
+      "tuna"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "hills-prescription-diet-kd-tender-chunks-in-gravy-wsalmon-can",
+    "brandName": "Hill's Prescription Diet",
+    "productName": "k/d Tender",
+    "flavor": "Chunks in Gravy w/Salmon",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 92,
+      "phosphorus_percent_dmb": 0.41,
+      "protein_percent_calories": 24,
+      "protein_percent_dmb": 30,
+      "sodium_mg_per_100kcal": 61,
+      "calcium_phosphorus_ratio": 1.9,
+      "fat_percent_calories": 44,
+      "carbs_percent_calories": 32,
+      "energy_kcal_per_kg": 978,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "salmon"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "smilla-veterinary-diet-renal-chicken-denmark-can",
+    "brandName": "Smilla Veterinary Diet",
+    "productName": "Renal Chicken Denmark",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 92,
+      "phosphorus_percent_dmb": 0.48,
+      "protein_percent_calories": 21,
+      "protein_percent_dmb": 33,
+      "sodium_mg_per_100kcal": 59,
+      "calcium_phosphorus_ratio": 1.6,
+      "fat_percent_calories": 67,
+      "carbs_percent_calories": 12,
+      "energy_kcal_per_kg": 1250,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "rawz-reduced-phosphorus-beef-pate-recipe-can",
+    "brandName": "Rawz Reduced Phosphorus",
+    "productName": "Beef Pate Recipe",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 93,
+      "phosphorus_percent_dmb": 0.43,
+      "protein_percent_calories": 31,
+      "protein_percent_dmb": 40,
+      "sodium_mg_per_100kcal": 55,
+      "calcium_phosphorus_ratio": 2.4,
+      "fat_percent_calories": 52,
+      "carbs_percent_calories": 18,
+      "energy_kcal_per_kg": 911,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "beef"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "royal-canin-renal-with-fish-thin-slices-in-gravy-international-can",
+    "brandName": "Royal Canin",
+    "productName": "Renal with",
+    "flavor": "Fish Thin Slices in Gravy (International)",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 97,
+      "phosphorus_percent_dmb": 0.45,
+      "protein_percent_calories": 33,
+      "protein_percent_dmb": 33,
+      "sodium_mg_per_100kcal": 87,
+      "calcium_phosphorus_ratio": 1.6,
+      "fat_percent_calories": 55,
+      "carbs_percent_calories": 20,
+      "energy_kcal_per_kg": 925,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "fish"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "identity-gently-cooked-bison-recipe-can",
+    "brandName": "Identity Gently Cooked",
+    "productName": "Bison Recipe",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 99,
+      "phosphorus_percent_dmb": 0.52,
+      "protein_percent_calories": 46,
+      "protein_percent_dmb": 68,
+      "sodium_mg_per_100kcal": 42,
+      "calcium_phosphorus_ratio": 1.1,
+      "fat_percent_calories": 52,
+      "carbs_percent_calories": 2,
+      "energy_kcal_per_kg": 1412,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "bison"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "trovet-renal-oxalate-rid-chicken-netherlands-can",
+    "brandName": "Trovet",
+    "productName": "Renal &",
+    "flavor": "Oxalate RID Chicken Netherlands",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 99,
+      "phosphorus_percent_dmb": 0.46,
+      "protein_percent_calories": 24,
+      "protein_percent_dmb": 33,
+      "sodium_mg_per_100kcal": 89,
+      "calcium_phosphorus_ratio": 1.6,
+      "fat_percent_calories": 55,
+      "carbs_percent_calories": 19,
+      "energy_kcal_per_kg": 1133,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "kattovit-kidneyrenal-germany-dry",
+    "brandName": "Kattovit",
+    "productName": "Kidney/Renal Germany",
+    "flavor": null,
+    "packageType": "dry",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 101,
+      "phosphorus_percent_dmb": 0.43,
+      "protein_percent_calories": 23,
+      "protein_percent_dmb": 27,
+      "sodium_mg_per_100kcal": 50,
+      "calcium_phosphorus_ratio": 1.7,
+      "fat_percent_calories": 43,
+      "carbs_percent_calories": 36,
+      "energy_kcal_per_kg": 3977,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "identity-gently-cooked-beef-recipe-can",
+    "brandName": "Identity Gently Cooked",
+    "productName": "Beef Recipe",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 102,
+      "phosphorus_percent_dmb": 0.54,
+      "protein_percent_calories": 33,
+      "protein_percent_dmb": 49,
+      "sodium_mg_per_100kcal": 39,
+      "calcium_phosphorus_ratio": 1.2,
+      "fat_percent_calories": 65,
+      "carbs_percent_calories": 2,
+      "energy_kcal_per_kg": 1275,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "beef"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "my-perfect-pet-low-phosphorus-chicken-can",
+    "brandName": "My Perfect Pet",
+    "productName": "Low Phosphorus Chicken",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 107,
+      "phosphorus_percent_dmb": 0.42,
+      "protein_percent_calories": 40,
+      "protein_percent_dmb": 45,
+      "sodium_mg_per_100kcal": 82,
+      "calcium_phosphorus_ratio": 1.5,
+      "fat_percent_calories": 32,
+      "carbs_percent_calories": 28,
+      "energy_kcal_per_kg": 1213,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "identity-gently-cooked-pork-recipe-can",
+    "brandName": "Identity Gently Cooked",
+    "productName": "Pork Recipe",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 110,
+      "phosphorus_percent_dmb": 0.54,
+      "protein_percent_calories": 45,
+      "protein_percent_dmb": 63,
+      "sodium_mg_per_100kcal": 47,
+      "calcium_phosphorus_ratio": 1.2,
+      "fat_percent_calories": 53,
+      "carbs_percent_calories": 1,
+      "energy_kcal_per_kg": 1272,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "pork"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "specific-senior-wet-uk-can",
+    "brandName": "Specific",
+    "productName": "Senior Wet UK",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 115,
+      "phosphorus_percent_dmb": 0.63,
+      "protein_percent_calories": 25,
+      "protein_percent_dmb": 38,
+      "sodium_mg_per_100kcal": 61,
+      "calcium_phosphorus_ratio": 1.2,
+      "fat_percent_calories": 69,
+      "carbs_percent_calories": 6,
+      "energy_kcal_per_kg": 1472,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "hills-prescription-diet-kd-pate-with-chicken-can",
+    "brandName": "Hill's Prescription Diet",
+    "productName": "k/d Pate",
+    "flavor": "with Chicken",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 116,
+      "phosphorus_percent_dmb": 0.5,
+      "protein_percent_calories": 24,
+      "protein_percent_dmb": 29,
+      "sodium_mg_per_100kcal": 65,
+      "calcium_phosphorus_ratio": 1.9,
+      "fat_percent_calories": 44,
+      "carbs_percent_calories": 33,
+      "energy_kcal_per_kg": 1166,
+      "potassium_mg_per_100kcal": 266
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "purina-pro-plan-vet-diet-nf-renal-early-care-tender-pieces-wchicken-can",
+    "brandName": "Purina Pro Plan Vet Diet",
+    "productName": "NF Renal",
+    "flavor": "Early Care Tender Pieces w/Chicken",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 116,
+      "phosphorus_percent_dmb": 0.55,
+      "protein_percent_calories": 31,
+      "protein_percent_dmb": 43,
+      "sodium_mg_per_100kcal": 74,
+      "calcium_phosphorus_ratio": 1.5,
+      "fat_percent_calories": 59,
+      "carbs_percent_calories": 10,
+      "energy_kcal_per_kg": 952,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "hills-prescription-diet-kd-chicken-vegetable-stew-can",
+    "brandName": "Hill's Prescription Diet",
+    "productName": "k/d Chicken",
+    "flavor": "& Vegetable Stew",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 117,
+      "phosphorus_percent_dmb": 0.52,
+      "protein_percent_calories": 24,
+      "protein_percent_dmb": 30,
+      "sodium_mg_per_100kcal": 57,
+      "calcium_phosphorus_ratio": 1.3,
+      "fat_percent_calories": 47,
+      "carbs_percent_calories": 30,
+      "energy_kcal_per_kg": 866,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "animonda-integra-protect-renal-with-beef-germany-can",
+    "brandName": "Animonda Integra Protect",
+    "productName": "Renal with",
+    "flavor": "Beef Germany",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 119,
+      "phosphorus_percent_dmb": 0.67,
+      "protein_percent_calories": 20,
+      "protein_percent_dmb": 33,
+      "sodium_mg_per_100kcal": 119,
+      "calcium_phosphorus_ratio": 1.4,
+      "fat_percent_calories": 72,
+      "carbs_percent_calories": 7,
+      "energy_kcal_per_kg": 1349,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "beef"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "animonda-integra-protect-renal-with-chicken-germany-can",
+    "brandName": "Animonda Integra Protect",
+    "productName": "Renal with",
+    "flavor": "Chicken Germany",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 119,
+      "phosphorus_percent_dmb": 0.67,
+      "protein_percent_calories": 20,
+      "protein_percent_dmb": 33,
+      "sodium_mg_per_100kcal": 119,
+      "calcium_phosphorus_ratio": 1.4,
+      "fat_percent_calories": 72,
+      "carbs_percent_calories": 7,
+      "energy_kcal_per_kg": 1349,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "animonda-integra-protect-renal-with-duck-germany-can",
+    "brandName": "Animonda Integra Protect",
+    "productName": "Renal with",
+    "flavor": "Duck Germany",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 119,
+      "phosphorus_percent_dmb": 0.67,
+      "protein_percent_calories": 20,
+      "protein_percent_dmb": 33,
+      "sodium_mg_per_100kcal": 119,
+      "calcium_phosphorus_ratio": 1.4,
+      "fat_percent_calories": 72,
+      "carbs_percent_calories": 7,
+      "energy_kcal_per_kg": 1349,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "duck"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "animonda-integra-protect-renal-with-turkey-germany-can",
+    "brandName": "Animonda Integra Protect",
+    "productName": "Renal with",
+    "flavor": "Turkey Germany",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 119,
+      "phosphorus_percent_dmb": 0.67,
+      "protein_percent_calories": 20,
+      "protein_percent_dmb": 33,
+      "sodium_mg_per_100kcal": 119,
+      "calcium_phosphorus_ratio": 1.4,
+      "fat_percent_calories": 72,
+      "carbs_percent_calories": 7,
+      "energy_kcal_per_kg": 1349,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "turkey"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "animonda-integra-protect-renal-with-veal-germany-can",
+    "brandName": "Animonda Integra Protect",
+    "productName": "Renal with",
+    "flavor": "Veal Germany",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 119,
+      "phosphorus_percent_dmb": 0.67,
+      "protein_percent_calories": 20,
+      "protein_percent_dmb": 33,
+      "sodium_mg_per_100kcal": 119,
+      "calcium_phosphorus_ratio": 1.4,
+      "fat_percent_calories": 72,
+      "carbs_percent_calories": 7,
+      "energy_kcal_per_kg": 1349,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "veal"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "hills-prescription-diet-kd-with-chicken-dry",
+    "brandName": "Hill's Prescription Diet",
+    "productName": "k/d with Chicken",
+    "flavor": null,
+    "packageType": "dry",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 120,
+      "phosphorus_percent_dmb": 0.51,
+      "protein_percent_calories": 24,
+      "protein_percent_dmb": 29,
+      "sodium_mg_per_100kcal": 66,
+      "calcium_phosphorus_ratio": 1.8,
+      "fat_percent_calories": 41,
+      "carbs_percent_calories": 36,
+      "energy_kcal_per_kg": 4071,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "kattovit-kidneyrenal-chicken-can-germany-can",
+    "brandName": "Kattovit",
+    "productName": "Kidney/Renal Chicken",
+    "flavor": "Can Germany",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 120,
+      "phosphorus_percent_dmb": 0.61,
+      "protein_percent_calories": 23,
+      "protein_percent_dmb": 33,
+      "sodium_mg_per_100kcal": 69,
+      "calcium_phosphorus_ratio": 1.4,
+      "fat_percent_calories": 62,
+      "carbs_percent_calories": 16,
+      "energy_kcal_per_kg": 1164,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "trovet-renal-oxalate-rid-lamb-netherlands-can",
+    "brandName": "Trovet",
+    "productName": "Renal &",
+    "flavor": "Oxalate RID Lamb Netherlands",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 122,
+      "phosphorus_percent_dmb": 0.61,
+      "protein_percent_calories": 23,
+      "protein_percent_dmb": 33,
+      "sodium_mg_per_100kcal": 70,
+      "calcium_phosphorus_ratio": 1.5,
+      "fat_percent_calories": 60,
+      "carbs_percent_calories": 17,
+      "energy_kcal_per_kg": 1145,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "lamb"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "raised-right-turkey-pumpkin-pate-gatypminerals-can",
+    "brandName": "Raised Right",
+    "productName": "Turkey &",
+    "flavor": "Pumpkin Pate GATypMinerals",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 125,
+      "phosphorus_percent_dmb": 0.63,
+      "protein_percent_calories": 51,
+      "protein_percent_dmb": 64,
+      "sodium_mg_per_100kcal": 64,
+      "calcium_phosphorus_ratio": 1.3,
+      "fat_percent_calories": 47,
+      "carbs_percent_calories": 2,
+      "energy_kcal_per_kg": 1668,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "turkey"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "guaranteed_analysis_typical_minerals",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "mjamjam-renal-diet-chicken-germany-can",
+    "brandName": "Mjamjam Renal Diet",
+    "productName": ", Chicken Germany",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 126,
+      "phosphorus_percent_dmb": 0.53,
+      "protein_percent_calories": 28,
+      "protein_percent_dmb": 33,
+      "sodium_mg_per_100kcal": 174,
+      "calcium_phosphorus_ratio": 1.5,
+      "fat_percent_calories": 47,
+      "carbs_percent_calories": 25,
+      "energy_kcal_per_kg": 632,
+      "potassium_mg_per_100kcal": 364
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "zealandia-free-range-lamb-gatypminerals-new-zealand-can",
+    "brandName": "Zealandia",
+    "productName": "Free-range Lamb",
+    "flavor": "GATypMinerals New Zealand",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 127,
+      "phosphorus_percent_dmb": 0.7,
+      "protein_percent_calories": 32,
+      "protein_percent_dmb": 35,
+      "sodium_mg_per_100kcal": null,
+      "calcium_phosphorus_ratio": 2.1,
+      "fat_percent_calories": 65,
+      "carbs_percent_calories": 3,
+      "energy_kcal_per_kg": 1218,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "lamb"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "guaranteed_analysis_typical_minerals",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "hills-science-diet-adult-1-6-tender-tuna-dinner-can",
+    "brandName": "Hill's Science Diet",
+    "productName": "Adult 1-6",
+    "flavor": "Tender Tuna Dinner",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 128,
+      "phosphorus_percent_dmb": 0.56,
+      "protein_percent_calories": 41,
+      "protein_percent_dmb": 52,
+      "sodium_mg_per_100kcal": 120,
+      "calcium_phosphorus_ratio": 1.4,
+      "fat_percent_calories": 50,
+      "carbs_percent_calories": 9,
+      "energy_kcal_per_kg": 1038,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "tuna"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "soulistic-pates-chicken-dinner-weruva-checkmate-can",
+    "brandName": "Soulistic Pates",
+    "productName": "Chicken Dinner",
+    "flavor": "(Weruva Checkmate)",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 128,
+      "phosphorus_percent_dmb": 0.56,
+      "protein_percent_calories": 42,
+      "protein_percent_dmb": 48,
+      "sodium_mg_per_100kcal": 120,
+      "calcium_phosphorus_ratio": 1.4,
+      "fat_percent_calories": 40,
+      "carbs_percent_calories": 18,
+      "energy_kcal_per_kg": 1088,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "soulistic-pates-chicken-turkey-dinner-weruva-topsy-turvy-can",
+    "brandName": "Soulistic Pates",
+    "productName": "Chicken &",
+    "flavor": "Turkey Dinner (Weruva Topsy Turvy)",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 129,
+      "phosphorus_percent_dmb": 0.69,
+      "protein_percent_calories": 31,
+      "protein_percent_dmb": 48,
+      "sodium_mg_per_100kcal": 110,
+      "calcium_phosphorus_ratio": 1.1,
+      "fat_percent_calories": 64,
+      "carbs_percent_calories": 5,
+      "energy_kcal_per_kg": 1082,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken",
+      "turkey"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "weruva-bff-omg-chicken-salmon-shine-bright-can",
+    "brandName": "Weruva BFF OMG",
+    "productName": "Chicken &",
+    "flavor": "Salmon Shine Bright",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 130,
+      "phosphorus_percent_dmb": 0.71,
+      "protein_percent_calories": 27,
+      "protein_percent_dmb": 42,
+      "sodium_mg_per_100kcal": 99,
+      "calcium_phosphorus_ratio": 1.1,
+      "fat_percent_calories": 66,
+      "carbs_percent_calories": 7,
+      "energy_kcal_per_kg": 1309,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken",
+      "salmon"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "granatapet-delicatessen-veal-pur-germany-can",
+    "brandName": "GranataPet Delicatessen",
+    "productName": "Veal Pur Germany",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 130,
+      "phosphorus_percent_dmb": 0.57,
+      "protein_percent_calories": 29,
+      "protein_percent_dmb": 34,
+      "sodium_mg_per_100kcal": 195,
+      "calcium_phosphorus_ratio": 1.5,
+      "fat_percent_calories": 55,
+      "carbs_percent_calories": 16,
+      "energy_kcal_per_kg": 1113,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "veal"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "mjamjam-renal-diet-beef-germany-can",
+    "brandName": "Mjamjam Renal Diet",
+    "productName": ", Beef Germany",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 130,
+      "phosphorus_percent_dmb": 0.57,
+      "protein_percent_calories": 29,
+      "protein_percent_dmb": 36,
+      "sodium_mg_per_100kcal": 195,
+      "calcium_phosphorus_ratio": 1.5,
+      "fat_percent_calories": 55,
+      "carbs_percent_calories": 16,
+      "energy_kcal_per_kg": 615,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "beef"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "identity-gently-cooked-chicken-recipe-can",
+    "brandName": "Identity Gently Cooked",
+    "productName": "Chicken Recipe",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 133,
+      "phosphorus_percent_dmb": 0.65,
+      "protein_percent_calories": 44,
+      "protein_percent_dmb": 62,
+      "sodium_mg_per_100kcal": 44,
+      "calcium_phosphorus_ratio": 1.1,
+      "fat_percent_calories": 53,
+      "carbs_percent_calories": 3,
+      "energy_kcal_per_kg": 1353,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "stella-chewys-carnivore-cravings-purrfect-pate-duck-chicken-can-can",
+    "brandName": "Stella & Chewy's Carnivore Cravings",
+    "productName": "Purrfect Pate",
+    "flavor": "Duck & Chicken (can)",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 133,
+      "phosphorus_percent_dmb": 0.59,
+      "protein_percent_calories": 38,
+      "protein_percent_dmb": 50,
+      "sodium_mg_per_100kcal": 235,
+      "calcium_phosphorus_ratio": 1.1,
+      "fat_percent_calories": 55,
+      "carbs_percent_calories": 7,
+      "energy_kcal_per_kg": 1134,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken",
+      "duck"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "catz-finefood-bio-n-505-organic-duck-germany-can",
+    "brandName": "Catz Finefood Bio",
+    "productName": "N° 505",
+    "flavor": "Organic Duck Germany",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 133,
+      "phosphorus_percent_dmb": 0.68,
+      "protein_percent_calories": 31,
+      "protein_percent_dmb": 45,
+      "sodium_mg_per_100kcal": null,
+      "calcium_phosphorus_ratio": 1.3,
+      "fat_percent_calories": 64,
+      "carbs_percent_calories": 5,
+      "energy_kcal_per_kg": 1207,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "duck"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "raised-right-chicken-gatypminerals-can",
+    "brandName": "Raised Right",
+    "productName": "Chicken GATypMinerals",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 135,
+      "phosphorus_percent_dmb": 0.62,
+      "protein_percent_calories": 51,
+      "protein_percent_dmb": 59,
+      "sodium_mg_per_100kcal": 73,
+      "calcium_phosphorus_ratio": 1.2,
+      "fat_percent_calories": 46,
+      "carbs_percent_calories": 3,
+      "energy_kcal_per_kg": 1628,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "guaranteed_analysis_typical_minerals",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "raised-right-turkey-gatypminerals-can",
+    "brandName": "Raised Right",
+    "productName": "Turkey GATypMinerals",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 135,
+      "phosphorus_percent_dmb": 0.62,
+      "protein_percent_calories": 51,
+      "protein_percent_dmb": 63,
+      "sodium_mg_per_100kcal": 73,
+      "calcium_phosphorus_ratio": 1.2,
+      "fat_percent_calories": 46,
+      "carbs_percent_calories": 3,
+      "energy_kcal_per_kg": 1527,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "turkey"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "guaranteed_analysis_typical_minerals",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "kattovit-kidneyrenal-beef-pouch-germany-pouch",
+    "brandName": "Kattovit",
+    "productName": "Kidney/Renal Beef",
+    "flavor": "Pouch Germany",
+    "packageType": "pouch",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 137,
+      "phosphorus_percent_dmb": 0.6,
+      "protein_percent_calories": 24,
+      "protein_percent_dmb": 30,
+      "sodium_mg_per_100kcal": 171,
+      "calcium_phosphorus_ratio": 1.5,
+      "fat_percent_calories": 53,
+      "carbs_percent_calories": 23,
+      "energy_kcal_per_kg": 875,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "beef"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "kattovit-kidneyrenal-chicken-pouch-germany-pouch",
+    "brandName": "Kattovit",
+    "productName": "Kidney/Renal Chicken",
+    "flavor": "Pouch Germany",
+    "packageType": "pouch",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 137,
+      "phosphorus_percent_dmb": 0.6,
+      "protein_percent_calories": 24,
+      "protein_percent_dmb": 30,
+      "sodium_mg_per_100kcal": 171,
+      "calcium_phosphorus_ratio": 1.5,
+      "fat_percent_calories": 53,
+      "carbs_percent_calories": 23,
+      "energy_kcal_per_kg": 875,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "kattovit-kidneyrenal-turkey-pouch-germany-pouch",
+    "brandName": "Kattovit",
+    "productName": "Kidney/Renal Turkey",
+    "flavor": "Pouch Germany",
+    "packageType": "pouch",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 137,
+      "phosphorus_percent_dmb": 0.6,
+      "protein_percent_calories": 24,
+      "protein_percent_dmb": 30,
+      "sodium_mg_per_100kcal": 171,
+      "calcium_phosphorus_ratio": 1.5,
+      "fat_percent_calories": 53,
+      "carbs_percent_calories": 23,
+      "energy_kcal_per_kg": 875,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "turkey"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "virbac-early-kidney-joint-wet-france-can",
+    "brandName": "Virbac",
+    "productName": "Early Kidney",
+    "flavor": "& Joint Wet France",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 137,
+      "phosphorus_percent_dmb": 0.57,
+      "protein_percent_calories": 45,
+      "protein_percent_dmb": 56,
+      "sodium_mg_per_100kcal": 55,
+      "calcium_phosphorus_ratio": null,
+      "fat_percent_calories": 49,
+      "carbs_percent_calories": 5,
+      "energy_kcal_per_kg": 930,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "stella-chewys-carnivore-cravings-purrfect-pate-chicken-salmon-can-can",
+    "brandName": "Stella & Chewy's Carnivore Cravings",
+    "productName": "Purrfect Pate",
+    "flavor": "Chicken & Salmon (can)",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 138,
+      "phosphorus_percent_dmb": 0.55,
+      "protein_percent_calories": 31,
+      "protein_percent_dmb": 50,
+      "sodium_mg_per_100kcal": 225,
+      "calcium_phosphorus_ratio": 1.1,
+      "fat_percent_calories": 63,
+      "carbs_percent_calories": 6,
+      "energy_kcal_per_kg": 1333,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken",
+      "salmon"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "hills-science-diet-adult-1-6-tender-chicken-dinner-can",
+    "brandName": "Hill's Science Diet",
+    "productName": "Adult 1-6",
+    "flavor": "Tender Chicken Dinner",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 139,
+      "phosphorus_percent_dmb": 0.59,
+      "protein_percent_calories": 41,
+      "protein_percent_dmb": 41,
+      "sodium_mg_per_100kcal": 64,
+      "calcium_phosphorus_ratio": 1.2,
+      "fat_percent_calories": 42,
+      "carbs_percent_calories": 24,
+      "energy_kcal_per_kg": 937,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [
+      "titanium_dioxide"
+    ],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "herrmanns-manufaktur-selection-adult-organic-beef-with-pumpkin-and-quinoa-germany-can",
+    "brandName": "Herrmann's Manufaktur Selection",
+    "productName": "Adult Organic",
+    "flavor": "beef with pumpkin and quinoa Germany",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 139,
+      "phosphorus_percent_dmb": 0.67,
+      "protein_percent_calories": 38,
+      "protein_percent_dmb": 52,
+      "sodium_mg_per_100kcal": 69,
+      "calcium_phosphorus_ratio": 1.2,
+      "fat_percent_calories": 57,
+      "carbs_percent_calories": 6,
+      "energy_kcal_per_kg": 1152,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "beef"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "hills-science-diet-adult-7-tender-chicken-dinner-can",
+    "brandName": "Hill's Science Diet",
+    "productName": "Adult 7+",
+    "flavor": "Tender Chicken Dinner",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 140,
+      "phosphorus_percent_dmb": 0.59,
+      "protein_percent_calories": 38,
+      "protein_percent_dmb": 38,
+      "sodium_mg_per_100kcal": 119,
+      "calcium_phosphorus_ratio": 1.8,
+      "fat_percent_calories": 41,
+      "carbs_percent_calories": 27,
+      "energy_kcal_per_kg": 970,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "mjamjam-renal-diet-turkey-germany-can",
+    "brandName": "Mjamjam Renal Diet",
+    "productName": ", Turkey Germany",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 142,
+      "phosphorus_percent_dmb": 0.62,
+      "protein_percent_calories": 28,
+      "protein_percent_dmb": 35,
+      "sodium_mg_per_100kcal": 178,
+      "calcium_phosphorus_ratio": 1.5,
+      "fat_percent_calories": 53,
+      "carbs_percent_calories": 19,
+      "energy_kcal_per_kg": 563,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "turkey"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "raised-right-chicken-pumpkin-pate-gatypminerals-can",
+    "brandName": "Raised Right",
+    "productName": "Chicken &",
+    "flavor": "Pumpkin Pate GATypMinerals",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 144,
+      "phosphorus_percent_dmb": 0.69,
+      "protein_percent_calories": 46,
+      "protein_percent_dmb": 59,
+      "sodium_mg_per_100kcal": 51,
+      "calcium_phosphorus_ratio": 1.1,
+      "fat_percent_calories": 51,
+      "carbs_percent_calories": 3,
+      "energy_kcal_per_kg": 1814,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "guaranteed_analysis_typical_minerals",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "daves-restricted-diet-phosphorus-chicken-liver-chicken-in-juice-pate-can",
+    "brandName": "Dave's Restricted Diet",
+    "productName": "Phosphorus Chicken",
+    "flavor": "Liver & Chicken in Juice Pate",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 147,
+      "phosphorus_percent_dmb": 0.57,
+      "protein_percent_calories": 26,
+      "protein_percent_dmb": 29,
+      "sodium_mg_per_100kcal": 70,
+      "calcium_phosphorus_ratio": 1.8,
+      "fat_percent_calories": 31,
+      "carbs_percent_calories": 42,
+      "energy_kcal_per_kg": 829,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken",
+      "liver"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "daves-naturally-healthy-grain-free-gobblicious-gourmet-pate-dinner-can",
+    "brandName": "Dave's Naturally Healthy",
+    "productName": "Grain Free",
+    "flavor": "Gobblicious Gourmet Pate Dinner",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 147,
+      "phosphorus_percent_dmb": 0.72,
+      "protein_percent_calories": 27,
+      "protein_percent_dmb": 41,
+      "sodium_mg_per_100kcal": 139,
+      "calcium_phosphorus_ratio": 1.8,
+      "fat_percent_calories": 68,
+      "carbs_percent_calories": 5,
+      "energy_kcal_per_kg": 1295,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [],
+    "allergenWarnings": [],
+    "isGrainFree": true,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "leonardo-lamb-cranberries-germany-can",
+    "brandName": "Leonardo",
+    "productName": "Lamb +",
+    "flavor": "Cranberries Germany",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 150,
+      "phosphorus_percent_dmb": 0.65,
+      "protein_percent_calories": 45,
+      "protein_percent_dmb": 55,
+      "sodium_mg_per_100kcal": 207,
+      "calcium_phosphorus_ratio": 2.0,
+      "fat_percent_calories": 49,
+      "carbs_percent_calories": 7,
+      "energy_kcal_per_kg": 869,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "lamb"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "animonda-integra-protect-renal-with-beef-germany-pouch",
+    "brandName": "Animonda Integra Protect",
+    "productName": "Renal with",
+    "flavor": "Beef Germany",
+    "packageType": "pouch",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 153,
+      "phosphorus_percent_dmb": 0.7,
+      "protein_percent_calories": 26,
+      "protein_percent_dmb": 34,
+      "sodium_mg_per_100kcal": 235,
+      "calcium_phosphorus_ratio": 1.5,
+      "fat_percent_calories": 55,
+      "carbs_percent_calories": 19,
+      "energy_kcal_per_kg": 851,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "beef"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "animonda-integra-protect-renal-with-chicken-germany-pouch",
+    "brandName": "Animonda Integra Protect",
+    "productName": "Renal with",
+    "flavor": "Chicken Germany",
+    "packageType": "pouch",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 153,
+      "phosphorus_percent_dmb": 0.7,
+      "protein_percent_calories": 26,
+      "protein_percent_dmb": 34,
+      "sodium_mg_per_100kcal": 235,
+      "calcium_phosphorus_ratio": 1.5,
+      "fat_percent_calories": 55,
+      "carbs_percent_calories": 19,
+      "energy_kcal_per_kg": 851,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "rawz-shredded-chicken-breast-coconut-oil-recipe-can",
+    "brandName": "Rawz Shredded",
+    "productName": "Chicken Breast",
+    "flavor": "& Coconut Oil Recipe",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 154,
+      "phosphorus_percent_dmb": 0.62,
+      "protein_percent_calories": 54,
+      "protein_percent_dmb": 61,
+      "sodium_mg_per_100kcal": 88,
+      "calcium_phosphorus_ratio": 1.7,
+      "fat_percent_calories": 40,
+      "carbs_percent_calories": 7,
+      "energy_kcal_per_kg": 910,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "hills-science-diet-adult-7-senior-vitality-tuna-vegetable-stew-can",
+    "brandName": "Hill's Science Diet",
+    "productName": "Adult 7+",
+    "flavor": "Senior Vitality Tuna & Vegetable Stew",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 155,
+      "phosphorus_percent_dmb": 0.63,
+      "protein_percent_calories": 39,
+      "protein_percent_dmb": 39,
+      "sodium_mg_per_100kcal": 105,
+      "calcium_phosphorus_ratio": 1.3,
+      "fat_percent_calories": 36,
+      "carbs_percent_calories": 30,
+      "energy_kcal_per_kg": 840,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "tuna"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "catz-finefood-bio-n-503-organic-chicken-germany-can",
+    "brandName": "Catz Finefood Bio",
+    "productName": "N° 503",
+    "flavor": "Organic Chicken Germany",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 155,
+      "phosphorus_percent_dmb": 0.76,
+      "protein_percent_calories": 33,
+      "protein_percent_dmb": 46,
+      "sodium_mg_per_100kcal": null,
+      "calcium_phosphorus_ratio": 1.2,
+      "fat_percent_calories": 60,
+      "carbs_percent_calories": 7,
+      "energy_kcal_per_kg": 1158,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "honest-kitchen-grain-free-minced-chicken-in-bone-broth-gravy-can",
+    "brandName": "Honest Kitchen Grain Free",
+    "productName": "Minced Chicken",
+    "flavor": "in Bone Broth Gravy",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 158,
+      "phosphorus_percent_dmb": 0.67,
+      "protein_percent_calories": 46,
+      "protein_percent_dmb": 56,
+      "sodium_mg_per_100kcal": 79,
+      "calcium_phosphorus_ratio": 3.0,
+      "fat_percent_calories": 45,
+      "carbs_percent_calories": 9,
+      "energy_kcal_per_kg": 760,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": true,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "meow-mix-tasty-layers-swirled-pate-chicken-turkey-can",
+    "brandName": "Meow Mix Tasty Layers",
+    "productName": "Swirled Pate",
+    "flavor": "Chicken & Turkey",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 158,
+      "phosphorus_percent_dmb": 0.8,
+      "protein_percent_calories": 47,
+      "protein_percent_dmb": 50,
+      "sodium_mg_per_100kcal": 89,
+      "calcium_phosphorus_ratio": 1.4,
+      "fat_percent_calories": 34,
+      "carbs_percent_calories": 19,
+      "energy_kcal_per_kg": 1010,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken",
+      "turkey"
+    ],
+    "allergenWarnings": [
+      "carrageenan"
+    ],
+    "isGrainFree": false,
+    "dataSource": "guaranteed_analysis_typical_minerals",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "identity-gently-cooked-turkey-recipe-can",
+    "brandName": "Identity Gently Cooked",
+    "productName": "Turkey Recipe",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 161,
+      "phosphorus_percent_dmb": 0.67,
+      "protein_percent_calories": 53,
+      "protein_percent_dmb": 63,
+      "sodium_mg_per_100kcal": 54,
+      "calcium_phosphorus_ratio": 1.1,
+      "fat_percent_calories": 44,
+      "carbs_percent_calories": 3,
+      "energy_kcal_per_kg": 933,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "turkey"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "tiki-cat-silver-whole-foods-with-tuna-mackerel-recipe-in-tuna-broth-can",
+    "brandName": "Tiki Cat Silver",
+    "productName": "Whole Foods",
+    "flavor": "with Tuna & Mackerel Recipe in Tuna Broth",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 165,
+      "phosphorus_percent_dmb": 0.74,
+      "protein_percent_calories": 49,
+      "protein_percent_dmb": 62,
+      "sodium_mg_per_100kcal": 66,
+      "calcium_phosphorus_ratio": 1.3,
+      "fat_percent_calories": 46,
+      "carbs_percent_calories": 6,
+      "energy_kcal_per_kg": 909,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "tuna",
+      "mackerel"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "stella-chewys-carnivore-cravings-purrfect-pate-chicken-chicken-liver-can-can",
+    "brandName": "Stella & Chewy's Carnivore Cravings",
+    "productName": "Purrfect Pate",
+    "flavor": "Chicken & Chicken Liver (can)",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 165,
+      "phosphorus_percent_dmb": 0.57,
+      "protein_percent_calories": 34,
+      "protein_percent_dmb": 50,
+      "sodium_mg_per_100kcal": 205,
+      "calcium_phosphorus_ratio": 1.1,
+      "fat_percent_calories": 60,
+      "carbs_percent_calories": 6,
+      "energy_kcal_per_kg": 1254,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken",
+      "liver"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "rawz-shredded-chicken-breast-cheese-recipe-can",
+    "brandName": "Rawz Shredded",
+    "productName": "Chicken Breast",
+    "flavor": "& Cheese Recipe",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 165,
+      "phosphorus_percent_dmb": 0.77,
+      "protein_percent_calories": 60,
+      "protein_percent_dmb": 80,
+      "sodium_mg_per_100kcal": 82,
+      "calcium_phosphorus_ratio": 1.7,
+      "fat_percent_calories": 29,
+      "carbs_percent_calories": 11,
+      "energy_kcal_per_kg": 849,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "wellness-core-tiny-tasters-flaked-tuna-salmon-can",
+    "brandName": "Wellness CORE Tiny Tasters",
+    "productName": "Flaked Tuna",
+    "flavor": "& Salmon",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 169,
+      "phosphorus_percent_dmb": 0.77,
+      "protein_percent_calories": 62,
+      "protein_percent_dmb": 62,
+      "sodium_mg_per_100kcal": 82,
+      "calcium_phosphorus_ratio": 1.7,
+      "fat_percent_calories": 29,
+      "carbs_percent_calories": 9,
+      "energy_kcal_per_kg": 947,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "salmon",
+      "tuna"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "granatapet-filet-a-la-carte-duck-chicken-germany-can",
+    "brandName": "GranataPet Filet",
+    "productName": "A La",
+    "flavor": "Carte Duck & Chicken Germany",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 170,
+      "phosphorus_percent_dmb": 0.73,
+      "protein_percent_calories": 45,
+      "protein_percent_dmb": 54,
+      "sodium_mg_per_100kcal": null,
+      "calcium_phosphorus_ratio": 1.6,
+      "fat_percent_calories": 46,
+      "carbs_percent_calories": 10,
+      "energy_kcal_per_kg": 941,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken",
+      "duck"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "virbac-kidney-joint-wet-france-can",
+    "brandName": "Virbac",
+    "productName": "Kidney &",
+    "flavor": "Joint Wet France",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 171,
+      "phosphorus_percent_dmb": 0.91,
+      "protein_percent_calories": 32,
+      "protein_percent_dmb": 46,
+      "sodium_mg_per_100kcal": 85,
+      "calcium_phosphorus_ratio": 1.5,
+      "fat_percent_calories": 61,
+      "carbs_percent_calories": 7,
+      "energy_kcal_per_kg": 1190,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "fussie-cat-pouch-chicken-in-gravy-pouch",
+    "brandName": "Fussie Cat Pouch",
+    "productName": "- Chicken",
+    "flavor": "in Gravy",
+    "packageType": "pouch",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 172,
+      "phosphorus_percent_dmb": 0.52,
+      "protein_percent_calories": 61,
+      "protein_percent_dmb": 69,
+      "sodium_mg_per_100kcal": 74,
+      "calcium_phosphorus_ratio": 1.4,
+      "fat_percent_calories": 29,
+      "carbs_percent_calories": 10,
+      "energy_kcal_per_kg": 408,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "wellness-core-tiny-tasters-pate-chicken-can",
+    "brandName": "Wellness CORE Tiny Tasters",
+    "productName": "Pate Chicken",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 173,
+      "phosphorus_percent_dmb": 0.91,
+      "protein_percent_calories": 46,
+      "protein_percent_dmb": 46,
+      "sodium_mg_per_100kcal": 173,
+      "calcium_phosphorus_ratio": 1.6,
+      "fat_percent_calories": 46,
+      "carbs_percent_calories": 7,
+      "energy_kcal_per_kg": 1216,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "leonardo-duck-cheese-germany-can",
+    "brandName": "Leonardo",
+    "productName": "Duck &",
+    "flavor": "Cheese Germany",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 173,
+      "phosphorus_percent_dmb": 0.75,
+      "protein_percent_calories": 45,
+      "protein_percent_dmb": 55,
+      "sodium_mg_per_100kcal": 288,
+      "calcium_phosphorus_ratio": 1.8,
+      "fat_percent_calories": 49,
+      "carbs_percent_calories": 7,
+      "energy_kcal_per_kg": 869,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "duck"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "forza10-renal-actiwet-with-lamb-can",
+    "brandName": "Forza10",
+    "productName": "Renal Actiwet",
+    "flavor": "with Lamb",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 173,
+      "phosphorus_percent_dmb": 0.9,
+      "protein_percent_calories": 24,
+      "protein_percent_dmb": 32,
+      "sodium_mg_per_100kcal": 80,
+      "calcium_phosphorus_ratio": 1.5,
+      "fat_percent_calories": 51,
+      "carbs_percent_calories": 24,
+      "energy_kcal_per_kg": 942,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [
+      "lamb"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "guaranteed_analysis_estimated",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "kirkland-signature-pate-turkey-recipe-costco-can",
+    "brandName": "Kirkland Signature",
+    "productName": "Pate Turkey",
+    "flavor": "Recipe (Costco)",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 174,
+      "phosphorus_percent_dmb": 0.76,
+      "protein_percent_calories": 40,
+      "protein_percent_dmb": 49,
+      "sodium_mg_per_100kcal": 93,
+      "calcium_phosphorus_ratio": 1.2,
+      "fat_percent_calories": 41,
+      "carbs_percent_calories": 19,
+      "energy_kcal_per_kg": 1103,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "turkey"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "honest-kitchen-grain-free-minced-turkey-in-bone-broth-gravy-can",
+    "brandName": "Honest Kitchen Grain Free",
+    "productName": "Minced Turkey",
+    "flavor": "in Bone Broth Gravy",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 175,
+      "phosphorus_percent_dmb": 0.72,
+      "protein_percent_calories": 45,
+      "protein_percent_dmb": 53,
+      "sodium_mg_per_100kcal": 135,
+      "calcium_phosphorus_ratio": 1.4,
+      "fat_percent_calories": 46,
+      "carbs_percent_calories": 9,
+      "energy_kcal_per_kg": 743,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "turkey"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": true,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "weruva-bff-omg-tuna-chicken-chase-me-can",
+    "brandName": "Weruva BFF OMG",
+    "productName": "Tuna &",
+    "flavor": "Chicken Chase Me",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 177,
+      "phosphorus_percent_dmb": 0.74,
+      "protein_percent_calories": 52,
+      "protein_percent_dmb": 61,
+      "sodium_mg_per_100kcal": 150,
+      "calcium_phosphorus_ratio": 1.1,
+      "fat_percent_calories": 38,
+      "carbs_percent_calories": 11,
+      "energy_kcal_per_kg": 732,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken",
+      "tuna"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "wellness-core-tiny-tasters-pate-chicken-beef-can",
+    "brandName": "Wellness CORE Tiny Tasters",
+    "productName": "Pate Chicken",
+    "flavor": "& Beef",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 179,
+      "phosphorus_percent_dmb": 0.92,
+      "protein_percent_calories": 43,
+      "protein_percent_dmb": 43,
+      "sodium_mg_per_100kcal": 171,
+      "calcium_phosphorus_ratio": 1.5,
+      "fat_percent_calories": 52,
+      "carbs_percent_calories": 6,
+      "energy_kcal_per_kg": 1228,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken",
+      "beef"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "wellness-core-tiny-tasters-pate-tuna-can",
+    "brandName": "Wellness CORE Tiny Tasters",
+    "productName": "Pate Tuna",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 180,
+      "phosphorus_percent_dmb": 0.88,
+      "protein_percent_calories": 49,
+      "protein_percent_dmb": 49,
+      "sodium_mg_per_100kcal": 238,
+      "calcium_phosphorus_ratio": 1.2,
+      "fat_percent_calories": 47,
+      "carbs_percent_calories": 4,
+      "energy_kcal_per_kg": 1221,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "tuna"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "feringa-pure-meat-chicken-with-pumpkin-catnip-can-germanyzooplus-can",
+    "brandName": "Feringa Pure Meat",
+    "productName": "Chicken with",
+    "flavor": "Pumpkin & Catnip Can Germany/ZooPlus",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 180,
+      "phosphorus_percent_dmb": 0.82,
+      "protein_percent_calories": 43,
+      "protein_percent_dmb": 56,
+      "sodium_mg_per_100kcal": null,
+      "calcium_phosphorus_ratio": 1.3,
+      "fat_percent_calories": 54,
+      "carbs_percent_calories": 3,
+      "energy_kcal_per_kg": 890,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "justfoodfordogs-justcats-fish-chicken-can",
+    "brandName": "JustFoodForDogs",
+    "productName": "JustCats Fish",
+    "flavor": "& Chicken",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 180,
+      "phosphorus_percent_dmb": 0.81,
+      "protein_percent_calories": 44,
+      "protein_percent_dmb": 56,
+      "sodium_mg_per_100kcal": 105,
+      "calcium_phosphorus_ratio": 1.3,
+      "fat_percent_calories": 45,
+      "carbs_percent_calories": 11,
+      "energy_kcal_per_kg": 1331,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken",
+      "fish"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "weruva-bff-omg-chicken-tuna-seeya-sooner-can",
+    "brandName": "Weruva BFF OMG",
+    "productName": "Chicken &",
+    "flavor": "Tuna Seeya Sooner!",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 181,
+      "phosphorus_percent_dmb": 0.86,
+      "protein_percent_calories": 44,
+      "protein_percent_dmb": 59,
+      "sodium_mg_per_100kcal": 80,
+      "calcium_phosphorus_ratio": 1.2,
+      "fat_percent_calories": 51,
+      "carbs_percent_calories": 5,
+      "energy_kcal_per_kg": 734,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken",
+      "tuna"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "fussie-cat-pouch-tuna-with-salmon-in-aspic-pouch",
+    "brandName": "Fussie Cat Pouch",
+    "productName": "- Tuna",
+    "flavor": "with Salmon in ASPIC",
+    "packageType": "pouch",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 181,
+      "phosphorus_percent_dmb": 0.67,
+      "protein_percent_calories": 61,
+      "protein_percent_dmb": 79,
+      "sodium_mg_per_100kcal": 68,
+      "calcium_phosphorus_ratio": 1.8,
+      "fat_percent_calories": 31,
+      "carbs_percent_calories": 8,
+      "energy_kcal_per_kg": 443,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "salmon",
+      "tuna"
+    ],
+    "allergenWarnings": [
+      "carrageenan"
+    ],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "fussie-cat-pouch-tuna-with-chicken-in-gravy-pouch",
+    "brandName": "Fussie Cat Pouch",
+    "productName": "- Tuna",
+    "flavor": "with Chicken in Gravy",
+    "packageType": "pouch",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 181,
+      "phosphorus_percent_dmb": 0.64,
+      "protein_percent_calories": 60,
+      "protein_percent_dmb": 78,
+      "sodium_mg_per_100kcal": 68,
+      "calcium_phosphorus_ratio": 1.5,
+      "fat_percent_calories": 29,
+      "carbs_percent_calories": 11,
+      "energy_kcal_per_kg": 443,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken",
+      "tuna"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "rayne-adult-health-rss-feline-chunky-stew-can",
+    "brandName": "Rayne",
+    "productName": "Adult Health-RSS",
+    "flavor": "Feline Chunky Stew",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 183,
+      "phosphorus_percent_dmb": 0.79,
+      "protein_percent_calories": 43,
+      "protein_percent_dmb": 53,
+      "sodium_mg_per_100kcal": 144,
+      "calcium_phosphorus_ratio": 1.3,
+      "fat_percent_calories": 43,
+      "carbs_percent_calories": 13,
+      "energy_kcal_per_kg": 973,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "instinct-original-duck-can",
+    "brandName": "Instinct Original",
+    "productName": "Duck",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 185,
+      "phosphorus_percent_dmb": 1.04,
+      "protein_percent_calories": 26,
+      "protein_percent_dmb": 42,
+      "sodium_mg_per_100kcal": 80,
+      "calcium_phosphorus_ratio": 1.6,
+      "fat_percent_calories": 72,
+      "carbs_percent_calories": 1,
+      "energy_kcal_per_kg": 1459,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "duck"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "royal-canin-renal-loaf-international-can",
+    "brandName": "Royal Canin",
+    "productName": "Renal Loaf (international)",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 187,
+      "phosphorus_percent_dmb": 0.78,
+      "protein_percent_calories": 35,
+      "protein_percent_dmb": 50,
+      "sodium_mg_per_100kcal": 160,
+      "calcium_phosphorus_ratio": 1.0,
+      "fat_percent_calories": 41,
+      "carbs_percent_calories": 24,
+      "energy_kcal_per_kg": 1006,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": true,
+    "therapeuticCategory": "renal_support",
+    "primaryProteins": [],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "wellness-core-tiny-tasters-pate-chicken-turkey-can",
+    "brandName": "Wellness CORE Tiny Tasters",
+    "productName": "Pate Chicken",
+    "flavor": "& Turkey",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 190,
+      "phosphorus_percent_dmb": 0.97,
+      "protein_percent_calories": 45,
+      "protein_percent_dmb": 45,
+      "sodium_mg_per_100kcal": 173,
+      "calcium_phosphorus_ratio": 1.7,
+      "fat_percent_calories": 50,
+      "carbs_percent_calories": 4,
+      "energy_kcal_per_kg": 1213,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken",
+      "turkey"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "tiki-cat-after-dark-velvet-mousse-chicken-beef-recipe-in-chicken-broth-can",
+    "brandName": "Tiki Cat After Dark",
+    "productName": "Velvet Mousse",
+    "flavor": "Chicken & Beef Recipe in Chicken Broth",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 190,
+      "phosphorus_percent_dmb": 0.92,
+      "protein_percent_calories": 43,
+      "protein_percent_dmb": 61,
+      "sodium_mg_per_100kcal": 58,
+      "calcium_phosphorus_ratio": 0.8,
+      "fat_percent_calories": 54,
+      "carbs_percent_calories": 3,
+      "energy_kcal_per_kg": 1118,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken",
+      "beef"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "granatapet-filet-a-la-carte-chicken-pur-germany-can",
+    "brandName": "GranataPet Filet",
+    "productName": "A La",
+    "flavor": "Carte Chicken Pur Germany",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 191,
+      "phosphorus_percent_dmb": 0.82,
+      "protein_percent_calories": 45,
+      "protein_percent_dmb": 54,
+      "sodium_mg_per_100kcal": 191,
+      "calcium_phosphorus_ratio": 1.4,
+      "fat_percent_calories": 46,
+      "carbs_percent_calories": 10,
+      "energy_kcal_per_kg": 941,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "thrive-complete-chicken-with-vegetable-uk-can",
+    "brandName": "Thrive Complete",
+    "productName": "Chicken with",
+    "flavor": "Vegetable UK",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 194,
+      "phosphorus_percent_dmb": 0.72,
+      "protein_percent_calories": 50,
+      "protein_percent_dmb": 53,
+      "sodium_mg_per_100kcal": 104,
+      "calcium_phosphorus_ratio": 1.2,
+      "fat_percent_calories": 25,
+      "carbs_percent_calories": 25,
+      "energy_kcal_per_kg": 671,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "tiki-cat-silver-whole-foods-with-chicken-recipe-in-chicken-broth-can",
+    "brandName": "Tiki Cat Silver",
+    "productName": "Whole Foods",
+    "flavor": "with Chicken Recipe in Chicken Broth",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 197,
+      "phosphorus_percent_dmb": 0.89,
+      "protein_percent_calories": 53,
+      "protein_percent_dmb": 68,
+      "sodium_mg_per_100kcal": 66,
+      "calcium_phosphorus_ratio": 1.1,
+      "fat_percent_calories": 45,
+      "carbs_percent_calories": 2,
+      "energy_kcal_per_kg": 915,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "blue-wilderness-duck-recipe-pate-can",
+    "brandName": "Blue Wilderness",
+    "productName": "Duck Recipe Pate",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 198,
+      "phosphorus_percent_dmb": 1.0,
+      "protein_percent_calories": 32,
+      "protein_percent_dmb": 45,
+      "sodium_mg_per_100kcal": 81,
+      "calcium_phosphorus_ratio": 1.4,
+      "fat_percent_calories": 61,
+      "carbs_percent_calories": 8,
+      "energy_kcal_per_kg": 1113,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "duck"
+    ],
+    "allergenWarnings": [
+      "carrageenan"
+    ],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "instinct-original-chicken-can",
+    "brandName": "Instinct Original",
+    "productName": "Chicken",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 199,
+      "phosphorus_percent_dmb": 1.07,
+      "protein_percent_calories": 27,
+      "protein_percent_dmb": 41,
+      "sodium_mg_per_100kcal": 75,
+      "calcium_phosphorus_ratio": 1.5,
+      "fat_percent_calories": 72,
+      "carbs_percent_calories": 1,
+      "energy_kcal_per_kg": 1460,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "nulo-medalseries-silky-mousse-senior-chicken-pumpkin-recipe-can",
+    "brandName": "Nulo Medalseries",
+    "productName": "Silky Mousse",
+    "flavor": "Senior Chicken & Pumpkin Recipe",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 199,
+      "phosphorus_percent_dmb": 0.91,
+      "protein_percent_calories": 41,
+      "protein_percent_dmb": 53,
+      "sodium_mg_per_100kcal": 78,
+      "calcium_phosphorus_ratio": 1.1,
+      "fat_percent_calories": 52,
+      "carbs_percent_calories": 8,
+      "energy_kcal_per_kg": 903,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "zealandia-chicken-pate-has-lamb-gatypminerals-new-zealand-can",
+    "brandName": "Zealandia",
+    "productName": "Chicken Pate",
+    "flavor": "(has lamb) GATypMinerals New Zealand",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 202,
+      "phosphorus_percent_dmb": 0.9,
+      "protein_percent_calories": 42,
+      "protein_percent_dmb": 43,
+      "sodium_mg_per_100kcal": null,
+      "calcium_phosphorus_ratio": 1.5,
+      "fat_percent_calories": 54,
+      "carbs_percent_calories": 4,
+      "energy_kcal_per_kg": 987,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken",
+      "lamb"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "guaranteed_analysis_typical_minerals",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "leonardo-poultry-egg-germany-can",
+    "brandName": "Leonardo",
+    "productName": "Poultry +",
+    "flavor": "Egg Germany",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 207,
+      "phosphorus_percent_dmb": 0.9,
+      "protein_percent_calories": 45,
+      "protein_percent_dmb": 55,
+      "sodium_mg_per_100kcal": 265,
+      "calcium_phosphorus_ratio": 1.5,
+      "fat_percent_calories": 49,
+      "carbs_percent_calories": 7,
+      "energy_kcal_per_kg": 869,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "egg"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "herrmanns-manufaktur-selection-adult-rabbit-and-cheese-germany-can",
+    "brandName": "Herrmann's Manufaktur Selection",
+    "productName": "Adult Rabbit",
+    "flavor": "and Cheese Germany",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 212,
+      "phosphorus_percent_dmb": 0.91,
+      "protein_percent_calories": 48,
+      "protein_percent_dmb": 58,
+      "sodium_mg_per_100kcal": 101,
+      "calcium_phosphorus_ratio": 1.3,
+      "fat_percent_calories": 47,
+      "carbs_percent_calories": 5,
+      "energy_kcal_per_kg": 895,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "rabbit"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "katkin-splash-human-quality-fresh-fish-and-turkey-recipe-gatypminerals-uk-can",
+    "brandName": "Katkin",
+    "productName": "Splash Human-Quality",
+    "flavor": "Fresh Fish and Turkey Recipe GATypMinerals UK",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 220,
+      "phosphorus_percent_dmb": 1.05,
+      "protein_percent_calories": 49,
+      "protein_percent_dmb": 62,
+      "sodium_mg_per_100kcal": 168,
+      "calcium_phosphorus_ratio": 1.2,
+      "fat_percent_calories": 48,
+      "carbs_percent_calories": 3,
+      "energy_kcal_per_kg": 1270,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "turkey",
+      "fish"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "guaranteed_analysis_typical_minerals",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "thrive-complete-tuna-salmon-uk-can",
+    "brandName": "Thrive Complete",
+    "productName": "Tuna &",
+    "flavor": "Salmon UK",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 223,
+      "phosphorus_percent_dmb": 0.82,
+      "protein_percent_calories": 74,
+      "protein_percent_dmb": 76,
+      "sodium_mg_per_100kcal": 202,
+      "calcium_phosphorus_ratio": 1.1,
+      "fat_percent_calories": 24,
+      "carbs_percent_calories": 2,
+      "energy_kcal_per_kg": 694,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "salmon",
+      "tuna"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "feringa-classic-meat-chicken-trout-with-potato-parsley-can-germanyzooplus-can",
+    "brandName": "Feringa Classic",
+    "productName": "Meat Chicken",
+    "flavor": "& Trout with Potato & Parsley Can Germany/ZooPlus",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 230,
+      "phosphorus_percent_dmb": 1.0,
+      "protein_percent_calories": 41,
+      "protein_percent_dmb": 50,
+      "sodium_mg_per_100kcal": null,
+      "calcium_phosphorus_ratio": 1.2,
+      "fat_percent_calories": 53,
+      "carbs_percent_calories": 7,
+      "energy_kcal_per_kg": 868,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "katkin-cluck-human-quality-fresh-chicken-recipe-gatypminerals-uk-can",
+    "brandName": "Katkin",
+    "productName": "Cluck Human-Quality",
+    "flavor": "Fresh Chicken Recipe GATypMinerals UK",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 250,
+      "phosphorus_percent_dmb": 1.29,
+      "protein_percent_calories": 52,
+      "protein_percent_dmb": 67,
+      "sodium_mg_per_100kcal": 97,
+      "calcium_phosphorus_ratio": 1.2,
+      "fat_percent_calories": 48,
+      "carbs_percent_calories": null,
+      "energy_kcal_per_kg": 1310,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "chicken"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "guaranteed_analysis_typical_minerals",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "zealandia-salmon-pate-has-lamb-gatypminerals-new-zealand-can",
+    "brandName": "Zealandia",
+    "productName": "Salmon Pate",
+    "flavor": "(has lamb) GATypMinerals New Zealand",
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 258,
+      "phosphorus_percent_dmb": 1.0,
+      "protein_percent_calories": 41,
+      "protein_percent_dmb": 41,
+      "sodium_mg_per_100kcal": null,
+      "calcium_phosphorus_ratio": 1.6,
+      "fat_percent_calories": 55,
+      "carbs_percent_calories": 4,
+      "energy_kcal_per_kg": 852,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "lamb",
+      "salmon"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "guaranteed_analysis_typical_minerals",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "foodId": "thrive-complete-tuna-fillet-uk-can",
+    "brandName": "Thrive Complete",
+    "productName": "Tuna Fillet UK",
+    "flavor": null,
+    "packageType": "can",
+    "nutrition": {
+      "phosphorus_mg_per_100kcal": 259,
+      "phosphorus_percent_dmb": 1.14,
+      "protein_percent_calories": 73,
+      "protein_percent_dmb": 73,
+      "sodium_mg_per_100kcal": 29,
+      "calcium_phosphorus_ratio": 1.1,
+      "fat_percent_calories": 27,
+      "carbs_percent_calories": null,
+      "energy_kcal_per_kg": 746,
+      "potassium_mg_per_100kcal": null
+    },
+    "isPrescription": false,
+    "therapeuticCategory": null,
+    "primaryProteins": [
+      "tuna"
+    ],
+    "allergenWarnings": [],
+    "isGrainFree": false,
+    "dataSource": "typical_analysis",
+    "schemaVersion": "1.0.0",
+    "lastUpdated": "2025-08-15"
+  }
+]
